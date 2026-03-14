@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LUT Chaining Shader Editor</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app">
+
+    <header class="header">
+      <div class="header-title">LUT Chaining <span>Shader Editor</span></div>
+      <div id="header-language-switcher"></div>
+
+      <div class="action-group" id="header-action-group"></div>
+    </header>
+
+    <div class="main">
+      <section class="pipeline-panel" id="pipeline-panel">
+        <div class="pipeline-header">
+          <div class="pipeline-title">LUT Step Chain</div>
+          <div class="pipeline-help" id="pipeline-help-text">左ノードを選択して、各StepのX/Yソケットへ接続</div>
+        </div>
+
+        <div class="pipeline-workspace" id="pipeline-workspace">
+          <svg class="connection-layer" id="connection-layer" aria-hidden="true"></svg>
+
+          <aside class="param-column">
+            <div class="section-label">Parameters</div>
+            <div class="param-node-list" id="param-node-list"></div>
+          </aside>
+
+          <div class="step-column" id="step-column">
+            <div class="step-list" id="step-list"></div>
+          </div>
+        </div>
+
+        <div class="error-section">
+          <div id="error-log"></div>
+        </div>
+
+        <section class="lut-strip-panel" id="lut-strip-panel">
+          <div class="lut-strip-head">
+            <div class="section-label">LUT Library</div>
+            <div class="lut-strip-actions" id="lut-strip-actions"></div>
+          </div>
+          <div class="lut-strip-list" id="lut-strip-list" aria-live="polite"></div>
+        </section>
+      </section>
+
+      <div class="resizer" id="resizer"></div>
+
+      <section class="preview-panel">
+        <div class="preview-header">
+          <div class="section-label">3D Preview</div>
+          <div class="preview-help" id="preview-help-text">ドラッグ: 回転 / ホイール: ズーム</div>
+        </div>
+
+        <section class="preview-display-section" id="preview-display-section">
+          <div class="preview-canvas-wrap" id="preview-canvas-wrap">
+            <canvas id="gl-canvas"></canvas>
+            <svg class="light-gizmo-layer" id="light-gizmo-layer" aria-hidden="true">
+              <defs>
+                <marker id="light-gizmo-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                  <path d="M 0 0 L 10 5 L 0 10 z"></path>
+                </marker>
+              </defs>
+              <circle class="light-gizmo-origin" id="light-gizmo-origin" r="3.5"></circle>
+              <circle class="light-gizmo-tip" id="light-gizmo-tip" r="4.5"></circle>
+              <text class="light-gizmo-label" id="light-gizmo-label">Light</text>
+            </svg>
+
+            <svg class="axis-gizmo-layer" id="axis-gizmo-layer" viewBox="0 0 92 92" aria-hidden="true">
+              <circle class="axis-gizmo-back" cx="32" cy="32" r="27"></circle>
+              <path class="axis-gizmo-line axis-gizmo-line-z" id="axis-gizmo-line-z"></path>
+              <path class="axis-gizmo-line axis-gizmo-line-x" id="axis-gizmo-line-x"></path>
+              <path class="axis-gizmo-line axis-gizmo-line-y" id="axis-gizmo-line-y"></path>
+              <circle class="axis-gizmo-origin" id="axis-gizmo-origin" cx="32" cy="32" r="2.7"></circle>
+              <circle class="axis-gizmo-tip axis-gizmo-tip-x" id="axis-gizmo-tip-x" r="3.3"></circle>
+              <circle class="axis-gizmo-tip axis-gizmo-tip-y" id="axis-gizmo-tip-y" r="3.3"></circle>
+              <circle class="axis-gizmo-tip axis-gizmo-tip-z" id="axis-gizmo-tip-z" r="3.3"></circle>
+              <text class="axis-gizmo-label axis-gizmo-label-x" id="axis-gizmo-label-x">X</text>
+              <text class="axis-gizmo-label axis-gizmo-label-y" id="axis-gizmo-label-y">Y</text>
+              <text class="axis-gizmo-label axis-gizmo-label-z" id="axis-gizmo-label-z">Z</text>
+            </svg>
+          </div>
+
+          <div class="preview-shape-bar" id="preview-shape-bar"></div>
+        </section>
+
+        <div
+          class="preview-layout-resizer"
+          id="preview-layout-resizer"
+          role="separator"
+          aria-orientation="horizontal"
+          aria-label="3Dプレビュー表示の高さを調整"
+        ></div>
+
+        <div class="preview-settings-scroll" id="preview-settings-scroll">
+          <section class="material-panel" id="material-panel">
+          </section>
+
+          <section class="light-panel" id="light-panel">
+          </section>
+        </div>
+
+        <dialog class="shader-dialog" id="shader-dialog" aria-labelledby="shader-dialog-title">
+          <section class="shader-dialog-surface"></section>
+        </dialog>
+      </section>
+    </div>
+
+  </div>
+  <script src="dist/bundle.js"></script>
+</body>
+</html>
