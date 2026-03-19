@@ -933,6 +933,7 @@ window.addEventListener('DOMContentLoaded', () => {
     }),
     getLightSettings,
     getLightDirectionWorld,
+    getMaterialSettings,
     onAfterDraw: ({ view, proj, canvas: drawCanvas, lightDirection, lightSettings }) => {
       if (!gizmoOverlayController) {
         return;

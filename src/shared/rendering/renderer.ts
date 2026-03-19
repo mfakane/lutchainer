@@ -20,6 +20,13 @@ interface BufferedGeometry {
   indexCount: number;
 }
 
+export interface MaterialUniformValues {
+  specularStrength: number;
+  specularPower: number;
+  fresnelStrength: number;
+  fresnelPower: number;
+}
+
 export class Renderer {
   readonly canvas: HTMLCanvasElement;
   private gl: WebGLRenderingContext;
@@ -134,6 +141,7 @@ export class Renderer {
     cameraPos: readonly [number, number, number] = [0, 0, 3],
     lightDir: readonly [number, number, number] = [0.38, 0.72, 0.4],
     showLightGuide = true,
+    materialUniforms: MaterialUniformValues,
   ): void {
     const gl = this.gl;
     const { program, bufferedGeo: geo } = this;
@@ -170,6 +178,10 @@ export class Renderer {
     uni2f('u_resolution', gl.drawingBufferWidth, gl.drawingBufferHeight);
     uni3f('u_cameraPos', cameraPos[0], cameraPos[1], cameraPos[2]);
     uni3f('u_lightDir', lightDir[0], lightDir[1], lightDir[2]);
+    uni1f('u_specularStrength', Number.isFinite(materialUniforms.specularStrength) ? materialUniforms.specularStrength : 0);
+    uni1f('u_specularPower', Number.isFinite(materialUniforms.specularPower) ? materialUniforms.specularPower : 1);
+    uni1f('u_fresnelStrength', Number.isFinite(materialUniforms.fresnelStrength) ? materialUniforms.fresnelStrength : 0);
+    uni1f('u_fresnelPower', Number.isFinite(materialUniforms.fresnelPower) ? materialUniforms.fresnelPower : 0.01);
     uniM4('u_modelMatrix', modelMatrix);
     uniM4('u_viewMatrix', viewMatrix);
     uniM4('u_projectionMatrix', projMatrix);

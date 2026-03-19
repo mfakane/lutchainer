@@ -1,4 +1,4 @@
-import type { LightSettings } from '../../features/pipeline/pipeline-model';
+import type { LightSettings, MaterialSettings } from '../../features/pipeline/pipeline-model';
 import {
   mat4Identity,
   mat4LookAt,
@@ -27,6 +27,7 @@ export interface CreateRenderSystemOptions {
   getCameraOrbit: () => CameraOrbitState;
   getLightSettings: () => LightSettings;
   getLightDirectionWorld: () => [number, number, number];
+  getMaterialSettings: () => MaterialSettings;
   onAfterDraw?: (payload: AfterDrawPayload) => void;
   requestAnimationFrameImpl?: (callback: FrameRequestCallback) => number;
   cancelAnimationFrameImpl?: (handle: number) => void;
@@ -67,6 +68,28 @@ function isLightSettings(value: unknown): value is LightSettings {
     && typeof candidate.showGizmo === 'boolean';
 }
 
+function isMaterialSettings(value: unknown): value is MaterialSettings {
+  if (!value || typeof value !== 'object') {
+    return false;
+  }
+
+  const candidate = value as Partial<MaterialSettings>;
+  return Array.isArray(candidate.baseColor)
+    && candidate.baseColor.length === 3
+    && isFiniteNumber(candidate.baseColor[0])
+    && isFiniteNumber(candidate.baseColor[1])
+    && isFiniteNumber(candidate.baseColor[2])
+    && Array.isArray(candidate.ambientColor)
+    && candidate.ambientColor.length === 3
+    && isFiniteNumber(candidate.ambientColor[0])
+    && isFiniteNumber(candidate.ambientColor[1])
+    && isFiniteNumber(candidate.ambientColor[2])
+    && isFiniteNumber(candidate.specularStrength)
+    && isFiniteNumber(candidate.specularPower)
+    && isFiniteNumber(candidate.fresnelStrength)
+    && isFiniteNumber(candidate.fresnelPower);
+}
+
 function isLightDirection(value: unknown): value is [number, number, number] {
   return Array.isArray(value)
     && value.length === 3
@@ -92,6 +115,9 @@ function assertValidOptions(value: unknown): asserts value is CreateRenderSystem
   }
   if (typeof options.getLightDirectionWorld !== 'function') {
     throw new Error('getLightDirectionWorld must be a function.');
+  }
+  if (typeof options.getMaterialSettings !== 'function') {
+    throw new Error('getMaterialSettings must be a function.');
   }
   if (options.onAfterDraw !== undefined && typeof options.onAfterDraw !== 'function') {
     throw new Error('onAfterDraw must be a function when provided.');
@@ -134,6 +160,11 @@ export function createRenderSystem(options: CreateRenderSystemOptions): RenderSy
       throw new Error('getLightDirectionWorld returned an invalid value.');
     }
 
+    const materialSettings = options.getMaterialSettings();
+    if (!isMaterialSettings(materialSettings)) {
+      throw new Error('getMaterialSettings returned an invalid value.');
+    }
+
     const canvas = options.renderer.canvas;
     const dpr = window.devicePixelRatio || 1;
     const widthPx = (canvas.clientWidth * dpr) | 0;
@@ -159,7 +190,16 @@ export function createRenderSystem(options: CreateRenderSystemOptions): RenderSy
 
     const model = mat4Identity();
     const normal = normalMatrixFromMat4(model);
-    options.renderer.draw(model, view, proj, normal, [eyeX, eyeY, eyeZ], lightDirection, lightSettings.showGizmo);
+    options.renderer.draw(
+      model,
+      view,
+      proj,
+      normal,
+      [eyeX, eyeY, eyeZ],
+      lightDirection,
+      lightSettings.showGizmo,
+      materialSettings,
+    );
 
     options.onAfterDraw?.({
       view,

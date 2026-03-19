@@ -97,9 +97,29 @@ export interface BlendModeStrategy {
   emitHlsl: (input: BlendModeEmitInput) => string[];
 }
 
-export interface ParamEvaluator {
+export type ShaderLocalKey =
+  | 'N'
+  | 'L'
+  | 'cameraPos'
+  | 'V'
+  | 'H'
+  | 'lambert'
+  | 'halfLambert'
+  | 'nDotH'
+  | 'specular'
+  | 'facing'
+  | 'fresnel'
+  | 'linearDepth'
+  | 'texcoord';
+
+export interface ParamShaderInfo {
   glslExpr: string;
   hlslExpr: string;
+  requires: readonly ShaderLocalKey[];
+}
+
+export interface ParamEvaluator {
+  shader: ParamShaderInfo;
   evaluate: (current: Color, context: StepParamContext) => number;
 }
 

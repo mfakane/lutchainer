@@ -202,88 +202,73 @@ function emitHsvLayerHlsl(
 
 export const PARAM_EVALUATORS: Record<ParamName, ParamEvaluator> = {
   lightness: {
-    glslExpr: 'lambert',
-    hlslExpr: 'lambert',
+    shader: { glslExpr: 'lambert', hlslExpr: 'lambert', requires: ['lambert'] },
     evaluate: (_current, context) => context.lambert,
   },
   specular: {
-    glslExpr: 'specular',
-    hlslExpr: 'specular',
+    shader: { glslExpr: 'specular', hlslExpr: 'specular', requires: ['specular'] },
     evaluate: (_current, context) => context.specular,
   },
   halfLambert: {
-    glslExpr: 'halfLambert',
-    hlslExpr: 'halfLambert',
+    shader: { glslExpr: 'halfLambert', hlslExpr: 'halfLambert', requires: ['halfLambert'] },
     evaluate: (_current, context) => context.halfLambert,
   },
   fresnel: {
-    glslExpr: 'fresnel',
-    hlslExpr: 'fresnel',
+    shader: { glslExpr: 'fresnel', hlslExpr: 'fresnel', requires: ['fresnel'] },
     evaluate: (_current, context) => context.fresnel,
   },
   facing: {
-    glslExpr: 'facing',
-    hlslExpr: 'facing',
+    shader: { glslExpr: 'facing', hlslExpr: 'facing', requires: ['facing'] },
     evaluate: (_current, context) => context.facing,
   },
   nDotH: {
-    glslExpr: 'nDotH',
-    hlslExpr: 'nDotH',
+    shader: { glslExpr: 'nDotH', hlslExpr: 'nDotH', requires: ['nDotH'] },
     evaluate: (_current, context) => context.nDotH,
   },
   linearDepth: {
-    glslExpr: 'linearDepth',
-    hlslExpr: 'linearDepth',
+    shader: { glslExpr: 'linearDepth', hlslExpr: 'linearDepth', requires: ['linearDepth'] },
     evaluate: (_current, context) => context.linearDepth,
   },
   r: {
-    glslExpr: 'color.r',
-    hlslExpr: 'color.r',
+    shader: { glslExpr: 'color.r', hlslExpr: 'color.r', requires: [] },
     evaluate: current => current[0],
   },
   g: {
-    glslExpr: 'color.g',
-    hlslExpr: 'color.g',
+    shader: { glslExpr: 'color.g', hlslExpr: 'color.g', requires: [] },
     evaluate: current => current[1],
   },
   b: {
-    glslExpr: 'color.b',
-    hlslExpr: 'color.b',
+    shader: { glslExpr: 'color.b', hlslExpr: 'color.b', requires: [] },
     evaluate: current => current[2],
   },
   h: {
-    glslExpr: 'rgb2hsv(color).x',
-    hlslExpr: 'RgbToHsv(color).x',
+    shader: { glslExpr: 'rgb2hsv(color).x', hlslExpr: 'RgbToHsv(color).x', requires: [] },
     evaluate: current => rgbToHsv(current)[0],
   },
   s: {
-    glslExpr: 'rgb2hsv(color).y',
-    hlslExpr: 'RgbToHsv(color).y',
+    shader: { glslExpr: 'rgb2hsv(color).y', hlslExpr: 'RgbToHsv(color).y', requires: [] },
     evaluate: current => rgbToHsv(current)[1],
   },
   v: {
-    glslExpr: 'rgb2hsv(color).z',
-    hlslExpr: 'RgbToHsv(color).z',
+    shader: { glslExpr: 'rgb2hsv(color).z', hlslExpr: 'RgbToHsv(color).z', requires: [] },
     evaluate: current => rgbToHsv(current)[2],
   },
   texU: {
-    glslExpr: 'v_texcoord.x',
-    hlslExpr: 'input.texcoord.x',
+    shader: { glslExpr: 'v_texcoord.x', hlslExpr: 'input.texcoord.x', requires: ['texcoord'] },
     evaluate: (_current, context) => context.texU,
   },
   texV: {
-    glslExpr: 'v_texcoord.y',
-    hlslExpr: 'input.texcoord.y',
+    shader: { glslExpr: 'v_texcoord.y', hlslExpr: 'input.texcoord.y', requires: ['texcoord'] },
     evaluate: (_current, context) => context.texV,
   },
 };
 
 export function paramExprGlsl(param: ParamName): string {
-  return PARAM_EVALUATORS[param].glslExpr;
+  return PARAM_EVALUATORS[param].shader.glslExpr;
 }
 
 export function paramExprHlsl(param: ParamName): string {
-  return PARAM_EVALUATORS[param].hlslExpr;
+  return PARAM_EVALUATORS[param].shader.hlslExpr;
 }
 
 export function evaluateStepParam(param: ParamName, current: Color, context: StepParamContext): number {
