@@ -39,7 +39,6 @@ import {
   syncMaterialPanelState,
 } from './shared/components/solid-panels.tsx';
 import {
-  mountLutStripActions,
   mountLutStripList,
   mountParamNodeList,
   mountStepList,
@@ -781,47 +780,6 @@ function setupUI(): void {
   setupLightPanel();
   setupShaderPanel();
 
-  mountLutStripActions($<HTMLElement>('#lut-strip-actions'), {
-    onAddLutFiles: async files => {
-      if (!Array.isArray(files) || files.some(file => !(file instanceof File))) {
-        showStatus(t('main.status.invalidLutAddInput'), 'error');
-        return;
-      }
-
-      const luts = getPipelineLuts();
-      const room = Math.max(0, MAX_LUTS - luts.length);
-      if (room === 0) {
-        showStatus(t('main.status.maxLutLimit', { max: MAX_LUTS }), 'error');
-        return;
-      }
-
-      const selected = files.slice(0, room);
-      const errors: string[] = [];
-      let added = 0;
-
-      for (const file of selected) {
-        try {
-          const lut = await createLutFromFile(file);
-          luts.push(lut);
-          added += 1;
-        } catch (err) {
-          errors.push(err instanceof Error ? err.message : `${t('common.unknownError')}: ${file.name}`);
-        }
-      }
-
-      normalizeSteps();
-      renderSteps();
-      scheduleApply();
-
-      if (errors.length > 0) {
-        showStatus(errors.join('\n'), 'error');
-      } else {
-        showStatus(t('main.status.lutAdded', { count: added }), 'success');
-      }
-    },
-    onStatus: showStatus,
-  });
-
   setupLutReorderBindings({
     lutStripListEl,
     parseLutId,
@@ -1045,6 +1003,43 @@ window.addEventListener('DOMContentLoaded', () => {
     steps: getPipelineSteps(),
     onRemoveLut: lutId => {
       removeLut(lutId);
+    },
+    onAddLutFiles: async files => {
+      if (!Array.isArray(files) || files.some(file => !(file instanceof File))) {
+        showStatus(t('main.status.invalidLutAddInput'), 'error');
+        return;
+      }
+
+      const luts = getPipelineLuts();
+      const room = Math.max(0, MAX_LUTS - luts.length);
+      if (room === 0) {
+        showStatus(t('main.status.maxLutLimit', { max: MAX_LUTS }), 'error');
+        return;
+      }
+
+      const selected = files.slice(0, room);
+      const errors: string[] = [];
+      let added = 0;
+
+      for (const file of selected) {
+        try {
+          const lut = await createLutFromFile(file);
+          luts.push(lut);
+          added += 1;
+        } catch (err) {
+          errors.push(err instanceof Error ? err.message : `${t('common.unknownError')}: ${file.name}`);
+        }
+      }
+
+      normalizeSteps();
+      renderSteps();
+      scheduleApply();
+
+      if (errors.length > 0) {
+        showStatus(errors.join('\n'), 'error');
+      } else {
+        showStatus(t('main.status.lutAdded', { count: added }), 'success');
+      }
     },
     onStatus: showStatus,
   });

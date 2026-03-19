@@ -43,10 +43,6 @@ interface LutStripListMountOptions {
   luts: LutModel[];
   steps: StepModel[];
   onRemoveLut: (lutId: string) => void;
-  onStatus: StatusReporter;
-}
-
-interface LutStripActionsMountOptions {
   onAddLutFiles: (files: File[]) => void | Promise<void>;
   onStatus: StatusReporter;
 }
@@ -69,10 +65,6 @@ interface LutStripListProps {
   luts: Accessor<LutModel[]>;
   steps: Accessor<StepModel[]>;
   onRemoveLut: (lutId: string) => void;
-  onStatus: StatusReporter;
-}
-
-interface LutStripActionsProps {
   onAddLutFiles: (files: File[]) => void | Promise<void>;
   onStatus: StatusReporter;
 }
@@ -80,7 +72,6 @@ interface LutStripActionsProps {
 let disposeParamNodeList: (() => void) | null = null;
 let disposeStepList: (() => void) | null = null;
 let disposeLutStripList: (() => void) | null = null;
-let disposeLutStripActions: (() => void) | null = null;
 
 let syncStepListInternal: ((steps: StepModel[], luts: LutModel[]) => void) | null = null;
 let syncLutStripListInternal: ((luts: LutModel[], steps: StepModel[]) => void) | null = null;
@@ -238,18 +229,6 @@ function ensureLutStripListMountOptions(value: unknown): asserts value is LutStr
     throw new Error('LUTストリップの削除コールバックが不正です。');
   }
   ensureStatusReporter(options.onStatus, 'LUTストリップ');
-}
-
-function ensureLutStripActionsMountOptions(value: unknown): asserts value is LutStripActionsMountOptions {
-  if (!value || typeof value !== 'object') {
-    throw new Error('LUTアクションの初期化オプションが不正です。');
-  }
-
-  const options = value as Partial<LutStripActionsMountOptions>;
-  if (typeof options.onAddLutFiles !== 'function') {
-    throw new Error('LUTアクションの追加コールバックが不正です。');
-  }
-  ensureStatusReporter(options.onStatus, 'LUTアクション');
 }
 
 function ParamNodeList(_props: ParamNodeListProps): JSX.Element {
@@ -527,14 +506,13 @@ function StepList(props: StepListProps): JSX.Element {
         </For>
       </Show>
 
-      <div class="step-list-add-wrap">
-        <button type="button" class="btn-secondary step-add-inline-btn" onClick={handleAddStepClick}>{tr('pipeline.step.add')}</button>
-      </div>
+      <button type="button" class="btn-secondary step-add-inline-btn" onClick={handleAddStepClick}>{tr('pipeline.step.add')}</button>
     </>
   );
 }
 
 function LutStripList(props: LutStripListProps): JSX.Element {
+  let fileInputRef: HTMLInputElement | null = null;
   const language = useLanguage();
 
   const tr = (key: string, values?: Record<string, string | number>): string => {
@@ -553,43 +531,6 @@ function LutStripList(props: LutStripListProps): JSX.Element {
     }
 
     props.onRemoveLut(lutId);
-  };
-
-  return (
-    <Show when={props.luts().length > 0} fallback={<div class="lut-strip-empty">{tr('pipeline.lut.empty')}</div>}>
-      <For each={props.luts()}>
-        {lut => (
-          <article class="lut-strip-item" draggable={true} data-lut-id={lut.id}>
-            <div class="lut-strip-thumb-wrap">
-              <img class="lut-strip-thumb" src={lut.thumbUrl} alt={`${lut.name} thumbnail`} loading="lazy" />
-            </div>
-            <div class="lut-strip-meta">
-              <div class="lut-strip-name">{lut.name}</div>
-              <div class="lut-strip-stats">{tr('pipeline.lut.stats', { width: lut.width, height: lut.height, count: usageCount(lut.id) })}</div>
-              <button
-                type="button"
-                class="lut-strip-remove"
-                data-lut-id={lut.id}
-                aria-label={tr('pipeline.lut.removeAria', { name: lut.name })}
-                onClick={() => handleRemoveLut(lut.id)}
-              >
-                {tr('pipeline.step.remove')}
-              </button>
-            </div>
-          </article>
-        )}
-      </For>
-    </Show>
-  );
-}
-
-function LutStripActions(props: LutStripActionsProps): JSX.Element {
-  let fileInputRef: HTMLInputElement | null = null;
-  const language = useLanguage();
-
-  const tr = (key: string, values?: Record<string, string | number>): string => {
-    language();
-    return t(key, values);
   };
 
   const openFilePicker = (): void => {
@@ -633,13 +574,39 @@ function LutStripActions(props: LutStripActionsProps): JSX.Element {
 
   return (
     <>
-      <button type="button" class="btn-secondary" id="btn-add-lut-strip" onClick={openFilePicker}>{tr('pipeline.lut.add')}</button>
+      <Show when={props.luts().length > 0} fallback={<div class="lut-strip-empty">{tr('pipeline.lut.empty')}</div>}>
+        <For each={props.luts()}>
+          {lut => (
+            <article class="lut-strip-item" draggable={true} data-lut-id={lut.id}>
+              <div class="lut-strip-thumb-wrap">
+                <img class="lut-strip-thumb" src={lut.thumbUrl} alt={`${lut.name} thumbnail`} loading="lazy" />
+              </div>
+              <div class="lut-strip-meta">
+                <div class="lut-strip-name">{lut.name}</div>
+                <div class="lut-strip-stats">{tr('pipeline.lut.stats', { width: lut.width, height: lut.height, count: usageCount(lut.id) })}</div>
+                <button
+                  type="button"
+                  class="lut-strip-remove"
+                  data-lut-id={lut.id}
+                  aria-label={tr('pipeline.lut.removeAria', { name: lut.name })}
+                  onClick={() => handleRemoveLut(lut.id)}
+                >
+                  {tr('pipeline.step.remove')}
+                </button>
+              </div>
+            </article>
+          )}
+        </For>
+        <div class="lut-strip-add-item" onClick={openFilePicker} title={tr('pipeline.lut.add')}>
+          <button type="button">{tr('pipeline.lut.add')}</button>
+        </div>
+      </Show>
       <input
         ref={element => {
           fileInputRef = element;
         }}
         type="file"
-        id="lut-file-input"
+        class="lut-strip-file-input"
         accept="image/*"
         multiple
         hidden
@@ -756,27 +723,10 @@ export function mountLutStripList(target: HTMLElement, options: LutStripListMoun
         luts={luts}
         steps={steps}
         onRemoveLut={options.onRemoveLut}
+        onAddLutFiles={options.onAddLutFiles}
         onStatus={options.onStatus}
       />
     );
-  }, target);
-}
-
-export function mountLutStripActions(target: HTMLElement, options: LutStripActionsMountOptions): void {
-  if (!(target instanceof HTMLElement)) {
-    throw new Error('LUTアクションの描画先要素が不正です。');
-  }
-
-  ensureLutStripActionsMountOptions(options);
-
-  if (disposeLutStripActions) {
-    disposeLutStripActions();
-    disposeLutStripActions = null;
-  }
-
-  target.textContent = '';
-  disposeLutStripActions = render(() => {
-    return <LutStripActions onAddLutFiles={options.onAddLutFiles} onStatus={options.onStatus} />;
   }, target);
 }
 
