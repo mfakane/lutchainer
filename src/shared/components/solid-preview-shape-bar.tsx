@@ -1,6 +1,7 @@
-import { For, Show, createSignal, onCleanup, type Accessor, type JSX } from 'solid-js';
+import { For, createSignal, type Accessor, type JSX } from 'solid-js';
 import { render } from 'solid-js/web';
 import { t, useLanguage } from '../i18n';
+import { DropdownMenu } from './solid-dropdown-menu';
 
 type StatusKind = 'success' | 'error' | 'info';
 type StatusReporter = (message: string, kind?: StatusKind) => void;
@@ -78,45 +79,11 @@ function ensureMountOptions(value: unknown): asserts value is PreviewShapeBarMou
 
 function PreviewShapeBar(props: PreviewShapeBarProps): JSX.Element {
   const language = useLanguage();
-  const [menuOpen, setMenuOpen] = createSignal(false);
-  let menuWrapEl: HTMLDivElement | null = null;
 
   const tr = (key: string, values?: Record<string, string | number>): string => {
     language();
     return t(key, values);
   };
-
-  const closeMenu = (): void => {
-    setMenuOpen(false);
-  };
-
-  const handleToggleMenu = (): void => {
-    setMenuOpen(prev => !prev);
-  };
-
-  const handleWindowPointerDown = (event: PointerEvent): void => {
-    if (!menuOpen()) {
-      return;
-    }
-
-    const target = event.target;
-    if (!(target instanceof Node)) {
-      return;
-    }
-
-    if (!menuWrapEl || menuWrapEl.contains(target)) {
-      return;
-    }
-
-    closeMenu();
-  };
-
-  if (typeof window !== 'undefined') {
-    window.addEventListener('pointerdown', handleWindowPointerDown);
-    onCleanup(() => {
-      window.removeEventListener('pointerdown', handleWindowPointerDown);
-    });
-  }
 
   const handleMenuAction = (action: PreviewActionMenuValue): void => {
     if (!isValidActionMenuValue(action)) {
@@ -124,20 +91,10 @@ function PreviewShapeBar(props: PreviewShapeBarProps): JSX.Element {
     }
 
     if (action === '') {
-      closeMenu();
       return;
     }
 
     props.onSelectActionMenu(action);
-    closeMenu();
-  };
-
-  const handleMenuKeyDown = (event: KeyboardEvent): void => {
-    if (event.key !== 'Escape') {
-      return;
-    }
-    event.preventDefault();
-    closeMenu();
   };
 
   return (
@@ -156,32 +113,22 @@ function PreviewShapeBar(props: PreviewShapeBarProps): JSX.Element {
           )}
         </For>
       </div>
-      <div class="preview-action-menu-wrap" ref={element => { menuWrapEl = element; }}>
-        <button
-          type="button"
-          class="preview-kebab-btn"
-          aria-label={tr('preview.menuButtonAria')}
-          aria-haspopup="menu"
-          aria-expanded={menuOpen() ? 'true' : 'false'}
-          onClick={handleToggleMenu}
-          onKeyDown={event => {
-            const keyEvent = event as KeyboardEvent;
-            handleMenuKeyDown(keyEvent);
-          }}
-        >
-          ･･･
-        </button>
-        <Show when={menuOpen()}>
-          <div class="preview-kebab-menu" role="menu" onKeyDown={event => {
-            const keyEvent = event as KeyboardEvent;
-            handleMenuKeyDown(keyEvent);
-          }}>
+      <DropdownMenu
+        wrapperClass="preview-action-menu-wrap"
+        triggerClass="preview-kebab-btn"
+        menuClass="preview-kebab-menu"
+        triggerAriaLabel={tr('preview.menuButtonAria')}
+        menuRole="menu"
+      >
+        {controls => (
+          <>
             <button
               type="button"
               class="preview-kebab-item"
               role="menuitem"
               onClick={() => {
                 handleMenuAction('toggle-wireframe');
+                controls.closeMenu();
               }}
             >
               {tr('preview.menuWireframeToggle', {
@@ -194,6 +141,7 @@ function PreviewShapeBar(props: PreviewShapeBarProps): JSX.Element {
               role="menuitem"
               onClick={() => {
                 handleMenuAction('export-main-preview');
+                controls.closeMenu();
               }}
             >
               {tr('preview.menuExportMainPng')}
@@ -204,13 +152,14 @@ function PreviewShapeBar(props: PreviewShapeBarProps): JSX.Element {
               role="menuitem"
               onClick={() => {
                 handleMenuAction('export-step-preview');
+                controls.closeMenu();
               }}
             >
               {tr('preview.menuExportStepPng')}
             </button>
-          </div>
-        </Show>
-      </div>
+          </>
+        )}
+      </DropdownMenu>
     </>
   );
 }

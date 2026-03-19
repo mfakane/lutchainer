@@ -1,7 +1,8 @@
-import { For, Show, createSignal, type Accessor, type JSX } from 'solid-js';
+import { For, createSignal, type Accessor, type JSX } from 'solid-js';
 import { render } from 'solid-js/web';
 import * as pipelineModel from '../../features/pipeline/pipeline-model';
 import { t, useLanguage } from '../i18n';
+import { DropdownMenu } from './solid-dropdown-menu';
 
 type StatusKind = 'success' | 'error' | 'info';
 type StatusReporter = (message: string, kind?: StatusKind) => void;
@@ -323,17 +324,15 @@ function MaterialPanel(props: MaterialPanelProps): JSX.Element {
     props.commitSettings(next);
   };
 
-  const [isMaterialPresetMenuOpen, setIsMaterialPresetMenuOpen] = createSignal(false);
-
-  const applyMaterialPreset = (preset: MaterialPresetDefinition): void => {
+  const applyMaterialPreset = (preset: MaterialPresetDefinition): boolean => {
     if (!isValidMaterialSettings(preset.settings)) {
       props.onStatus(tr('panel.status.materialPresetInvalidValue', { value: preset.key }), 'error');
-      return;
+      return false;
     }
 
     props.commitSettings(cloneMaterialSettings(preset.settings));
     props.onStatus(tr('panel.status.materialPresetApplied', { name: tr(preset.labelKey) }), 'info');
-    setIsMaterialPresetMenuOpen(false);
+    return true;
   };
 
   return (
@@ -343,33 +342,35 @@ function MaterialPanel(props: MaterialPanelProps): JSX.Element {
           <div class="section-label">Material</div>
           <div class="material-help">{tr('panel.materialHelp')}</div>
         </div>
-        <div class="material-action-menu-wrap">
-          <button
-            class="material-kebab-btn"
-            id="material-preset-btn"
-            aria-label={tr('panel.materialPreset')}
-            aria-haspopup="menu"
-            aria-expanded={isMaterialPresetMenuOpen()}
-            onClick={() => setIsMaterialPresetMenuOpen(!isMaterialPresetMenuOpen())}
-          >
-            ･･･
-          </button>
-          <Show when={isMaterialPresetMenuOpen()}>
-            <div class="material-kebab-menu" role="menu">
+        <DropdownMenu
+          wrapperClass="material-action-menu-wrap"
+          triggerClass="material-kebab-btn"
+          menuClass="material-kebab-menu"
+          triggerAriaLabel={tr('panel.materialPreset')}
+          menuRole="menu"
+        >
+          {controls => (
+            <>
               <div class="material-kebab-header">{tr('panel.materialPreset')}</div>
               <For each={MATERIAL_PRESETS}>
                 {preset => (
                   <button
+                    type="button"
                     class="material-kebab-item"
-                    onClick={() => applyMaterialPreset(preset)}
+                    role="menuitem"
+                    onClick={() => {
+                      if (applyMaterialPreset(preset)) {
+                        controls.closeMenu();
+                      }
+                    }}
                   >
                     {tr(preset.labelKey)}
                   </button>
                 )}
               </For>
-            </div>
-          </Show>
-        </div>
+            </>
+          )}
+        </DropdownMenu>
       </div>
 
       <div class="material-grid">
@@ -464,17 +465,15 @@ function LightPanel(props: LightPanelProps): JSX.Element {
     });
   };
 
-  const [isLightPresetMenuOpen, setIsLightPresetMenuOpen] = createSignal(false);
-
-  const applyLightPreset = (preset: LightPresetDefinition): void => {
+  const applyLightPreset = (preset: LightPresetDefinition): boolean => {
     if (!isValidLightSettings(preset.settings)) {
       props.onStatus(tr('panel.status.lightPresetInvalidValue', { value: preset.key }), 'error');
-      return;
+      return false;
     }
 
     props.commitSettings(cloneLightSettings(preset.settings));
     props.onStatus(tr('panel.status.lightPresetApplied', { name: tr(preset.labelKey) }), 'info');
-    setIsLightPresetMenuOpen(false);
+    return true;
   };
 
   return (
@@ -486,33 +485,35 @@ function LightPanel(props: LightPanelProps): JSX.Element {
         </div>
 
         <div class="light-panel-actions">
-          <div class="light-action-menu-wrap">
-            <button
-              class="light-kebab-btn"
-              id="light-preset-btn"
-              aria-label={tr('panel.lightPreset')}
-              aria-expanded={isLightPresetMenuOpen()}
-              aria-haspopup="menu"
-              onClick={() => setIsLightPresetMenuOpen(!isLightPresetMenuOpen())}
-            >
-              ･･･
-            </button>
-            <Show when={isLightPresetMenuOpen()}>
-              <div class="light-kebab-menu" role="menu">
+          <DropdownMenu
+            wrapperClass="light-action-menu-wrap"
+            triggerClass="light-kebab-btn"
+            menuClass="light-kebab-menu"
+            triggerAriaLabel={tr('panel.lightPreset')}
+            menuRole="menu"
+          >
+            {controls => (
+              <>
                 <div class="light-kebab-header">{tr('panel.lightPreset')}</div>
                 <For each={LIGHT_PRESETS}>
                   {preset => (
                     <button
+                      type="button"
                       class="light-kebab-item"
-                      onClick={() => applyLightPreset(preset)}
+                      role="menuitem"
+                      onClick={() => {
+                        if (applyLightPreset(preset)) {
+                          controls.closeMenu();
+                        }
+                      }}
                     >
                       {tr(preset.labelKey)}
                     </button>
                   )}
                 </For>
-              </div>
-            </Show>
-          </div>
+              </>
+            )}
+          </DropdownMenu>
 
           <button
             type="button"
