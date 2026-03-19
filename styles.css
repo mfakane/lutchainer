@@ -1143,10 +1143,10 @@ button:hover {
   bottom: 0;
   left: 0;
   right: 0;
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 6px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-rows: auto auto;
+  gap: 2px;
   padding: 5px 7px;
   background: rgba(13, 18, 28, 0.72);
   backdrop-filter: blur(3px);
@@ -1157,19 +1157,22 @@ button:hover {
   line-height: 1.35;
   color: var(--text-strong);
   overflow-wrap: anywhere;
+  grid-row: 1;
+  grid-column: 1 / -1;
 }
 
 .lut-strip-stats {
-  margin-top: 4px;
   font-size: 10px;
   color: var(--muted);
+  grid-row: 2;
 }
 
 .lut-strip-remove {
-  flex-shrink: 0;
+  margin-top: auto;
   font-size: 10px;
   padding: 4px 7px;
   color: var(--remove-text);
+  grid-row: 2;
 }
 
 ::-webkit-scrollbar {

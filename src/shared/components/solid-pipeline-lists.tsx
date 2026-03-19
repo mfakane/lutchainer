@@ -2,12 +2,12 @@ import { For, Show, createSignal, type Accessor, type JSX } from 'solid-js';
 import { render } from 'solid-js/web';
 import * as pipelineModel from '../../features/pipeline/pipeline-model';
 import {
-    BLEND_MODES,
-    BLEND_OPS,
-    type BlendOp,
-    type ChannelName,
-    type LutModel,
-    type StepModel,
+  BLEND_MODES,
+  BLEND_OPS,
+  type BlendOp,
+  type ChannelName,
+  type LutModel,
+  type StepModel,
 } from '../../features/step/step-model';
 import { getCustomChannelsForBlendMode } from '../../features/step/step-runtime';
 import { t, useLanguage } from '../i18n';
@@ -565,10 +565,8 @@ function LutStripList(props: LutStripListProps): JSX.Element {
               <img class="lut-strip-thumb" src={lut.thumbUrl} alt={`${lut.name} thumbnail`} loading="lazy" />
             </div>
             <div class="lut-strip-meta">
-              <div>
-                <div class="lut-strip-name">{lut.name}</div>
-                <div class="lut-strip-stats">{tr('pipeline.lut.stats', { width: lut.width, height: lut.height, count: usageCount(lut.id) })}</div>
-              </div>
+              <div class="lut-strip-name">{lut.name}</div>
+              <div class="lut-strip-stats">{tr('pipeline.lut.stats', { width: lut.width, height: lut.height, count: usageCount(lut.id) })}</div>
               <button
                 type="button"
                 class="lut-strip-remove"

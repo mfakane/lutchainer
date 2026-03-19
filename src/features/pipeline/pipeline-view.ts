@@ -380,10 +380,8 @@ export function renderLutStripMarkup(luts: LutModel[], steps: StepModel[]): stri
           <img class="lut-strip-thumb" src="${lut.thumbUrl}" alt="${escapeHtml(lut.name)} thumbnail" loading="lazy" />
         </div>
         <div class="lut-strip-meta">
-          <div>
-            <div class="lut-strip-name">${escapeHtml(lut.name)}</div>
-            <div class="lut-strip-stats">${lut.width}x${lut.height} / 使用 ${usageCount} step</div>
-          </div>
+          <div class="lut-strip-name">${escapeHtml(lut.name)}</div>
+          <div class="lut-strip-stats">${lut.width}x${lut.height} / 使用 ${usageCount} step</div>
           <button
             type="button"
             class="lut-strip-remove"
