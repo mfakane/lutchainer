@@ -1,7 +1,7 @@
 import esbuild from 'esbuild';
 import { solidPlugin } from 'esbuild-plugin-solid';
-import path from 'path';
 import fs from 'fs';
+import path from 'path';
 
 const watchMode = process.argv.includes('--watch');
 

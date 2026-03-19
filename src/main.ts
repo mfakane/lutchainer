@@ -1,48 +1,7 @@
 import {
-  getLanguage,
-  subscribeLanguageChange,
-  t,
-} from './shared/i18n.ts';
-import {
-  getLinearDropPlacement,
-  reorderItemsById,
-  updatePointerDragStateForMove,
-  type LinearDropCandidate,
-} from './shared/interactions/dnd.ts';
-import {
-  setupOrbitPointerControls,
-  setupPipelinePanelResizer,
-  setupPreviewPanelLayoutResizer,
-} from './shared/interactions/layout-interactions.ts';
-import {
-  applySocketDropConnection,
-  cleanupSocketDragInteraction,
-  createSocketDropTargetResolver,
-  handleSocketDragEnd as processSocketDragEnd,
-  handleSocketDragMove as processSocketDragMove,
-  syncSocketDropTargetState
-} from './shared/interactions/socket-dnd.ts';
-import { createCube, createSphere, createTorus } from './shared/utils/geometry.ts';
-import {
   createConnectionDrawScheduler,
   renderConnectionLayer,
 } from './connection-renderer.ts';
-import { createGizmoOverlayController } from './gizmo-overlay.ts';
-import {
-  clearLutReorderDragState,
-  clearSocketDragState,
-  clearStepReorderDragState,
-  getLutReorderDragState,
-  getSocketDragState,
-  getSocketDropTargetState,
-  getStepReorderDragState,
-  getSuppressClickUntil,
-  setLutReorderDragState,
-  setSocketDragState,
-  setSocketDropTargetState,
-  setStepReorderDragState,
-  setSuppressClickUntil,
-} from './shared/ui/interaction-state.ts';
 import {
   setupLutReorderBindings,
   setupSocketPointerBindings,
@@ -60,15 +19,14 @@ import {
   setSteps as setPipelineSteps,
 } from './features/pipeline/pipeline-state.ts';
 import * as pipelineView from './features/pipeline/pipeline-view.ts';
-import { createRenderSystem } from './shared/rendering/render-system.ts';
-import { Renderer } from './shared/rendering/renderer.ts';
-import {
-  getLightSettings,
-  getMaterialSettings,
-  setLightSettings,
-  setMaterialSettings
-} from './shared/ui/scene-state.ts';
 import * as shaderGenerator from './features/shader/shader-generator.ts';
+import { StepPreviewRenderer } from './features/step/step-preview-renderer.ts';
+import { createStepPreviewSystem } from './features/step/step-preview-system.ts';
+import {
+  type ParamName,
+  type StepModel,
+} from './features/step/types.ts';
+import { createGizmoOverlayController } from './gizmo-overlay.ts';
 import {
   mountHeaderActionGroup,
   mountLanguageSwitcher,
@@ -102,15 +60,57 @@ import {
   syncStatusLogState,
 } from './shared/components/solid-status.tsx';
 import {
-  type ParamName,
-  type StepModel,
-} from './features/step/step-model.ts';
-import { StepPreviewRenderer } from './features/step/step-preview-renderer.ts';
-import { createStepPreviewSystem } from './features/step/step-preview-system.ts';
+  getLanguage,
+  subscribeLanguageChange,
+  t,
+} from './shared/i18n.ts';
+import {
+  getLinearDropPlacement,
+  reorderItemsById,
+  updatePointerDragStateForMove,
+  type LinearDropCandidate,
+} from './shared/interactions/dnd.ts';
+import {
+  setupOrbitPointerControls,
+  setupPipelinePanelResizer,
+  setupPreviewPanelLayoutResizer,
+} from './shared/interactions/layout-interactions.ts';
+import {
+  applySocketDropConnection,
+  cleanupSocketDragInteraction,
+  createSocketDropTargetResolver,
+  handleSocketDragEnd as processSocketDragEnd,
+  handleSocketDragMove as processSocketDragMove,
+  syncSocketDropTargetState
+} from './shared/interactions/socket-dnd.ts';
+import { createRenderSystem } from './shared/rendering/render-system.ts';
+import { Renderer } from './shared/rendering/renderer.ts';
+import {
+  clearLutReorderDragState,
+  clearSocketDragState,
+  clearStepReorderDragState,
+  getLutReorderDragState,
+  getSocketDragState,
+  getSocketDropTargetState,
+  getStepReorderDragState,
+  getSuppressClickUntil,
+  setLutReorderDragState,
+  setSocketDragState,
+  setSocketDropTargetState,
+  setStepReorderDragState,
+  setSuppressClickUntil,
+} from './shared/ui/interaction-state.ts';
+import {
+  getLightSettings,
+  getMaterialSettings,
+  setLightSettings,
+  setMaterialSettings
+} from './shared/ui/scene-state.ts';
 import {
   isAutoApplyEnabled,
   setAutoApplyEnabled,
 } from './shared/ui/ui-state.ts';
+import { createCube, createSphere, createTorus } from './shared/utils/geometry.ts';
 
 type PrimitiveType = PreviewShapeType;
 type SocketAxis = pipelineView.SocketAxis;

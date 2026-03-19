@@ -1,20 +1,42 @@
+export type BlendMode =
+  | 'none'
+  | 'replace'
+  | 'add'
+  | 'subtract'
+  | 'multiply'
+  | 'hue'
+  | 'saturation'
+  | 'color'
+  | 'value'
+  | 'customRgb'
+  | 'customHsv';
+
+export type BlendOp = 'none' | 'replace' | 'add' | 'subtract' | 'multiply';
+export type ChannelName = 'r' | 'g' | 'b' | 'h' | 's' | 'v';
 export type ParamName =
   | 'lightness'
   | 'specular'
   | 'halfLambert'
   | 'fresnel'
   | 'facing'
-  | 'r' | 'g' | 'b'
-  | 'h' | 's' | 'v'
-  | 'texU' | 'texV';
+  | 'r'
+  | 'g'
+  | 'b'
+  | 'h'
+  | 's'
+  | 'v'
+  | 'texU'
+  | 'texV';
+
+export type Color = [number, number, number];
 
 export interface StepModel {
   id: number;
   lutId: string;
-  blendMode: string;
+  blendMode: BlendMode;
   xParam: ParamName;
   yParam: ParamName;
-  ops: Record<string, string>;
+  ops: Record<ChannelName, BlendOp>;
 }
 
 export interface LutModel {
@@ -26,3 +48,82 @@ export interface LutModel {
   pixels: Uint8ClampedArray;
   thumbUrl: string;
 }
+
+export interface BlendModeDef {
+  key: BlendMode;
+  label: string;
+}
+
+export interface StepRuntimeModel {
+  step: StepModel;
+  lut: LutModel | null;
+  lutIndex: number;
+}
+
+export interface StepParamContext {
+  lambert: number;
+  halfLambert: number;
+  specular: number;
+  fresnel: number;
+  facing: number;
+  texU: number;
+  texV: number;
+}
+
+export interface BlendModeApplyInput {
+  current: Color;
+  lutColor: Color;
+  lutAlpha: number;
+  ops: Record<ChannelName, BlendOp>;
+}
+
+export interface BlendModeEmitInput {
+  lutColorVar: string;
+  lutAlphaVar: string;
+  targetColorVar: string;
+  hsvCurVar: string;
+  hsvLutVar: string;
+  ops: Record<ChannelName, BlendOp>;
+}
+
+export interface BlendModeStrategy {
+  editableChannels: readonly ChannelName[];
+  applyCpu: (input: BlendModeApplyInput) => Color;
+  emitGlsl: (input: BlendModeEmitInput) => string[];
+  emitHlsl: (input: BlendModeEmitInput) => string[];
+}
+
+export interface ParamEvaluator {
+  glslExpr: string;
+  hlslExpr: string;
+  evaluate: (current: Color, context: StepParamContext) => number;
+}
+
+export const CHANNELS: ChannelName[] = ['r', 'g', 'b', 'h', 's', 'v'];
+export const BLEND_OPS: BlendOp[] = ['none', 'replace', 'add', 'subtract', 'multiply'];
+
+export const BLEND_MODES: BlendModeDef[] = [
+  { key: 'none', label: 'None' },
+  { key: 'replace', label: 'Replace' },
+  { key: 'add', label: 'Add' },
+  { key: 'subtract', label: 'Subtract' },
+  { key: 'multiply', label: 'Multiply' },
+  { key: 'hue', label: 'Hue' },
+  { key: 'saturation', label: 'Saturation' },
+  { key: 'color', label: 'Color' },
+  { key: 'value', label: 'Value' },
+  { key: 'customRgb', label: 'Custom RGB' },
+  { key: 'customHsv', label: 'Custom HSV' },
+];
+
+export const CUSTOM_RGB_CHANNELS: Array<'r' | 'g' | 'b'> = ['r', 'g', 'b'];
+export const CUSTOM_HSV_CHANNELS: Array<'h' | 's' | 'v'> = ['h', 's', 'v'];
+
+export const DEFAULT_OPS: Record<ChannelName, BlendOp> = {
+  r: 'none',
+  g: 'none',
+  b: 'none',
+  h: 'none',
+  s: 'none',
+  v: 'none',
+};

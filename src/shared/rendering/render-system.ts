@@ -1,9 +1,9 @@
 import type { LightSettings } from '../../features/pipeline/pipeline-model';
 import {
-    mat4Identity,
-    mat4LookAt,
-    mat4Perspective,
-    normalMatrixFromMat4,
+  mat4Identity,
+  mat4LookAt,
+  mat4Perspective,
+  normalMatrixFromMat4,
 } from '../utils/math';
 import { Renderer } from './renderer';
 
