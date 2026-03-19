@@ -87,7 +87,6 @@ let syncLutStripListInternal: ((luts: LutModel[], steps: StepModel[]) => void) |
 
 let stepListStatusReporter: StatusReporter = () => undefined;
 let lutStripStatusReporter: StatusReporter = () => undefined;
-let lutStripActionsStatusReporter: StatusReporter = () => undefined;
 
 function isNonEmptyString(value: unknown): value is string {
   return typeof value === 'string' && value.trim().length > 0;
@@ -769,7 +768,6 @@ export function mountLutStripActions(target: HTMLElement, options: LutStripActio
   }
 
   ensureLutStripActionsMountOptions(options);
-  lutStripActionsStatusReporter = options.onStatus;
 
   if (disposeLutStripActions) {
     disposeLutStripActions();

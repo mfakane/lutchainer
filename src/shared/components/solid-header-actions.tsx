@@ -1,11 +1,11 @@
 import { createSignal, type Accessor, type JSX } from 'solid-js';
 import { render } from 'solid-js/web';
 import {
-    getLanguageLabel,
-    setLanguage,
-    t,
-    useLanguage,
-    type Language,
+  getLanguageLabel,
+  setLanguage,
+  t,
+  useLanguage,
+  type Language,
 } from '../i18n';
 
 type StatusKind = 'success' | 'error' | 'info';
@@ -33,7 +33,6 @@ interface HeaderActionGroupProps {
 
 let disposeHeaderActionGroup: (() => void) | null = null;
 let syncHeaderActionAutoApplyInternal: ((enabled: boolean) => void) | null = null;
-let syncHeaderActionStepPreviewCpuInternal: ((enabled: boolean) => void) | null = null;
 let headerActionStatusReporter: StatusReporter = () => undefined;
 
 function isBoolean(value: unknown): value is boolean {
@@ -80,10 +79,6 @@ function HeaderActionGroup(props: HeaderActionGroupProps): JSX.Element {
   const tr = (key: string, values?: Record<string, string | number>): string => {
     language();
     return t(key, values);
-  };
-
-  const isLanguageActive = (candidate: Language): boolean => {
-    return language() === candidate;
   };
 
   const openPipelineFilePicker = (): void => {
@@ -152,25 +147,6 @@ function HeaderActionGroup(props: HeaderActionGroupProps): JSX.Element {
     }
 
     props.onAutoApplyChange(input.checked);
-  };
-
-  const handleLanguageSelect = (value: unknown): void => {
-    if (!isLanguage(value)) {
-      props.onStatus(t('header.status.invalidLanguageSelection', { value: String(value) }), 'error');
-      return;
-    }
-
-    if (isLanguageActive(value)) {
-      return;
-    }
-
-    const nextLanguage = setLanguage(value);
-    props.onStatus(
-      t('header.status.languageChanged', {
-        language: getLanguageLabel(nextLanguage),
-      }),
-      'info',
-    );
   };
 
   return (

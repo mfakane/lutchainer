@@ -1,12 +1,8 @@
-import { BLEND_MODES, BLEND_OPS, type LutModel, type ParamName, type StepModel } from '../step/step-model';
-import { getCustomChannelsForBlendMode } from '../step/step-runtime';
+import { type ParamName } from '../step/step-model';
 import {
   LIGHT_RANGE_BINDINGS,
   MATERIAL_RANGE_BINDINGS,
-  PARAM_GROUPS,
   colorToHex,
-  getParamDef,
-  getParamLabel,
   type LightSettings,
   type MaterialSettings,
 } from './pipeline-model';
@@ -177,15 +173,6 @@ export function isValidSocketAxis(value: string): value is SocketAxis {
   return value === 'x' || value === 'y';
 }
 
-export function escapeHtml(value: string): string {
-  return value
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-}
-
 export function syncMaterialPanel(materialSettings: MaterialSettings, root: ParentNode | null = document): void {
   if (!isValidQueryableRoot(root)) {
     return;
@@ -232,185 +219,6 @@ export function syncLightPanel(lightSettings: LightSettings, root: ParentNode | 
     toggleButton.textContent = `ガイド: ${lightSettings.showGizmo ? 'ON' : 'OFF'}`;
     toggleButton.setAttribute('aria-pressed', lightSettings.showGizmo ? 'true' : 'false');
   }
-}
-
-export function renderParamNodesMarkup(): string {
-  return PARAM_GROUPS.map(group => {
-    const nodes = group.params.map(paramName => {
-      const param = getParamDef(paramName);
-      return `
-        <button type="button" class="param-node param-socket" data-param="${param.key}" title="${escapeHtml(param.label)} を接続">
-          <span class="param-socket-dot" aria-hidden="true"></span>
-          <span class="param-name">${escapeHtml(param.label)}</span>
-          <span class="param-desc">${escapeHtml(param.description)}</span>
-        </button>
-      `;
-    }).join('');
-
-    const badge = group.tone === 'feedback'
-      ? '<span class="param-group-badge">Prev Color</span>'
-      : '';
-
-    return `
-      <section class="param-group param-group-${group.tone}" data-group="${group.key}">
-        <header class="param-group-head">
-          <div class="param-group-title-row">
-            <div class="param-group-title">${escapeHtml(group.label)}</div>
-            ${badge}
-          </div>
-          <div class="param-group-desc">${escapeHtml(group.description)}</div>
-        </header>
-        <div class="param-group-nodes">${nodes}</div>
-      </section>
-    `;
-  }).join('');
-}
-
-function renderStepItemMarkup(step: StepModel, index: number, luts: LutModel[]): string {
-  const lut = luts.find(item => item.id === step.lutId) ?? luts[0] ?? null;
-  const lutOptions = luts.map(lutOpt => {
-    const selected = lutOpt.id === step.lutId ? 'selected' : '';
-    return `<option value="${lutOpt.id}" ${selected}>${escapeHtml(lutOpt.name)}</option>`;
-  }).join('');
-
-  const blendModeOptions = BLEND_MODES.map(mode => {
-    const selected = mode.key === step.blendMode ? 'selected' : '';
-    return `<option value="${mode.key}" ${selected}>${escapeHtml(mode.label)}</option>`;
-  }).join('');
-
-  const editableChannels = getCustomChannelsForBlendMode(step.blendMode);
-
-  const opGrid = editableChannels.map(channel => {
-    const options = BLEND_OPS.map(op => {
-      const selected = step.ops[channel] === op ? 'selected' : '';
-      return `<option value="${op}" ${selected}>${op}</option>`;
-    }).join('');
-
-    return `
-      <label class="op-item">
-        <span class="op-label">${channel.toUpperCase()}</span>
-        <select class="step-op-select" data-step-id="${step.id}" data-channel="${channel}">
-          ${options}
-        </select>
-      </label>
-    `;
-  }).join('');
-
-  const opGridSection = editableChannels.length > 0
-    ? `<div class="op-grid">${opGrid}</div>`
-    : '';
-
-  return `
-    <article class="step-item" data-step-id="${step.id}">
-      <section class="step-head">
-        <div class="step-title-row">
-          <button type="button" class="step-drag-handle" draggable="true" data-step-id="${step.id}" title="Stepをドラッグして移動">drag</button>
-          <div class="step-title">Step ${index + 1}</div>
-        </div>
-        <button type="button" class="step-remove" data-step-id="${step.id}">削除</button>
-      </section>
-
-      <aside class="step-socket-rail">
-        <button
-          type="button"
-          class="step-socket"
-          data-step-id="${step.id}"
-          data-axis="x"
-          title="X: ${escapeHtml(getParamLabel(step.xParam))}"
-        >
-          <span class="step-socket-dot" aria-hidden="true"></span>
-          <span class="step-socket-axis-label">X</span>
-          <span class="step-socket-param">${escapeHtml(getParamLabel(step.xParam))}</span>
-        </button>
-        <button
-          type="button"
-          class="step-socket"
-          data-step-id="${step.id}"
-          data-axis="y"
-          title="Y: ${escapeHtml(getParamLabel(step.yParam))}"
-        >
-          <span class="step-socket-dot" aria-hidden="true"></span>
-          <span class="step-socket-axis-label">Y</span>
-          <span class="step-socket-param">${escapeHtml(getParamLabel(step.yParam))}</span>
-        </button>
-      </aside>
-
-      <section class="step-core">
-        <div class="lut-row">
-          <img class="lut-thumb" src="${lut ? lut.thumbUrl : ''}" alt="LUT thumbnail" />
-          <select class="step-lut-select" data-step-id="${step.id}">
-            ${lutOptions}
-          </select>
-        </div>
-
-        <div class="step-mode-row">
-          <label class="step-mode-field">
-            <span class="op-label">Blend Mode</span>
-            <select class="step-blend-mode-select" data-step-id="${step.id}">
-              ${blendModeOptions}
-            </select>
-          </label>
-        </div>
-
-        ${opGridSection}
-      </section>
-
-      <aside class="step-preview">
-        <canvas
-          class="preview-swatch preview-sphere"
-          data-step-id="${step.id}"
-          data-preview="after"
-          aria-label="Step ${index + 1} sphere preview"
-        ></canvas>
-      </aside>
-    </article>
-  `;
-}
-
-export function renderLutStripMarkup(luts: LutModel[], steps: StepModel[]): string {
-  if (!Array.isArray(luts) || luts.length === 0) {
-    return '<div class="lut-strip-empty">LUT がありません。LUT追加で読み込んでください。</div>';
-  }
-
-  return luts.map(lut => {
-    const usageCount = Array.isArray(steps) ? steps.filter(step => step.lutId === lut.id).length : 0;
-    return `
-      <article class="lut-strip-item" draggable="true" data-lut-id="${lut.id}">
-        <div class="lut-strip-thumb-wrap">
-          <img class="lut-strip-thumb" src="${lut.thumbUrl}" alt="${escapeHtml(lut.name)} thumbnail" loading="lazy" />
-        </div>
-        <div class="lut-strip-meta">
-          <div class="lut-strip-name">${escapeHtml(lut.name)}</div>
-          <div class="lut-strip-stats">${lut.width}x${lut.height} / 使用 ${usageCount} step</div>
-          <button
-            type="button"
-            class="lut-strip-remove"
-            data-lut-id="${lut.id}"
-            aria-label="${escapeHtml(lut.name)} を削除"
-          >
-            削除
-          </button>
-        </div>
-      </article>
-    `;
-  }).join('');
-}
-
-export function renderStepListMarkup(steps: StepModel[], luts: LutModel[]): string {
-  const addStepButtonHtml = `
-    <div class="step-list-add-wrap">
-      <button type="button" class="btn-secondary step-add-inline-btn">Step追加</button>
-    </div>
-  `;
-
-  if (!Array.isArray(steps) || steps.length === 0) {
-    return `
-      <div class="step-core">Stepがありません。下のStep追加ボタンで作成できます。</div>
-      ${addStepButtonHtml}
-    `;
-  }
-
-  return `${steps.map((step, index) => renderStepItemMarkup(step, index, luts)).join('')}${addStepButtonHtml}`;
 }
 
 export function getParamSocketAnchorPoint(element: HTMLElement, workspaceRect: DOMRect): AnchorPoint {

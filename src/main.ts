@@ -114,7 +114,6 @@ import { createCube, createSphere, createTorus } from './shared/utils/geometry.t
 
 type PrimitiveType = PreviewShapeType;
 type SocketAxis = pipelineView.SocketAxis;
-type SocketDragState = pipelineView.SocketDragState;
 type SocketDropTarget = pipelineView.SocketDropTarget;
 
 interface StaticTranslationTarget {
@@ -204,7 +203,6 @@ let axisGizmoTipZEl: SVGCircleElement;
 let axisGizmoLabelXEl: SVGTextElement;
 let axisGizmoLabelYEl: SVGTextElement;
 let axisGizmoLabelZEl: SVGTextElement;
-let stepColumnEl: HTMLElement;
 let paramColumnEl: HTMLElement;
 let gizmoOverlayController: ReturnType<typeof createGizmoOverlayController> | null = null;
 let renderSystem: ReturnType<typeof createRenderSystem> | null = null;
@@ -903,7 +901,6 @@ window.addEventListener('DOMContentLoaded', () => {
   axisGizmoLabelXEl = $<SVGTextElement>('#axis-gizmo-label-x');
   axisGizmoLabelYEl = $<SVGTextElement>('#axis-gizmo-label-y');
   axisGizmoLabelZEl = $<SVGTextElement>('#axis-gizmo-label-z');
-  stepColumnEl = $<HTMLElement>('#step-column');
   paramColumnEl = $<HTMLElement>('.param-column');
 
   gizmoOverlayController = createGizmoOverlayController({
