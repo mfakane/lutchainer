@@ -35,6 +35,8 @@ export type Color = [number, number, number];
 export interface StepModel {
   id: number;
   lutId: string;
+  label?: string;
+  muted: boolean;
   blendMode: BlendMode;
   xParam: ParamName;
   yParam: ParamName;
@@ -125,6 +127,7 @@ export interface ParamEvaluator {
 
 export const CHANNELS: ChannelName[] = ['r', 'g', 'b', 'h', 's', 'v'];
 export const BLEND_OPS: BlendOp[] = ['none', 'replace', 'add', 'subtract', 'multiply'];
+export const MAX_STEP_LABEL_LENGTH = 40;
 
 export const BLEND_MODES: BlendModeDef[] = [
   { key: 'none', label: 'None' },

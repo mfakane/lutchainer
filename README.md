@@ -1,4 +1,4 @@
-# LUT Chaining Shader Editor
+# LUT Chainer - LUT Chaining Shader Editor
 
 ブラウザで動作する、LUTベースのステップチェーン型シェーダエディタです。
 複数のLUTとブレンドモードを段階的に組み合わせ、3Dプレビューを見ながら見た目を調整できます。

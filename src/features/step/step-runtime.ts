@@ -549,7 +549,11 @@ export function resolveStepRuntimeModels(
     return [];
   }
 
-  return steps.slice(0, clampedLast + 1).map(step => {
+  const activeSteps = steps
+    .slice(0, clampedLast + 1)
+    .filter(step => step && !step.muted);
+
+  return activeSteps.map(step => {
     const lutIndex = Math.max(0, luts.findIndex(lut => lut.id === step.lutId));
     const lut = luts[lutIndex] ?? null;
     return { step, lut, lutIndex };

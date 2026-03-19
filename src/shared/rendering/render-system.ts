@@ -28,6 +28,7 @@ export interface CreateRenderSystemOptions {
   getLightSettings: () => LightSettings;
   getLightDirectionWorld: () => [number, number, number];
   getMaterialSettings: () => MaterialSettings;
+  shouldSuppressLightGuide?: () => boolean;
   onAfterDraw?: (payload: AfterDrawPayload) => void;
   requestAnimationFrameImpl?: (callback: FrameRequestCallback) => number;
   cancelAnimationFrameImpl?: (handle: number) => void;
@@ -119,6 +120,9 @@ function assertValidOptions(value: unknown): asserts value is CreateRenderSystem
   if (typeof options.getMaterialSettings !== 'function') {
     throw new Error('getMaterialSettings must be a function.');
   }
+  if (options.shouldSuppressLightGuide !== undefined && typeof options.shouldSuppressLightGuide !== 'function') {
+    throw new Error('shouldSuppressLightGuide must be a function when provided.');
+  }
   if (options.onAfterDraw !== undefined && typeof options.onAfterDraw !== 'function') {
     throw new Error('onAfterDraw must be a function when provided.');
   }
@@ -137,6 +141,19 @@ export function createRenderSystem(options: CreateRenderSystemOptions): RenderSy
   const cancelFrame = options.cancelAnimationFrameImpl ?? cancelAnimationFrame;
   let running = false;
   let frameHandle: number | null = null;
+
+  const shouldSuppressLightGuide = (): boolean => {
+    if (!options.shouldSuppressLightGuide) {
+      return false;
+    }
+
+    try {
+      const value = options.shouldSuppressLightGuide();
+      return typeof value === 'boolean' ? value : false;
+    } catch {
+      return false;
+    }
+  };
 
   const drawFrame = (): void => {
     if (!running) {
@@ -190,6 +207,7 @@ export function createRenderSystem(options: CreateRenderSystemOptions): RenderSy
 
     const model = mat4Identity();
     const normal = normalMatrixFromMat4(model);
+    const showLightGuide = lightSettings.showGizmo && !shouldSuppressLightGuide();
     options.renderer.draw(
       model,
       view,
@@ -197,7 +215,7 @@ export function createRenderSystem(options: CreateRenderSystemOptions): RenderSy
       normal,
       [eyeX, eyeY, eyeZ],
       lightDirection,
-      lightSettings.showGizmo,
+      showLightGuide,
       materialSettings,
     );
 

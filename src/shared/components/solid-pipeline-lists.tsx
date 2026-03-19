@@ -4,6 +4,7 @@ import * as pipelineModel from '../../features/pipeline/pipeline-model';
 import {
   BLEND_MODES,
   BLEND_OPS,
+  MAX_STEP_LABEL_LENGTH,
   type BlendOp,
   type ChannelName,
   type LutModel,
@@ -31,7 +32,10 @@ interface StepListMountOptions {
   steps: StepModel[];
   luts: LutModel[];
   onAddStep: () => void;
+  onDuplicateStep: (stepId: number) => void;
   onRemoveStep: (stepId: number) => void;
+  onStepMuteChange: (stepId: number, muted: boolean) => void;
+  onStepLabelChange: (stepId: number, label: string | null) => void;
   onStepLutChange: (stepId: number, lutId: string) => void;
   onStepBlendModeChange: (stepId: number, blendMode: StepModel['blendMode']) => void;
   onStepOpChange: (stepId: number, channel: ChannelName, op: BlendOp) => void;
@@ -53,7 +57,10 @@ interface StepListProps {
   steps: Accessor<StepModel[]>;
   luts: Accessor<LutModel[]>;
   onAddStep: () => void;
+  onDuplicateStep: (stepId: number) => void;
   onRemoveStep: (stepId: number) => void;
+  onStepMuteChange: (stepId: number, muted: boolean) => void;
+  onStepLabelChange: (stepId: number, label: string | null) => void;
   onStepLutChange: (stepId: number, lutId: string) => void;
   onStepBlendModeChange: (stepId: number, blendMode: StepModel['blendMode']) => void;
   onStepOpChange: (stepId: number, channel: ChannelName, op: BlendOp) => void;
@@ -108,6 +115,8 @@ function isValidStepModel(value: unknown): value is StepModel {
   return Number.isInteger(step.id)
     && (step.id ?? 0) > 0
     && isNonEmptyString(step.lutId)
+    && typeof step.muted === 'boolean'
+    && (step.label === undefined || (isNonEmptyString(step.label) && step.label.trim().length <= MAX_STEP_LABEL_LENGTH))
     && typeof step.blendMode === 'string'
     && pipelineModel.isValidBlendMode(step.blendMode)
     && typeof step.xParam === 'string'
@@ -138,6 +147,8 @@ function cloneStepModel(step: StepModel): StepModel {
   return {
     id: step.id,
     lutId: step.lutId,
+    label: step.label,
+    muted: step.muted,
     blendMode: step.blendMode,
     xParam: step.xParam,
     yParam: step.yParam,
@@ -195,8 +206,17 @@ function ensureStepListMountOptions(value: unknown): asserts value is StepListMo
   if (typeof options.onAddStep !== 'function') {
     throw new Error('Stepリストの追加コールバックが不正です。');
   }
+  if (typeof options.onDuplicateStep !== 'function') {
+    throw new Error('Stepリストの複製コールバックが不正です。');
+  }
   if (typeof options.onRemoveStep !== 'function') {
     throw new Error('Stepリストの削除コールバックが不正です。');
+  }
+  if (typeof options.onStepMuteChange !== 'function') {
+    throw new Error('Stepリストのミュート変更コールバックが不正です。');
+  }
+  if (typeof options.onStepLabelChange !== 'function') {
+    throw new Error('Stepリストのラベル変更コールバックが不正です。');
   }
   if (typeof options.onStepLutChange !== 'function') {
     throw new Error('StepリストのLUT変更コールバックが不正です。');
@@ -322,6 +342,45 @@ function StepList(props: StepListProps): JSX.Element {
     props.onAddStep();
   };
 
+  const resolveStepLabel = (step: StepModel, displayIndex: number): string => {
+    const customLabel = typeof step.label === 'string' ? step.label.trim() : '';
+    if (customLabel.length > 0) {
+      return customLabel;
+    }
+    return `Step ${displayIndex}`;
+  };
+
+  const commitStepLabel = (
+    stepId: number,
+    displayIndex: number,
+    inputElement: HTMLInputElement | null,
+  ): void => {
+    if (!inputElement) {
+      props.onStatus(tr('pipeline.status.stepLabelInputMissing'), 'error');
+      return;
+    }
+
+    const rawValue = inputElement.value;
+    if (typeof rawValue !== 'string') {
+      props.onStatus(tr('pipeline.status.stepLabelInvalidValue'), 'error');
+      inputElement.value = `Step ${displayIndex}`;
+      return;
+    }
+
+    const trimmed = rawValue.trim();
+    if (trimmed.length > MAX_STEP_LABEL_LENGTH) {
+      props.onStatus(
+        tr('pipeline.status.stepLabelTooLong', { max: MAX_STEP_LABEL_LENGTH }),
+        'error',
+      );
+      inputElement.value = trimmed.slice(0, MAX_STEP_LABEL_LENGTH);
+      return;
+    }
+
+    props.onStepLabelChange(stepId, trimmed.length > 0 ? trimmed : null);
+    inputElement.value = trimmed.length > 0 ? trimmed : `Step ${displayIndex}`;
+  };
+
   return (
     <>
       <Show
@@ -332,9 +391,10 @@ function StepList(props: StepListProps): JSX.Element {
           {(step, index) => {
             const selectedLut = (): LutModel | null => resolveLut(step.lutId);
             const editableChannels = (): ChannelName[] => getCustomChannelsForBlendMode(step.blendMode);
+            const displayIndex = (): number => index() + 1;
 
             return (
-              <article class="step-item" data-step-id={String(step.id)}>
+              <article class={step.muted ? 'step-item step-item-muted' : 'step-item'} data-step-id={String(step.id)}>
                 <section class="step-head">
                   <div class="step-title-row">
                     <button
@@ -346,22 +406,82 @@ function StepList(props: StepListProps): JSX.Element {
                     >
                       drag
                     </button>
-                    <div class="step-title">Step {index() + 1}</div>
-                  </div>
-                  <button
-                    type="button"
-                    class="step-remove"
-                    data-step-id={String(step.id)}
-                    onClick={() => {
-                      if (shouldIgnoreClick()) {
-                        return;
-                      }
+                    <input
+                      type="text"
+                      class="step-title-input"
+                      value={resolveStepLabel(step, displayIndex())}
+                      maxLength={MAX_STEP_LABEL_LENGTH}
+                      aria-label={tr('pipeline.step.titleAria', { index: displayIndex() })}
+                      onBlur={event => {
+                        const input = event.currentTarget as HTMLInputElement | null;
+                        commitStepLabel(step.id, displayIndex(), input);
+                      }}
+                      onKeyDown={event => {
+                        const input = event.currentTarget as HTMLInputElement | null;
+                        if (!input) {
+                          props.onStatus(tr('pipeline.status.stepLabelInputMissing'), 'error');
+                          return;
+                        }
 
-                      props.onRemoveStep(step.id);
-                    }}
-                  >
-                    {tr('pipeline.step.remove')}
-                  </button>
+                        if (event.key === 'Enter') {
+                          event.preventDefault();
+                          input.blur();
+                          return;
+                        }
+
+                        if (event.key === 'Escape') {
+                          event.preventDefault();
+                          input.value = resolveStepLabel(step, displayIndex());
+                          input.blur();
+                        }
+                      }}
+                    />
+                  </div>
+                  <div class="step-actions">
+                    <button
+                      type="button"
+                      class={step.muted ? 'step-mute active' : 'step-mute'}
+                      data-step-id={String(step.id)}
+                      aria-pressed={step.muted ? 'true' : 'false'}
+                      onClick={() => {
+                        if (shouldIgnoreClick()) {
+                          return;
+                        }
+
+                        props.onStepMuteChange(step.id, !step.muted);
+                      }}
+                    >
+                      {step.muted ? tr('pipeline.step.unmute') : tr('pipeline.step.mute')}
+                    </button>
+                    <button
+                      type="button"
+                      class="step-duplicate"
+                      data-step-id={String(step.id)}
+                      onClick={() => {
+                        if (shouldIgnoreClick()) {
+                          return;
+                        }
+
+                        props.onDuplicateStep(step.id);
+                      }}
+                    >
+                      {tr('pipeline.step.duplicate')}
+                    </button>
+                    <button
+                      type="button"
+                      class="step-remove"
+                      data-step-id={String(step.id)}
+                      onClick={() => {
+                        if (shouldIgnoreClick()) {
+                          return;
+                        }
+
+                        props.onRemoveStep(step.id);
+                      }}
+                    >
+                      {tr('pipeline.step.remove')}
+                    </button>
+                  </div>
                 </section>
 
                 <aside class="step-socket-rail">
@@ -672,7 +792,10 @@ export function mountStepList(target: HTMLElement, options: StepListMountOptions
         steps={steps}
         luts={luts}
         onAddStep={options.onAddStep}
+        onDuplicateStep={options.onDuplicateStep}
         onRemoveStep={options.onRemoveStep}
+        onStepMuteChange={options.onStepMuteChange}
+        onStepLabelChange={options.onStepLabelChange}
         onStepLutChange={options.onStepLutChange}
         onStepBlendModeChange={options.onStepBlendModeChange}
         onStepOpChange={options.onStepOpChange}

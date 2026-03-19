@@ -4,6 +4,7 @@ import {
   BLEND_OPS,
   CHANNELS,
   DEFAULT_OPS,
+  MAX_STEP_LABEL_LENGTH,
   type BlendMode,
   type BlendOp,
   type ChannelName,
@@ -83,6 +84,8 @@ export type PipelineStepOpsEntry = Partial<Record<ChannelName, BlendOp>>;
 export interface PipelineStepEntry {
   id: number;
   lutId: string;
+  label?: string;
+  muted?: boolean;
   blendMode: BlendMode;
   xParam: ParamName;
   yParam: ParamName;
@@ -119,6 +122,13 @@ export interface LoadedPipelineData {
 
 export interface CreatePipelineStepResult {
   step: StepModel | null;
+  nextStepId: number;
+  error: string | null;
+}
+
+export interface DuplicatePipelineStepResult {
+  steps: StepModel[];
+  duplicated: StepModel | null;
   nextStepId: number;
   error: string | null;
 }
@@ -552,11 +562,72 @@ export function createPipelineStep(
     step: {
       id: nextStepId,
       lutId: defaultLutId,
+      muted: false,
       blendMode: 'multiply',
       xParam: 'lightness',
       yParam: 'facing',
       ops: { ...DEFAULT_OPS },
     },
+    nextStepId: nextStepId + 1,
+    error: null,
+  };
+}
+
+function buildDuplicatedStepLabel(source: StepModel, sourceIndex: number): string {
+  const suffix = ' コピー';
+  const sourceLabel = typeof source.label === 'string' ? source.label.trim() : '';
+  const fallbackLabel = `Step ${sourceIndex + 1}`;
+  const baseLabel = sourceLabel.length > 0 ? sourceLabel : fallbackLabel;
+  const maxBaseLength = Math.max(1, MAX_STEP_LABEL_LENGTH - suffix.length);
+  const clippedBase = baseLabel.length > maxBaseLength
+    ? baseLabel.slice(0, maxBaseLength).trimEnd()
+    : baseLabel;
+  return `${clippedBase}${suffix}`;
+}
+
+export function duplicatePipelineStep(
+  steps: StepModel[],
+  stepId: number,
+  nextStepId: number,
+): DuplicatePipelineStepResult {
+  if (!Array.isArray(steps)) {
+    return { steps: [], duplicated: null, nextStepId, error: 'Step の状態が不正です。' };
+  }
+
+  if (!Number.isSafeInteger(stepId) || stepId <= 0) {
+    return { steps: [...steps], duplicated: null, nextStepId, error: '複製対象の Step ID が不正です。' };
+  }
+
+  if (!Number.isSafeInteger(nextStepId) || nextStepId <= 0) {
+    return { steps: [...steps], duplicated: null, nextStepId, error: '次の Step ID が不正です。' };
+  }
+
+  if (steps.length >= MAX_STEPS) {
+    return { steps: [...steps], duplicated: null, nextStepId, error: `Step は最大 ${MAX_STEPS} 個までです。` };
+  }
+
+  const sourceIndex = steps.findIndex(step => step.id === stepId);
+  if (sourceIndex < 0) {
+    return { steps: [...steps], duplicated: null, nextStepId, error: `Step ${stepId} が見つかりません。` };
+  }
+
+  const source = steps[sourceIndex];
+  const duplicated: StepModel = {
+    ...source,
+    id: nextStepId,
+    label: buildDuplicatedStepLabel(source, sourceIndex),
+    ops: { ...source.ops },
+  };
+
+  const nextSteps = [
+    ...steps.slice(0, sourceIndex + 1),
+    duplicated,
+    ...steps.slice(sourceIndex + 1),
+  ];
+
+  return {
+    steps: nextSteps,
+    duplicated,
     nextStepId: nextStepId + 1,
     error: null,
   };
@@ -848,6 +919,19 @@ function parsePipelineStepEntry(value: unknown, index: number): StepModel {
     throw new Error(`${fieldPrefix}.lutId が不正です。`);
   }
 
+  let label: string | undefined;
+  if (value.label !== undefined) {
+    label = parseNonEmptyText(value.label, `${fieldPrefix}.label`, MAX_STEP_LABEL_LENGTH);
+  }
+
+  let muted = false;
+  if (value.muted !== undefined) {
+    if (typeof value.muted !== 'boolean') {
+      throw new Error(`${fieldPrefix}.muted が不正です。`);
+    }
+    muted = value.muted;
+  }
+
   const blendModeRaw = value.blendMode;
   if (typeof blendModeRaw !== 'string' || !isValidBlendMode(blendModeRaw)) {
     throw new Error(`${fieldPrefix}.blendMode が不正です。`);
@@ -884,6 +968,8 @@ function parsePipelineStepEntry(value: unknown, index: number): StepModel {
   return {
     id,
     lutId,
+    label,
+    muted,
     blendMode: blendModeRaw,
     xParam: xParamRaw,
     yParam: yParamRaw,
@@ -923,6 +1009,15 @@ function serializePipelineStepEntry(step: StepModel, index: number): PipelineSte
     throw new Error(`${fieldPrefix}.lutId が不正です。`);
   }
 
+  let label: string | undefined;
+  if (step.label !== undefined) {
+    label = parseNonEmptyText(step.label, `${fieldPrefix}.label`, MAX_STEP_LABEL_LENGTH);
+  }
+
+  if (typeof step.muted !== 'boolean') {
+    throw new Error(`${fieldPrefix}.muted が不正です。`);
+  }
+
   const blendModeRaw = step.blendMode;
   if (typeof blendModeRaw !== 'string' || !isValidBlendMode(blendModeRaw)) {
     throw new Error(`${fieldPrefix}.blendMode が不正です。`);
@@ -947,6 +1042,14 @@ function serializePipelineStepEntry(step: StepModel, index: number): PipelineSte
     xParam: xParamRaw,
     yParam: yParamRaw,
   };
+
+  if (label) {
+    entry.label = label;
+  }
+
+  if (step.muted) {
+    entry.muted = true;
+  }
 
   if (compactOps) {
     entry.ops = compactOps;

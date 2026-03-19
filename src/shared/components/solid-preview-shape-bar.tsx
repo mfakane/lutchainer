@@ -1,4 +1,4 @@
-import { For, createSignal, type Accessor, type JSX } from 'solid-js';
+import { For, Show, createSignal, onCleanup, type Accessor, type JSX } from 'solid-js';
 import { render } from 'solid-js/web';
 import { t, useLanguage } from '../i18n';
 
@@ -6,16 +6,23 @@ type StatusKind = 'success' | 'error' | 'info';
 type StatusReporter = (message: string, kind?: StatusKind) => void;
 
 export type PreviewShapeType = 'sphere' | 'cube' | 'torus';
+type PreviewActionMenuValue = '' | 'toggle-wireframe' | 'export-main-preview' | 'export-step-preview';
 
 interface PreviewShapeBarMountOptions {
   initialShape: PreviewShapeType;
+  initialWireframeEnabled: boolean;
   onShapeChange: (shape: PreviewShapeType) => void;
+  onWireframeChange: (enabled: boolean) => void;
+  onExportMainPreviewPng: () => void | Promise<void>;
+  onExportStepPreviewPng: () => void | Promise<void>;
   onStatus: StatusReporter;
 }
 
 interface PreviewShapeBarProps {
   activeShape: Accessor<PreviewShapeType>;
+  wireframeEnabled: Accessor<boolean>;
   onSelectShape: (shape: PreviewShapeType) => void;
+  onSelectActionMenu: (value: PreviewActionMenuValue) => void;
 }
 
 const PREVIEW_SHAPES: Array<{ key: PreviewShapeType; label: string }> = [
@@ -26,10 +33,18 @@ const PREVIEW_SHAPES: Array<{ key: PreviewShapeType; label: string }> = [
 
 let disposePreviewShapeBar: (() => void) | null = null;
 let syncPreviewShapeBarStateInternal: ((nextShape: PreviewShapeType) => void) | null = null;
+let syncPreviewWireframeStateInternal: ((enabled: boolean) => void) | null = null;
 let previewShapeStatusReporter: StatusReporter = () => undefined;
 
 function isValidPreviewShapeType(value: unknown): value is PreviewShapeType {
   return value === 'sphere' || value === 'cube' || value === 'torus';
+}
+
+function isValidActionMenuValue(value: unknown): value is PreviewActionMenuValue {
+  return value === ''
+    || value === 'toggle-wireframe'
+    || value === 'export-main-preview'
+    || value === 'export-step-preview';
 }
 
 function ensureMountOptions(value: unknown): asserts value is PreviewShapeBarMountOptions {
@@ -41,8 +56,20 @@ function ensureMountOptions(value: unknown): asserts value is PreviewShapeBarMou
   if (!isValidPreviewShapeType(options.initialShape)) {
     throw new Error('Shapeバーの初期Shapeが不正です。');
   }
+  if (typeof options.initialWireframeEnabled !== 'boolean') {
+    throw new Error('Shapeバーの初期Wireframe状態が不正です。');
+  }
   if (typeof options.onShapeChange !== 'function') {
     throw new Error('Shapeバーの変更コールバックが不正です。');
+  }
+  if (typeof options.onWireframeChange !== 'function') {
+    throw new Error('ShapeバーのWireframe変更コールバックが不正です。');
+  }
+  if (typeof options.onExportMainPreviewPng !== 'function') {
+    throw new Error('Shapeバーの3Dプレビュー書き出しコールバックが不正です。');
+  }
+  if (typeof options.onExportStepPreviewPng !== 'function') {
+    throw new Error('ShapeバーのStepプレビュー書き出しコールバックが不正です。');
   }
   if (typeof options.onStatus !== 'function') {
     throw new Error('Shapeバーのステータス通知コールバックが不正です。');
@@ -51,15 +78,71 @@ function ensureMountOptions(value: unknown): asserts value is PreviewShapeBarMou
 
 function PreviewShapeBar(props: PreviewShapeBarProps): JSX.Element {
   const language = useLanguage();
+  const [menuOpen, setMenuOpen] = createSignal(false);
+  let menuWrapEl: HTMLDivElement | null = null;
 
-  const shapeLabel = (): string => {
+  const tr = (key: string, values?: Record<string, string | number>): string => {
     language();
-    return t('preview.shapeLabel');
+    return t(key, values);
+  };
+
+  const closeMenu = (): void => {
+    setMenuOpen(false);
+  };
+
+  const handleToggleMenu = (): void => {
+    setMenuOpen(prev => !prev);
+  };
+
+  const handleWindowPointerDown = (event: PointerEvent): void => {
+    if (!menuOpen()) {
+      return;
+    }
+
+    const target = event.target;
+    if (!(target instanceof Node)) {
+      return;
+    }
+
+    if (!menuWrapEl || menuWrapEl.contains(target)) {
+      return;
+    }
+
+    closeMenu();
+  };
+
+  if (typeof window !== 'undefined') {
+    window.addEventListener('pointerdown', handleWindowPointerDown);
+    onCleanup(() => {
+      window.removeEventListener('pointerdown', handleWindowPointerDown);
+    });
+  }
+
+  const handleMenuAction = (action: PreviewActionMenuValue): void => {
+    if (!isValidActionMenuValue(action)) {
+      return;
+    }
+
+    if (action === '') {
+      closeMenu();
+      return;
+    }
+
+    props.onSelectActionMenu(action);
+    closeMenu();
+  };
+
+  const handleMenuKeyDown = (event: KeyboardEvent): void => {
+    if (event.key !== 'Escape') {
+      return;
+    }
+    event.preventDefault();
+    closeMenu();
   };
 
   return (
     <>
-      <div class="section-label">{shapeLabel()}</div>
+      <div class="section-label">{tr('preview.shapeLabel')}</div>
       <div class="shape-group preview-shape-group">
         <For each={PREVIEW_SHAPES}>
           {shape => (
@@ -72,6 +155,61 @@ function PreviewShapeBar(props: PreviewShapeBarProps): JSX.Element {
             </button>
           )}
         </For>
+      </div>
+      <div class="preview-action-menu-wrap" ref={element => { menuWrapEl = element; }}>
+        <button
+          type="button"
+          class="preview-kebab-btn"
+          aria-label={tr('preview.menuButtonAria')}
+          aria-haspopup="menu"
+          aria-expanded={menuOpen() ? 'true' : 'false'}
+          onClick={handleToggleMenu}
+          onKeyDown={event => {
+            const keyEvent = event as KeyboardEvent;
+            handleMenuKeyDown(keyEvent);
+          }}
+        >
+          ･･･
+        </button>
+        <Show when={menuOpen()}>
+          <div class="preview-kebab-menu" role="menu" onKeyDown={event => {
+            const keyEvent = event as KeyboardEvent;
+            handleMenuKeyDown(keyEvent);
+          }}>
+            <button
+              type="button"
+              class="preview-kebab-item"
+              role="menuitem"
+              onClick={() => {
+                handleMenuAction('toggle-wireframe');
+              }}
+            >
+              {tr('preview.menuWireframeToggle', {
+                state: props.wireframeEnabled() ? tr('common.on') : tr('common.off'),
+              })}
+            </button>
+            <button
+              type="button"
+              class="preview-kebab-item"
+              role="menuitem"
+              onClick={() => {
+                handleMenuAction('export-main-preview');
+              }}
+            >
+              {tr('preview.menuExportMainPng')}
+            </button>
+            <button
+              type="button"
+              class="preview-kebab-item"
+              role="menuitem"
+              onClick={() => {
+                handleMenuAction('export-step-preview');
+              }}
+            >
+              {tr('preview.menuExportStepPng')}
+            </button>
+          </div>
+        </Show>
       </div>
     </>
   );
@@ -94,6 +232,7 @@ export function mountPreviewShapeBar(target: HTMLElement, options: PreviewShapeB
 
   disposePreviewShapeBar = render(() => {
     const [activeShape, setActiveShape] = createSignal<PreviewShapeType>(options.initialShape);
+    const [wireframeEnabled, setWireframeEnabled] = createSignal<boolean>(options.initialWireframeEnabled);
 
     syncPreviewShapeBarStateInternal = nextShape => {
       if (!isValidPreviewShapeType(nextShape)) {
@@ -105,6 +244,18 @@ export function mountPreviewShapeBar(target: HTMLElement, options: PreviewShapeB
       }
 
       setActiveShape(nextShape);
+    };
+
+    syncPreviewWireframeStateInternal = enabled => {
+      if (typeof enabled !== 'boolean') {
+        previewShapeStatusReporter(
+          t('preview.status.invalidWireframeSyncValue', { value: String(enabled) }),
+          'error',
+        );
+        return;
+      }
+
+      setWireframeEnabled(enabled);
     };
 
     const handleSelectShape = (nextShape: PreviewShapeType): void => {
@@ -124,10 +275,64 @@ export function mountPreviewShapeBar(target: HTMLElement, options: PreviewShapeB
       options.onShapeChange(nextShape);
     };
 
+    const handleSelectActionMenu = (action: PreviewActionMenuValue): void => {
+      if (!isValidActionMenuValue(action)) {
+        previewShapeStatusReporter(
+          t('preview.status.invalidMenuAction', { value: String(action) }),
+          'error',
+        );
+        return;
+      }
+
+      if (action === '') {
+        return;
+      }
+
+      if (action === 'toggle-wireframe') {
+        const next = !wireframeEnabled();
+        try {
+          options.onWireframeChange(next);
+          setWireframeEnabled(next);
+        } catch (error) {
+          const message = error instanceof Error ? error.message : t('common.unknownError');
+          previewShapeStatusReporter(
+            t('preview.status.menuActionFailed', { message }),
+            'error',
+          );
+        }
+        return;
+      }
+
+      if (action === 'export-main-preview') {
+        Promise.resolve()
+          .then(() => options.onExportMainPreviewPng())
+          .catch(error => {
+            const message = error instanceof Error ? error.message : t('common.unknownError');
+            previewShapeStatusReporter(
+              t('preview.status.menuActionFailed', { message }),
+              'error',
+            );
+          });
+        return;
+      }
+
+      Promise.resolve()
+        .then(() => options.onExportStepPreviewPng())
+        .catch(error => {
+          const message = error instanceof Error ? error.message : t('common.unknownError');
+          previewShapeStatusReporter(
+            t('preview.status.menuActionFailed', { message }),
+            'error',
+          );
+        });
+    };
+
     return (
       <PreviewShapeBar
         activeShape={activeShape}
+        wireframeEnabled={wireframeEnabled}
         onSelectShape={handleSelectShape}
+        onSelectActionMenu={handleSelectActionMenu}
       />
     );
   }, target);
@@ -147,4 +352,20 @@ export function syncPreviewShapeBarState(nextShape: PreviewShapeType): void {
   }
 
   syncPreviewShapeBarStateInternal(nextShape);
+}
+
+export function syncPreviewWireframeState(enabled: boolean): void {
+  if (!syncPreviewWireframeStateInternal) {
+    return;
+  }
+
+  if (typeof enabled !== 'boolean') {
+    previewShapeStatusReporter(
+      t('preview.status.invalidWireframeSyncArg', { value: String(enabled) }),
+      'error',
+    );
+    return;
+  }
+
+  syncPreviewWireframeStateInternal(enabled);
 }

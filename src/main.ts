@@ -20,6 +20,7 @@ import {
 } from './features/pipeline/pipeline-state.ts';
 import * as pipelineView from './features/pipeline/pipeline-view.ts';
 import * as shaderGenerator from './features/shader/shader-generator.ts';
+import { MAX_STEP_LABEL_LENGTH } from './features/step/step-model.ts';
 import { StepPreviewRenderer } from './features/step/step-preview-renderer.ts';
 import { createStepPreviewSystem } from './features/step/step-preview-system.ts';
 import {
@@ -48,6 +49,7 @@ import {
 import {
   mountPreviewShapeBar,
   syncPreviewShapeBarState,
+  syncPreviewWireframeState,
   type PreviewShapeType,
 } from './shared/components/solid-preview-shape-bar.tsx';
 import {
@@ -107,7 +109,9 @@ import {
 } from './shared/ui/scene-state.ts';
 import {
   isAutoApplyEnabled,
+  isPreviewWireframeOverlayEnabled,
   setAutoApplyEnabled,
+  setPreviewWireframeOverlayEnabled,
 } from './shared/ui/ui-state.ts';
 import { createCube, createSphere, createTorus } from './shared/utils/geometry.ts';
 
@@ -132,7 +136,18 @@ interface StepPreviewDebugApi {
   isForceCpu: () => boolean;
 }
 
+interface PendingMainPreviewCapture {
+  resolve: (blob: Blob) => void;
+  reject: (error: Error) => void;
+  timeoutHandle: ReturnType<typeof setTimeout>;
+}
+
+interface MainPreviewCaptureRequestOptions {
+  hideLightGuide?: boolean;
+}
+
 const STEP_PREVIEW_DEBUG_GLOBAL_KEY = '__debugStepPreview';
+const MAIN_PREVIEW_CAPTURE_TIMEOUT_MS = 2000;
 const STATIC_TRANSLATION_TARGETS: StaticTranslationTarget[] = [
   {
     selector: '#pipeline-help-text',
@@ -207,6 +222,8 @@ let gizmoOverlayController: ReturnType<typeof createGizmoOverlayController> | nu
 let renderSystem: ReturnType<typeof createRenderSystem> | null = null;
 let stepPreviewSystem: ReturnType<typeof createStepPreviewSystem> | null = null;
 let pipelineIoSystem: ReturnType<typeof createPipelineIoSystem> | null = null;
+let pendingMainPreviewCapture: PendingMainPreviewCapture | null = null;
+let suppressLightGuideForMainPreviewCapture = false;
 
 const connectionDrawScheduler = createConnectionDrawScheduler({
   draw: () => {
@@ -270,6 +287,182 @@ function showStatus(message: string, kind: 'success' | 'error' | 'info' = 'info'
   });
 }
 
+function formatDatePart(value: number, digits: number): string {
+  if (!Number.isFinite(value) || !Number.isInteger(value) || value < 0) {
+    throw new Error('日付情報が不正です。');
+  }
+  return String(value).padStart(digits, '0');
+}
+
+function buildPreviewDownloadFilename(kind: 'main' | 'step', now: Date = new Date()): string {
+  if (!(now instanceof Date) || Number.isNaN(now.getTime())) {
+    throw new Error('保存時刻の取得に失敗しました。');
+  }
+
+  const yyyy = formatDatePart(now.getFullYear(), 4);
+  const mm = formatDatePart(now.getMonth() + 1, 2);
+  const dd = formatDatePart(now.getDate(), 2);
+  const hh = formatDatePart(now.getHours(), 2);
+  const min = formatDatePart(now.getMinutes(), 2);
+  const ss = formatDatePart(now.getSeconds(), 2);
+  const suffix = kind === 'main' ? '3d-preview' : 'step-preview';
+  return `lutchainer-preview-${suffix}-${yyyy}${mm}${dd}-${hh}${min}${ss}.png`;
+}
+
+function downloadBlobAsFile(blob: Blob, filename: string): void {
+  if (!(blob instanceof Blob) || blob.size <= 0) {
+    throw new Error('ダウンロード対象のBlobが不正です。');
+  }
+  if (typeof filename !== 'string' || filename.trim().length === 0) {
+    throw new Error('ダウンロードファイル名が不正です。');
+  }
+
+  const objectUrl = URL.createObjectURL(blob);
+  try {
+    const anchor = document.createElement('a');
+    anchor.href = objectUrl;
+    anchor.download = filename;
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+  } finally {
+    URL.revokeObjectURL(objectUrl);
+  }
+}
+
+function canvasToPngBlob(canvas: HTMLCanvasElement): Promise<Blob> {
+  if (!(canvas instanceof HTMLCanvasElement)) {
+    return Promise.reject(new Error('キャンバス要素が不正です。'));
+  }
+
+  return new Promise((resolve, reject) => {
+    canvas.toBlob(blob => {
+      if (!blob) {
+        reject(new Error('PNGの生成に失敗しました。'));
+        return;
+      }
+      resolve(blob);
+    }, 'image/png');
+  });
+}
+
+function copyCanvasSnapshot(canvas: HTMLCanvasElement): HTMLCanvasElement {
+  if (!(canvas instanceof HTMLCanvasElement)) {
+    throw new Error('スナップショット元キャンバスが不正です。');
+  }
+  if (!Number.isInteger(canvas.width) || !Number.isInteger(canvas.height) || canvas.width <= 0 || canvas.height <= 0) {
+    throw new Error('スナップショット元キャンバスのサイズが不正です。');
+  }
+
+  const snapshot = document.createElement('canvas');
+  snapshot.width = canvas.width;
+  snapshot.height = canvas.height;
+
+  const ctx = snapshot.getContext('2d');
+  if (!ctx) {
+    throw new Error('スナップショット用Canvasの作成に失敗しました。');
+  }
+
+  ctx.drawImage(canvas, 0, 0);
+  return snapshot;
+}
+
+function settleMainPreviewCaptureFromFrame(canvas: HTMLCanvasElement): void {
+  const pending = pendingMainPreviewCapture;
+  if (!pending) {
+    return;
+  }
+
+  pendingMainPreviewCapture = null;
+  suppressLightGuideForMainPreviewCapture = false;
+  clearTimeout(pending.timeoutHandle);
+
+  let snapshot: HTMLCanvasElement;
+  try {
+    snapshot = copyCanvasSnapshot(canvas);
+  } catch (error) {
+    pending.reject(error instanceof Error ? error : new Error(t('common.unknownError')));
+    return;
+  }
+
+  canvasToPngBlob(snapshot)
+    .then(blob => pending.resolve(blob))
+    .catch(error => {
+      pending.reject(error instanceof Error ? error : new Error(t('common.unknownError')));
+    });
+}
+
+function requestMainPreviewPngBlob(options?: MainPreviewCaptureRequestOptions): Promise<Blob> {
+  if (options !== undefined && (typeof options !== 'object' || options === null || Array.isArray(options))) {
+    return Promise.reject(new Error('キャプチャオプションが不正です。'));
+  }
+
+  const hideLightGuideRaw = options?.hideLightGuide;
+  if (hideLightGuideRaw !== undefined && typeof hideLightGuideRaw !== 'boolean') {
+    return Promise.reject(new Error('hideLightGuide は boolean で指定してください。'));
+  }
+
+  if (pendingMainPreviewCapture) {
+    return Promise.reject(new Error(t('main.status.previewExportBusy')));
+  }
+
+  suppressLightGuideForMainPreviewCapture = hideLightGuideRaw ?? false;
+
+  return new Promise<Blob>((resolve, reject) => {
+    const timeoutHandle = setTimeout(() => {
+      const pending = pendingMainPreviewCapture;
+      if (!pending || pending.timeoutHandle !== timeoutHandle) {
+        return;
+      }
+
+      pendingMainPreviewCapture = null;
+      suppressLightGuideForMainPreviewCapture = false;
+      pending.reject(new Error(t('main.status.previewExportCaptureTimeout')));
+    }, MAIN_PREVIEW_CAPTURE_TIMEOUT_MS);
+
+    pendingMainPreviewCapture = {
+      resolve,
+      reject,
+      timeoutHandle,
+    };
+  });
+}
+
+async function exportMainPreviewPng(): Promise<void> {
+  if (!(renderer instanceof Renderer)) {
+    throw new Error(t('main.status.previewExportRendererMissing'));
+  }
+
+  if (!renderSystem) {
+    throw new Error(t('main.status.previewExportRendererMissing'));
+  }
+
+  if (!renderSystem.isRunning()) {
+    renderSystem.start();
+  }
+
+  const blob = await requestMainPreviewPngBlob({ hideLightGuide: true });
+  downloadBlobAsFile(blob, buildPreviewDownloadFilename('main'));
+  showStatus(t('main.status.previewExportMainSaved'), 'success');
+}
+
+async function exportStepPreviewPng(): Promise<void> {
+  if (!stepPreviewSystem) {
+    throw new Error(t('main.status.stepPreviewNotInitialized'));
+  }
+
+  const bytes = await stepPreviewSystem.renderPreviewPngBytes();
+  if (!(bytes instanceof Uint8Array) || bytes.byteLength <= 0) {
+    throw new Error(t('main.status.previewExportBytesInvalid'));
+  }
+
+  const blob = new Blob([(bytes.buffer as ArrayBuffer).slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength)], {
+    type: 'image/png',
+  });
+  downloadBlobAsFile(blob, buildPreviewDownloadFilename('step'));
+  showStatus(t('main.status.previewExportStepSaved'), 'success');
+}
+
 function setStepPreviewForceCpu(value: unknown): StepPreviewDebugApiResult {
   if (!stepPreviewSystem) {
     const message = t('main.status.stepPreviewNotInitialized');
@@ -330,6 +523,45 @@ function setActiveShape(type: PrimitiveType): void {
   syncPreviewShapeBarState(type);
 }
 
+function setWireframeOverlayEnabled(enabled: unknown): void {
+  if (typeof enabled !== 'boolean') {
+    showStatus(t('main.status.wireframeInvalidValue', { value: String(enabled) }), 'error');
+    return;
+  }
+
+  if (!(renderer instanceof Renderer)) {
+    showStatus(t('main.status.previewExportRendererMissing'), 'error');
+    return;
+  }
+
+  setPreviewWireframeOverlayEnabled(enabled);
+  renderer.setWireframeOverlayEnabled(enabled);
+  syncPreviewWireframeState(isPreviewWireframeOverlayEnabled());
+  showStatus(
+    t('main.status.wireframeChanged', {
+      state: enabled ? t('common.on') : t('common.off'),
+    }),
+    'info',
+  );
+}
+
+function normalizeStepLabelInput(value: unknown): string | null {
+  if (value === null) {
+    return null;
+  }
+
+  if (typeof value !== 'string') {
+    throw new Error('Stepラベルは文字列で指定してください。');
+  }
+
+  const trimmed = value.trim();
+  if (trimmed.length === 0) {
+    return null;
+  }
+
+  return pipelineModel.parseNonEmptyText(trimmed, 'step.label', MAX_STEP_LABEL_LENGTH);
+}
+
 function getStepById(stepId: number): StepModel | null {
   const step = pipelineModel.getStepById(getPipelineSteps(), stepId);
   if (!step) {
@@ -359,6 +591,63 @@ function addStep(): void {
   steps.push(step);
   renderSteps();
   scheduleApply();
+}
+
+function duplicateStep(stepId: number): void {
+  const result = pipelineModel.duplicatePipelineStep(getPipelineSteps(), stepId, getPipelineNextStepId());
+  if (result.error || !result.duplicated) {
+    showStatus(result.error ?? t('common.unknownError'), 'error');
+    return;
+  }
+
+  setPipelineSteps(result.steps);
+  setPipelineNextStepId(result.nextStepId);
+  renderSteps();
+  scheduleApply();
+  showStatus(t('main.status.stepDuplicated', { stepId: result.duplicated.id }), 'info');
+}
+
+function setStepMuted(stepId: number, muted: unknown): void {
+  if (typeof muted !== 'boolean') {
+    showStatus(t('main.status.stepMuteInvalidValue', { value: String(muted) }), 'error');
+    return;
+  }
+
+  const step = getStepById(stepId);
+  if (!step) {
+    return;
+  }
+
+  if (step.muted === muted) {
+    return;
+  }
+
+  step.muted = muted;
+  renderSteps();
+  scheduleApply();
+}
+
+function setStepLabel(stepId: number, label: unknown): void {
+  const step = getStepById(stepId);
+  if (!step) {
+    return;
+  }
+
+  let normalized: string | null;
+  try {
+    normalized = normalizeStepLabelInput(label);
+  } catch (error) {
+    showStatus(pipelineModel.toErrorMessage(error), 'error');
+    return;
+  }
+
+  const nextLabel = normalized ?? undefined;
+  if (step.label === nextLabel) {
+    return;
+  }
+
+  step.label = nextLabel;
+  renderSteps();
 }
 
 function removeStep(stepId: number): void {
@@ -770,8 +1059,18 @@ function setupUI(): void {
 
   mountPreviewShapeBar($<HTMLElement>('#preview-shape-bar'), {
     initialShape: currentPrimitive,
+    initialWireframeEnabled: isPreviewWireframeOverlayEnabled(),
     onShapeChange: nextShape => {
       setActiveShape(nextShape);
+    },
+    onWireframeChange: enabled => {
+      setWireframeOverlayEnabled(enabled);
+    },
+    onExportMainPreviewPng: async () => {
+      await exportMainPreviewPng();
+    },
+    onExportStepPreviewPng: async () => {
+      await exportStepPreviewPng();
     },
     onStatus: showStatus,
   });
@@ -885,6 +1184,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
   const canvas = $<HTMLCanvasElement>('#gl-canvas');
   renderer = new Renderer(canvas);
+  renderer.setWireframeOverlayEnabled(isPreviewWireframeOverlayEnabled());
   stepPreviewRenderer = StepPreviewRenderer.create();
   stepPreviewSystem = createStepPreviewSystem({
     getSteps: getPipelineSteps,
@@ -934,7 +1234,10 @@ window.addEventListener('DOMContentLoaded', () => {
     getLightSettings,
     getLightDirectionWorld,
     getMaterialSettings,
+    shouldSuppressLightGuide: () => suppressLightGuideForMainPreviewCapture,
     onAfterDraw: ({ view, proj, canvas: drawCanvas, lightDirection, lightSettings }) => {
+      settleMainPreviewCaptureFromFrame(drawCanvas);
+
       if (!gizmoOverlayController) {
         return;
       }
@@ -970,8 +1273,17 @@ window.addEventListener('DOMContentLoaded', () => {
     onAddStep: () => {
       addStep();
     },
+    onDuplicateStep: stepId => {
+      duplicateStep(stepId);
+    },
     onRemoveStep: stepId => {
       removeStep(stepId);
+    },
+    onStepMuteChange: (stepId, muted) => {
+      setStepMuted(stepId, muted);
+    },
+    onStepLabelChange: (stepId, label) => {
+      setStepLabel(stepId, label);
     },
     onStepLutChange: (stepId, lutId) => {
       const step = getStepById(stepId);

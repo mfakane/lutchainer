@@ -1,9 +1,11 @@
 interface UiState {
   autoApply: boolean;
+  previewWireframeOverlay: boolean;
 }
 
 const uiState: UiState = {
   autoApply: true,
+  previewWireframeOverlay: false,
 };
 
 function isBoolean(value: unknown): value is boolean {
@@ -20,4 +22,16 @@ export function setAutoApplyEnabled(value: boolean): void {
   }
 
   uiState.autoApply = value;
+}
+
+export function isPreviewWireframeOverlayEnabled(): boolean {
+  return uiState.previewWireframeOverlay;
+}
+
+export function setPreviewWireframeOverlayEnabled(value: boolean): void {
+  if (!isBoolean(value)) {
+    throw new Error(`Invalid previewWireframeOverlay value: ${String(value)}`);
+  }
+
+  uiState.previewWireframeOverlay = value;
 }

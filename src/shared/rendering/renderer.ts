@@ -18,6 +18,8 @@ interface BufferedGeometry {
   texcoordBuf: WebGLBuffer;
   indexBuf: WebGLBuffer;
   indexCount: number;
+  wireframeIndexBuf: WebGLBuffer;
+  wireframeIndexCount: number;
 }
 
 export interface MaterialUniformValues {
@@ -27,6 +29,44 @@ export interface MaterialUniformValues {
   specularPower: number;
   fresnelStrength: number;
   fresnelPower: number;
+}
+
+function createWireframeIndices(indices: Uint16Array): Uint16Array {
+  if (!(indices instanceof Uint16Array) || indices.length < 3) {
+    return new Uint16Array();
+  }
+
+  const edgeSet = new Set<string>();
+  const lineIndices: number[] = [];
+
+  const pushEdge = (a: number, b: number): void => {
+    if (!Number.isInteger(a) || !Number.isInteger(b) || a < 0 || b < 0 || a === b) {
+      return;
+    }
+
+    const minIndex = Math.min(a, b);
+    const maxIndex = Math.max(a, b);
+    const key = `${minIndex}:${maxIndex}`;
+    if (edgeSet.has(key)) {
+      return;
+    }
+
+    edgeSet.add(key);
+    lineIndices.push(minIndex, maxIndex);
+  };
+
+  const triangleCount = Math.floor(indices.length / 3);
+  for (let tri = 0; tri < triangleCount; tri++) {
+    const base = tri * 3;
+    const a = indices[base + 0];
+    const b = indices[base + 1];
+    const c = indices[base + 2];
+    pushEdge(a, b);
+    pushEdge(b, c);
+    pushEdge(c, a);
+  }
+
+  return new Uint16Array(lineIndices);
 }
 
 export class Renderer {
@@ -40,6 +80,7 @@ export class Renderer {
   private lightLineProgram: WebGLProgram | null = null;
   private lightLineBuf: WebGLBuffer | null = null;
   private readonly maxTextureUnits: number;
+  private wireframeOverlayEnabled = false;
   readonly startTime = performance.now();
 
   constructor(canvas: HTMLCanvasElement) {
@@ -152,6 +193,7 @@ export class Renderer {
       gl.deleteBuffer(this.bufferedGeo.normalBuf);
       gl.deleteBuffer(this.bufferedGeo.texcoordBuf);
       gl.deleteBuffer(this.bufferedGeo.indexBuf);
+      gl.deleteBuffer(this.bufferedGeo.wireframeIndexBuf);
     }
 
     const makeBuffer = (data: Float32Array | Uint16Array, target: number): WebGLBuffer => {
@@ -161,13 +203,28 @@ export class Renderer {
       return buf;
     };
 
+    const wireframeIndices = createWireframeIndices(geo.indices);
+
     this.bufferedGeo = {
       positionBuf: makeBuffer(geo.positions, gl.ARRAY_BUFFER),
       normalBuf:   makeBuffer(geo.normals,   gl.ARRAY_BUFFER),
       texcoordBuf: makeBuffer(geo.texcoords, gl.ARRAY_BUFFER),
       indexBuf:    makeBuffer(geo.indices,   gl.ELEMENT_ARRAY_BUFFER),
       indexCount:  geo.indices.length,
+      wireframeIndexBuf: makeBuffer(wireframeIndices, gl.ELEMENT_ARRAY_BUFFER),
+      wireframeIndexCount: wireframeIndices.length,
     };
+  }
+
+  setWireframeOverlayEnabled(enabled: unknown): void {
+    if (typeof enabled !== 'boolean') {
+      throw new Error(`wireframeOverlayEnabled must be a boolean: ${String(enabled)}`);
+    }
+    this.wireframeOverlayEnabled = enabled;
+  }
+
+  isWireframeOverlayEnabled(): boolean {
+    return this.wireframeOverlayEnabled;
   }
 
   draw(
@@ -262,9 +319,73 @@ export class Renderer {
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, geo.indexBuf);
     gl.drawElements(gl.TRIANGLES, geo.indexCount, gl.UNSIGNED_SHORT, 0);
 
+    if (this.wireframeOverlayEnabled) {
+      this.drawWireframeOverlay(geo, modelMatrix, viewMatrix, projMatrix);
+    }
+
     if (showLightGuide) {
       this.drawLightDirectionLine(modelMatrix, viewMatrix, projMatrix, lightDir);
     }
+  }
+
+  private drawWireframeOverlay(
+    geo: BufferedGeometry,
+    modelMatrix: Mat4,
+    viewMatrix: Mat4,
+    projMatrix: Mat4,
+  ): void {
+    if (geo.wireframeIndexCount <= 0) {
+      return;
+    }
+
+    const gl = this.gl;
+    const program = this.getLightLineProgram();
+    if (!program) {
+      return;
+    }
+
+    gl.useProgram(program);
+    const posLoc = gl.getAttribLocation(program, 'a_position');
+    if (posLoc < 0) {
+      return;
+    }
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, geo.positionBuf);
+    gl.enableVertexAttribArray(posLoc);
+    gl.vertexAttribPointer(posLoc, 3, gl.FLOAT, false, 0, 0);
+
+    const setMat4 = (name: string, matrix: Mat4) => {
+      const loc = gl.getUniformLocation(program, name);
+      if (loc !== null) gl.uniformMatrix4fv(loc, false, matrix);
+    };
+    const setColor = (r: number, g: number, b: number, a: number) => {
+      const loc = gl.getUniformLocation(program, 'u_color');
+      if (loc !== null) gl.uniform4f(loc, r, g, b, a);
+    };
+
+    setMat4('u_modelMatrix', modelMatrix);
+    setMat4('u_viewMatrix', viewMatrix);
+    setMat4('u_projectionMatrix', projMatrix);
+
+    gl.disable(gl.CULL_FACE);
+    gl.enable(gl.BLEND);
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+    gl.depthMask(false);
+
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, geo.wireframeIndexBuf);
+
+    gl.depthFunc(gl.LEQUAL);
+    setColor(0.86, 0.93, 1.0, 0.8);
+    gl.drawElements(gl.LINES, geo.wireframeIndexCount, gl.UNSIGNED_SHORT, 0);
+
+    gl.depthFunc(gl.GREATER);
+    setColor(0.86, 0.93, 1.0, 0.28);
+    gl.drawElements(gl.LINES, geo.wireframeIndexCount, gl.UNSIGNED_SHORT, 0);
+
+    gl.depthFunc(gl.LEQUAL);
+    gl.depthMask(true);
+    gl.disable(gl.BLEND);
+    gl.enable(gl.CULL_FACE);
   }
 
   private getLightLineProgram(): WebGLProgram | null {

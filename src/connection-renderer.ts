@@ -3,9 +3,9 @@ import type { SocketAxis, SocketDragState, SocketDropTarget } from './features/p
 import * as pipelineView from './features/pipeline/pipeline-view';
 import type { ParamName, StepModel } from './features/step/step-model';
 import {
-    resolveSocketDragPreviewColor,
-    resolveSocketDragPreviewEnd,
-    resolveSocketDragPreviewStart,
+  resolveSocketDragPreviewColor,
+  resolveSocketDragPreviewEnd,
+  resolveSocketDragPreviewStart,
 } from './shared/interactions/socket-dnd';
 
 export interface ConnectionLayerRenderOptions {
@@ -122,6 +122,7 @@ function isValidConnectionStep(step: unknown): step is StepModel {
   const candidate = step as Partial<StepModel>;
   return Number.isInteger(candidate.id)
     && (candidate.id ?? 0) > 0
+    && typeof candidate.muted === 'boolean'
     && typeof candidate.xParam === 'string'
     && pipelineModel.isValidParamName(candidate.xParam)
     && typeof candidate.yParam === 'string'
