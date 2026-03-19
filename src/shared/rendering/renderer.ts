@@ -35,6 +35,8 @@ export class Renderer {
   private program: WebGLProgram | null = null;
   private bufferedGeo: BufferedGeometry | null = null;
   private lutTextures: WebGLTexture[] = [];
+  private contentTexture: WebGLTexture | null = null;
+  private defaultContentTexture: WebGLTexture;
   private lightLineProgram: WebGLProgram | null = null;
   private lightLineBuf: WebGLBuffer | null = null;
   private readonly maxTextureUnits: number;
@@ -49,6 +51,18 @@ export class Renderer {
     gl.enable(gl.DEPTH_TEST);
     gl.enable(gl.CULL_FACE);
     gl.cullFace(gl.BACK);
+
+    // Create white default texture for u_texture
+    const whiteData = new Uint8Array([255, 255, 255, 255]);
+    const whiteTex = gl.createTexture()!;
+    gl.bindTexture(gl.TEXTURE_2D, whiteTex);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, whiteData);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.bindTexture(gl.TEXTURE_2D, null);
+    this.defaultContentTexture = whiteTex;
   }
 
   setLutTextures(sources: TexImageSource[]): string | null {
@@ -64,6 +78,26 @@ export class Renderer {
     }
 
     return result.error;
+  }
+
+  setContentTexture(source: TexImageSource | null): void {
+    const gl = this.gl;
+    if (this.contentTexture) {
+      gl.deleteTexture(this.contentTexture);
+      this.contentTexture = null;
+    }
+
+    if (!source) return;
+
+    const texture = gl.createTexture()!;
+    gl.bindTexture(gl.TEXTURE_2D, texture);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, source);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.bindTexture(gl.TEXTURE_2D, null);
+    this.contentTexture = texture;
   }
 
   compileProgram(vertSrc: string, fragSrc: string): CompileResult {
@@ -106,6 +140,7 @@ export class Renderer {
     }
 
     if (this.program) gl.deleteProgram(this.program);
+    if (this.contentTexture) gl.deleteTexture(this.contentTexture);
     this.program = program;
     return { success: true, errors: [] };
   }
@@ -206,6 +241,11 @@ export class Renderer {
       gl.bindTexture(gl.TEXTURE_2D, texture);
       uni1i(`u_lut${index}`, index);
     });
+
+    const contentTex = this.contentTexture ?? this.defaultContentTexture;
+    gl.activeTexture(gl.TEXTURE0 + this.lutTextures.length);
+    gl.bindTexture(gl.TEXTURE_2D, contentTex);
+    uni1i('u_texture', this.lutTextures.length);
 
     const bindAttr = (name: string, buf: WebGLBuffer, size: number) => {
       const loc = gl.getAttribLocation(program, name);

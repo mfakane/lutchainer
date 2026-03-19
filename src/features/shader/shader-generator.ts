@@ -568,6 +568,7 @@ uniform float u_specularStrength;
 uniform float u_specularPower;
 uniform float u_fresnelStrength;
 uniform float u_fresnelPower;
+uniform sampler2D u_texture;
 ${samplerDecl}
 
 varying vec3 v_worldPos;
@@ -596,16 +597,18 @@ vec4 sampleLut(int lutIndex, vec2 uv) {
 void main() {
   vec3 materialBaseColor = clamp(u_materialBaseColor, 0.0, 1.0);
   vec3 ambientColor = clamp(u_ambientColor, 0.0, 1.0);
+  vec4 textureSample = texture2D(u_texture, v_texcoord);
 
   ${fragmentParamLines.join('\n  ')}
 
-  vec3 color = clamp(materialBaseColor, 0.0, 1.0);
+  vec3 color = clamp(materialBaseColor * textureSample.rgb, 0.0, 1.0);
 
   ${stepCode.join('\n  ')}
 
   color = clamp(color + ambientColor, 0.0, 1.0);
+  float finalAlpha = clamp(textureSample.a, 0.0, 1.0);
 
-  gl_FragColor = vec4(color, 1.0);
+  gl_FragColor = vec4(color, finalAlpha);
 }`;
 }
 
@@ -637,6 +640,7 @@ cbuffer SceneUniforms : register(b0)
   float u_fresnelPower;
 };
 
+Texture2D u_texture : register(t0);
 ${textureDecl}
 SamplerState u_lutSampler : register(s0);
 
@@ -717,16 +721,18 @@ PSInput VSMain(VSInput input) {
 float4 PSMain(PSInput input) : SV_TARGET {
   float3 materialBaseColor = saturate(u_materialBaseColor);
   float3 ambientColor = saturate(u_ambientColor);
+  float4 textureSample = u_texture.SampleLevel(u_lutSampler, input.texcoord, 0.0);
 
   ${hlslParamLines.join('\n  ')}
 
-  float3 color = saturate(materialBaseColor);
+  float3 color = saturate(materialBaseColor * textureSample.rgb);
 
   ${stepCode.join('\n  ')}
 
   color = saturate(color + ambientColor);
+  float finalAlpha = saturate(textureSample.a);
 
-  return float4(color, 1.0);
+  return float4(color, finalAlpha);
 }`;
 }
 
