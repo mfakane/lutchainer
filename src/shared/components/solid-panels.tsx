@@ -6,6 +6,97 @@ import { t, useLanguage } from '../i18n';
 type StatusKind = 'success' | 'error' | 'info';
 type StatusReporter = (message: string, kind?: StatusKind) => void;
 
+interface MaterialPresetDefinition {
+  key: string;
+  labelKey: string;
+  settings: pipelineModel.MaterialSettings;
+}
+
+interface LightPresetDefinition {
+  key: string;
+  labelKey: string;
+  settings: pipelineModel.LightSettings;
+}
+
+const MATERIAL_PRESETS: MaterialPresetDefinition[] = [
+  {
+    key: 'default',
+    labelKey: 'panel.preset.default',
+    settings: pipelineModel.DEFAULT_MATERIAL_SETTINGS,
+  },
+  {
+    key: 'matte-clay',
+    labelKey: 'panel.preset.material.matteClay',
+    settings: {
+      baseColor: [0.70, 0.62, 0.54],
+      ambientColor: [0.06, 0.06, 0.07],
+      specularStrength: 0.12,
+      specularPower: 7,
+      fresnelStrength: 0.08,
+      fresnelPower: 1.4,
+    },
+  },
+  {
+    key: 'gloss-metal',
+    labelKey: 'panel.preset.material.glossMetal',
+    settings: {
+      baseColor: [0.78, 0.80, 0.84],
+      ambientColor: [0.02, 0.02, 0.03],
+      specularStrength: 1.05,
+      specularPower: 72,
+      fresnelStrength: 0.36,
+      fresnelPower: 3.6,
+    },
+  },
+  {
+    key: 'neon-lacquer',
+    labelKey: 'panel.preset.material.neonLacquer',
+    settings: {
+      baseColor: [0.18, 0.82, 0.95],
+      ambientColor: [0.00, 0.03, 0.05],
+      specularStrength: 0.62,
+      specularPower: 44,
+      fresnelStrength: 0.46,
+      fresnelPower: 2.8,
+    },
+  },
+];
+
+const LIGHT_PRESETS: LightPresetDefinition[] = [
+  {
+    key: 'default',
+    labelKey: 'panel.preset.default',
+    settings: pipelineModel.DEFAULT_LIGHT_SETTINGS,
+  },
+  {
+    key: 'studio-front',
+    labelKey: 'panel.preset.light.studioFront',
+    settings: {
+      azimuthDeg: 20,
+      elevationDeg: 48,
+      showGizmo: true,
+    },
+  },
+  {
+    key: 'rim-side',
+    labelKey: 'panel.preset.light.rimSide',
+    settings: {
+      azimuthDeg: -115,
+      elevationDeg: 18,
+      showGizmo: true,
+    },
+  },
+  {
+    key: 'top-down',
+    labelKey: 'panel.preset.light.topDown',
+    settings: {
+      azimuthDeg: 0,
+      elevationDeg: 82,
+      showGizmo: true,
+    },
+  },
+];
+
 interface MaterialPanelMountOptions {
   initialSettings: pipelineModel.MaterialSettings;
   onSettingsChange: (nextSettings: pipelineModel.MaterialSettings) => void;
@@ -103,6 +194,32 @@ function getMaterialRangeStep(key: pipelineModel.MaterialNumericKey): string {
     default:
       return '0.01';
   }
+}
+
+function getMaterialPresetByKey(value: unknown): MaterialPresetDefinition | null {
+  if (typeof value !== 'string') {
+    return null;
+  }
+
+  const key = value.trim();
+  if (key.length === 0) {
+    return null;
+  }
+
+  return MATERIAL_PRESETS.find(preset => preset.key === key) ?? null;
+}
+
+function getLightPresetByKey(value: unknown): LightPresetDefinition | null {
+  if (typeof value !== 'string') {
+    return null;
+  }
+
+  const key = value.trim();
+  if (key.length === 0) {
+    return null;
+  }
+
+  return LIGHT_PRESETS.find(preset => preset.key === key) ?? null;
 }
 
 function ensureMaterialMountOptions(value: unknown): asserts value is MaterialPanelMountOptions {
@@ -206,11 +323,47 @@ function MaterialPanel(props: MaterialPanelProps): JSX.Element {
     props.commitSettings(next);
   };
 
+  const handleMaterialPresetChange = (event: Event): void => {
+    const select = event.currentTarget as HTMLSelectElement | null;
+    if (!(select instanceof HTMLSelectElement)) {
+      props.onStatus(tr('panel.status.materialPresetSelectMissing'), 'error');
+      return;
+    }
+
+    const preset = getMaterialPresetByKey(select.value);
+    if (!preset || !isValidMaterialSettings(preset.settings)) {
+      props.onStatus(tr('panel.status.materialPresetInvalidValue', { value: String(select.value) }), 'error');
+      return;
+    }
+
+    props.commitSettings(cloneMaterialSettings(preset.settings));
+    props.onStatus(tr('panel.status.materialPresetApplied', { name: tr(preset.labelKey) }), 'info');
+  };
+
   return (
     <>
       <div class="material-panel-head">
-        <div class="section-label">Material</div>
-        <div class="material-help">{tr('panel.materialHelp')}</div>
+        <div>
+          <div class="section-label">Material</div>
+          <div class="material-help">{tr('panel.materialHelp')}</div>
+        </div>
+        <label class="panel-preset-row">
+          <span class="panel-preset-label">{tr('panel.materialPreset')}</span>
+          <select
+            class="panel-preset-select"
+            id="material-preset-select"
+            aria-label={tr('panel.materialPreset')}
+            onChange={handleMaterialPresetChange}
+          >
+            <optgroup label={tr('panel.preset.groupLabel')}>
+              <For each={MATERIAL_PRESETS}>
+                {preset => (
+                  <option value={preset.key}>{tr(preset.labelKey)}</option>
+                )}
+              </For>
+            </optgroup>
+          </select>
+        </label>
       </div>
 
       <div class="material-grid">
@@ -305,6 +458,23 @@ function LightPanel(props: LightPanelProps): JSX.Element {
     });
   };
 
+  const handleLightPresetChange = (event: Event): void => {
+    const select = event.currentTarget as HTMLSelectElement | null;
+    if (!(select instanceof HTMLSelectElement)) {
+      props.onStatus(tr('panel.status.lightPresetSelectMissing'), 'error');
+      return;
+    }
+
+    const preset = getLightPresetByKey(select.value);
+    if (!preset || !isValidLightSettings(preset.settings)) {
+      props.onStatus(tr('panel.status.lightPresetInvalidValue', { value: String(select.value) }), 'error');
+      return;
+    }
+
+    props.commitSettings(cloneLightSettings(preset.settings));
+    props.onStatus(tr('panel.status.lightPresetApplied', { name: tr(preset.labelKey) }), 'info');
+  };
+
   return (
     <>
       <div class="light-panel-head">
@@ -313,15 +483,35 @@ function LightPanel(props: LightPanelProps): JSX.Element {
           <div class="material-help">{tr('panel.lightHelp')}</div>
         </div>
 
-        <button
-          type="button"
-          class="btn-secondary light-toggle-btn"
-          id="btn-toggle-light-gizmo"
-          aria-pressed={props.settings().showGizmo ? 'true' : 'false'}
-          onClick={toggleGizmo}
-        >
-          {tr('panel.guide', { state: props.settings().showGizmo ? tr('common.on') : tr('common.off') })}
-        </button>
+        <div class="light-panel-actions">
+          <label class="panel-preset-row">
+            <span class="panel-preset-label">{tr('panel.lightPreset')}</span>
+            <select
+              class="panel-preset-select"
+              id="light-preset-select"
+              aria-label={tr('panel.lightPreset')}
+              onChange={handleLightPresetChange}
+            >
+              <optgroup label={tr('panel.preset.groupLabel')}>
+                <For each={LIGHT_PRESETS}>
+                  {preset => (
+                    <option value={preset.key}>{tr(preset.labelKey)}</option>
+                  )}
+                </For>
+              </optgroup>
+            </select>
+          </label>
+
+          <button
+            type="button"
+            class="btn-secondary light-toggle-btn"
+            id="btn-toggle-light-gizmo"
+            aria-pressed={props.settings().showGizmo ? 'true' : 'false'}
+            onClick={toggleGizmo}
+          >
+            {tr('panel.guide', { state: props.settings().showGizmo ? tr('common.on') : tr('common.off') })}
+          </button>
+        </div>
       </div>
 
       <div class="light-grid">
