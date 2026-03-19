@@ -105,6 +105,14 @@ button:hover {
   transform: translateY(-1px);
 }
 
+button:disabled,
+button:disabled:hover {
+  opacity: 0.45;
+  cursor: not-allowed;
+  border-color: var(--line);
+  transform: none;
+}
+
 .btn-shape.active {
   border-color: var(--accent);
   background: var(--accent);

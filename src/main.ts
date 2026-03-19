@@ -17,13 +17,15 @@ import {
   setLuts as setPipelineLuts,
   setNextStepId as setPipelineNextStepId,
   setSteps as setPipelineSteps,
+  type PipelineStateSnapshot,
 } from './features/pipeline/pipeline-state.ts';
 import * as pipelineView from './features/pipeline/pipeline-view.ts';
 import * as shaderGenerator from './features/shader/shader-generator.ts';
-import { MAX_STEP_LABEL_LENGTH } from './features/step/step-model.ts';
+import { CHANNELS, MAX_STEP_LABEL_LENGTH } from './features/step/step-model.ts';
 import { StepPreviewRenderer } from './features/step/step-preview-renderer.ts';
 import { createStepPreviewSystem } from './features/step/step-preview-system.ts';
 import {
+  type LutModel,
   type ParamName,
   type StepModel,
 } from './features/step/types.ts';
@@ -31,7 +33,8 @@ import { createGizmoOverlayController } from './gizmo-overlay.ts';
 import {
   mountHeaderActionGroup,
   mountLanguageSwitcher,
-  syncHeaderActionAutoApplyState
+  syncHeaderActionAutoApplyState,
+  syncHeaderActionHistoryState,
 } from './shared/components/solid-header-actions.tsx';
 import {
   mountLightPanel,
@@ -146,8 +149,13 @@ interface MainPreviewCaptureRequestOptions {
   hideLightGuide?: boolean;
 }
 
+interface AddStepOptions {
+  recordHistory?: boolean;
+}
+
 const STEP_PREVIEW_DEBUG_GLOBAL_KEY = '__debugStepPreview';
 const MAIN_PREVIEW_CAPTURE_TIMEOUT_MS = 2000;
+const PIPELINE_HISTORY_LIMIT = 100;
 const STATIC_TRANSLATION_TARGETS: StaticTranslationTarget[] = [
   {
     selector: '#pipeline-help-text',
@@ -224,6 +232,8 @@ let stepPreviewSystem: ReturnType<typeof createStepPreviewSystem> | null = null;
 let pipelineIoSystem: ReturnType<typeof createPipelineIoSystem> | null = null;
 let pendingMainPreviewCapture: PendingMainPreviewCapture | null = null;
 let suppressLightGuideForMainPreviewCapture = false;
+const pipelineUndoStack: PipelineStateSnapshot[] = [];
+const pipelineRedoStack: PipelineStateSnapshot[] = [];
 
 const connectionDrawScheduler = createConnectionDrawScheduler({
   draw: () => {
@@ -285,6 +295,263 @@ function showStatus(message: string, kind: 'success' | 'error' | 'info' = 'info'
     message,
     kind,
   });
+}
+
+function isPipelineStateSnapshot(value: unknown): value is PipelineStateSnapshot {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return false;
+  }
+
+  const candidate = value as Partial<PipelineStateSnapshot>;
+  return Array.isArray(candidate.steps)
+    && Array.isArray(candidate.luts)
+    && typeof candidate.nextStepId === 'number'
+    && Number.isInteger(candidate.nextStepId)
+    && candidate.nextStepId > 0;
+}
+
+function cloneStepForHistory(step: StepModel): StepModel {
+  if (!step || typeof step !== 'object') {
+    throw new Error('履歴用Stepデータが不正です。');
+  }
+
+  return {
+    ...step,
+    ops: { ...step.ops },
+  };
+}
+
+function cloneLutForHistory(lut: LutModel): LutModel {
+  if (!lut || typeof lut !== 'object') {
+    throw new Error('履歴用LUTデータが不正です。');
+  }
+
+  return {
+    ...lut,
+  };
+}
+
+function clonePipelineSnapshot(snapshot: PipelineStateSnapshot): PipelineStateSnapshot {
+  if (!isPipelineStateSnapshot(snapshot)) {
+    throw new Error('履歴スナップショットが不正です。');
+  }
+
+  return {
+    steps: snapshot.steps.map(step => cloneStepForHistory(step)),
+    luts: snapshot.luts.map(lut => cloneLutForHistory(lut)),
+    nextStepId: snapshot.nextStepId,
+  };
+}
+
+function capturePipelineSnapshot(): PipelineStateSnapshot {
+  return clonePipelineSnapshot({
+    steps: getPipelineSteps(),
+    luts: getPipelineLuts(),
+    nextStepId: getPipelineNextStepId(),
+  });
+}
+
+function areStepModelsEqual(left: StepModel, right: StepModel): boolean {
+  if (left.id !== right.id) return false;
+  if (left.lutId !== right.lutId) return false;
+  if ((left.label ?? '') !== (right.label ?? '')) return false;
+  if (left.muted !== right.muted) return false;
+  if (left.blendMode !== right.blendMode) return false;
+  if (left.xParam !== right.xParam) return false;
+  if (left.yParam !== right.yParam) return false;
+
+  for (const channel of CHANNELS) {
+    if (left.ops[channel] !== right.ops[channel]) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+function areLutModelsEqual(left: LutModel, right: LutModel): boolean {
+  return left.id === right.id
+    && left.name === right.name
+    && left.width === right.width
+    && left.height === right.height
+    && left.thumbUrl === right.thumbUrl;
+}
+
+function arePipelineSnapshotsEqual(left: PipelineStateSnapshot, right: PipelineStateSnapshot): boolean {
+  if (left.nextStepId !== right.nextStepId) {
+    return false;
+  }
+
+  if (left.steps.length !== right.steps.length || left.luts.length !== right.luts.length) {
+    return false;
+  }
+
+  for (let index = 0; index < left.steps.length; index += 1) {
+    if (!areStepModelsEqual(left.steps[index], right.steps[index])) {
+      return false;
+    }
+  }
+
+  for (let index = 0; index < left.luts.length; index += 1) {
+    if (!areLutModelsEqual(left.luts[index], right.luts[index])) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+function trimHistoryStack(stack: PipelineStateSnapshot[]): void {
+  while (stack.length > PIPELINE_HISTORY_LIMIT) {
+    stack.shift();
+  }
+}
+
+function syncPipelineHistoryButtons(): void {
+  syncHeaderActionHistoryState(pipelineUndoStack.length > 0, pipelineRedoStack.length > 0);
+}
+
+function clearPipelineHistory(): void {
+  pipelineUndoStack.length = 0;
+  pipelineRedoStack.length = 0;
+  syncPipelineHistoryButtons();
+}
+
+function commitPipelineHistorySnapshot(before: PipelineStateSnapshot): boolean {
+  if (!isPipelineStateSnapshot(before)) {
+    throw new Error('履歴記録前のパイプライン状態が不正です。');
+  }
+
+  const after = capturePipelineSnapshot();
+  if (arePipelineSnapshotsEqual(before, after)) {
+    return false;
+  }
+
+  const lastUndo = pipelineUndoStack[pipelineUndoStack.length - 1];
+  if (!lastUndo || !arePipelineSnapshotsEqual(lastUndo, before)) {
+    pipelineUndoStack.push(clonePipelineSnapshot(before));
+    trimHistoryStack(pipelineUndoStack);
+  }
+
+  pipelineRedoStack.length = 0;
+  syncPipelineHistoryButtons();
+  return true;
+}
+
+function restorePipelineSnapshot(snapshot: PipelineStateSnapshot): void {
+  if (!isPipelineStateSnapshot(snapshot)) {
+    throw new Error('復元対象のパイプライン状態が不正です。');
+  }
+
+  replacePipelineState(clonePipelineSnapshot(snapshot));
+  renderSteps();
+  scheduleApply();
+}
+
+function undoPipeline(): boolean {
+  const previous = pipelineUndoStack.pop();
+  if (!previous) {
+    showStatus(t('main.status.undoUnavailable'), 'info');
+    syncPipelineHistoryButtons();
+    return false;
+  }
+
+  const current = capturePipelineSnapshot();
+  pipelineRedoStack.push(current);
+  trimHistoryStack(pipelineRedoStack);
+
+  restorePipelineSnapshot(previous);
+  syncPipelineHistoryButtons();
+  showStatus(t('main.status.undoApplied'), 'info');
+  return true;
+}
+
+function redoPipeline(): boolean {
+  const next = pipelineRedoStack.pop();
+  if (!next) {
+    showStatus(t('main.status.redoUnavailable'), 'info');
+    syncPipelineHistoryButtons();
+    return false;
+  }
+
+  const current = capturePipelineSnapshot();
+  pipelineUndoStack.push(current);
+  trimHistoryStack(pipelineUndoStack);
+
+  restorePipelineSnapshot(next);
+  syncPipelineHistoryButtons();
+  showStatus(t('main.status.redoApplied'), 'info');
+  return true;
+}
+
+function isEditableEventTarget(target: EventTarget | null): boolean {
+  if (!(target instanceof Element)) {
+    return false;
+  }
+
+  if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target instanceof HTMLSelectElement) {
+    return true;
+  }
+
+  if (target instanceof HTMLElement && target.isContentEditable) {
+    return true;
+  }
+
+  return target.closest('[contenteditable=""], [contenteditable="true"], [contenteditable="plaintext-only"]') !== null;
+}
+
+function handleHistoryShortcutKeydown(event: KeyboardEvent): void {
+  if (!(event instanceof KeyboardEvent)) {
+    return;
+  }
+
+  if (event.defaultPrevented) {
+    return;
+  }
+
+  if (isEditableEventTarget(event.target)) {
+    return;
+  }
+
+  const hasModifier = event.ctrlKey || event.metaKey;
+  if (!hasModifier || event.altKey) {
+    return;
+  }
+
+  const key = event.key.toLowerCase();
+  if (key === 'z') {
+    event.preventDefault();
+    if (event.shiftKey) {
+      redoPipeline();
+      return;
+    }
+
+    undoPipeline();
+    return;
+  }
+
+  if (key === 'y' && !event.shiftKey) {
+    event.preventDefault();
+    redoPipeline();
+  }
+}
+
+function parseAddStepOptions(options: AddStepOptions | undefined): { recordHistory: boolean } {
+  if (options === undefined) {
+    return { recordHistory: true };
+  }
+
+  if (!options || typeof options !== 'object' || Array.isArray(options)) {
+    throw new Error('addStep オプションが不正です。');
+  }
+
+  if (options.recordHistory !== undefined && typeof options.recordHistory !== 'boolean') {
+    throw new Error(`addStep.recordHistory は boolean で指定してください: ${String(options.recordHistory)}`);
+  }
+
+  return {
+    recordHistory: options.recordHistory ?? true,
+  };
 }
 
 function formatDatePart(value: number, digits: number): string {
@@ -500,6 +767,7 @@ function applyLoadedPipeline(loaded: pipelineModel.LoadedPipelineData): void {
     steps: loaded.steps,
     nextStepId: loaded.nextStepId,
   });
+  clearPipelineHistory();
   renderSteps();
   if (applyTimer !== null) {
     clearTimeout(applyTimer);
@@ -575,7 +843,16 @@ function normalizeSteps(): void {
   pipelineModel.normalizeSteps(getPipelineSteps(), getPipelineLuts());
 }
 
-function addStep(): void {
+function addStep(options?: AddStepOptions): void {
+  let parsedOptions: { recordHistory: boolean };
+  try {
+    parsedOptions = parseAddStepOptions(options);
+  } catch (error) {
+    showStatus(pipelineModel.toErrorMessage(error), 'error');
+    return;
+  }
+
+  const before = parsedOptions.recordHistory ? capturePipelineSnapshot() : null;
   const steps = getPipelineSteps();
   const luts = getPipelineLuts();
   const result = pipelineModel.createPipelineStep(steps, luts, getPipelineNextStepId());
@@ -589,11 +866,15 @@ function addStep(): void {
   setPipelineNextStepId(result.nextStepId);
   const step = result.step;
   steps.push(step);
+  if (before) {
+    commitPipelineHistorySnapshot(before);
+  }
   renderSteps();
   scheduleApply();
 }
 
 function duplicateStep(stepId: number): void {
+  const before = capturePipelineSnapshot();
   const result = pipelineModel.duplicatePipelineStep(getPipelineSteps(), stepId, getPipelineNextStepId());
   if (result.error || !result.duplicated) {
     showStatus(result.error ?? t('common.unknownError'), 'error');
@@ -602,6 +883,7 @@ function duplicateStep(stepId: number): void {
 
   setPipelineSteps(result.steps);
   setPipelineNextStepId(result.nextStepId);
+  commitPipelineHistorySnapshot(before);
   renderSteps();
   scheduleApply();
   showStatus(t('main.status.stepDuplicated', { stepId: result.duplicated.id }), 'info');
@@ -622,7 +904,9 @@ function setStepMuted(stepId: number, muted: unknown): void {
     return;
   }
 
+  const before = capturePipelineSnapshot();
   step.muted = muted;
+  commitPipelineHistorySnapshot(before);
   renderSteps();
   scheduleApply();
 }
@@ -646,22 +930,112 @@ function setStepLabel(stepId: number, label: unknown): void {
     return;
   }
 
+  const before = capturePipelineSnapshot();
   step.label = nextLabel;
+  commitPipelineHistorySnapshot(before);
   renderSteps();
 }
 
+function setStepLut(stepId: number, lutId: unknown): void {
+  if (typeof lutId !== 'string') {
+    showStatus(t('pipeline.status.selectedLutIdInvalid'), 'error');
+    return;
+  }
+
+  const validatedLutId = parseLutId(lutId);
+  if (!validatedLutId) {
+    showStatus(t('pipeline.status.selectedLutIdInvalid'), 'error');
+    return;
+  }
+
+  const lutExists = getPipelineLuts().some(lut => lut.id === validatedLutId);
+  if (!lutExists) {
+    showStatus(t('pipeline.status.selectedLutMissing'), 'error');
+    return;
+  }
+
+  const step = getStepById(stepId);
+  if (!step) {
+    return;
+  }
+
+  if (step.lutId === validatedLutId) {
+    return;
+  }
+
+  const before = capturePipelineSnapshot();
+  step.lutId = validatedLutId;
+  commitPipelineHistorySnapshot(before);
+  renderSteps();
+  scheduleApply();
+}
+
+function setStepBlendMode(stepId: number, blendMode: unknown): void {
+  if (typeof blendMode !== 'string' || !pipelineModel.isValidBlendMode(blendMode)) {
+    showStatus(t('pipeline.status.invalidBlendMode', { blendMode: String(blendMode) }), 'error');
+    return;
+  }
+
+  const step = getStepById(stepId);
+  if (!step) {
+    return;
+  }
+
+  if (step.blendMode === blendMode) {
+    return;
+  }
+
+  const before = capturePipelineSnapshot();
+  step.blendMode = blendMode;
+  commitPipelineHistorySnapshot(before);
+  renderSteps();
+  scheduleApply();
+}
+
+function setStepChannelOp(stepId: number, channel: unknown, op: unknown): void {
+  if (typeof channel !== 'string' || !pipelineModel.isValidChannelName(channel)) {
+    showStatus(t('pipeline.status.invalidOp', { op: String(op) }), 'error');
+    return;
+  }
+
+  if (typeof op !== 'string' || !pipelineModel.isValidBlendOp(op)) {
+    showStatus(t('pipeline.status.invalidOp', { op: String(op) }), 'error');
+    return;
+  }
+
+  const step = getStepById(stepId);
+  if (!step) {
+    return;
+  }
+
+  if (step.ops[channel] === op) {
+    return;
+  }
+
+  const before = capturePipelineSnapshot();
+  step.ops[channel] = op;
+  commitPipelineHistorySnapshot(before);
+  stepPreviewSystem?.bumpPipelineVersion();
+  updateStepSwatches();
+  updateShaderCodePanel();
+  scheduleApply();
+}
+
 function removeStep(stepId: number): void {
+  const before = capturePipelineSnapshot();
   const result = pipelineModel.removeStepFromPipeline(getPipelineSteps(), stepId);
   if (!result.removed) {
     showStatus(t('main.status.removeStepNotFound', { stepId }), 'error');
     return;
   }
   setPipelineSteps(result.steps);
+  commitPipelineHistorySnapshot(before);
   renderSteps();
   scheduleApply();
 }
 
 function removeLut(lutId: string): void {
+  const before = capturePipelineSnapshot();
   const result = pipelineModel.removeLutFromPipeline(getPipelineLuts(), getPipelineSteps(), lutId);
   if (result.error) {
     showStatus(result.error, 'error');
@@ -670,6 +1044,7 @@ function removeLut(lutId: string): void {
 
   setPipelineLuts(result.luts);
   setPipelineSteps(result.steps);
+  commitPipelineHistorySnapshot(before);
   renderSteps();
   scheduleApply();
   if (result.removed) {
@@ -753,12 +1128,27 @@ function updateStepSwatches(): void {
 }
 
 function assignParamToSocket(stepId: number, axis: SocketAxis, param: ParamName): boolean {
+  if (!isValidSocketAxis(axis)) {
+    return false;
+  }
+
+  if (!isValidParamName(param)) {
+    return false;
+  }
+
   const step = getStepById(stepId);
   if (!step) return false;
 
+  const currentParam = axis === 'x' ? step.xParam : step.yParam;
+  if (currentParam === param) {
+    return false;
+  }
+
+  const before = capturePipelineSnapshot();
   if (axis === 'x') step.xParam = param;
   else step.yParam = param;
 
+  commitPipelineHistorySnapshot(before);
   renderSteps();
   scheduleApply();
   return true;
@@ -852,6 +1242,7 @@ function getStepDropPlacement(clientY: number): { stepId: number | null; after: 
 }
 
 function moveStepToPosition(stepId: number, targetStepId: number | null, after: boolean): void {
+  const before = capturePipelineSnapshot();
   const steps = getPipelineSteps();
   const draggedExists = steps.some(step => step.id === stepId);
   if (!draggedExists) {
@@ -863,6 +1254,7 @@ function moveStepToPosition(stepId: number, targetStepId: number | null, after: 
   if (!nextSteps) return;
 
   setPipelineSteps(nextSteps);
+  commitPipelineHistorySnapshot(before);
   renderSteps();
   scheduleApply();
   showStatus(t('main.status.stepOrderUpdated'), 'info');
@@ -898,6 +1290,7 @@ function getLutDropPlacement(clientX: number): { lutId: string | null; after: bo
 }
 
 function moveLutToPosition(lutId: string, targetLutId: string | null, after: boolean): void {
+  const before = capturePipelineSnapshot();
   const luts = getPipelineLuts();
   const draggedExists = luts.some(lut => lut.id === lutId);
   if (!draggedExists) {
@@ -909,6 +1302,7 @@ function moveLutToPosition(lutId: string, targetLutId: string | null, after: boo
   if (!nextLuts) return;
 
   setPipelineLuts(nextLuts);
+  commitPipelineHistorySnapshot(before);
   renderSteps();
   scheduleApply();
   showStatus(t('main.status.lutOrderUpdated'), 'info');
@@ -999,13 +1393,22 @@ function setupUI(): void {
   mountLanguageSwitcher($<HTMLElement>('#header-language-switcher'));
   mountHeaderActionGroup($<HTMLElement>('#header-action-group'), {
     initialAutoApplyEnabled: isAutoApplyEnabled(),
+    initialCanUndo: pipelineUndoStack.length > 0,
+    initialCanRedo: pipelineRedoStack.length > 0,
+    onUndoPipeline: () => {
+      undoPipeline();
+    },
+    onRedoPipeline: () => {
+      redoPipeline();
+    },
     onResetPipeline: () => {
       replacePipelineState({
         luts: getPipelineLuts(),
         steps: [],
         nextStepId: 1,
       });
-      addStep();
+      clearPipelineHistory();
+      addStep({ recordHistory: false });
       showStatus(t('main.status.resetStepChain'), 'info');
     },
     onSavePipeline: async () => {
@@ -1119,6 +1522,7 @@ function setupUI(): void {
 
   stepListEl.addEventListener('scroll', () => scheduleConnectionDraw());
   paramColumnEl.addEventListener('scroll', () => scheduleConnectionDraw());
+  window.addEventListener('keydown', handleHistoryShortcutKeydown);
   window.addEventListener('resize', () => {
     scheduleConnectionDraw();
     updateStepSwatches();
@@ -1258,6 +1662,7 @@ window.addEventListener('DOMContentLoaded', () => {
     steps: [],
     nextStepId: 1,
   });
+  clearPipelineHistory();
 
   mountStatusLog($<HTMLElement>('#error-log'), {
     initialMessage: t('main.status.initialPrompt'),
@@ -1286,27 +1691,13 @@ window.addEventListener('DOMContentLoaded', () => {
       setStepLabel(stepId, label);
     },
     onStepLutChange: (stepId, lutId) => {
-      const step = getStepById(stepId);
-      if (!step) return;
-      step.lutId = lutId;
-      renderSteps();
-      scheduleApply();
+      setStepLut(stepId, lutId);
     },
     onStepBlendModeChange: (stepId, blendMode) => {
-      const step = getStepById(stepId);
-      if (!step) return;
-      step.blendMode = blendMode;
-      renderSteps();
-      scheduleApply();
+      setStepBlendMode(stepId, blendMode);
     },
     onStepOpChange: (stepId, channel, op) => {
-      const step = getStepById(stepId);
-      if (!step) return;
-      step.ops[channel] = op;
-      stepPreviewSystem?.bumpPipelineVersion();
-      updateStepSwatches();
-      updateShaderCodePanel();
-      scheduleApply();
+      setStepChannelOp(stepId, channel, op);
     },
     shouldSuppressClick: isClickSuppressed,
     onStatus: showStatus,
@@ -1333,6 +1724,7 @@ window.addEventListener('DOMContentLoaded', () => {
       const selected = files.slice(0, room);
       const errors: string[] = [];
       let added = 0;
+      const before = capturePipelineSnapshot();
 
       for (const file of selected) {
         try {
@@ -1345,6 +1737,7 @@ window.addEventListener('DOMContentLoaded', () => {
       }
 
       normalizeSteps();
+      commitPipelineHistorySnapshot(before);
       renderSteps();
       scheduleApply();
 
@@ -1384,7 +1777,7 @@ window.addEventListener('DOMContentLoaded', () => {
     },
   });
 
-  addStep();
+  addStep({ recordHistory: false });
   applyPipelineNow();
   if (renderSystem && !renderSystem.isRunning()) {
     renderSystem.start();

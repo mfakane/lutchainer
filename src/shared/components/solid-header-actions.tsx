@@ -13,6 +13,10 @@ type StatusReporter = (message: string, kind?: StatusKind) => void;
 
 interface HeaderActionGroupMountOptions {
   initialAutoApplyEnabled: boolean;
+  initialCanUndo: boolean;
+  initialCanRedo: boolean;
+  onUndoPipeline: () => void;
+  onRedoPipeline: () => void;
   onResetPipeline: () => void;
   onSavePipeline: () => void | Promise<void>;
   onApplyPipeline: () => void;
@@ -23,6 +27,10 @@ interface HeaderActionGroupMountOptions {
 
 interface HeaderActionGroupProps {
   autoApplyEnabled: Accessor<boolean>;
+  canUndo: Accessor<boolean>;
+  canRedo: Accessor<boolean>;
+  onUndoPipeline: () => void;
+  onRedoPipeline: () => void;
   onResetPipeline: () => void;
   onSavePipeline: () => void | Promise<void>;
   onApplyPipeline: () => void;
@@ -33,6 +41,7 @@ interface HeaderActionGroupProps {
 
 let disposeHeaderActionGroup: (() => void) | null = null;
 let syncHeaderActionAutoApplyInternal: ((enabled: boolean) => void) | null = null;
+let syncHeaderActionHistoryInternal: ((canUndo: boolean, canRedo: boolean) => void) | null = null;
 let headerActionStatusReporter: StatusReporter = () => undefined;
 
 function isBoolean(value: unknown): value is boolean {
@@ -51,6 +60,18 @@ function ensureMountOptions(value: unknown): asserts value is HeaderActionGroupM
   const options = value as Partial<HeaderActionGroupMountOptions>;
   if (!isBoolean(options.initialAutoApplyEnabled)) {
     throw new Error('ヘッダーアクションの初期自動反映状態が不正です。');
+  }
+  if (!isBoolean(options.initialCanUndo)) {
+    throw new Error('ヘッダーアクションの初期Undo状態が不正です。');
+  }
+  if (!isBoolean(options.initialCanRedo)) {
+    throw new Error('ヘッダーアクションの初期Redo状態が不正です。');
+  }
+  if (typeof options.onUndoPipeline !== 'function') {
+    throw new Error('ヘッダーアクションのUndoコールバックが不正です。');
+  }
+  if (typeof options.onRedoPipeline !== 'function') {
+    throw new Error('ヘッダーアクションのRedoコールバックが不正です。');
   }
   if (typeof options.onResetPipeline !== 'function') {
     throw new Error('ヘッダーアクションの初期化コールバックが不正です。');
@@ -151,6 +172,20 @@ function HeaderActionGroup(props: HeaderActionGroupProps): JSX.Element {
 
   return (
     <>
+      <button
+        class="btn-secondary"
+        id="btn-undo-pipeline"
+        aria-label={tr('header.undoAria')}
+        disabled={!props.canUndo()}
+        onClick={props.onUndoPipeline}
+      >{tr('header.undo')}</button>
+      <button
+        class="btn-secondary"
+        id="btn-redo-pipeline"
+        aria-label={tr('header.redoAria')}
+        disabled={!props.canRedo()}
+        onClick={props.onRedoPipeline}
+      >{tr('header.redo')}</button>
       <button class="btn-secondary" id="btn-reset-pipeline" onClick={props.onResetPipeline}>{tr('header.reset')}</button>
       <button class="btn-secondary" id="btn-load-pipeline" onClick={openPipelineFilePicker}>{tr('header.load')}</button>
       <button class="btn-secondary" id="btn-save-pipeline" onClick={() => void handleSavePipeline()}>{tr('header.save')}</button>
@@ -248,6 +283,8 @@ export function mountHeaderActionGroup(target: HTMLElement, options: HeaderActio
 
   disposeHeaderActionGroup = render(() => {
     const [autoApplyEnabled, setAutoApplyEnabled] = createSignal(options.initialAutoApplyEnabled);
+    const [canUndo, setCanUndo] = createSignal(options.initialCanUndo);
+    const [canRedo, setCanRedo] = createSignal(options.initialCanRedo);
 
     syncHeaderActionAutoApplyInternal = enabled => {
       if (!isBoolean(enabled)) {
@@ -258,6 +295,21 @@ export function mountHeaderActionGroup(target: HTMLElement, options: HeaderActio
         return;
       }
       setAutoApplyEnabled(enabled);
+    };
+
+    syncHeaderActionHistoryInternal = (nextCanUndo, nextCanRedo) => {
+      if (!isBoolean(nextCanUndo) || !isBoolean(nextCanRedo)) {
+        headerActionStatusReporter(
+          t('header.status.invalidHistorySyncValue', {
+            value: `canUndo=${String(nextCanUndo)}, canRedo=${String(nextCanRedo)}`,
+          }),
+          'error',
+        );
+        return;
+      }
+
+      setCanUndo(nextCanUndo);
+      setCanRedo(nextCanRedo);
     };
 
     const handleAutoApplyChange = (enabled: boolean): void => {
@@ -276,6 +328,10 @@ export function mountHeaderActionGroup(target: HTMLElement, options: HeaderActio
     return (
       <HeaderActionGroup
         autoApplyEnabled={autoApplyEnabled}
+        canUndo={canUndo}
+        canRedo={canRedo}
+        onUndoPipeline={options.onUndoPipeline}
+        onRedoPipeline={options.onRedoPipeline}
         onResetPipeline={options.onResetPipeline}
         onSavePipeline={options.onSavePipeline}
         onApplyPipeline={options.onApplyPipeline}
@@ -301,4 +357,22 @@ export function syncHeaderActionAutoApplyState(enabled: boolean): void {
   }
 
   syncHeaderActionAutoApplyInternal(enabled);
+}
+
+export function syncHeaderActionHistoryState(canUndo: boolean, canRedo: boolean): void {
+  if (!syncHeaderActionHistoryInternal) {
+    return;
+  }
+
+  if (!isBoolean(canUndo) || !isBoolean(canRedo)) {
+    headerActionStatusReporter(
+      t('header.status.invalidHistorySyncArg', {
+        value: `canUndo=${String(canUndo)}, canRedo=${String(canRedo)}`,
+      }),
+      'error',
+    );
+    return;
+  }
+
+  syncHeaderActionHistoryInternal(canUndo, canRedo);
 }
