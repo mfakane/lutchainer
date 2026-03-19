@@ -226,6 +226,16 @@ export const PARAM_EVALUATORS: Record<ParamName, ParamEvaluator> = {
     hlslExpr: 'facing',
     evaluate: (_current, context) => context.facing,
   },
+  nDotH: {
+    glslExpr: 'nDotH',
+    hlslExpr: 'nDotH',
+    evaluate: (_current, context) => context.nDotH,
+  },
+  linearDepth: {
+    glslExpr: 'linearDepth',
+    hlslExpr: 'linearDepth',
+    evaluate: (_current, context) => context.linearDepth,
+  },
   r: {
     glslExpr: 'color.r',
     hlslExpr: 'color.r',

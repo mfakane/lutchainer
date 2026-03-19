@@ -1,16 +1,16 @@
 import type { MaterialSettings } from '../pipeline/pipeline-model';
 import * as shaderGenerator from '../shader/shader-generator';
 import {
-    type Color,
-    type LutModel,
-    type StepModel,
-    type StepParamContext,
-    type StepRuntimeModel,
+  type Color,
+  type LutModel,
+  type StepModel,
+  type StepParamContext,
+  type StepRuntimeModel,
 } from './step-model';
 import { StepPreviewRenderer } from './step-preview-renderer';
 import {
-    composeColorFromSteps,
-    resolveStepRuntimeModels,
+  composeColorFromSteps,
+  resolveStepRuntimeModels,
 } from './step-runtime';
 
 interface StepPreviewSystemOptions {
@@ -234,9 +234,15 @@ export function createStepPreviewSystem(options: StepPreviewSystemOptions): Step
           const hy = hLength > 1e-6 ? hyRaw / hLength : 0;
           const hz = hLength > 1e-6 ? hzRaw / hLength : 1;
 
-          const specular = Math.pow(Math.max(nx * hx + ny * hy + nz * hz, 0), minSpecPower) * materialSettings.specularStrength;
+          const nDotH = Math.max(nx * hx + ny * hy + nz * hz, 0);
+          const specular = Math.pow(nDotH, minSpecPower) * materialSettings.specularStrength;
           const facing = Math.max(nx * vx + ny * vy + nz * vz, 0);
           const fresnel = Math.pow(1.0 - facing, minFresnelPower) * materialSettings.fresnelStrength;
+          const cameraDist = Math.hypot(cameraPos[0], cameraPos[1], cameraPos[2]);
+          const nearDepth = Math.max(0, cameraDist - 1);
+          const farDepth = cameraDist + 1;
+          const depthDenom = Math.max(1e-4, farDepth - nearDepth);
+          const linearDepth = clamp01((viewLength - nearDepth) / depthDenom);
 
           let texU = Math.atan2(nz, nx) / (Math.PI * 2);
           if (texU < 0) texU += 1;
@@ -248,6 +254,8 @@ export function createStepPreviewSystem(options: StepPreviewSystemOptions): Step
             specular,
             fresnel,
             facing,
+            nDotH,
+            linearDepth,
             texU,
             texV,
           });

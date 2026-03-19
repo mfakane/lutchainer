@@ -19,6 +19,8 @@ export type ParamName =
   | 'halfLambert'
   | 'fresnel'
   | 'facing'
+  | 'nDotH'
+  | 'linearDepth'
   | 'r'
   | 'g'
   | 'b'
@@ -66,6 +68,8 @@ export interface StepParamContext {
   specular: number;
   fresnel: number;
   facing: number;
+  nDotH: number;
+  linearDepth: number;
   texU: number;
   texV: number;
 }

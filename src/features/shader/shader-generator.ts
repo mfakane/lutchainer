@@ -332,9 +332,14 @@ void main() {
     float lambert = max(dot(N, L), 0.0);
     float halfLambert = lambert * 0.5 + 0.5;
     vec3 H = normalize(L + V);
-    float specular = pow(max(dot(N, H), 0.0), specularPower) * specularStrength;
+    float nDotH = max(dot(N, H), 0.0);
+    float specular = pow(nDotH, specularPower) * specularStrength;
     float facing = max(dot(N, V), 0.0);
     float fresnel = pow(1.0 - facing, fresnelPower) * fresnelStrength;
+    float cameraDist = length(cameraPos);
+    float nearDepth = max(0.0, cameraDist - 1.0);
+    float farDepth = cameraDist + 1.0;
+    float linearDepth = clamp((length(cameraPos - N) - nearDepth) / max(1.0e-4, farDepth - nearDepth), 0.0, 1.0);
 
     float texU = atan(nz, nx) / (PI * 2.0);
     if (texU < 0.0) texU += 1.0;
@@ -413,9 +418,14 @@ void main() {
   float lambert = max(dot(N, L), 0.0);
   float halfLambert = lambert * 0.5 + 0.5;
   vec3 H = normalize(L + V);
-  float specular = pow(max(dot(N, H), 0.0), max(1.0, specularPower)) * specularStrength;
+  float nDotH = max(dot(N, H), 0.0);
+  float specular = pow(nDotH, max(1.0, specularPower)) * specularStrength;
   float facing = max(dot(N, V), 0.0);
   float fresnel = pow(1.0 - facing, max(0.01, fresnelPower)) * fresnelStrength;
+  float cameraDist = length(u_cameraPos);
+  float nearDepth = max(0.0, cameraDist - 1.0);
+  float farDepth = cameraDist + 1.0;
+  float linearDepth = clamp((length(u_cameraPos - v_worldPos) - nearDepth) / max(1.0e-4, farDepth - nearDepth), 0.0, 1.0);
 
   vec3 color = clamp(materialBaseColor, 0.0, 1.0);
 
@@ -544,9 +554,14 @@ float4 PSMain(PSInput input) : SV_TARGET {
   float lambert = max(dot(N, L), 0.0);
   float halfLambert = lambert * 0.5 + 0.5;
   float3 H = normalize(L + V);
-  float specular = pow(max(dot(N, H), 0.0), max(1.0, specularPower)) * specularStrength;
+  float nDotH = max(dot(N, H), 0.0);
+  float specular = pow(nDotH, max(1.0, specularPower)) * specularStrength;
   float facing = max(dot(N, V), 0.0);
   float fresnel = pow(1.0 - facing, max(0.01, fresnelPower)) * fresnelStrength;
+  float cameraDist = length(u_cameraPos);
+  float nearDepth = max(0.0, cameraDist - 1.0);
+  float farDepth = cameraDist + 1.0;
+  float linearDepth = saturate((length(u_cameraPos - input.worldPos) - nearDepth) / max(1.0e-4, farDepth - nearDepth));
 
   float3 color = saturate(materialBaseColor);
 

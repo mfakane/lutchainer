@@ -1,16 +1,16 @@
 import { strToU8, unzipSync, zipSync } from 'fflate';
 import {
-    BLEND_MODES,
-    BLEND_OPS,
-    CHANNELS,
-    DEFAULT_OPS,
-    type BlendMode,
-    type BlendOp,
-    type ChannelName,
-    type Color,
-    type LutModel,
-    type ParamName,
-    type StepModel,
+  BLEND_MODES,
+  BLEND_OPS,
+  CHANNELS,
+  DEFAULT_OPS,
+  type BlendMode,
+  type BlendOp,
+  type ChannelName,
+  type Color,
+  type LutModel,
+  type ParamName,
+  type StepModel,
 } from '../step/step-model';
 
 export interface ParamDef {
@@ -131,11 +131,17 @@ export interface RemoveLutFromPipelineResult {
 }
 
 export const PARAMS: ParamDef[] = [
-  { key: 'lightness', label: 'Lightness', description: 'Lambert factor dot(N, L)' },
-  { key: 'specular', label: 'Specular', description: 'Specular lighting factor' },
-  { key: 'halfLambert', label: 'Half-Lambert', description: '0.5 * NdotL + 0.5' },
-  { key: 'fresnel', label: 'Fresnel', description: 'View-dependent edge factor' },
-  { key: 'facing', label: 'Facing', description: 'N dot V facing ratio' },
+  { key: 'lightness', label: 'Lightness (Lambert)', description: 'dot(N, L)' },
+  { key: 'specular', label: 'Specular', description: 'pow(NdotH, specularPower) * specularStrength' },
+  { key: 'halfLambert', label: 'Half-Lambert', description: '0.5 * dot(N, L) + 0.5' },
+  { key: 'fresnel', label: 'Fresnel', description: 'pow(1 - dot(N, V), fresnelPower) * fresnelStrength' },
+  { key: 'facing', label: 'Facing', description: 'dot(N, V)' },
+  { key: 'nDotH', label: 'NdotH', description: 'dot(N, H), H = normalize(L + V)' },
+  {
+    key: 'linearDepth',
+    label: 'Linear Depth',
+    description: '((distance(C, P) - near) / (far - near)), near=|C|-1, far=|C|+1',
+  },
   { key: 'r', label: 'R', description: 'Current color red channel' },
   { key: 'g', label: 'G', description: 'Current color green channel' },
   { key: 'b', label: 'B', description: 'Current color blue channel' },
@@ -152,7 +158,7 @@ export const PARAM_GROUPS: ParamGroupDef[] = [
     label: 'Lighting / Derived',
     description: 'ライティングや視線から計算される値',
     tone: 'default',
-    params: ['lightness', 'specular', 'halfLambert', 'fresnel', 'facing'],
+    params: ['lightness', 'specular', 'halfLambert', 'fresnel', 'facing', 'nDotH', 'linearDepth'],
   },
   {
     key: 'feedback-rgb',
