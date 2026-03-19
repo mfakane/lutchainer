@@ -21,6 +21,8 @@ interface BufferedGeometry {
 }
 
 export interface MaterialUniformValues {
+  baseColor: readonly [number, number, number];
+  ambientColor: readonly [number, number, number];
   specularStrength: number;
   specularPower: number;
   fresnelStrength: number;
@@ -178,6 +180,18 @@ export class Renderer {
     uni2f('u_resolution', gl.drawingBufferWidth, gl.drawingBufferHeight);
     uni3f('u_cameraPos', cameraPos[0], cameraPos[1], cameraPos[2]);
     uni3f('u_lightDir', lightDir[0], lightDir[1], lightDir[2]);
+    uni3f(
+      'u_materialBaseColor',
+      Number.isFinite(materialUniforms.baseColor[0]) ? materialUniforms.baseColor[0] : 0,
+      Number.isFinite(materialUniforms.baseColor[1]) ? materialUniforms.baseColor[1] : 0,
+      Number.isFinite(materialUniforms.baseColor[2]) ? materialUniforms.baseColor[2] : 0,
+    );
+    uni3f(
+      'u_ambientColor',
+      Number.isFinite(materialUniforms.ambientColor[0]) ? materialUniforms.ambientColor[0] : 0,
+      Number.isFinite(materialUniforms.ambientColor[1]) ? materialUniforms.ambientColor[1] : 0,
+      Number.isFinite(materialUniforms.ambientColor[2]) ? materialUniforms.ambientColor[2] : 0,
+    );
     uni1f('u_specularStrength', Number.isFinite(materialUniforms.specularStrength) ? materialUniforms.specularStrength : 0);
     uni1f('u_specularPower', Number.isFinite(materialUniforms.specularPower) ? materialUniforms.specularPower : 1);
     uni1f('u_fresnelStrength', Number.isFinite(materialUniforms.fresnelStrength) ? materialUniforms.fresnelStrength : 0);

@@ -550,8 +550,6 @@ export function buildFragmentShader(input: ShaderBuildInput): string {
   assertValidShaderBuildInput(input);
 
   const samplerDecl = input.luts.map((_, index) => `uniform sampler2D u_lut${index};`).join('\n');
-  const materialBaseColor = glslVec3(input.materialSettings.baseColor);
-  const ambientColor = glslVec3(input.materialSettings.ambientColor);
   const sampleBody = buildGlslSampleBody(input.luts);
   const stepModels = resolveStepRuntimeModels(input.steps, input.luts);
   const stepCode = buildFragmentStepCode(stepModels);
@@ -564,6 +562,8 @@ uniform float u_time;
 uniform vec2  u_resolution;
 uniform vec3  u_cameraPos;
 uniform vec3  u_lightDir;
+uniform vec3  u_materialBaseColor;
+uniform vec3  u_ambientColor;
 uniform float u_specularStrength;
 uniform float u_specularPower;
 uniform float u_fresnelStrength;
@@ -594,8 +594,8 @@ vec4 sampleLut(int lutIndex, vec2 uv) {
 }
 
 void main() {
-  vec3 materialBaseColor = ${materialBaseColor};
-  vec3 ambientColor = ${ambientColor};
+  vec3 materialBaseColor = clamp(u_materialBaseColor, 0.0, 1.0);
+  vec3 ambientColor = clamp(u_ambientColor, 0.0, 1.0);
 
   ${fragmentParamLines.join('\n  ')}
 
@@ -613,8 +613,6 @@ export function buildHlslShader(input: ShaderBuildInput): string {
   assertValidShaderBuildInput(input);
 
   const textureDecl = input.luts.map((_, index) => `Texture2D u_lut${index} : register(t${index});`).join('\n');
-  const materialBaseColor = hlslVec3(input.materialSettings.baseColor);
-  const ambientColor = hlslVec3(input.materialSettings.ambientColor);
   const sampleBody = buildHlslSampleBody(input.luts);
   const stepModels = resolveStepRuntimeModels(input.steps, input.luts);
   const stepCode = buildHlslStepCode(stepModels);
@@ -631,6 +629,8 @@ cbuffer SceneUniforms : register(b0)
   float2 u_resolution;
   float3 u_cameraPos;
   float3 u_lightDir;
+  float3 u_materialBaseColor;
+  float3 u_ambientColor;
   float u_specularStrength;
   float u_specularPower;
   float u_fresnelStrength;
@@ -715,8 +715,8 @@ PSInput VSMain(VSInput input) {
 }
 
 float4 PSMain(PSInput input) : SV_TARGET {
-  float3 materialBaseColor = ${materialBaseColor};
-  float3 ambientColor = ${ambientColor};
+  float3 materialBaseColor = saturate(u_materialBaseColor);
+  float3 ambientColor = saturate(u_ambientColor);
 
   ${hlslParamLines.join('\n  ')}
 
