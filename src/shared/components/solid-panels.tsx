@@ -1,4 +1,4 @@
-import { For, createSignal, type Accessor, type JSX } from 'solid-js';
+import { For, Show, createSignal, type Accessor, type JSX } from 'solid-js';
 import { render } from 'solid-js/web';
 import * as pipelineModel from '../../features/pipeline/pipeline-model';
 import { t, useLanguage } from '../i18n';
@@ -323,21 +323,17 @@ function MaterialPanel(props: MaterialPanelProps): JSX.Element {
     props.commitSettings(next);
   };
 
-  const handleMaterialPresetChange = (event: Event): void => {
-    const select = event.currentTarget as HTMLSelectElement | null;
-    if (!(select instanceof HTMLSelectElement)) {
-      props.onStatus(tr('panel.status.materialPresetSelectMissing'), 'error');
-      return;
-    }
+  const [isMaterialPresetMenuOpen, setIsMaterialPresetMenuOpen] = createSignal(false);
 
-    const preset = getMaterialPresetByKey(select.value);
-    if (!preset || !isValidMaterialSettings(preset.settings)) {
-      props.onStatus(tr('panel.status.materialPresetInvalidValue', { value: String(select.value) }), 'error');
+  const applyMaterialPreset = (preset: MaterialPresetDefinition): void => {
+    if (!isValidMaterialSettings(preset.settings)) {
+      props.onStatus(tr('panel.status.materialPresetInvalidValue', { value: preset.key }), 'error');
       return;
     }
 
     props.commitSettings(cloneMaterialSettings(preset.settings));
     props.onStatus(tr('panel.status.materialPresetApplied', { name: tr(preset.labelKey) }), 'info');
+    setIsMaterialPresetMenuOpen(false);
   };
 
   return (
@@ -347,23 +343,33 @@ function MaterialPanel(props: MaterialPanelProps): JSX.Element {
           <div class="section-label">Material</div>
           <div class="material-help">{tr('panel.materialHelp')}</div>
         </div>
-        <label class="panel-preset-row">
-          <span class="panel-preset-label">{tr('panel.materialPreset')}</span>
-          <select
-            class="panel-preset-select"
-            id="material-preset-select"
+        <div class="material-action-menu-wrap">
+          <button
+            class="material-kebab-btn"
+            id="material-preset-btn"
             aria-label={tr('panel.materialPreset')}
-            onChange={handleMaterialPresetChange}
+            aria-haspopup="menu"
+            aria-expanded={isMaterialPresetMenuOpen()}
+            onClick={() => setIsMaterialPresetMenuOpen(!isMaterialPresetMenuOpen())}
           >
-            <optgroup label={tr('panel.preset.groupLabel')}>
+            ･･･
+          </button>
+          <Show when={isMaterialPresetMenuOpen()}>
+            <div class="material-kebab-menu" role="menu">
+              <div class="material-kebab-header">{tr('panel.materialPreset')}</div>
               <For each={MATERIAL_PRESETS}>
                 {preset => (
-                  <option value={preset.key}>{tr(preset.labelKey)}</option>
+                  <button
+                    class="material-kebab-item"
+                    onClick={() => applyMaterialPreset(preset)}
+                  >
+                    {tr(preset.labelKey)}
+                  </button>
                 )}
               </For>
-            </optgroup>
-          </select>
-        </label>
+            </div>
+          </Show>
+        </div>
       </div>
 
       <div class="material-grid">
@@ -458,21 +464,17 @@ function LightPanel(props: LightPanelProps): JSX.Element {
     });
   };
 
-  const handleLightPresetChange = (event: Event): void => {
-    const select = event.currentTarget as HTMLSelectElement | null;
-    if (!(select instanceof HTMLSelectElement)) {
-      props.onStatus(tr('panel.status.lightPresetSelectMissing'), 'error');
-      return;
-    }
+  const [isLightPresetMenuOpen, setIsLightPresetMenuOpen] = createSignal(false);
 
-    const preset = getLightPresetByKey(select.value);
-    if (!preset || !isValidLightSettings(preset.settings)) {
-      props.onStatus(tr('panel.status.lightPresetInvalidValue', { value: String(select.value) }), 'error');
+  const applyLightPreset = (preset: LightPresetDefinition): void => {
+    if (!isValidLightSettings(preset.settings)) {
+      props.onStatus(tr('panel.status.lightPresetInvalidValue', { value: preset.key }), 'error');
       return;
     }
 
     props.commitSettings(cloneLightSettings(preset.settings));
     props.onStatus(tr('panel.status.lightPresetApplied', { name: tr(preset.labelKey) }), 'info');
+    setIsLightPresetMenuOpen(false);
   };
 
   return (
@@ -484,23 +486,33 @@ function LightPanel(props: LightPanelProps): JSX.Element {
         </div>
 
         <div class="light-panel-actions">
-          <label class="panel-preset-row">
-            <span class="panel-preset-label">{tr('panel.lightPreset')}</span>
-            <select
-              class="panel-preset-select"
-              id="light-preset-select"
+          <div class="light-action-menu-wrap">
+            <button
+              class="light-kebab-btn"
+              id="light-preset-btn"
               aria-label={tr('panel.lightPreset')}
-              onChange={handleLightPresetChange}
+              aria-expanded={isLightPresetMenuOpen()}
+              aria-haspopup="menu"
+              onClick={() => setIsLightPresetMenuOpen(!isLightPresetMenuOpen())}
             >
-              <optgroup label={tr('panel.preset.groupLabel')}>
+              ･･･
+            </button>
+            <Show when={isLightPresetMenuOpen()}>
+              <div class="light-kebab-menu" role="menu">
+                <div class="light-kebab-header">{tr('panel.lightPreset')}</div>
                 <For each={LIGHT_PRESETS}>
                   {preset => (
-                    <option value={preset.key}>{tr(preset.labelKey)}</option>
+                    <button
+                      class="light-kebab-item"
+                      onClick={() => applyLightPreset(preset)}
+                    >
+                      {tr(preset.labelKey)}
+                    </button>
                   )}
                 </For>
-              </optgroup>
-            </select>
-          </label>
+              </div>
+            </Show>
+          </div>
 
           <button
             type="button"
