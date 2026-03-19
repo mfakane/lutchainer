@@ -13,7 +13,20 @@
       "presentation": {
         "reveal": "always",
         "panel": "shared",
-        "showReuseMessage": false,
+        "showReuseMessage": true,
+        "clear": true
+      }
+    },
+    {
+      "label": "TypeScript: Type Check",
+      "type": "shell",
+      "command": "npx tsc --noEmit",
+      "group": "build",
+      "problemMatcher": "$tsc",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "showReuseMessage": true,
         "clear": true
       }
     }
