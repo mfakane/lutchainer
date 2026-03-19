@@ -1,5 +1,6 @@
 import type { Geometry } from '../utils/geometry';
 import type { Mat3, Mat4 } from '../utils/math';
+import { applyLutTextures } from './lut-texture-utils';
 
 export interface ShaderError {
   type: 'vertex' | 'fragment' | 'link';
@@ -42,32 +43,18 @@ export class Renderer {
   }
 
   setLutTextures(sources: TexImageSource[]): string | null {
-    const gl = this.gl;
-    if (sources.length > this.maxTextureUnits) {
-      return `LUT 数が多すぎます (${sources.length})。この環境の上限は ${this.maxTextureUnits} です。`;
+    const result = applyLutTextures({
+      gl: this.gl,
+      currentTextures: this.lutTextures,
+      sources,
+      maxTextureUnits: this.maxTextureUnits,
+    });
+
+    if (result.shouldUpdateTextures) {
+      this.lutTextures = result.textures;
     }
 
-    this.lutTextures.forEach(tex => gl.deleteTexture(tex));
-    this.lutTextures = [];
-
-    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, 0);
-    for (const src of sources) {
-      const texture = gl.createTexture();
-      if (!texture) {
-        this.lutTextures.forEach(tex => gl.deleteTexture(tex));
-        this.lutTextures = [];
-        return 'LUT テクスチャの作成に失敗しました。';
-      }
-      gl.bindTexture(gl.TEXTURE_2D, texture);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, src);
-      this.lutTextures.push(texture);
-    }
-    gl.bindTexture(gl.TEXTURE_2D, null);
-    return null;
+    return result.error;
   }
 
   compileProgram(vertSrc: string, fragSrc: string): CompileResult {

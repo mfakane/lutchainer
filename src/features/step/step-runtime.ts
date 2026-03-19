@@ -1,17 +1,17 @@
 import {
-    CUSTOM_HSV_CHANNELS,
-    CUSTOM_RGB_CHANNELS,
-    type BlendMode,
-    type BlendModeStrategy,
-    type BlendOp,
-    type ChannelName,
-    type Color,
-    type LutModel,
-    type ParamEvaluator,
-    type ParamName,
-    type StepModel,
-    type StepParamContext,
-    type StepRuntimeModel,
+  CUSTOM_HSV_CHANNELS,
+  CUSTOM_RGB_CHANNELS,
+  type BlendMode,
+  type BlendModeStrategy,
+  type BlendOp,
+  type ChannelName,
+  type Color,
+  type LutModel,
+  type ParamEvaluator,
+  type ParamName,
+  type StepModel,
+  type StepParamContext,
+  type StepRuntimeModel,
 } from './step-model';
 
 function clamp01(v: number): number {
@@ -124,21 +124,14 @@ function emitTargetColorWithLerpHlsl(
 }
 
 export function opExprGlsl(op: BlendOp, left: string, right: string): string {
-  switch (op) {
-    case 'none':
-      return left;
-    case 'replace':
-      return right;
-    case 'add':
-      return `(${left} + ${right})`;
-    case 'subtract':
-      return `(${left} - ${right})`;
-    case 'multiply':
-      return `(${left} * ${right})`;
-  }
+  return opExpr(op, left, right);
 }
 
 export function opExprHlsl(op: BlendOp, left: string, right: string): string {
+  return opExpr(op, left, right);
+}
+
+function opExpr(op: BlendOp, left: string, right: string): string {
   switch (op) {
     case 'none':
       return left;

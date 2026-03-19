@@ -1,10 +1,10 @@
 import { type MaterialSettings } from '../pipeline/pipeline-model';
 import type { LutModel, StepModel, StepRuntimeModel } from '../step/step-model';
 import {
-    getBlendModeStrategy,
-    paramExprGlsl,
-    paramExprHlsl,
-    resolveStepRuntimeModels,
+  getBlendModeStrategy,
+  paramExprGlsl,
+  paramExprHlsl,
+  resolveStepRuntimeModels,
 } from '../step/step-runtime';
 
 export const DEFAULT_VERT = `// SPDX-License-Identifier: CC0-1.0
@@ -85,34 +85,54 @@ function hlslVec3(value: readonly [number, number, number]): string {
   return `float3(${glslFloat(value[0])}, ${glslFloat(value[1])}, ${glslFloat(value[2])})`;
 }
 
-function buildGlslSampleBody(luts: LutModel[]): string {
+function buildSampleBody(
+  luts: LutModel[],
+  fallbackExpr: string,
+  sampleExprAtIndex: (index: number) => string,
+): string {
+  if (!Array.isArray(luts)) {
+    throw new Error('LUT list が不正です。');
+  }
+  if (typeof fallbackExpr !== 'string' || fallbackExpr.trim().length === 0) {
+    throw new Error('fallbackExpr が不正です。');
+  }
+  if (typeof sampleExprAtIndex !== 'function') {
+    throw new Error('sampleExprAtIndex が不正です。');
+  }
+
   if (luts.length === 0) {
-    return 'return vec4(1.0, 1.0, 1.0, 1.0);';
+    return `return ${fallbackExpr};`;
   }
 
   const lines: string[] = [];
   for (let index = 0; index < luts.length; index++) {
-    const sampleExpr = `texture2D(u_lut${index}, uv)`;
+    const sampleExpr = sampleExprAtIndex(index);
+    if (typeof sampleExpr !== 'string' || sampleExpr.trim().length === 0) {
+      throw new Error(`sampleExprAtIndex(${index}) が不正です。`);
+    }
+
     if (index === 0) lines.push(`if (lutIndex == ${index}) return ${sampleExpr};`);
     else lines.push(`else if (lutIndex == ${index}) return ${sampleExpr};`);
   }
-  lines.push('return texture2D(u_lut0, uv);');
+
+  lines.push(`return ${sampleExprAtIndex(0)};`);
   return lines.join('\n  ');
 }
 
-function buildHlslSampleBody(luts: LutModel[]): string {
-  if (luts.length === 0) {
-    return 'return float4(1.0, 1.0, 1.0, 1.0);';
-  }
+function buildGlslSampleBody(luts: LutModel[]): string {
+  return buildSampleBody(
+    luts,
+    'vec4(1.0, 1.0, 1.0, 1.0)',
+    index => `texture2D(u_lut${index}, uv)`,
+  );
+}
 
-  const lines: string[] = [];
-  for (let index = 0; index < luts.length; index++) {
-    const sampleExpr = `u_lut${index}.SampleLevel(u_lutSampler, uv, 0.0)`;
-    if (index === 0) lines.push(`if (lutIndex == ${index}) return ${sampleExpr};`);
-    else lines.push(`else if (lutIndex == ${index}) return ${sampleExpr};`);
-  }
-  lines.push('return u_lut0.SampleLevel(u_lutSampler, uv, 0.0);');
-  return lines.join('\n  ');
+function buildHlslSampleBody(luts: LutModel[]): string {
+  return buildSampleBody(
+    luts,
+    'float4(1.0, 1.0, 1.0, 1.0)',
+    index => `u_lut${index}.SampleLevel(u_lutSampler, uv, 0.0)`,
+  );
 }
 
 function buildPreviewStepCode(stepModels: StepRuntimeModel[]): string[] {

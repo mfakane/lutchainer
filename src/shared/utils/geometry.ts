@@ -5,6 +5,48 @@ export interface Geometry {
   indices: Uint16Array;
 }
 
+function buildGeometry(
+  positions: readonly number[],
+  normals: readonly number[],
+  texcoords: readonly number[],
+  indices: readonly number[],
+): Geometry {
+  if (!Array.isArray(positions) || !Array.isArray(normals) || !Array.isArray(texcoords) || !Array.isArray(indices)) {
+    throw new Error('Geometry 配列の入力が不正です。');
+  }
+
+  return {
+    positions: new Float32Array(positions),
+    normals: new Float32Array(normals),
+    texcoords: new Float32Array(texcoords),
+    indices: new Uint16Array(indices),
+  };
+}
+
+function appendGridQuadIndices(
+  indices: number[],
+  rowSegments: number,
+  columnSegments: number,
+): void {
+  if (!Array.isArray(indices)) {
+    throw new Error('indices が不正です。');
+  }
+  if (!Number.isInteger(rowSegments) || rowSegments < 0) {
+    throw new Error('rowSegments が不正です。');
+  }
+  if (!Number.isInteger(columnSegments) || columnSegments < 0) {
+    throw new Error('columnSegments が不正です。');
+  }
+
+  for (let row = 0; row < rowSegments; row++) {
+    for (let column = 0; column < columnSegments; column++) {
+      const a = row * (columnSegments + 1) + column;
+      const b = a + columnSegments + 1;
+      indices.push(a, a + 1, b, b, a + 1, b + 1);
+    }
+  }
+}
+
 /** UV sphere */
 export function createSphere(radius = 1.0, latSegs = 32, lonSegs = 32): Geometry {
   const positions: number[] = [];
@@ -28,20 +70,9 @@ export function createSphere(radius = 1.0, latSegs = 32, lonSegs = 32): Geometry
     }
   }
 
-  for (let lat = 0; lat < latSegs; lat++) {
-    for (let lon = 0; lon < lonSegs; lon++) {
-      const a = lat * (lonSegs + 1) + lon;
-      const b = a + lonSegs + 1;
-      indices.push(a, a + 1, b, b, a + 1, b + 1);
-    }
-  }
+  appendGridQuadIndices(indices, latSegs, lonSegs);
 
-  return {
-    positions: new Float32Array(positions),
-    normals: new Float32Array(normals),
-    texcoords: new Float32Array(texcoords),
-    indices: new Uint16Array(indices),
-  };
+  return buildGeometry(positions, normals, texcoords, indices);
 }
 
 /** Axis-aligned cube */
@@ -74,12 +105,7 @@ export function createCube(size = 1.0): Geometry {
     indices.push(base, base + 1, base + 2, base, base + 2, base + 3);
   });
 
-  return {
-    positions: new Float32Array(positions),
-    normals: new Float32Array(normals),
-    texcoords: new Float32Array(texcoords),
-    indices: new Uint16Array(indices),
-  };
+  return buildGeometry(positions, normals, texcoords, indices);
 }
 
 /** Torus (doughnut) */
@@ -106,18 +132,7 @@ export function createTorus(majorR = 0.6, minorR = 0.25, majorSegs = 48, minorSe
     }
   }
 
-  for (let i = 0; i < majorSegs; i++) {
-    for (let j = 0; j < minorSegs; j++) {
-      const a = i * (minorSegs + 1) + j;
-      const b = a + minorSegs + 1;
-      indices.push(a, a + 1, b, b, a + 1, b + 1);
-    }
-  }
+  appendGridQuadIndices(indices, majorSegs, minorSegs);
 
-  return {
-    positions: new Float32Array(positions),
-    normals: new Float32Array(normals),
-    texcoords: new Float32Array(texcoords),
-    indices: new Uint16Array(indices),
-  };
+  return buildGeometry(positions, normals, texcoords, indices);
 }

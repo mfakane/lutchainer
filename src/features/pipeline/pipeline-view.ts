@@ -1,14 +1,14 @@
 import { BLEND_MODES, BLEND_OPS, type LutModel, type ParamName, type StepModel } from '../step/step-model';
 import { getCustomChannelsForBlendMode } from '../step/step-runtime';
 import {
-    LIGHT_RANGE_BINDINGS,
-    MATERIAL_RANGE_BINDINGS,
-    PARAM_GROUPS,
-    colorToHex,
-    getParamDef,
-    getParamLabel,
-    type LightSettings,
-    type MaterialSettings,
+  LIGHT_RANGE_BINDINGS,
+  MATERIAL_RANGE_BINDINGS,
+  PARAM_GROUPS,
+  colorToHex,
+  getParamDef,
+  getParamLabel,
+  type LightSettings,
+  type MaterialSettings,
 } from './pipeline-model';
 
 export type SocketAxis = 'x' | 'y';
@@ -608,8 +608,12 @@ export function updateReorderDropIndicators<TId extends string | number>(
   targetEl.classList.add(state.dropAfter ? binding.dropAfterClass : binding.dropBeforeClass);
 }
 
-export function clearStepDropIndicators(stepListEl: HTMLElement): void {
-  clearReorderDropIndicators<number>({
+function createStepReorderBinding(stepListEl: HTMLElement): ReorderIndicatorBinding<number> {
+  if (!isHtmlElement(stepListEl)) {
+    throw new Error('Step reorder indicator container must be an HTMLElement.');
+  }
+
+  return {
     containerEl: stepListEl,
     itemSelector: '.step-item',
     getItemId: item => {
@@ -628,31 +632,34 @@ export function clearStepDropIndicators(stepListEl: HTMLElement): void {
     draggingClass: 'dragging-step',
     dropBeforeClass: 'step-drop-before',
     dropAfterClass: 'step-drop-after',
-  });
+  };
+}
+
+function createLutReorderBinding(lutStripListEl: HTMLElement): ReorderIndicatorBinding<string> {
+  if (!isHtmlElement(lutStripListEl)) {
+    throw new Error('LUT reorder indicator container must be an HTMLElement.');
+  }
+
+  return {
+    containerEl: lutStripListEl,
+    itemSelector: '.lut-strip-item',
+    getItemId: item => {
+      const lutId = item.dataset.lutId;
+      return isNonEmptyString(lutId) ? lutId : null;
+    },
+    draggingClass: 'dragging-lut',
+    dropBeforeClass: 'lut-drop-before',
+    dropAfterClass: 'lut-drop-after',
+  };
+}
+
+export function clearStepDropIndicators(stepListEl: HTMLElement): void {
+  clearReorderDropIndicators<number>(createStepReorderBinding(stepListEl));
 }
 
 export function updateStepDropIndicators(stepListEl: HTMLElement, stepReorderDragState: StepReorderDragState | null): void {
   updateReorderDropIndicators<number>(
-    {
-      containerEl: stepListEl,
-      itemSelector: '.step-item',
-      getItemId: item => {
-        const rawStepId = item.dataset.stepId;
-        if (!isNonEmptyString(rawStepId)) {
-          return null;
-        }
-
-        const stepId = Number(rawStepId);
-        if (!Number.isInteger(stepId) || stepId <= 0) {
-          return null;
-        }
-
-        return stepId;
-      },
-      draggingClass: 'dragging-step',
-      dropBeforeClass: 'step-drop-before',
-      dropAfterClass: 'step-drop-after',
-    },
+    createStepReorderBinding(stepListEl),
     stepReorderDragState
       ? {
           draggedId: stepReorderDragState.stepId,
@@ -664,32 +671,12 @@ export function updateStepDropIndicators(stepListEl: HTMLElement, stepReorderDra
 }
 
 export function clearLutDropIndicators(lutStripListEl: HTMLElement): void {
-  clearReorderDropIndicators<string>({
-    containerEl: lutStripListEl,
-    itemSelector: '.lut-strip-item',
-    getItemId: item => {
-      const lutId = item.dataset.lutId;
-      return isNonEmptyString(lutId) ? lutId : null;
-    },
-    draggingClass: 'dragging-lut',
-    dropBeforeClass: 'lut-drop-before',
-    dropAfterClass: 'lut-drop-after',
-  });
+  clearReorderDropIndicators<string>(createLutReorderBinding(lutStripListEl));
 }
 
 export function updateLutDropIndicators(lutStripListEl: HTMLElement, lutReorderDragState: LutReorderDragState | null): void {
   updateReorderDropIndicators<string>(
-    {
-      containerEl: lutStripListEl,
-      itemSelector: '.lut-strip-item',
-      getItemId: item => {
-        const lutId = item.dataset.lutId;
-        return isNonEmptyString(lutId) ? lutId : null;
-      },
-      draggingClass: 'dragging-lut',
-      dropBeforeClass: 'lut-drop-before',
-      dropAfterClass: 'lut-drop-after',
-    },
+    createLutReorderBinding(lutStripListEl),
     lutReorderDragState
       ? {
           draggedId: lutReorderDragState.lutId,
