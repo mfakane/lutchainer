@@ -66,9 +66,10 @@ html, body {
 .header-title {
   font-size: 14px;
   font-weight: 700;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.5em;
   color: #eef3ff;
   white-space: nowrap;
+  text-transform: uppercase;
 }
 
 .header-title span {
