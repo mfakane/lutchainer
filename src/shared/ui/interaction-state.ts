@@ -1,5 +1,5 @@
-import * as pipelineModel from './pipeline-model';
-import * as pipelineView from './pipeline-view';
+import * as pipelineModel from '../../features/pipeline/pipeline-model';
+import * as pipelineView from '../../features/pipeline/pipeline-view';
 
 export type SocketDragState = pipelineView.SocketDragState;
 export type SocketDropTarget = pipelineView.SocketDropTarget;

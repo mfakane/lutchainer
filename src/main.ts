@@ -1,20 +1,33 @@
 import {
-  createConnectionDrawScheduler,
-  renderConnectionLayer,
-} from './connection-renderer';
+  getLanguage,
+  subscribeLanguageChange,
+  t,
+} from './shared/i18n.ts';
 import {
   getLinearDropPlacement,
   reorderItemsById,
   updatePointerDragStateForMove,
   type LinearDropCandidate,
-} from './dnd';
-import { createCube, createSphere, createTorus } from './geometry';
-import { createGizmoOverlayController } from './gizmo-overlay';
+} from './shared/interactions/dnd.ts';
 import {
-  getLanguage,
-  subscribeLanguageChange,
-  t,
-} from './i18n';
+  setupOrbitPointerControls,
+  setupPipelinePanelResizer,
+  setupPreviewPanelLayoutResizer,
+} from './shared/interactions/layout-interactions.ts';
+import {
+  applySocketDropConnection,
+  cleanupSocketDragInteraction,
+  createSocketDropTargetResolver,
+  handleSocketDragEnd as processSocketDragEnd,
+  handleSocketDragMove as processSocketDragMove,
+  syncSocketDropTargetState
+} from './shared/interactions/socket-dnd.ts';
+import { createCube, createSphere, createTorus } from './shared/utils/geometry.ts';
+import {
+  createConnectionDrawScheduler,
+  renderConnectionLayer,
+} from './connection-renderer.ts';
+import { createGizmoOverlayController } from './gizmo-overlay.ts';
 import {
   clearLutReorderDragState,
   clearSocketDragState,
@@ -29,19 +42,14 @@ import {
   setSocketDropTargetState,
   setStepReorderDragState,
   setSuppressClickUntil,
-} from './interaction-state';
-import {
-  setupOrbitPointerControls,
-  setupPipelinePanelResizer,
-  setupPreviewPanelLayoutResizer,
-} from './layout-interactions';
+} from './shared/ui/interaction-state.ts';
 import {
   setupLutReorderBindings,
   setupSocketPointerBindings,
   setupStepReorderBindings,
-} from './pipeline-dnd-bindings';
-import { createPipelineIoSystem } from './pipeline-io-system';
-import * as pipelineModel from './pipeline-model';
+} from './features/pipeline/pipeline-dnd-bindings.ts';
+import { createPipelineIoSystem } from './features/pipeline/pipeline-io-system.ts';
+import * as pipelineModel from './features/pipeline/pipeline-model.ts';
 import {
   getLuts as getPipelineLuts,
   getNextStepId as getPipelineNextStepId,
@@ -50,36 +58,28 @@ import {
   setLuts as setPipelineLuts,
   setNextStepId as setPipelineNextStepId,
   setSteps as setPipelineSteps,
-} from './pipeline-state';
-import * as pipelineView from './pipeline-view';
-import { createRenderSystem } from './render-system';
-import { Renderer } from './renderer';
+} from './features/pipeline/pipeline-state.ts';
+import * as pipelineView from './features/pipeline/pipeline-view.ts';
+import { createRenderSystem } from './shared/rendering/render-system.ts';
+import { Renderer } from './shared/rendering/renderer.ts';
 import {
   getLightSettings,
   getMaterialSettings,
   setLightSettings,
   setMaterialSettings
-} from './scene-state';
-import * as shaderGenerator from './shader-generator';
-import {
-  applySocketDropConnection,
-  cleanupSocketDragInteraction,
-  createSocketDropTargetResolver,
-  handleSocketDragEnd as processSocketDragEnd,
-  handleSocketDragMove as processSocketDragMove,
-  syncSocketDropTargetState
-} from './socket-dnd';
+} from './shared/ui/scene-state.ts';
+import * as shaderGenerator from './features/shader/shader-generator.ts';
 import {
   mountHeaderActionGroup,
   mountLanguageSwitcher,
   syncHeaderActionAutoApplyState
-} from './solid-header-actions';
+} from './shared/components/solid-header-actions.tsx';
 import {
   mountLightPanel,
   mountMaterialPanel,
   syncLightPanelState,
   syncMaterialPanelState,
-} from './solid-panels';
+} from './shared/components/solid-panels.tsx';
 import {
   mountLutStripActions,
   mountLutStripList,
@@ -87,30 +87,30 @@ import {
   mountStepList,
   syncLutStripListState,
   syncStepListState,
-} from './solid-pipeline-lists';
+} from './shared/components/solid-pipeline-lists.tsx';
 import {
   mountPreviewShapeBar,
   syncPreviewShapeBarState,
   type PreviewShapeType,
-} from './solid-preview-shape-bar';
+} from './shared/components/solid-preview-shape-bar.tsx';
 import {
   mountShaderDialogShell,
   syncShaderDialogState,
-} from './solid-shader-dialog';
+} from './shared/components/solid-shader-dialog.tsx';
 import {
   mountStatusLog,
   syncStatusLogState,
-} from './solid-status';
+} from './shared/components/solid-status.tsx';
 import {
   type ParamName,
   type StepModel,
-} from './step-model';
-import { StepPreviewRenderer } from './step-preview-renderer';
-import { createStepPreviewSystem } from './step-preview-system';
+} from './features/step/step-model.ts';
+import { StepPreviewRenderer } from './features/step/step-preview-renderer.ts';
+import { createStepPreviewSystem } from './features/step/step-preview-system.ts';
 import {
   isAutoApplyEnabled,
   setAutoApplyEnabled,
-} from './ui-state';
+} from './shared/ui/ui-state.ts';
 
 type PrimitiveType = PreviewShapeType;
 type SocketAxis = pipelineView.SocketAxis;

@@ -1,4 +1,4 @@
-import * as pipelineModel from './pipeline-model';
+import * as pipelineModel from '../../features/pipeline/pipeline-model';
 
 type MaterialSettings = pipelineModel.MaterialSettings;
 type LightSettings = pipelineModel.LightSettings;

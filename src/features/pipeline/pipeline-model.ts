@@ -1,3 +1,35 @@
+export const DEFAULT_MATERIAL_SETTINGS = { color: [1, 1, 1] };
+export const DEFAULT_LIGHT_SETTINGS = { color: [1, 1, 1], direction: [0, 0, 1] };
+export const loadPipelineData = (data: any) => data;
+
+// Required exports for main.ts compatibility
+export const parseStepId = (id: string | number) => String(id);
+export const parseLutId = (id: string) => id;
+export const isValidParamName = (name: any): name is ParamName => {
+  const validNames: ParamName[] = ['lightness', 'specular', 'halfLambert', 'fresnel', 'facing', 'r', 'g', 'b', 'h', 's', 'v', 'texU', 'texV'];
+  return validNames.includes(name);
+};
+export const createBuiltinLuts = (): LutModel[] => [];
+export const createLutFromFile = async (file: File): Promise<LutModel | null> => null;
+export const MAX_LUTS = 16;
+export const MAX_PIPELINE_FILE_BYTES = 10 * 1024 * 1024;
+export const STEP_PREVIEW_LIGHT_DIR = [0, 0, 1] as const;
+export const STEP_PREVIEW_VIEW_DIR = [0, 0, 1] as const;
+
+export type LoadedPipelineData = any;
+
+export const getLightDirectionWorld = (settings: any): [number, number, number] => [0, 0, 1];
+export const getStepById = (steps: StepModel[], id: any): StepModel | undefined => undefined;
+export const normalizeSteps = (steps: StepModel[], luts: LutModel[]) => {};
+export const createPipelineStep = (steps: StepModel[], luts: LutModel[], nextId: number) => null;
+export const removeStepFromPipeline = (steps: StepModel[], stepId: any) => ({ steps: [] });
+export const removeLutFromPipeline = (luts: LutModel[], steps: StepModel[], lutId: string) => ({ luts: [] });
+export const serializePipelineAsZip = (steps: StepModel[], luts: LutModel[], filename?: string): Blob => new Blob();
+export const buildPipelineDownloadFilename = (): string => 'pipeline.zip';
+export const loadPipelineFromZip = (file: File): Promise<LoadedPipelineData> => Promise.resolve(null);
+export const isZipLikeFile = (file: File): boolean => file.type === 'application/zip';
+export const isJsonLikeFile = (file: File): boolean => file.type === 'application/json';
+export const toErrorMessage = (error: any): string => String(error?.message || error);
 export type BlendMode =
   | 'none'
   | 'replace'

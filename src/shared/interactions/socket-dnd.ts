@@ -1,5 +1,5 @@
-import type { SocketAxis, SocketDragState, SocketDropTarget } from './pipeline-view';
-import type { ParamName } from './step-model';
+import type { SocketAxis, SocketDragState, SocketDropTarget } from '../../features/pipeline/pipeline-view';
+import type { ParamName } from '../../features/step/step-model';
 
 interface ResolveSocketDropTargetOptions {
   socketDragState: SocketDragState | null;

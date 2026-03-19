@@ -1,5 +1,5 @@
-import type { Geometry } from './geometry';
-import type { Mat3, Mat4 } from './math';
+import type { Geometry } from '../utils/geometry';
+import type { Mat3, Mat4 } from '../utils/math';
 
 export interface ShaderError {
   type: 'vertex' | 'fragment' | 'link';
