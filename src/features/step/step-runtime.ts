@@ -295,54 +295,48 @@ export const BLEND_MODE_STRATEGIES: Record<BlendMode, BlendModeStrategy> = {
   },
   add: {
     editableChannels: [],
-    applyCpu: ({ current, lutColor, lutAlpha }) =>
-      blendWithLutAlpha(
-        current,
-        [
-          clamp01(current[0] + lutColor[0]),
-          clamp01(current[1] + lutColor[1]),
-          clamp01(current[2] + lutColor[2]),
-        ],
-        lutAlpha,
-      ),
-    emitGlsl: ({ lutColorVar, lutAlphaVar, targetColorVar }) =>
-      emitTargetColorWithLerpGlsl(targetColorVar, `color + ${lutColorVar}`, lutAlphaVar),
-    emitHlsl: ({ lutColorVar, lutAlphaVar, targetColorVar }) =>
-      emitTargetColorWithLerpHlsl(targetColorVar, `color + ${lutColorVar}`, lutAlphaVar),
+    applyCpu: ({ current, lutColor, lutAlpha }) => {
+      const a = clamp01(Number.isFinite(lutAlpha) ? lutAlpha : 1);
+      return [
+        clamp01(current[0] + lutColor[0] * a),
+        clamp01(current[1] + lutColor[1] * a),
+        clamp01(current[2] + lutColor[2] * a),
+      ];
+    },
+    emitGlsl: ({ lutColorVar, lutAlphaVar }) =>
+      [`color += ${lutColorVar} * clamp(${lutAlphaVar}, 0.0, 1.0);`],
+    emitHlsl: ({ lutColorVar, lutAlphaVar }) =>
+      [`color += ${lutColorVar} * saturate(${lutAlphaVar});`],
   },
   subtract: {
     editableChannels: [],
-    applyCpu: ({ current, lutColor, lutAlpha }) =>
-      blendWithLutAlpha(
-        current,
-        [
-          clamp01(current[0] - lutColor[0]),
-          clamp01(current[1] - lutColor[1]),
-          clamp01(current[2] - lutColor[2]),
-        ],
-        lutAlpha,
-      ),
-    emitGlsl: ({ lutColorVar, lutAlphaVar, targetColorVar }) =>
-      emitTargetColorWithLerpGlsl(targetColorVar, `color - ${lutColorVar}`, lutAlphaVar),
-    emitHlsl: ({ lutColorVar, lutAlphaVar, targetColorVar }) =>
-      emitTargetColorWithLerpHlsl(targetColorVar, `color - ${lutColorVar}`, lutAlphaVar),
+    applyCpu: ({ current, lutColor, lutAlpha }) => {
+      const a = clamp01(Number.isFinite(lutAlpha) ? lutAlpha : 1);
+      return [
+        clamp01(current[0] - lutColor[0] * a),
+        clamp01(current[1] - lutColor[1] * a),
+        clamp01(current[2] - lutColor[2] * a),
+      ];
+    },
+    emitGlsl: ({ lutColorVar, lutAlphaVar }) =>
+      [`color -= ${lutColorVar} * clamp(${lutAlphaVar}, 0.0, 1.0);`],
+    emitHlsl: ({ lutColorVar, lutAlphaVar }) =>
+      [`color -= ${lutColorVar} * saturate(${lutAlphaVar});`],
   },
   multiply: {
     editableChannels: [],
-    applyCpu: ({ current, lutColor, lutAlpha }) =>
-      blendWithLutAlpha(
-        current,
-        [
-          clamp01(current[0] * lutColor[0]),
-          clamp01(current[1] * lutColor[1]),
-          clamp01(current[2] * lutColor[2]),
-        ],
-        lutAlpha,
-      ),
-    emitGlsl: ({ lutColorVar, lutAlphaVar, targetColorVar }) =>
-      emitTargetColorWithLerpGlsl(targetColorVar, `color * ${lutColorVar}`, lutAlphaVar),
-    emitHlsl: ({ lutColorVar, lutAlphaVar, targetColorVar }) =>
-      emitTargetColorWithLerpHlsl(targetColorVar, `color * ${lutColorVar}`, lutAlphaVar),
+    applyCpu: ({ current, lutColor, lutAlpha }) => {
+      const a = clamp01(Number.isFinite(lutAlpha) ? lutAlpha : 1);
+      return [
+        clamp01(current[0] * (1 - a + lutColor[0] * a)),
+        clamp01(current[1] * (1 - a + lutColor[1] * a)),
+        clamp01(current[2] * (1 - a + lutColor[2] * a)),
+      ];
+    },
+    emitGlsl: ({ lutColorVar, lutAlphaVar }) =>
+      [`color *= mix(vec3(1.0), ${lutColorVar}, clamp(${lutAlphaVar}, 0.0, 1.0));`],
+    emitHlsl: ({ lutColorVar, lutAlphaVar }) =>
+      [`color *= lerp(float3(1.0, 1.0, 1.0), ${lutColorVar}, saturate(${lutAlphaVar}));`],
   },
   hue: {
     editableChannels: [],
