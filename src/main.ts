@@ -68,9 +68,7 @@ import {
   t,
 } from './shared/i18n.ts';
 import {
-  getLinearDropPlacement,
   updatePointerDragStateForMove,
-  type LinearDropCandidate,
 } from './shared/interactions/dnd.ts';
 import { createHistoryShortcutHandler } from './shared/interactions/keyboard-history.ts';
 import {
@@ -90,6 +88,10 @@ import {
   createPipelineApplyController,
   type PipelineApplyController,
 } from './features/pipeline/pipeline-apply.ts';
+import {
+  createPipelineDropIndicatorController,
+  type PipelineDropIndicatorController,
+} from './features/pipeline/pipeline-drop-indicators.ts';
 import { createRenderSystem } from './shared/rendering/render-system.ts';
 import { Renderer } from './shared/rendering/renderer.ts';
 import {
@@ -202,6 +204,7 @@ function syncLightPanel(): void {
 
 let renderer: Renderer;
 let pipelineApply: PipelineApplyController;
+let pipelineDropIndicators: PipelineDropIndicatorController;
 let stepPreviewRenderer: StepPreviewRenderer | null = null;
 let currentPrimitive: PrimitiveType = 'sphere';
 
@@ -642,64 +645,6 @@ function handleSocketDragEnd(event: PointerEvent): void {
   });
 }
 
-function clearStepDropIndicators(): void {
-  pipelineView.clearStepDropIndicators(stepListEl);
-}
-
-function updateStepDropIndicators(): void {
-  pipelineView.updateStepDropIndicators(stepListEl, getStepReorderDragState());
-}
-
-function getStepDropPlacement(clientY: number): { stepId: number | null; after: boolean } {
-  const stepReorderDragState = getStepReorderDragState();
-  const candidates: LinearDropCandidate<number>[] = [];
-
-  for (const item of Array.from(stepListEl.querySelectorAll<HTMLElement>('.step-item'))) {
-    const itemStepId = parseStepId(item.dataset.stepId);
-    if (itemStepId === null || itemStepId === stepReorderDragState?.stepId) {
-      continue;
-    }
-
-    const rect = item.getBoundingClientRect();
-    candidates.push({
-      id: itemStepId,
-      midpoint: rect.top + rect.height * 0.5,
-    });
-  }
-
-  const placement = getLinearDropPlacement(candidates, clientY);
-  return { stepId: placement.targetId, after: placement.after };
-}
-
-function clearLutDropIndicators(): void {
-  pipelineView.clearLutDropIndicators(lutStripListEl);
-}
-
-function updateLutDropIndicators(): void {
-  pipelineView.updateLutDropIndicators(lutStripListEl, getLutReorderDragState());
-}
-
-function getLutDropPlacement(clientX: number): { lutId: string | null; after: boolean } {
-  const lutReorderDragState = getLutReorderDragState();
-  const candidates: LinearDropCandidate<string>[] = [];
-
-  for (const item of Array.from(lutStripListEl.querySelectorAll<HTMLElement>('.lut-strip-item'))) {
-    const lutId = item.dataset.lutId;
-    if (!lutId || lutId === lutReorderDragState?.lutId) {
-      continue;
-    }
-
-    const rect = item.getBoundingClientRect();
-    candidates.push({
-      id: lutId,
-      midpoint: rect.left + rect.width * 0.5,
-    });
-  }
-
-  const placement = getLinearDropPlacement(candidates, clientX);
-  return { lutId: placement.targetId, after: placement.after };
-}
-
 const pipelineCommands = createPipelineCommandController({
   maxStepLabelLength: MAX_STEP_LABEL_LENGTH,
   getSteps: getPipelineSteps,
@@ -872,12 +817,12 @@ function setupUI(): void {
     lutReorder: {
       lutStripListEl,
       parseLutId,
-      getLutDropPlacement,
+      getLutDropPlacement: pipelineDropIndicators.getLutDropPlacement,
       getLutReorderDragState,
       setLutReorderDragState,
       clearLutReorderDragState,
-      updateLutDropIndicators,
-      clearLutDropIndicators,
+      updateLutDropIndicators: pipelineDropIndicators.updateLutDropIndicators,
+      clearLutDropIndicators: pipelineDropIndicators.clearLutDropIndicators,
       moveLutToPosition: pipelineCommands.moveLutToPosition,
       onStatus: showStatus,
     },
@@ -895,12 +840,12 @@ function setupUI(): void {
     stepReorder: {
       stepListEl,
       parseStepId,
-      getStepDropPlacement,
+      getStepDropPlacement: pipelineDropIndicators.getStepDropPlacement,
       getStepReorderDragState,
       setStepReorderDragState,
       clearStepReorderDragState,
-      updateStepDropIndicators,
-      clearStepDropIndicators,
+      updateStepDropIndicators: pipelineDropIndicators.updateStepDropIndicators,
+      clearStepDropIndicators: pipelineDropIndicators.clearStepDropIndicators,
       moveStepToPosition: pipelineCommands.moveStepToPosition,
       onStatus: showStatus,
     },
@@ -949,6 +894,14 @@ window.addEventListener('DOMContentLoaded', () => {
   axisGizmoLabelYEl = $<SVGTextElement>('#axis-gizmo-label-y');
   axisGizmoLabelZEl = $<SVGTextElement>('#axis-gizmo-label-z');
   paramColumnEl = $<HTMLElement>('.param-column');
+
+  pipelineDropIndicators = createPipelineDropIndicatorController({
+    stepListEl,
+    lutStripListEl,
+    parseStepId,
+    getStepReorderDragState,
+    getLutReorderDragState,
+  });
 
   gizmoOverlayController = createGizmoOverlayController({
     light: {
