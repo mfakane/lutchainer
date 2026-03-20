@@ -32,6 +32,7 @@ import * as pipelineView from './features/pipeline/pipeline-view.ts';
 import * as shaderGenerator from './features/shader/shader-generator.ts';
 import { MAX_STEP_LABEL_LENGTH } from './features/step/step-model.ts';
 import { StepPreviewRenderer } from './features/step/step-preview-renderer.ts';
+import { setupStepPreviewShapeUi } from './features/step/step-preview-shape-ui.ts';
 import { createStepPreviewSystem } from './features/step/step-preview-system.ts';
 import { createGizmoOverlayController } from './gizmo-overlay.ts';
 import {
@@ -54,7 +55,6 @@ import {
   syncStepListState,
 } from './shared/components/solid-pipeline-lists.tsx';
 import {
-  mountPreviewShapeBar,
   syncPreviewShapeBarState,
   syncPreviewWireframeState,
   type PreviewShapeType,
@@ -691,9 +691,10 @@ function setupUI(): void {
   mountLanguageSwitcher($<HTMLElement>('#header-language-switcher'));
   mountHeaderActionGroup($<HTMLElement>('#header-action-group'), pipelineHeaderActions.buildMountOptions());
 
-  mountPreviewShapeBar($<HTMLElement>('#preview-shape-bar'), {
+  setupStepPreviewShapeUi({
+    target: $<HTMLElement>('#preview-shape-bar'),
     initialShape: currentPrimitive,
-    initialWireframeEnabled: isPreviewWireframeOverlayEnabled(),
+    isWireframeEnabled: isPreviewWireframeOverlayEnabled,
     onShapeChange: nextShape => {
       setActiveShape(nextShape);
     },
