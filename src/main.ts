@@ -90,8 +90,8 @@ import {
 } from './shared/ui/interaction-state.ts';
 import { resolveMainDomElements } from './shared/ui/main-dom-elements.ts';
 import { setupMainLayoutControls } from './shared/ui/main-layout-controls-setup.ts';
+import { setupMainPipelineEditor } from './shared/ui/main-pipeline-editor-setup.ts';
 import { setupMainRenderPipeline, type MainRenderPipeline } from './shared/ui/main-render-pipeline-setup.ts';
-import { setupMainPipelineLists } from './shared/ui/main-pipeline-lists-setup.ts';
 import { setupMainPreviewRuntime } from './shared/ui/main-preview-runtime-setup.ts';
 import { setupMainUi } from './shared/ui/main-ui-setup.ts';
 import {
@@ -566,44 +566,17 @@ window.addEventListener('DOMContentLoaded', () => {
     initialKind: 'info',
   });
 
-  setupMainPipelineLists({
+  setupMainPipelineEditor({
     paramNodeListEl,
     stepListEl,
     lutStripListEl,
     getSteps: getPipelineSteps,
     getLuts: getPipelineLuts,
     shouldSuppressClick: isClickSuppressed,
-    onAddStep: () => {
-      pipelineCommands.addStep();
-    },
-    onDuplicateStep: stepId => {
-      pipelineCommands.duplicateStep(stepId);
-    },
-    onRemoveStep: stepId => {
-      pipelineCommands.removeStep(stepId);
-    },
-    onStepMuteChange: (stepId, muted) => {
-      pipelineCommands.setStepMuted(stepId, muted);
-    },
-    onStepLabelChange: (stepId, label) => {
-      pipelineCommands.setStepLabel(stepId, label);
-    },
-    onStepLutChange: (stepId, lutId) => {
-      pipelineCommands.setStepLut(stepId, lutId);
-    },
-    onStepBlendModeChange: (stepId, blendMode) => {
-      pipelineCommands.setStepBlendMode(stepId, blendMode);
-    },
-    onStepOpChange: (stepId, channel, op) => {
-      pipelineCommands.setStepChannelOp(stepId, channel, op);
-    },
-    onRemoveLut: lutId => {
-      pipelineCommands.removeLut(lutId);
-    },
+    pipelineCommands,
     createLutFromFile: pipelineModel.createLutFromFile,
     maxLuts: pipelineModel.MAX_LUTS,
-    captureHistorySnapshot: () => pipelineHistoryActions.captureSnapshot(),
-    commitHistorySnapshot: before => pipelineHistoryActions.commitSnapshot(before),
+    pipelineHistoryActions,
     normalizeSteps,
     renderSteps,
     scheduleApply: () => pipelineApply.scheduleApply(),
