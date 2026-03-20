@@ -52,7 +52,7 @@ interface LutStripListMountOptions {
   onStatus: StatusReporter;
 }
 
-interface ParamNodeListProps {}
+interface ParamNodeListProps { }
 
 interface StepListProps {
   steps: Accessor<StepModel[]>;
@@ -517,6 +517,39 @@ function StepList(props: StepListProps): JSX.Element {
 
                 <section class="step-core">
                   <div class="lut-row">
+                    <label class="lut-select-field">
+                      <span class="lut-select-label">{tr('pipeline.step.lut')}</span>
+                      <select
+                        class="step-lut-select"
+                        data-step-id={String(step.id)}
+                        onChange={event => {
+                          const input = event.currentTarget as HTMLSelectElement | null;
+                          if (!input) {
+                            props.onStatus(tr('pipeline.status.stepLutSelectMissing'), 'error');
+                            return;
+                          }
+
+                          const lutId = input.value;
+                          if (!isNonEmptyString(lutId)) {
+                            props.onStatus(tr('pipeline.status.selectedLutIdInvalid'), 'error');
+                            return;
+                          }
+
+                          const availableLuts = props.luts();
+                          if (!availableLuts.some(lut => lut.id === lutId)) {
+                            props.onStatus(tr('pipeline.status.selectedLutMissing'), 'error');
+                            return;
+                          }
+
+                          props.onStepLutChange(step.id, lutId);
+                        }}
+                      >
+                        <For each={props.luts()}>
+                          {lutOpt => <option value={lutOpt.id} selected={lutOpt.id === step.lutId}>{lutOpt.name}</option>}
+                        </For>
+                      </select>
+                    </label>
+
                     <div class="lut-thumb-wrap">
                       <img class="lut-thumb" src={selectedLut()?.thumbUrl ?? ''} alt="LUT thumbnail" />
                       <Show when={crosshairUv() !== null}>
@@ -527,35 +560,6 @@ function StepList(props: StepListProps): JSX.Element {
                         />
                       </Show>
                     </div>
-                    <select
-                      class="step-lut-select"
-                      data-step-id={String(step.id)}
-                      onChange={event => {
-                        const input = event.currentTarget as HTMLSelectElement | null;
-                        if (!input) {
-                          props.onStatus(tr('pipeline.status.stepLutSelectMissing'), 'error');
-                          return;
-                        }
-
-                        const lutId = input.value;
-                        if (!isNonEmptyString(lutId)) {
-                          props.onStatus(tr('pipeline.status.selectedLutIdInvalid'), 'error');
-                          return;
-                        }
-
-                        const availableLuts = props.luts();
-                        if (!availableLuts.some(lut => lut.id === lutId)) {
-                          props.onStatus(tr('pipeline.status.selectedLutMissing'), 'error');
-                          return;
-                        }
-
-                        props.onStepLutChange(step.id, lutId);
-                      }}
-                    >
-                      <For each={props.luts()}>
-                        {lutOpt => <option value={lutOpt.id} selected={lutOpt.id === step.lutId}>{lutOpt.name}</option>}
-                      </For>
-                    </select>
                   </div>
 
                   <div class="step-mode-row">
