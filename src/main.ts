@@ -42,12 +42,6 @@ import {
   syncHeaderActionHistoryState,
 } from './shared/components/solid-header-actions.tsx';
 import {
-  mountLightPanel,
-  mountMaterialPanel,
-  syncLightPanelState,
-  syncMaterialPanelState,
-} from './shared/components/solid-panels.tsx';
-import {
   mountLutStripList,
   mountParamNodeList,
   mountStepList,
@@ -60,7 +54,6 @@ import {
   type PreviewShapeType,
 } from './shared/components/solid-preview-shape-bar.tsx';
 import {
-  mountShaderDialogShell,
   syncShaderDialogState,
 } from './shared/components/solid-shader-dialog.tsx';
 import {
@@ -110,6 +103,7 @@ import {
   setSuppressClickUntil,
 } from './shared/ui/interaction-state.ts';
 import { resolveMainDomElements } from './shared/ui/main-dom-elements.ts';
+import { setupMainPanels } from './shared/ui/main-panels-setup.ts';
 import {
   getLightSettings,
   getMaterialSettings,
@@ -193,14 +187,6 @@ const resolveSocketDropTargetForDrag = createSocketDropTargetResolver({
   isValidSocketAxis,
   isValidParamName,
 });
-
-function syncMaterialPanel(): void {
-  syncMaterialPanelState(getMaterialSettings());
-}
-
-function syncLightPanel(): void {
-  syncLightPanelState(getLightSettings());
-}
 
 let renderer: Renderer;
 let pipelineApply: PipelineApplyController;
@@ -637,57 +623,6 @@ const pipelineHeaderActions = createPipelineHeaderActionController({
   t,
 });
 
-function setupMaterialPanel(): void {
-  const panel = $<HTMLElement>('#material-panel');
-  mountMaterialPanel(panel, {
-    initialSettings: getMaterialSettings(),
-    onSettingsChange: nextSettings => {
-      setMaterialSettings(nextSettings);
-      updateStepSwatches();
-      updateShaderCodePanel();
-      pipelineApply.scheduleApply();
-    },
-    onStatus: showStatus,
-  });
-
-  syncMaterialPanel();
-  updateShaderCodePanel();
-}
-
-function setupLightPanel(): void {
-  const panel = $<HTMLElement>('#light-panel');
-  mountLightPanel(panel, {
-    initialSettings: getLightSettings(),
-    onSettingsChange: nextSettings => {
-      const wasVisible = getLightSettings().showGizmo;
-      setLightSettings(nextSettings);
-      const lightSettings = getLightSettings();
-      updateShaderCodePanel();
-
-      if (wasVisible && !lightSettings.showGizmo) {
-        lightGizmoLayerEl.style.opacity = '0';
-      }
-    },
-    onStatus: showStatus,
-  });
-
-  syncLightPanel();
-}
-
-function setupShaderPanel(): void {
-  mountShaderDialogShell({
-    dialogEl: $<HTMLDialogElement>('#shader-dialog'),
-    openButtonEl: $<HTMLButtonElement>('#btn-open-shader-dialog'),
-    surfaceEl: $<Element>('.shader-dialog-surface'),
-    onBeforeOpen: () => {
-      updateShaderCodePanel();
-    },
-    onStatus: showStatus,
-  });
-
-  syncShaderDialogState(getShaderBuildInput());
-}
-
 function setupUI(): void {
   mountLanguageSwitcher($<HTMLElement>('#header-language-switcher'));
   mountHeaderActionGroup($<HTMLElement>('#header-action-group'), pipelineHeaderActions.buildMountOptions());
@@ -711,9 +646,27 @@ function setupUI(): void {
     onStatus: showStatus,
   });
 
-  setupMaterialPanel();
-  setupLightPanel();
-  setupShaderPanel();
+  setupMainPanels({
+    materialPanelEl: $<HTMLElement>('#material-panel'),
+    lightPanelEl: $<HTMLElement>('#light-panel'),
+    shaderDialogEl: $<HTMLDialogElement>('#shader-dialog'),
+    shaderOpenButtonEl: $<HTMLButtonElement>('#btn-open-shader-dialog'),
+    shaderSurfaceEl: $<Element>('.shader-dialog-surface'),
+    lightGizmoLayerEl,
+    getMaterialSettings,
+    setMaterialSettings,
+    getLightSettings,
+    setLightSettings,
+    getShaderBuildInput,
+    onUpdateStepSwatches: updateStepSwatches,
+    onUpdateShaderCodePanel: () => {
+      updateShaderCodePanel();
+    },
+    onScheduleApply: () => {
+      pipelineApply.scheduleApply();
+    },
+    onStatus: showStatus,
+  });
 
   setupPipelineUiInteractions({
     dndBindings: {
