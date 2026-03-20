@@ -260,10 +260,6 @@ button:disabled:hover {
   background: color-mix(in srgb, var(--panel), #000 12%);
 }
 
-.param-group-default {
-  box-shadow: inset 0 1px 0 #343b45;
-}
-
 .param-group-feedback {
   border-color: #6f85a8;
   background:
