@@ -6,9 +6,6 @@ import {
   createPipelineCommandController,
 } from './features/pipeline/pipeline-command-controller.ts';
 import {
-  setupPipelineUiInteractions,
-} from './features/pipeline/pipeline-ui-interactions.ts';
-import {
   createPipelineHistoryController,
 } from './features/pipeline/pipeline-history.ts';
 import {
@@ -35,11 +32,8 @@ import { StepPreviewRenderer } from './features/step/step-preview-renderer.ts';
 import {
   createStepPreviewDebugController,
 } from './features/step/step-preview-debug-controller.ts';
-import { setupStepPreviewShapeUi } from './features/step/step-preview-shape-ui.ts';
 import { createStepPreviewSystem } from './features/step/step-preview-system.ts';
 import {
-  mountHeaderActionGroup,
-  mountLanguageSwitcher,
   syncHeaderActionAutoApplyState,
   syncHeaderActionHistoryState,
 } from './shared/components/solid-header-actions.tsx';
@@ -98,8 +92,8 @@ import { resolveMainDomElements } from './shared/ui/main-dom-elements.ts';
 import { setupMainLayoutControls } from './shared/ui/main-layout-controls-setup.ts';
 import { setupMainRenderPipeline, type MainRenderPipeline } from './shared/ui/main-render-pipeline-setup.ts';
 import { setupMainPipelineLists } from './shared/ui/main-pipeline-lists-setup.ts';
-import { setupMainPanels } from './shared/ui/main-panels-setup.ts';
 import { setupMainPreviewRuntime } from './shared/ui/main-preview-runtime-setup.ts';
+import { setupMainUi } from './shared/ui/main-ui-setup.ts';
 import {
   type PreviewShapeController,
 } from './shared/ui/preview-shape-controller.ts';
@@ -442,100 +436,6 @@ const pipelineHeaderActions = createPipelineHeaderActionController({
   t,
 });
 
-function setupUI(): void {
-  mountLanguageSwitcher($<HTMLElement>('#header-language-switcher'));
-  mountHeaderActionGroup($<HTMLElement>('#header-action-group'), pipelineHeaderActions.buildMountOptions());
-
-  setupStepPreviewShapeUi({
-    target: $<HTMLElement>('#preview-shape-bar'),
-    initialShape: previewShapeController.getCurrentShape(),
-    isWireframeEnabled: isPreviewWireframeOverlayEnabled,
-    onShapeChange: nextShape => {
-      previewShapeController.setActiveShape(nextShape);
-    },
-    onWireframeChange: enabled => {
-      previewShapeController.setWireframeOverlayEnabled(enabled);
-    },
-    onExportMainPreviewPng: async () => {
-      await mainPreviewCapture.exportMainPreviewPng();
-    },
-    onExportStepPreviewPng: async () => {
-      await mainPreviewCapture.exportStepPreviewPng();
-    },
-    onStatus: showStatus,
-  });
-
-  setupMainPanels({
-    materialPanelEl: $<HTMLElement>('#material-panel'),
-    lightPanelEl: $<HTMLElement>('#light-panel'),
-    shaderDialogEl: $<HTMLDialogElement>('#shader-dialog'),
-    shaderOpenButtonEl: $<HTMLButtonElement>('#btn-open-shader-dialog'),
-    shaderSurfaceEl: $<Element>('.shader-dialog-surface'),
-    lightGizmoLayerEl,
-    getMaterialSettings,
-    setMaterialSettings,
-    getLightSettings,
-    setLightSettings,
-    getShaderBuildInput,
-    onUpdateStepSwatches: updateStepSwatches,
-    onUpdateShaderCodePanel: () => {
-      updateShaderCodePanel();
-    },
-    onScheduleApply: () => {
-      pipelineApply.scheduleApply();
-    },
-    onStatus: showStatus,
-  });
-
-  setupPipelineUiInteractions({
-    dndBindings: {
-      lutReorder: {
-        lutStripListEl,
-        parseLutId,
-        getLutDropPlacement: pipelineDropIndicators.getLutDropPlacement,
-        getLutReorderDragState,
-        setLutReorderDragState,
-        clearLutReorderDragState,
-        updateLutDropIndicators: pipelineDropIndicators.updateLutDropIndicators,
-        clearLutDropIndicators: pipelineDropIndicators.clearLutDropIndicators,
-        moveLutToPosition: pipelineCommands.moveLutToPosition,
-        onStatus: showStatus,
-      },
-      socketPointer: {
-        paramNodeListEl,
-        stepListEl,
-        parseStepId,
-        isValidParamName,
-        isValidSocketAxis,
-        setSocketDragState,
-        handleSocketDragMove: pipelineSocketDnd.handleSocketDragMove,
-        handleSocketDragEnd: pipelineSocketDnd.handleSocketDragEnd,
-        onStatus: showStatus,
-      },
-      stepReorder: {
-        stepListEl,
-        parseStepId,
-        getStepDropPlacement: pipelineDropIndicators.getStepDropPlacement,
-        getStepReorderDragState,
-        setStepReorderDragState,
-        clearStepReorderDragState,
-        updateStepDropIndicators: pipelineDropIndicators.updateStepDropIndicators,
-        clearStepDropIndicators: pipelineDropIndicators.clearStepDropIndicators,
-        moveStepToPosition: pipelineCommands.moveStepToPosition,
-        onStatus: showStatus,
-      },
-    },
-    stepListEl,
-    paramColumnEl,
-    onScheduleConnectionDraw: scheduleConnectionDraw,
-    onUpdateStepSwatches: updateStepSwatches,
-    onUndoPipeline: pipelineHistoryActions.undo,
-    onRedoPipeline: pipelineHistoryActions.redo,
-  });
-
-  previewShapeController.setActiveShape('sphere');
-}
-
 window.addEventListener('DOMContentLoaded', () => {
   setupStaticLocaleSync({
     syncStaticLocaleText,
@@ -724,7 +624,49 @@ window.addEventListener('DOMContentLoaded', () => {
     t,
   });
 
-  setupUI();
+  setupMainUi({
+    select: $,
+    pipelineHeaderActions,
+    previewShapeController,
+    mainPreviewCapture,
+    isPreviewWireframeOverlayEnabled,
+    lightGizmoLayerEl,
+    getMaterialSettings,
+    setMaterialSettings,
+    getLightSettings,
+    setLightSettings,
+    getShaderBuildInput,
+    onUpdateStepSwatches: updateStepSwatches,
+    onUpdateShaderCodePanel: () => {
+      updateShaderCodePanel();
+    },
+    onScheduleApply: () => {
+      pipelineApply.scheduleApply();
+    },
+    paramNodeListEl,
+    stepListEl,
+    lutStripListEl,
+    paramColumnEl,
+    parseStepId,
+    parseLutId,
+    isValidParamName,
+    isValidSocketAxis,
+    pipelineDropIndicators,
+    getLutReorderDragState,
+    setLutReorderDragState,
+    clearLutReorderDragState,
+    getStepReorderDragState,
+    setStepReorderDragState,
+    clearStepReorderDragState,
+    setSocketDragState,
+    pipelineSocketDnd,
+    moveLutToPosition: pipelineCommands.moveLutToPosition,
+    moveStepToPosition: pipelineCommands.moveStepToPosition,
+    onScheduleConnectionDraw: scheduleConnectionDraw,
+    onUndoPipeline: pipelineHistoryActions.undo,
+    onRedoPipeline: pipelineHistoryActions.redo,
+    onStatus: showStatus,
+  });
   setupMainLayoutControls({
     canvas,
     pipelinePanel: $<HTMLElement>('#pipeline-panel'),
