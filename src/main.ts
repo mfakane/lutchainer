@@ -32,6 +32,9 @@ import * as pipelineView from './features/pipeline/pipeline-view.ts';
 import * as shaderGenerator from './features/shader/shader-generator.ts';
 import { MAX_STEP_LABEL_LENGTH } from './features/step/step-model.ts';
 import { StepPreviewRenderer } from './features/step/step-preview-renderer.ts';
+import {
+  createStepPreviewDebugController,
+} from './features/step/step-preview-debug-controller.ts';
 import { setupStepPreviewShapeUi } from './features/step/step-preview-shape-ui.ts';
 import { createStepPreviewSystem } from './features/step/step-preview-system.ts';
 import { createGizmoOverlayController } from './gizmo-overlay.ts';
@@ -127,17 +130,6 @@ interface StaticTranslationTarget {
   attribute?: 'textContent' | 'aria-label';
 }
 
-interface StepPreviewDebugApiResult {
-  ok: boolean;
-  forceCpu: boolean;
-  message: string;
-}
-
-interface StepPreviewDebugApi {
-  forceCpu: (value: unknown) => StepPreviewDebugApiResult;
-  isForceCpu: () => boolean;
-}
-
 interface PendingMainPreviewCapture {
   resolve: (blob: Blob) => void;
   reject: (error: Error) => void;
@@ -148,7 +140,6 @@ interface MainPreviewCaptureRequestOptions {
   hideLightGuide?: boolean;
 }
 
-const STEP_PREVIEW_DEBUG_GLOBAL_KEY = '__debugStepPreview';
 const MAIN_PREVIEW_CAPTURE_TIMEOUT_MS = 2000;
 const PIPELINE_HISTORY_LIMIT = 100;
 const STATIC_TRANSLATION_TARGETS: StaticTranslationTarget[] = [
@@ -404,33 +395,6 @@ async function exportStepPreviewPng(): Promise<void> {
   showStatus(t('main.status.previewExportStepSaved'), 'success');
 }
 
-function setStepPreviewForceCpu(value: unknown): StepPreviewDebugApiResult {
-  if (!stepPreviewSystem) {
-    const message = t('main.status.stepPreviewNotInitialized');
-    showStatus(message, 'error');
-    return {
-      ok: false,
-      forceCpu: false,
-      message,
-    };
-  }
-
-  const result = stepPreviewSystem.setForceCpu(value);
-  if (!result.ok) {
-    showStatus(result.message, 'error');
-    return result;
-  }
-
-  updateStepSwatches();
-  showStatus(
-    t('main.status.stepPreviewCpuMode', {
-      state: result.forceCpu ? t('common.on') : t('common.off'),
-    }),
-    'info',
-  );
-  return result;
-}
-
 function isClickSuppressed(): boolean {
   return performance.now() < getSuppressClickUntil();
 }
@@ -503,6 +467,13 @@ function updateStepSwatches(): void {
       ),
   });
 }
+
+const stepPreviewDebugController = createStepPreviewDebugController({
+  getStepPreviewSystem: () => stepPreviewSystem,
+  onUpdateStepSwatches: updateStepSwatches,
+  onStatus: showStatus,
+  t,
+});
 
 const pipelineCommands = createPipelineCommandController({
   maxStepLabelLength: MAX_STEP_LABEL_LENGTH,
@@ -759,13 +730,10 @@ window.addEventListener('DOMContentLoaded', () => {
     stepPreviewViewDirection: pipelineModel.STEP_PREVIEW_VIEW_DIR,
   }));
 
-  const stepPreviewDebugApi: StepPreviewDebugApi = {
-    forceCpu: (value: unknown): StepPreviewDebugApiResult => setStepPreviewForceCpu(value),
-    isForceCpu: () => stepPreviewSystem?.isForceCpu() ?? false,
-  };
-
   // Debug helper: use window.__debugStepPreview.forceCpu(true/false) from browser console.
-  (window as unknown as Record<string, unknown>)[STEP_PREVIEW_DEBUG_GLOBAL_KEY] = stepPreviewDebugApi;
+  stepPreviewDebugController.registerGlobalDebugApi({
+    globalObject: window as unknown as Record<string, unknown>,
+  });
 
   pipelineIoSystem = createPipelineIoSystem({
     getNextStepId: getPipelineNextStepId,
