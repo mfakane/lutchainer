@@ -6,8 +6,8 @@ import {
   createPipelineCommandController,
 } from './features/pipeline/pipeline-command-controller.ts';
 import {
-  setupPipelineDndBindings,
-} from './features/pipeline/pipeline-dnd-bindings.ts';
+  setupPipelineUiInteractions,
+} from './features/pipeline/pipeline-ui-interactions.ts';
 import {
   createPipelineHistoryController,
 } from './features/pipeline/pipeline-history.ts';
@@ -67,7 +67,6 @@ import {
   subscribeLanguageChange,
   t,
 } from './shared/i18n.ts';
-import { createHistoryShortcutHandler } from './shared/interactions/keyboard-history.ts';
 import {
   setupOrbitPointerControls,
   setupPipelinePanelResizer,
@@ -769,50 +768,50 @@ function setupUI(): void {
   setupLightPanel();
   setupShaderPanel();
 
-  setupPipelineDndBindings({
-    lutReorder: {
-      lutStripListEl,
-      parseLutId,
-      getLutDropPlacement: pipelineDropIndicators.getLutDropPlacement,
-      getLutReorderDragState,
-      setLutReorderDragState,
-      clearLutReorderDragState,
-      updateLutDropIndicators: pipelineDropIndicators.updateLutDropIndicators,
-      clearLutDropIndicators: pipelineDropIndicators.clearLutDropIndicators,
-      moveLutToPosition: pipelineCommands.moveLutToPosition,
-      onStatus: showStatus,
+  setupPipelineUiInteractions({
+    dndBindings: {
+      lutReorder: {
+        lutStripListEl,
+        parseLutId,
+        getLutDropPlacement: pipelineDropIndicators.getLutDropPlacement,
+        getLutReorderDragState,
+        setLutReorderDragState,
+        clearLutReorderDragState,
+        updateLutDropIndicators: pipelineDropIndicators.updateLutDropIndicators,
+        clearLutDropIndicators: pipelineDropIndicators.clearLutDropIndicators,
+        moveLutToPosition: pipelineCommands.moveLutToPosition,
+        onStatus: showStatus,
+      },
+      socketPointer: {
+        paramNodeListEl,
+        stepListEl,
+        parseStepId,
+        isValidParamName,
+        isValidSocketAxis,
+        setSocketDragState,
+        handleSocketDragMove: pipelineSocketDnd.handleSocketDragMove,
+        handleSocketDragEnd: pipelineSocketDnd.handleSocketDragEnd,
+        onStatus: showStatus,
+      },
+      stepReorder: {
+        stepListEl,
+        parseStepId,
+        getStepDropPlacement: pipelineDropIndicators.getStepDropPlacement,
+        getStepReorderDragState,
+        setStepReorderDragState,
+        clearStepReorderDragState,
+        updateStepDropIndicators: pipelineDropIndicators.updateStepDropIndicators,
+        clearStepDropIndicators: pipelineDropIndicators.clearStepDropIndicators,
+        moveStepToPosition: pipelineCommands.moveStepToPosition,
+        onStatus: showStatus,
+      },
     },
-    socketPointer: {
-      paramNodeListEl,
-      stepListEl,
-      parseStepId,
-      isValidParamName,
-      isValidSocketAxis,
-      setSocketDragState,
-      handleSocketDragMove: pipelineSocketDnd.handleSocketDragMove,
-      handleSocketDragEnd: pipelineSocketDnd.handleSocketDragEnd,
-      onStatus: showStatus,
-    },
-    stepReorder: {
-      stepListEl,
-      parseStepId,
-      getStepDropPlacement: pipelineDropIndicators.getStepDropPlacement,
-      getStepReorderDragState,
-      setStepReorderDragState,
-      clearStepReorderDragState,
-      updateStepDropIndicators: pipelineDropIndicators.updateStepDropIndicators,
-      clearStepDropIndicators: pipelineDropIndicators.clearStepDropIndicators,
-      moveStepToPosition: pipelineCommands.moveStepToPosition,
-      onStatus: showStatus,
-    },
-  });
-
-  stepListEl.addEventListener('scroll', () => scheduleConnectionDraw());
-  paramColumnEl.addEventListener('scroll', () => scheduleConnectionDraw());
-  window.addEventListener('keydown', createHistoryShortcutHandler({ onUndo: undoPipeline, onRedo: redoPipeline }));
-  window.addEventListener('resize', () => {
-    scheduleConnectionDraw();
-    updateStepSwatches();
+    stepListEl,
+    paramColumnEl,
+    onScheduleConnectionDraw: scheduleConnectionDraw,
+    onUpdateStepSwatches: updateStepSwatches,
+    onUndoPipeline: undoPipeline,
+    onRedoPipeline: redoPipeline,
   });
 
   setActiveShape('sphere');
