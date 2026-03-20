@@ -63,11 +63,6 @@ import {
 } from './shared/i18n.ts';
 import { setupStaticLocaleSync } from './shared/i18n/static-locale-sync.ts';
 import {
-  setupOrbitPointerControls,
-  setupPipelinePanelResizer,
-  setupPreviewPanelLayoutResizer,
-} from './shared/interactions/layout-interactions.ts';
-import {
   createSocketDropTargetResolver,
 } from './shared/interactions/socket-dnd.ts';
 import {
@@ -99,6 +94,7 @@ import {
   setSuppressClickUntil,
 } from './shared/ui/interaction-state.ts';
 import { resolveMainDomElements } from './shared/ui/main-dom-elements.ts';
+import { setupMainLayoutControls } from './shared/ui/main-layout-controls-setup.ts';
 import { setupMainPipelineLists } from './shared/ui/main-pipeline-lists-setup.ts';
 import { setupMainPanels } from './shared/ui/main-panels-setup.ts';
 import { setupMainPreviewRuntime } from './shared/ui/main-preview-runtime-setup.ts';
@@ -879,19 +875,13 @@ window.addEventListener('DOMContentLoaded', () => {
   });
 
   setupUI();
-  setupPipelinePanelResizer({
-    panel: $<HTMLElement>('#pipeline-panel'),
-    resizer: $<HTMLElement>('#resizer'),
-    onResized: scheduleConnectionDraw,
-  });
-  setupPreviewPanelLayoutResizer({
+  setupMainLayoutControls({
+    canvas,
+    pipelinePanel: $<HTMLElement>('#pipeline-panel'),
+    pipelineResizer: $<HTMLElement>('#resizer'),
     previewPanel: $<HTMLElement>('.preview-panel'),
     previewDisplay: $<HTMLElement>('#preview-display-section'),
     previewResizer: $<HTMLElement>('#preview-layout-resizer'),
-    onStatus: showStatus,
-  });
-  setupOrbitPointerControls({
-    canvas,
     getOrbitState: () => ({
       orbitPitchDeg,
       orbitYawDeg,
@@ -902,6 +892,8 @@ window.addEventListener('DOMContentLoaded', () => {
       orbitYawDeg = nextState.orbitYawDeg;
       orbitDist = nextState.orbitDist;
     },
+    onPanelResized: scheduleConnectionDraw,
+    onStatus: showStatus,
   });
 
   pipelineCommands.addStep({ recordHistory: false });
