@@ -14,6 +14,9 @@ import {
 import {
   createPipelineHistoryActionsController,
 } from './features/pipeline/pipeline-history-actions.ts';
+import {
+  createPipelineHeaderActionController,
+} from './features/pipeline/pipeline-header-actions-controller.ts';
 import { createPipelineIoSystem } from './features/pipeline/pipeline-io-system.ts';
 import * as pipelineModel from './features/pipeline/pipeline-model.ts';
 import {
@@ -600,6 +603,39 @@ pipelineSocketDnd = createPipelineSocketDndController({
   now: () => performance.now(),
 });
 
+const pipelineHeaderActions = createPipelineHeaderActionController({
+  isAutoApplyEnabled,
+  canUndo: () => pipelineHistory.canUndo(),
+  canRedo: () => pipelineHistory.canRedo(),
+  onUndoPipeline: () => {
+    pipelineHistoryActions.undo();
+  },
+  onRedoPipeline: () => {
+    pipelineHistoryActions.redo();
+  },
+  onResetPipelineState: () => {
+    replacePipelineState({
+      luts: getPipelineLuts(),
+      steps: [],
+      nextStepId: 1,
+    });
+    pipelineHistoryActions.clearHistory();
+    pipelineCommands.addStep({ recordHistory: false });
+  },
+  onApplyPipeline: () => {
+    pipelineApply.applyNow();
+  },
+  onApplyLoadedPipeline: loaded => {
+    applyLoadedPipeline(loaded);
+  },
+  getPipelineIoSystem: () => pipelineIoSystem,
+  setAutoApplyEnabled,
+  syncAutoApplyState: syncHeaderActionAutoApplyState,
+  scheduleApply: () => pipelineApply.scheduleApply(),
+  onStatus: showStatus,
+  t,
+});
+
 function setupMaterialPanel(): void {
   const panel = $<HTMLElement>('#material-panel');
   mountMaterialPanel(panel, {
@@ -653,74 +689,7 @@ function setupShaderPanel(): void {
 
 function setupUI(): void {
   mountLanguageSwitcher($<HTMLElement>('#header-language-switcher'));
-  mountHeaderActionGroup($<HTMLElement>('#header-action-group'), {
-    initialAutoApplyEnabled: isAutoApplyEnabled(),
-    initialCanUndo: pipelineHistory.canUndo(),
-    initialCanRedo: pipelineHistory.canRedo(),
-    onUndoPipeline: () => {
-      pipelineHistoryActions.undo();
-    },
-    onRedoPipeline: () => {
-      pipelineHistoryActions.redo();
-    },
-    onResetPipeline: () => {
-      replacePipelineState({
-        luts: getPipelineLuts(),
-        steps: [],
-        nextStepId: 1,
-      });
-      pipelineHistoryActions.clearHistory();
-      pipelineCommands.addStep({ recordHistory: false });
-      showStatus(t('main.status.resetStepChain'), 'info');
-    },
-    onSavePipeline: async () => {
-      if (!pipelineIoSystem) {
-        showStatus(t('main.status.pipelineIoNotInitialized'), 'error');
-        return;
-      }
-
-      const result = await pipelineIoSystem.savePipelineAsFile();
-      if (result.ok) {
-        showStatus(t('main.status.pipelineSaved'), 'success');
-        return;
-      }
-
-      showStatus(
-        t('main.status.pipelineSaveFailed', {
-          message: result.errorMessage ?? t('common.unknownError'),
-        }),
-        'error',
-      );
-    },
-    onApplyPipeline: () => {
-      pipelineApply.applyNow();
-    },
-    onPipelineFileSelected: async file => {
-      if (!pipelineIoSystem) {
-        showStatus(t('main.status.pipelineIoNotInitialized'), 'error');
-        return;
-      }
-
-      const result = await pipelineIoSystem.loadPipelineFromFile(file);
-      if (!result.ok || !result.loaded) {
-        showStatus(
-          t('main.status.pipelineLoadFailed', {
-            message: result.errorMessage ?? t('common.unknownError'),
-          }),
-          'error',
-        );
-        return;
-      }
-
-      applyLoadedPipeline(result.loaded);
-    },
-    onAutoApplyChange: enabled => {
-      setAutoApplyEnabled(enabled);
-      syncHeaderActionAutoApplyState(isAutoApplyEnabled());
-      if (isAutoApplyEnabled()) pipelineApply.scheduleApply();
-    },
-    onStatus: showStatus,
-  });
+  mountHeaderActionGroup($<HTMLElement>('#header-action-group'), pipelineHeaderActions.buildMountOptions());
 
   mountPreviewShapeBar($<HTMLElement>('#preview-shape-bar'), {
     initialShape: currentPrimitive,
