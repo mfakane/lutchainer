@@ -62,7 +62,6 @@ import {
   type PipelineApplyController,
 } from './features/pipeline/pipeline-apply.ts';
 import {
-  createPipelineDropIndicatorController,
   type PipelineDropIndicatorController,
 } from './features/pipeline/pipeline-drop-indicators.ts';
 import {
@@ -88,8 +87,8 @@ import {
 import { resolveMainDomElements } from './shared/ui/main-dom-elements.ts';
 import { setupMainLayoutControls } from './shared/ui/main-layout-controls-setup.ts';
 import { setupMainPipelineEditor } from './shared/ui/main-pipeline-editor-setup.ts';
-import { setupMainRenderPipeline, type MainRenderPipeline } from './shared/ui/main-render-pipeline-setup.ts';
-import { setupMainPreviewRuntime } from './shared/ui/main-preview-runtime-setup.ts';
+import { type MainRenderPipeline } from './shared/ui/main-render-pipeline-setup.ts';
+import { bootstrapMainRuntime } from './shared/ui/main-runtime-bootstrap.ts';
 import { setupMainUi } from './shared/ui/main-ui-setup.ts';
 import {
   type PreviewShapeController,
@@ -107,7 +106,6 @@ import {
   setPreviewWireframeOverlayEnabled,
 } from './shared/ui/ui-state.ts';
 import {
-  createMainPreviewCaptureController,
   type MainPreviewCaptureController,
 } from './shared/ui/main-preview-capture-controller.ts';
 
@@ -286,14 +284,6 @@ const mainStepRendering = createMainStepRenderingController({
   t,
 });
 
-
-
-
-
-function settleMainPreviewCaptureFromFrame(canvas: HTMLCanvasElement): void {
-  mainPreviewCapture.settleFromFrame(canvas);
-}
-
 function isClickSuppressed(): boolean {
   return performance.now() < getSuppressClickUntil();
 }
@@ -443,63 +433,46 @@ window.addEventListener('DOMContentLoaded', () => {
     paramColumnEl,
   } = resolveMainDomElements({ select: $ }));
 
-  pipelineDropIndicators = createPipelineDropIndicatorController({
-    stepListEl,
-    lutStripListEl,
-    parseStepId,
-    getStepReorderDragState,
-    getLutReorderDragState,
-  });
-
   const canvas = $<HTMLCanvasElement>('#gl-canvas');
   ({
+    pipelineDropIndicators,
     renderer,
     pipelineApply,
     previewShapeController,
     stepPreviewRenderer,
     stepPreviewSystem,
-  } = setupMainPreviewRuntime({
-    canvas,
-    getShaderBuildInput,
-    isAutoApplyEnabled,
-    onUpdateShaderCodePanel: frag => updateShaderCodePanel(frag),
-    onStatus: showStatus,
-    t,
-    getWireframeEnabled: isPreviewWireframeOverlayEnabled,
-    setWireframeEnabled: setPreviewWireframeOverlayEnabled,
-    syncPreviewShapeState: syncPreviewShapeBarState,
-    syncPreviewWireframeState,
-    getSteps: getPipelineSteps,
-    getLuts: getPipelineLuts,
-    getMaterialSettings,
-    getLightSettings,
-    stepPreviewLightDirection: pipelineModel.STEP_PREVIEW_LIGHT_DIR,
-    stepPreviewViewDirection: pipelineModel.STEP_PREVIEW_VIEW_DIR,
-  }));
-
-  // Debug helper: use window.__debugStepPreview.forceCpu(true/false) from browser console.
-  stepPreviewDebugController.registerGlobalDebugApi({
-    globalObject: window as unknown as Record<string, unknown>,
-  });
-
-  mainPreviewCapture = createMainPreviewCaptureController({
-    getRenderer: () => renderer,
-    getRenderSystem: () => mainRenderPipeline?.renderSystem ?? null,
-    getStepPreviewSystem: () => stepPreviewSystem,
-    onStatus: showStatus,
-    t,
-  });
-
-  pipelineIoSystem = setupMainPipelineIoSystem({
+    mainPreviewCapture,
+    pipelineIoSystem,
+    mainRenderPipeline,
+  } = bootstrapMainRuntime({
+    stepListEl,
+    lutStripListEl,
+    parseStepId,
+    getStepReorderDragState,
+    getLutReorderDragState,
+    previewRuntime: {
+      canvas,
+      getShaderBuildInput,
+      isAutoApplyEnabled,
+      onUpdateShaderCodePanel: frag => updateShaderCodePanel(frag),
+      onStatus: showStatus,
+      t,
+      getWireframeEnabled: isPreviewWireframeOverlayEnabled,
+      setWireframeEnabled: setPreviewWireframeOverlayEnabled,
+      syncPreviewShapeState: syncPreviewShapeBarState,
+      syncPreviewWireframeState,
+      getSteps: getPipelineSteps,
+      getLuts: getPipelineLuts,
+      getMaterialSettings,
+      getLightSettings,
+      stepPreviewLightDirection: pipelineModel.STEP_PREVIEW_LIGHT_DIR,
+      stepPreviewViewDirection: pipelineModel.STEP_PREVIEW_VIEW_DIR,
+    },
+    stepPreviewDebugController,
+    debugGlobalObject: window as unknown as Record<string, unknown>,
     getNextStepId: getPipelineNextStepId,
-    getLuts: getPipelineLuts,
-    getSteps: getPipelineSteps,
-    getStepPreviewSystem: () => stepPreviewSystem,
+    onStatus: showStatus,
     t,
-  });
-
-  mainRenderPipeline = setupMainRenderPipeline({
-    renderer,
     lightGizmoElements: {
       layer: lightGizmoLayerEl,
       origin: lightGizmoOriginEl,
@@ -524,12 +497,8 @@ window.addEventListener('DOMContentLoaded', () => {
       orbitYawDeg,
       orbitDist,
     }),
-    getLightSettings,
     getLightDirectionWorld,
-    getMaterialSettings,
-    shouldSuppressLightGuide: () => mainPreviewCapture.isSuppressLightGuide(),
-    onSettleFrameCapture: settleMainPreviewCaptureFromFrame,
-  });
+  }));
 
   replacePipelineState({
     luts: createBuiltinLuts(),
