@@ -1,5 +1,8 @@
-import * as pipelineModel from '../../features/pipeline/pipeline-model';
 import * as pipelineView from '../../features/pipeline/pipeline-view';
+import {
+  isValidSocketDragState,
+  isValidSocketDropTarget,
+} from '../interactions/socket-validation';
 
 export type SocketDragState = pipelineView.SocketDragState;
 export type SocketDropTarget = pipelineView.SocketDropTarget;
@@ -26,110 +29,20 @@ function isFiniteNumber(value: unknown): value is number {
   return typeof value === 'number' && Number.isFinite(value);
 }
 
-function isValidPointerId(value: unknown): value is number {
-  return typeof value === 'number' && Number.isInteger(value) && value >= 0;
-}
-
 function isValidPositiveInteger(value: unknown): value is number {
   return typeof value === 'number' && Number.isInteger(value) && value > 0;
 }
 
-function isHtmlButtonElement(value: unknown): value is HTMLButtonElement {
-  return value instanceof HTMLButtonElement;
-}
-
-function isValidDragMode(value: unknown): value is SocketDragState['mode'] {
-  return value === 'param' || value === 'step';
-}
-
 function assertValidSocketDragState(value: unknown): asserts value is SocketDragState {
-  if (!value || typeof value !== 'object') {
-    throw new Error('Socket drag state must be an object.');
-  }
-
-  const candidate = value as Partial<SocketDragState> & {
-    mode?: unknown;
-    sourceEl?: unknown;
-    param?: unknown;
-    stepId?: unknown;
-    axis?: unknown;
-    pointerId?: unknown;
-    startX?: unknown;
-    startY?: unknown;
-    pointerX?: unknown;
-    pointerY?: unknown;
-    dragging?: unknown;
-  };
-
-  if (!isValidDragMode(candidate.mode)) {
-    throw new Error(`Invalid socket drag mode: ${String(candidate.mode)}`);
-  }
-  if (!isHtmlButtonElement(candidate.sourceEl)) {
-    throw new Error('Socket drag sourceEl must be an HTMLButtonElement.');
-  }
-  if (!isValidPointerId(candidate.pointerId)) {
-    throw new Error(`Invalid socket drag pointerId: ${String(candidate.pointerId)}`);
-  }
-  if (!isFiniteNumber(candidate.startX) || !isFiniteNumber(candidate.startY)) {
-    throw new Error('Socket drag start coordinates must be finite numbers.');
-  }
-  if (!isFiniteNumber(candidate.pointerX) || !isFiniteNumber(candidate.pointerY)) {
-    throw new Error('Socket drag pointer coordinates must be finite numbers.');
-  }
-  if (typeof candidate.dragging !== 'boolean') {
-    throw new Error('Socket drag dragging flag must be a boolean.');
-  }
-
-  if (candidate.mode === 'param') {
-    if (typeof candidate.param !== 'string' || !pipelineModel.isValidParamName(candidate.param)) {
-      throw new Error(`Invalid socket drag parameter: ${String(candidate.param)}`);
-    }
-    return;
-  }
-
-  if (!isValidPositiveInteger(candidate.stepId)) {
-    throw new Error(`Invalid socket drag stepId: ${String(candidate.stepId)}`);
-  }
-  if (typeof candidate.axis !== 'string' || !pipelineView.isValidSocketAxis(candidate.axis)) {
-    throw new Error(`Invalid socket drag axis: ${String(candidate.axis)}`);
+  if (!isValidSocketDragState(value)) {
+    throw new Error('Socket drag state is invalid.');
   }
 }
 
 function assertValidSocketDropTarget(value: unknown): asserts value is SocketDropTarget {
-  if (!value || typeof value !== 'object') {
-    throw new Error('Socket drop target must be an object.');
+  if (!isValidSocketDropTarget(value)) {
+    throw new Error('Socket drop target is invalid.');
   }
-
-  const candidate = value as Partial<SocketDropTarget> & {
-    kind?: unknown;
-    element?: unknown;
-    param?: unknown;
-    stepId?: unknown;
-    axis?: unknown;
-  };
-
-  if (!isHtmlButtonElement(candidate.element)) {
-    throw new Error('Socket drop target element must be an HTMLButtonElement.');
-  }
-
-  if (candidate.kind === 'param') {
-    if (typeof candidate.param !== 'string' || !pipelineModel.isValidParamName(candidate.param)) {
-      throw new Error(`Invalid socket drop parameter: ${String(candidate.param)}`);
-    }
-    return;
-  }
-
-  if (candidate.kind === 'step') {
-    if (!isValidPositiveInteger(candidate.stepId)) {
-      throw new Error(`Invalid socket drop stepId: ${String(candidate.stepId)}`);
-    }
-    if (typeof candidate.axis !== 'string' || !pipelineView.isValidSocketAxis(candidate.axis)) {
-      throw new Error(`Invalid socket drop axis: ${String(candidate.axis)}`);
-    }
-    return;
-  }
-
-  throw new Error(`Invalid socket drop target kind: ${String(candidate.kind)}`);
 }
 
 function assertValidStepReorderDragState(value: unknown): asserts value is StepReorderDragState {

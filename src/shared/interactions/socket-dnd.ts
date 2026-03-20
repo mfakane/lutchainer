@@ -1,5 +1,9 @@
 import type { SocketAxis, SocketDragState, SocketDropTarget } from '../../features/pipeline/pipeline-view';
 import type { ParamName } from '../../features/step/step-model';
+import {
+  isValidSocketDragState,
+  isValidSocketDropTarget,
+} from './socket-validation';
 
 interface ResolveSocketDropTargetOptions {
   socketDragState: SocketDragState | null;
@@ -104,16 +108,8 @@ function isValidPointerId(value: unknown): value is number {
   return typeof value === 'number' && Number.isInteger(value) && value >= 0;
 }
 
-function isValidPositiveInteger(value: unknown): value is number {
-  return typeof value === 'number' && Number.isInteger(value) && value > 0;
-}
-
 function isHtmlButtonElement(value: unknown): value is HTMLButtonElement {
   return value instanceof HTMLButtonElement;
-}
-
-function isSocketAxis(value: unknown): value is SocketAxis {
-  return value === 'x' || value === 'y';
 }
 
 function assertValidObject(value: unknown, label: string): asserts value is Record<string, unknown> {
@@ -142,80 +138,6 @@ function isValidAnchorPoint(value: unknown): value is AnchorPoint {
 
   const point = value as Partial<AnchorPoint>;
   return isFiniteCoord(point.x) && isFiniteCoord(point.y);
-}
-
-function isValidSocketDragState(value: unknown): value is SocketDragState {
-  if (!value || typeof value !== 'object') {
-    return false;
-  }
-
-  const candidate = value as Partial<SocketDragState> & {
-    mode?: unknown;
-    sourceEl?: unknown;
-    pointerId?: unknown;
-    startX?: unknown;
-    startY?: unknown;
-    pointerX?: unknown;
-    pointerY?: unknown;
-    dragging?: unknown;
-    param?: unknown;
-    stepId?: unknown;
-    axis?: unknown;
-  };
-
-  if (!isHtmlButtonElement(candidate.sourceEl)) {
-    return false;
-  }
-  if (!isValidPointerId(candidate.pointerId)) {
-    return false;
-  }
-  if (!isFiniteCoord(candidate.startX) || !isFiniteCoord(candidate.startY)) {
-    return false;
-  }
-  if (!isFiniteCoord(candidate.pointerX) || !isFiniteCoord(candidate.pointerY)) {
-    return false;
-  }
-  if (typeof candidate.dragging !== 'boolean') {
-    return false;
-  }
-
-  if (candidate.mode === 'param') {
-    return isNonEmptyString(candidate.param);
-  }
-
-  if (candidate.mode === 'step') {
-    return isValidPositiveInteger(candidate.stepId) && isSocketAxis(candidate.axis);
-  }
-
-  return false;
-}
-
-function isValidSocketDropTarget(value: unknown): value is SocketDropTarget {
-  if (!value || typeof value !== 'object') {
-    return false;
-  }
-
-  const candidate = value as Partial<SocketDropTarget> & {
-    kind?: unknown;
-    element?: unknown;
-    param?: unknown;
-    stepId?: unknown;
-    axis?: unknown;
-  };
-
-  if (!isHtmlButtonElement(candidate.element)) {
-    return false;
-  }
-
-  if (candidate.kind === 'param') {
-    return isNonEmptyString(candidate.param);
-  }
-
-  if (candidate.kind === 'step') {
-    return isValidPositiveInteger(candidate.stepId) && isSocketAxis(candidate.axis);
-  }
-
-  return false;
 }
 
 function assertValidResolveSocketDropTargetOptions(

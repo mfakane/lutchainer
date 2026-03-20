@@ -7,6 +7,10 @@ import {
   resolveSocketDragPreviewEnd,
   resolveSocketDragPreviewStart,
 } from './shared/interactions/socket-dnd';
+import {
+  isValidSocketDragState,
+  isValidSocketDropTarget,
+} from './shared/interactions/socket-validation';
 
 export interface ConnectionLayerRenderOptions {
   pipelineWorkspaceEl: HTMLElement;
@@ -37,81 +41,6 @@ function isHtmlElement(value: unknown): value is HTMLElement {
 
 function isSvgElement(value: unknown): value is SVGSVGElement {
   return value instanceof SVGSVGElement;
-}
-
-function isFiniteNumber(value: unknown): value is number {
-  return typeof value === 'number' && Number.isFinite(value);
-}
-
-function isValidSocketDragState(value: unknown): value is SocketDragState {
-  if (!isObject(value)) {
-    return false;
-  }
-
-  const candidate = value as Partial<SocketDragState> & {
-    mode?: unknown;
-    sourceEl?: unknown;
-    pointerX?: unknown;
-    pointerY?: unknown;
-    dragging?: unknown;
-    param?: unknown;
-    stepId?: unknown;
-    axis?: unknown;
-  };
-
-  if (!isHtmlElement(candidate.sourceEl)) {
-    return false;
-  }
-
-  if (!isFiniteNumber(candidate.pointerX) || !isFiniteNumber(candidate.pointerY)) {
-    return false;
-  }
-
-  if (typeof candidate.dragging !== 'boolean') {
-    return false;
-  }
-
-  if (candidate.mode === 'param') {
-    return typeof candidate.param === 'string' && pipelineModel.isValidParamName(candidate.param);
-  }
-
-  if (candidate.mode === 'step') {
-    return Number.isInteger(candidate.stepId)
-      && (candidate.stepId ?? 0) > 0
-      && (candidate.axis === 'x' || candidate.axis === 'y');
-  }
-
-  return false;
-}
-
-function isValidSocketDropTarget(value: unknown): value is SocketDropTarget {
-  if (!isObject(value)) {
-    return false;
-  }
-
-  const candidate = value as Partial<SocketDropTarget> & {
-    kind?: unknown;
-    element?: unknown;
-    param?: unknown;
-    stepId?: unknown;
-    axis?: unknown;
-  };
-
-  if (!isHtmlElement(candidate.element)) {
-    return false;
-  }
-
-  if (candidate.kind === 'param') {
-    return typeof candidate.param === 'string' && pipelineModel.isValidParamName(candidate.param);
-  }
-
-  if (candidate.kind === 'step') {
-    return Number.isInteger(candidate.stepId)
-      && (candidate.stepId ?? 0) > 0
-      && (candidate.axis === 'x' || candidate.axis === 'y');
-  }
-
-  return false;
 }
 
 function isValidConnectionStep(step: unknown): step is StepModel {

@@ -1,11 +1,4 @@
 import { type ParamName } from '../step/step-model';
-import {
-  LIGHT_RANGE_BINDINGS,
-  MATERIAL_RANGE_BINDINGS,
-  colorToHex,
-  type LightSettings,
-  type MaterialSettings,
-} from './pipeline-model';
 
 export type SocketAxis = 'x' | 'y';
 
@@ -100,10 +93,6 @@ interface AnchorPoint {
 export const CONNECTION_FALLBACK_COLOR = '#78d9c4';
 export const CONNECTION_DRAG_PREVIEW_COLOR = '#c6fff1';
 
-function isValidQueryableRoot(root: ParentNode | null | undefined): root is ParentNode {
-  return !!root && typeof root.querySelector === 'function';
-}
-
 function isNonEmptyString(value: unknown): value is string {
   return typeof value === 'string' && value.trim().length > 0;
 }
@@ -171,63 +160,6 @@ function findIndicatorItemById<TId extends string | number>(
 
 export function isValidSocketAxis(value: string): value is SocketAxis {
   return value === 'x' || value === 'y';
-}
-
-export function syncMaterialPanel(materialSettings: MaterialSettings, root: ParentNode | null = document): void {
-  if (!isValidQueryableRoot(root)) {
-    return;
-  }
-
-  const baseColorInput = root.querySelector<HTMLInputElement>('#mat-base-color');
-  const baseColorValue = root.querySelector<HTMLElement>('#mat-base-color-value');
-  const hexColor = colorToHex(materialSettings.baseColor);
-
-  if (baseColorInput) baseColorInput.value = hexColor;
-  if (baseColorValue) baseColorValue.textContent = hexColor;
-
-  for (const binding of MATERIAL_RANGE_BINDINGS) {
-    const input = root.querySelector<HTMLInputElement>(`#${binding.inputId}`);
-    const output = root.querySelector<HTMLElement>(`#${binding.outputId}`);
-    const currentValue = materialSettings[binding.key];
-
-    if (input) input.value = String(currentValue);
-    if (output) output.textContent = currentValue.toFixed(binding.fractionDigits);
-  }
-}
-
-export function syncLightPanel(lightSettings: LightSettings, root: ParentNode | null = document): void {
-  if (!isValidQueryableRoot(root)) {
-    return;
-  }
-
-  const lightColorInput = root.querySelector<HTMLInputElement>('#light-color');
-  const lightColorValue = root.querySelector<HTMLElement>('#light-color-value');
-  const ambientColorInput = root.querySelector<HTMLInputElement>('#light-ambient-color');
-  const ambientColorValue = root.querySelector<HTMLElement>('#light-ambient-color-value');
-  const lightHexColor = colorToHex(lightSettings.lightColor);
-  const ambientHexColor = colorToHex(lightSettings.ambientColor);
-
-  if (lightColorInput) lightColorInput.value = lightHexColor;
-  if (lightColorValue) lightColorValue.textContent = lightHexColor;
-  if (ambientColorInput) ambientColorInput.value = ambientHexColor;
-  if (ambientColorValue) ambientColorValue.textContent = ambientHexColor;
-
-  for (const binding of LIGHT_RANGE_BINDINGS) {
-    const input = root.querySelector<HTMLInputElement>(`#${binding.inputId}`);
-    const output = root.querySelector<HTMLElement>(`#${binding.outputId}`);
-    const currentValue = lightSettings[binding.key];
-    const isAngle = binding.key === 'azimuthDeg' || binding.key === 'elevationDeg';
-    const formatted = currentValue.toFixed(binding.fractionDigits);
-
-    if (input) input.value = formatted;
-    if (output) output.textContent = isAngle ? `${formatted}°` : formatted;
-  }
-
-  const toggleButton = root.querySelector<HTMLButtonElement>('#btn-toggle-light-gizmo');
-  if (toggleButton) {
-    toggleButton.textContent = `ガイド: ${lightSettings.showGizmo ? 'ON' : 'OFF'}`;
-    toggleButton.setAttribute('aria-pressed', lightSettings.showGizmo ? 'true' : 'false');
-  }
 }
 
 export function getParamSocketAnchorPoint(element: HTMLElement, workspaceRect: DOMRect): AnchorPoint {

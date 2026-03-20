@@ -1,12 +1,12 @@
 import { type MaterialSettings } from '../pipeline/pipeline-model';
-import type { LutModel, ParamName, ShaderLocalKey, StepModel, StepRuntimeModel } from '../step/step-model';
+import type { LutModel, StepModel, StepRuntimeModel } from '../step/step-model';
 import {
-  PARAM_EVALUATORS,
   getBlendModeStrategy,
   paramExprGlsl,
   paramExprHlsl,
   resolveStepRuntimeModels,
 } from '../step/step-runtime';
+import { buildShaderLocalDeclarations } from './shader-local-decls';
 
 export const DEFAULT_VERT = `// SPDX-License-Identifier: CC0-1.0
 precision mediump float;
@@ -132,215 +132,6 @@ function buildHlslSampleBody(luts: LutModel[]): string {
     'float4(1.0, 1.0, 1.0, 1.0)',
     index => `u_lut${index}.SampleLevel(u_lutSampler, uv, 0.0)`,
   );
-}
-
-interface ShaderLocalDecl {
-  requires: readonly ShaderLocalKey[];
-  previewGlsl: readonly string[];
-  fragmentGlsl: (material: MaterialSettings) => readonly string[];
-  hlsl: (material: MaterialSettings) => readonly string[];
-}
-
-const SHADER_LOCALS: Record<ShaderLocalKey, ShaderLocalDecl> = {
-  N: {
-    requires: [],
-    previewGlsl: ['vec3 N = vec3(nx, ny, nz);'],
-    fragmentGlsl: () => ['vec3 N = normalize(v_normal);'],
-    hlsl: () => ['float3 N = normalize(input.normal);'],
-  },
-  L: {
-    requires: [],
-    previewGlsl: ['vec3 L = normalize(u_previewLightDir);'],
-    fragmentGlsl: () => ['vec3 L = normalize(u_lightDir);'],
-    hlsl: () => ['float3 L = normalize(u_lightDir);'],
-  },
-  cameraPos: {
-    requires: [],
-    previewGlsl: ['vec3 cameraPos = vec3(0.0, 0.0, 3.0);'],
-    fragmentGlsl: () => [],
-    hlsl: () => [],
-  },
-  V: {
-    requires: ['N', 'cameraPos'],
-    previewGlsl: ['vec3 V = normalize(cameraPos - N);'],
-    fragmentGlsl: () => ['vec3 V = normalize(u_cameraPos - v_worldPos);'],
-    hlsl: () => ['float3 V = normalize(u_cameraPos - input.worldPos);'],
-  },
-  H: {
-    requires: ['L', 'V'],
-    previewGlsl: ['vec3 H = normalize(L + V);'],
-    fragmentGlsl: () => ['vec3 H = normalize(L + V);'],
-    hlsl: () => ['float3 H = normalize(L + V);'],
-  },
-  lambert: {
-    requires: ['N', 'L'],
-    previewGlsl: ['float lambert = max(dot(N, L), 0.0);'],
-    fragmentGlsl: () => ['float lambert = max(dot(N, L), 0.0);'],
-    hlsl: () => ['float lambert = max(dot(N, L), 0.0);'],
-  },
-  halfLambert: {
-    requires: ['lambert'],
-    previewGlsl: ['float halfLambert = lambert * 0.5 + 0.5;'],
-    fragmentGlsl: () => ['float halfLambert = lambert * 0.5 + 0.5;'],
-    hlsl: () => ['float halfLambert = lambert * 0.5 + 0.5;'],
-  },
-  nDotH: {
-    requires: ['N', 'H'],
-    previewGlsl: ['float nDotH = max(dot(N, H), 0.0);'],
-    fragmentGlsl: () => ['float nDotH = max(dot(N, H), 0.0);'],
-    hlsl: () => ['float nDotH = max(dot(N, H), 0.0);'],
-  },
-  specular: {
-    requires: ['nDotH'],
-    previewGlsl: [
-      'float specularStrength = max(0.0, u_specularStrength);',
-      'float specularPower = max(1.0, u_specularPower);',
-      'float specular = pow(nDotH, specularPower) * specularStrength;',
-    ],
-    fragmentGlsl: () => [
-      'float specularStrength = max(0.0, u_specularStrength);',
-      'float specularPower = max(1.0, u_specularPower);',
-      'float specular = pow(nDotH, specularPower) * specularStrength;',
-    ],
-    hlsl: () => [
-      'float specularStrength = max(0.0, u_specularStrength);',
-      'float specularPower = max(1.0, u_specularPower);',
-      'float specular = pow(nDotH, specularPower) * specularStrength;',
-    ],
-  },
-  facing: {
-    requires: ['N', 'V'],
-    previewGlsl: ['float facing = max(dot(N, V), 0.0);'],
-    fragmentGlsl: () => ['float facing = max(dot(N, V), 0.0);'],
-    hlsl: () => ['float facing = max(dot(N, V), 0.0);'],
-  },
-  fresnel: {
-    requires: ['facing'],
-    previewGlsl: [
-      'float fresnelStrength = max(0.0, u_fresnelStrength);',
-      'float fresnelPower = max(0.01, u_fresnelPower);',
-      'float fresnel = pow(1.0 - facing, fresnelPower) * fresnelStrength;',
-    ],
-    fragmentGlsl: () => [
-      'float fresnelStrength = max(0.0, u_fresnelStrength);',
-      'float fresnelPower = max(0.01, u_fresnelPower);',
-      'float fresnel = pow(1.0 - facing, fresnelPower) * fresnelStrength;',
-    ],
-    hlsl: () => [
-      'float fresnelStrength = max(0.0, u_fresnelStrength);',
-      'float fresnelPower = max(0.01, u_fresnelPower);',
-      'float fresnel = pow(1.0 - facing, fresnelPower) * fresnelStrength;',
-    ],
-  },
-  linearDepth: {
-    requires: ['N', 'cameraPos'],
-    previewGlsl: [
-      'float cameraDist = length(cameraPos);',
-      'float nearDepth = max(0.0, cameraDist - 1.0);',
-      'float farDepth = cameraDist + 1.0;',
-      'float linearDepth = clamp((length(cameraPos - N) - nearDepth) / max(1.0e-4, farDepth - nearDepth), 0.0, 1.0);',
-    ],
-    fragmentGlsl: () => [
-      'float cameraDist = length(u_cameraPos);',
-      'float nearDepth = max(0.0, cameraDist - 1.0);',
-      'float farDepth = cameraDist + 1.0;',
-      'float linearDepth = clamp((length(u_cameraPos - v_worldPos) - nearDepth) / max(1.0e-4, farDepth - nearDepth), 0.0, 1.0);',
-    ],
-    hlsl: () => [
-      'float cameraDist = length(u_cameraPos);',
-      'float nearDepth = max(0.0, cameraDist - 1.0);',
-      'float farDepth = cameraDist + 1.0;',
-      'float linearDepth = saturate((length(u_cameraPos - input.worldPos) - nearDepth) / max(1.0e-4, farDepth - nearDepth));',
-    ],
-  },
-  texcoord: {
-    requires: [],
-    previewGlsl: [
-      'float texU = atan(nz, nx) / (PI * 2.0);',
-      'if (texU < 0.0) texU += 1.0;',
-      'float texV = acos(clamp(ny, -1.0, 1.0)) / PI;',
-      'vec2 v_texcoord = vec2(texU, texV);',
-    ],
-    fragmentGlsl: () => [],
-    hlsl: () => [],
-  },
-};
-
-const ALL_LOCAL_KEYS: readonly ShaderLocalKey[] = [
-  'N', 'L', 'cameraPos', 'V', 'H',
-  'lambert', 'halfLambert', 'nDotH', 'specular',
-  'facing', 'fresnel', 'linearDepth', 'texcoord',
-];
-
-function collectUsedParams(stepModels: readonly StepRuntimeModel[]): Set<ParamName> {
-  const usedParams = new Set<ParamName>();
-  for (const stepModel of stepModels) {
-    usedParams.add(stepModel.step.xParam);
-    usedParams.add(stepModel.step.yParam);
-  }
-  return usedParams;
-}
-
-function collectRequiredLocals(usedParams: ReadonlySet<ParamName>): Set<ShaderLocalKey> {
-  const required = new Set<ShaderLocalKey>();
-  for (const param of usedParams) {
-    for (const key of PARAM_EVALUATORS[param].shader.requires) {
-      required.add(key);
-    }
-  }
-  let changed = true;
-  while (changed) {
-    changed = false;
-    for (const key of ALL_LOCAL_KEYS) {
-      if (!required.has(key)) continue;
-      for (const dep of SHADER_LOCALS[key].requires) {
-        if (!required.has(dep)) {
-          required.add(dep);
-          changed = true;
-        }
-      }
-    }
-  }
-  return required;
-}
-
-function topoSort(required: Set<ShaderLocalKey>): ShaderLocalKey[] {
-  const sorted: ShaderLocalKey[] = [];
-  const visited = new Set<ShaderLocalKey>();
-  const visiting = new Set<ShaderLocalKey>();
-
-  function visit(key: ShaderLocalKey): void {
-    if (visited.has(key)) return;
-    if (visiting.has(key)) throw new Error(`シェーダローカル依存に循環があります: ${key}`);
-    visiting.add(key);
-    for (const dep of SHADER_LOCALS[key].requires) {
-      if (required.has(dep)) visit(dep);
-    }
-    visiting.delete(key);
-    visited.add(key);
-    sorted.push(key);
-  }
-
-  for (const key of ALL_LOCAL_KEYS) {
-    if (required.has(key)) visit(key);
-  }
-  return sorted;
-}
-
-function emitLocalDecls(required: Set<ShaderLocalKey>, stage: 'previewGlsl'): string[];
-function emitLocalDecls(required: Set<ShaderLocalKey>, stage: 'fragmentGlsl' | 'hlsl', material: MaterialSettings): string[];
-function emitLocalDecls(
-  required: Set<ShaderLocalKey>,
-  stage: 'previewGlsl' | 'fragmentGlsl' | 'hlsl',
-  material?: MaterialSettings,
-): string[] {
-  const sorted = topoSort(required);
-  return sorted.flatMap(key => {
-    const decl = SHADER_LOCALS[key];
-    if (stage === 'previewGlsl') return [...decl.previewGlsl];
-    if (stage === 'fragmentGlsl') return [...decl.fragmentGlsl(material!)];
-    return [...decl.hlsl(material!)];
-  });
 }
 
 function buildPreviewStepCode(stepModels: StepRuntimeModel[]): string[] {
@@ -471,7 +262,7 @@ export function buildStepPreviewFragmentShader(input: StepPreviewShaderBuildInpu
   const sampleBody = buildGlslSampleBody(input.luts);
   const stepModels = resolveStepRuntimeModels(input.steps, input.luts);
   const stepCode = buildPreviewStepCode(stepModels);
-  const previewParamLines = emitLocalDecls(collectRequiredLocals(collectUsedParams(stepModels)), 'previewGlsl');
+  const previewParamLines = buildShaderLocalDeclarations(stepModels, 'previewGlsl');
 
   return `// SPDX-License-Identifier: CC0-1.0
 precision mediump float;
@@ -555,7 +346,7 @@ export function buildFragmentShader(input: ShaderBuildInput): string {
   const sampleBody = buildGlslSampleBody(input.luts);
   const stepModels = resolveStepRuntimeModels(input.steps, input.luts);
   const stepCode = buildFragmentStepCode(stepModels);
-  const fragmentParamLines = emitLocalDecls(collectRequiredLocals(collectUsedParams(stepModels)), 'fragmentGlsl', input.materialSettings);
+  const fragmentParamLines = buildShaderLocalDeclarations(stepModels, 'fragmentGlsl', input.materialSettings);
 
   return `// SPDX-License-Identifier: CC0-1.0
 precision mediump float;
@@ -625,7 +416,7 @@ export function buildHlslShader(input: ShaderBuildInput): string {
   const sampleBody = buildHlslSampleBody(input.luts);
   const stepModels = resolveStepRuntimeModels(input.steps, input.luts);
   const stepCode = buildHlslStepCode(stepModels);
-  const hlslParamLines = emitLocalDecls(collectRequiredLocals(collectUsedParams(stepModels)), 'hlsl', input.materialSettings);
+  const hlslParamLines = buildShaderLocalDeclarations(stepModels, 'hlsl', input.materialSettings);
 
   return `// SPDX-License-Identifier: CC0-1.0
 cbuffer SceneUniforms : register(b0)

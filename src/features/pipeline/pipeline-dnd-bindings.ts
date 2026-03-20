@@ -1,14 +1,14 @@
 import {
-    bindPointerDragSources,
-    bindReorderDragHandlers,
-    createPointerDragState,
+  bindPointerDragSources,
+  bindReorderDragHandlers,
+  createPointerDragState,
 } from '../../shared/interactions/dnd';
 import type { ParamName } from '../step/step-model';
 import type {
-    LutReorderDragState,
-    SocketAxis,
-    SocketDragState,
-    StepReorderDragState,
+  LutReorderDragState,
+  SocketAxis,
+  SocketDragState,
+  StepReorderDragState,
 } from './pipeline-view';
 
 type StatusKind = 'success' | 'error' | 'info';
@@ -60,6 +60,12 @@ interface SetupSocketPointerBindingsOptions {
   handleSocketDragMove: (event: PointerEvent) => void;
   handleSocketDragEnd: (event: PointerEvent) => void;
   onStatus: StatusReporter;
+}
+
+interface SetupPipelineDndBindingsOptions {
+  lutReorder: SetupLutReorderBindingsOptions;
+  socketPointer: SetupSocketPointerBindingsOptions;
+  stepReorder: SetupStepReorderBindingsOptions;
 }
 
 type SocketDragStartSeed =
@@ -173,6 +179,24 @@ function ensureSetupSocketPointerBindingsOptions(value: unknown): asserts value 
   ensureFunction(options.handleSocketDragMove, 'Socket pointer D&D: handleSocketDragMove');
   ensureFunction(options.handleSocketDragEnd, 'Socket pointer D&D: handleSocketDragEnd');
   ensureStatusReporter(options.onStatus, 'Socket pointer D&D: onStatus');
+}
+
+function ensureSetupPipelineDndBindingsOptions(value: unknown): asserts value is SetupPipelineDndBindingsOptions {
+  if (!value || typeof value !== 'object') {
+    throw new Error('Pipeline D&D オプションが不正です。');
+  }
+
+  const options = value as Partial<SetupPipelineDndBindingsOptions>;
+  ensureSetupLutReorderBindingsOptions(options.lutReorder);
+  ensureSetupSocketPointerBindingsOptions(options.socketPointer);
+  ensureSetupStepReorderBindingsOptions(options.stepReorder);
+}
+
+export function setupPipelineDndBindings(options: SetupPipelineDndBindingsOptions): void {
+  ensureSetupPipelineDndBindingsOptions(options);
+  setupLutReorderBindings(options.lutReorder);
+  setupSocketPointerBindings(options.socketPointer);
+  setupStepReorderBindings(options.stepReorder);
 }
 
 export function setupLutReorderBindings(options: SetupLutReorderBindingsOptions): void {

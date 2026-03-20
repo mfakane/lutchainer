@@ -3,10 +3,14 @@ import {
   renderConnectionLayer,
 } from './connection-renderer.ts';
 import {
-  setupLutReorderBindings,
-  setupSocketPointerBindings,
-  setupStepReorderBindings,
+  createPipelineCommandController,
+} from './features/pipeline/pipeline-command-controller.ts';
+import {
+  setupPipelineDndBindings,
 } from './features/pipeline/pipeline-dnd-bindings.ts';
+import {
+  createPipelineHistoryController,
+} from './features/pipeline/pipeline-history.ts';
 import { createPipelineIoSystem } from './features/pipeline/pipeline-io-system.ts';
 import * as pipelineModel from './features/pipeline/pipeline-model.ts';
 import {
@@ -21,14 +25,9 @@ import {
 } from './features/pipeline/pipeline-state.ts';
 import * as pipelineView from './features/pipeline/pipeline-view.ts';
 import * as shaderGenerator from './features/shader/shader-generator.ts';
-import { CHANNELS, MAX_STEP_LABEL_LENGTH } from './features/step/step-model.ts';
+import { MAX_STEP_LABEL_LENGTH } from './features/step/step-model.ts';
 import { StepPreviewRenderer } from './features/step/step-preview-renderer.ts';
 import { createStepPreviewSystem } from './features/step/step-preview-system.ts';
-import {
-  type LutModel,
-  type ParamName,
-  type StepModel,
-} from './features/step/types.ts';
 import { createGizmoOverlayController } from './gizmo-overlay.ts';
 import {
   mountHeaderActionGroup,
@@ -70,7 +69,6 @@ import {
 } from './shared/i18n.ts';
 import {
   getLinearDropPlacement,
-  reorderItemsById,
   updatePointerDragStateForMove,
   type LinearDropCandidate,
 } from './shared/interactions/dnd.ts';
@@ -119,7 +117,6 @@ import {
 import { createCube, createSphere, createTorus } from './shared/utils/geometry.ts';
 
 type PrimitiveType = PreviewShapeType;
-type SocketAxis = pipelineView.SocketAxis;
 type SocketDropTarget = pipelineView.SocketDropTarget;
 
 interface StaticTranslationTarget {
@@ -147,10 +144,6 @@ interface PendingMainPreviewCapture {
 
 interface MainPreviewCaptureRequestOptions {
   hideLightGuide?: boolean;
-}
-
-interface AddStepOptions {
-  recordHistory?: boolean;
 }
 
 const STEP_PREVIEW_DEBUG_GLOBAL_KEY = '__debugStepPreview';
@@ -232,8 +225,6 @@ let stepPreviewSystem: ReturnType<typeof createStepPreviewSystem> | null = null;
 let pipelineIoSystem: ReturnType<typeof createPipelineIoSystem> | null = null;
 let pendingMainPreviewCapture: PendingMainPreviewCapture | null = null;
 let suppressLightGuideForMainPreviewCapture = false;
-const pipelineUndoStack: PipelineStateSnapshot[] = [];
-const pipelineRedoStack: PipelineStateSnapshot[] = [];
 
 const connectionDrawScheduler = createConnectionDrawScheduler({
   draw: () => {
@@ -244,6 +235,23 @@ const connectionDrawScheduler = createConnectionDrawScheduler({
       socketDragState: getSocketDragState(),
       socketDropTarget: getSocketDropTargetState(),
     });
+  },
+});
+
+const pipelineHistory = createPipelineHistoryController({
+  historyLimit: PIPELINE_HISTORY_LIMIT,
+  captureSnapshot: () => ({
+    steps: getPipelineSteps(),
+    luts: getPipelineLuts(),
+    nextStepId: getPipelineNextStepId(),
+  }),
+  restoreSnapshot: snapshot => {
+    replacePipelineState(snapshot);
+    renderSteps();
+    scheduleApply();
+  },
+  onHistoryStateChange: (canUndo, canRedo) => {
+    syncHeaderActionHistoryState(canUndo, canRedo);
   },
 });
 
@@ -297,189 +305,34 @@ function showStatus(message: string, kind: 'success' | 'error' | 'info' = 'info'
   });
 }
 
-function isPipelineStateSnapshot(value: unknown): value is PipelineStateSnapshot {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) {
-    return false;
-  }
-
-  const candidate = value as Partial<PipelineStateSnapshot>;
-  return Array.isArray(candidate.steps)
-    && Array.isArray(candidate.luts)
-    && typeof candidate.nextStepId === 'number'
-    && Number.isInteger(candidate.nextStepId)
-    && candidate.nextStepId > 0;
-}
-
-function cloneStepForHistory(step: StepModel): StepModel {
-  if (!step || typeof step !== 'object') {
-    throw new Error('履歴用Stepデータが不正です。');
-  }
-
-  return {
-    ...step,
-    ops: { ...step.ops },
-  };
-}
-
-function cloneLutForHistory(lut: LutModel): LutModel {
-  if (!lut || typeof lut !== 'object') {
-    throw new Error('履歴用LUTデータが不正です。');
-  }
-
-  return {
-    ...lut,
-  };
-}
-
-function clonePipelineSnapshot(snapshot: PipelineStateSnapshot): PipelineStateSnapshot {
-  if (!isPipelineStateSnapshot(snapshot)) {
-    throw new Error('履歴スナップショットが不正です。');
-  }
-
-  return {
-    steps: snapshot.steps.map(step => cloneStepForHistory(step)),
-    luts: snapshot.luts.map(lut => cloneLutForHistory(lut)),
-    nextStepId: snapshot.nextStepId,
-  };
-}
-
 function capturePipelineSnapshot(): PipelineStateSnapshot {
-  return clonePipelineSnapshot({
-    steps: getPipelineSteps(),
-    luts: getPipelineLuts(),
-    nextStepId: getPipelineNextStepId(),
-  });
-}
-
-function areStepModelsEqual(left: StepModel, right: StepModel): boolean {
-  if (left.id !== right.id) return false;
-  if (left.lutId !== right.lutId) return false;
-  if ((left.label ?? '') !== (right.label ?? '')) return false;
-  if (left.muted !== right.muted) return false;
-  if (left.blendMode !== right.blendMode) return false;
-  if (left.xParam !== right.xParam) return false;
-  if (left.yParam !== right.yParam) return false;
-
-  for (const channel of CHANNELS) {
-    if (left.ops[channel] !== right.ops[channel]) {
-      return false;
-    }
-  }
-
-  return true;
-}
-
-function areLutModelsEqual(left: LutModel, right: LutModel): boolean {
-  return left.id === right.id
-    && left.name === right.name
-    && left.width === right.width
-    && left.height === right.height
-    && left.thumbUrl === right.thumbUrl;
-}
-
-function arePipelineSnapshotsEqual(left: PipelineStateSnapshot, right: PipelineStateSnapshot): boolean {
-  if (left.nextStepId !== right.nextStepId) {
-    return false;
-  }
-
-  if (left.steps.length !== right.steps.length || left.luts.length !== right.luts.length) {
-    return false;
-  }
-
-  for (let index = 0; index < left.steps.length; index += 1) {
-    if (!areStepModelsEqual(left.steps[index], right.steps[index])) {
-      return false;
-    }
-  }
-
-  for (let index = 0; index < left.luts.length; index += 1) {
-    if (!areLutModelsEqual(left.luts[index], right.luts[index])) {
-      return false;
-    }
-  }
-
-  return true;
-}
-
-function trimHistoryStack(stack: PipelineStateSnapshot[]): void {
-  while (stack.length > PIPELINE_HISTORY_LIMIT) {
-    stack.shift();
-  }
-}
-
-function syncPipelineHistoryButtons(): void {
-  syncHeaderActionHistoryState(pipelineUndoStack.length > 0, pipelineRedoStack.length > 0);
+  return pipelineHistory.captureSnapshot();
 }
 
 function clearPipelineHistory(): void {
-  pipelineUndoStack.length = 0;
-  pipelineRedoStack.length = 0;
-  syncPipelineHistoryButtons();
+  pipelineHistory.clearHistory();
 }
 
 function commitPipelineHistorySnapshot(before: PipelineStateSnapshot): boolean {
-  if (!isPipelineStateSnapshot(before)) {
-    throw new Error('履歴記録前のパイプライン状態が不正です。');
-  }
-
-  const after = capturePipelineSnapshot();
-  if (arePipelineSnapshotsEqual(before, after)) {
-    return false;
-  }
-
-  const lastUndo = pipelineUndoStack[pipelineUndoStack.length - 1];
-  if (!lastUndo || !arePipelineSnapshotsEqual(lastUndo, before)) {
-    pipelineUndoStack.push(clonePipelineSnapshot(before));
-    trimHistoryStack(pipelineUndoStack);
-  }
-
-  pipelineRedoStack.length = 0;
-  syncPipelineHistoryButtons();
-  return true;
-}
-
-function restorePipelineSnapshot(snapshot: PipelineStateSnapshot): void {
-  if (!isPipelineStateSnapshot(snapshot)) {
-    throw new Error('復元対象のパイプライン状態が不正です。');
-  }
-
-  replacePipelineState(clonePipelineSnapshot(snapshot));
-  renderSteps();
-  scheduleApply();
+  return pipelineHistory.commitSnapshot(before);
 }
 
 function undoPipeline(): boolean {
-  const previous = pipelineUndoStack.pop();
-  if (!previous) {
+  if (!pipelineHistory.undo()) {
     showStatus(t('main.status.undoUnavailable'), 'info');
-    syncPipelineHistoryButtons();
     return false;
   }
 
-  const current = capturePipelineSnapshot();
-  pipelineRedoStack.push(current);
-  trimHistoryStack(pipelineRedoStack);
-
-  restorePipelineSnapshot(previous);
-  syncPipelineHistoryButtons();
   showStatus(t('main.status.undoApplied'), 'info');
   return true;
 }
 
 function redoPipeline(): boolean {
-  const next = pipelineRedoStack.pop();
-  if (!next) {
+  if (!pipelineHistory.redo()) {
     showStatus(t('main.status.redoUnavailable'), 'info');
-    syncPipelineHistoryButtons();
     return false;
   }
 
-  const current = capturePipelineSnapshot();
-  pipelineUndoStack.push(current);
-  trimHistoryStack(pipelineUndoStack);
-
-  restorePipelineSnapshot(next);
-  syncPipelineHistoryButtons();
   showStatus(t('main.status.redoApplied'), 'info');
   return true;
 }
@@ -534,24 +387,6 @@ function handleHistoryShortcutKeydown(event: KeyboardEvent): void {
     event.preventDefault();
     redoPipeline();
   }
-}
-
-function parseAddStepOptions(options: AddStepOptions | undefined): { recordHistory: boolean } {
-  if (options === undefined) {
-    return { recordHistory: true };
-  }
-
-  if (!options || typeof options !== 'object' || Array.isArray(options)) {
-    throw new Error('addStep オプションが不正です。');
-  }
-
-  if (options.recordHistory !== undefined && typeof options.recordHistory !== 'boolean') {
-    throw new Error(`addStep.recordHistory は boolean で指定してください: ${String(options.recordHistory)}`);
-  }
-
-  return {
-    recordHistory: options.recordHistory ?? true,
-  };
 }
 
 function formatDatePart(value: number, digits: number): string {
@@ -813,243 +648,8 @@ function setWireframeOverlayEnabled(enabled: unknown): void {
   );
 }
 
-function normalizeStepLabelInput(value: unknown): string | null {
-  if (value === null) {
-    return null;
-  }
-
-  if (typeof value !== 'string') {
-    throw new Error('Stepラベルは文字列で指定してください。');
-  }
-
-  const trimmed = value.trim();
-  if (trimmed.length === 0) {
-    return null;
-  }
-
-  return pipelineModel.parseNonEmptyText(trimmed, 'step.label', MAX_STEP_LABEL_LENGTH);
-}
-
-function getStepById(stepId: number): StepModel | null {
-  const step = pipelineModel.getStepById(getPipelineSteps(), stepId);
-  if (!step) {
-    showStatus(t('main.status.stepNotFound', { stepId }), 'error');
-    return null;
-  }
-  return step;
-}
-
 function normalizeSteps(): void {
   pipelineModel.normalizeSteps(getPipelineSteps(), getPipelineLuts());
-}
-
-function addStep(options?: AddStepOptions): void {
-  let parsedOptions: { recordHistory: boolean };
-  try {
-    parsedOptions = parseAddStepOptions(options);
-  } catch (error) {
-    showStatus(pipelineModel.toErrorMessage(error), 'error');
-    return;
-  }
-
-  const before = parsedOptions.recordHistory ? capturePipelineSnapshot() : null;
-  const steps = getPipelineSteps();
-  const luts = getPipelineLuts();
-  const result = pipelineModel.createPipelineStep(steps, luts, getPipelineNextStepId());
-  if (!result.step) {
-    if (result.error) {
-      showStatus(result.error, 'error');
-    }
-    return;
-  }
-
-  setPipelineNextStepId(result.nextStepId);
-  const step = result.step;
-  steps.push(step);
-  if (before) {
-    commitPipelineHistorySnapshot(before);
-  }
-  renderSteps();
-  scheduleApply();
-}
-
-function duplicateStep(stepId: number): void {
-  const before = capturePipelineSnapshot();
-  const result = pipelineModel.duplicatePipelineStep(getPipelineSteps(), stepId, getPipelineNextStepId());
-  if (result.error || !result.duplicated) {
-    showStatus(result.error ?? t('common.unknownError'), 'error');
-    return;
-  }
-
-  setPipelineSteps(result.steps);
-  setPipelineNextStepId(result.nextStepId);
-  commitPipelineHistorySnapshot(before);
-  renderSteps();
-  scheduleApply();
-  showStatus(t('main.status.stepDuplicated', { stepId: result.duplicated.id }), 'info');
-}
-
-function setStepMuted(stepId: number, muted: unknown): void {
-  if (typeof muted !== 'boolean') {
-    showStatus(t('main.status.stepMuteInvalidValue', { value: String(muted) }), 'error');
-    return;
-  }
-
-  const step = getStepById(stepId);
-  if (!step) {
-    return;
-  }
-
-  if (step.muted === muted) {
-    return;
-  }
-
-  const before = capturePipelineSnapshot();
-  step.muted = muted;
-  commitPipelineHistorySnapshot(before);
-  renderSteps();
-  scheduleApply();
-}
-
-function setStepLabel(stepId: number, label: unknown): void {
-  const step = getStepById(stepId);
-  if (!step) {
-    return;
-  }
-
-  let normalized: string | null;
-  try {
-    normalized = normalizeStepLabelInput(label);
-  } catch (error) {
-    showStatus(pipelineModel.toErrorMessage(error), 'error');
-    return;
-  }
-
-  const nextLabel = normalized ?? undefined;
-  if (step.label === nextLabel) {
-    return;
-  }
-
-  const before = capturePipelineSnapshot();
-  step.label = nextLabel;
-  commitPipelineHistorySnapshot(before);
-  renderSteps();
-}
-
-function setStepLut(stepId: number, lutId: unknown): void {
-  if (typeof lutId !== 'string') {
-    showStatus(t('pipeline.status.selectedLutIdInvalid'), 'error');
-    return;
-  }
-
-  const validatedLutId = parseLutId(lutId);
-  if (!validatedLutId) {
-    showStatus(t('pipeline.status.selectedLutIdInvalid'), 'error');
-    return;
-  }
-
-  const lutExists = getPipelineLuts().some(lut => lut.id === validatedLutId);
-  if (!lutExists) {
-    showStatus(t('pipeline.status.selectedLutMissing'), 'error');
-    return;
-  }
-
-  const step = getStepById(stepId);
-  if (!step) {
-    return;
-  }
-
-  if (step.lutId === validatedLutId) {
-    return;
-  }
-
-  const before = capturePipelineSnapshot();
-  step.lutId = validatedLutId;
-  commitPipelineHistorySnapshot(before);
-  renderSteps();
-  scheduleApply();
-}
-
-function setStepBlendMode(stepId: number, blendMode: unknown): void {
-  if (typeof blendMode !== 'string' || !pipelineModel.isValidBlendMode(blendMode)) {
-    showStatus(t('pipeline.status.invalidBlendMode', { blendMode: String(blendMode) }), 'error');
-    return;
-  }
-
-  const step = getStepById(stepId);
-  if (!step) {
-    return;
-  }
-
-  if (step.blendMode === blendMode) {
-    return;
-  }
-
-  const before = capturePipelineSnapshot();
-  step.blendMode = blendMode;
-  commitPipelineHistorySnapshot(before);
-  renderSteps();
-  scheduleApply();
-}
-
-function setStepChannelOp(stepId: number, channel: unknown, op: unknown): void {
-  if (typeof channel !== 'string' || !pipelineModel.isValidChannelName(channel)) {
-    showStatus(t('pipeline.status.invalidOp', { op: String(op) }), 'error');
-    return;
-  }
-
-  if (typeof op !== 'string' || !pipelineModel.isValidBlendOp(op)) {
-    showStatus(t('pipeline.status.invalidOp', { op: String(op) }), 'error');
-    return;
-  }
-
-  const step = getStepById(stepId);
-  if (!step) {
-    return;
-  }
-
-  if (step.ops[channel] === op) {
-    return;
-  }
-
-  const before = capturePipelineSnapshot();
-  step.ops[channel] = op;
-  commitPipelineHistorySnapshot(before);
-  stepPreviewSystem?.bumpPipelineVersion();
-  updateStepSwatches();
-  updateShaderCodePanel();
-  scheduleApply();
-}
-
-function removeStep(stepId: number): void {
-  const before = capturePipelineSnapshot();
-  const result = pipelineModel.removeStepFromPipeline(getPipelineSteps(), stepId);
-  if (!result.removed) {
-    showStatus(t('main.status.removeStepNotFound', { stepId }), 'error');
-    return;
-  }
-  setPipelineSteps(result.steps);
-  commitPipelineHistorySnapshot(before);
-  renderSteps();
-  scheduleApply();
-}
-
-function removeLut(lutId: string): void {
-  const before = capturePipelineSnapshot();
-  const result = pipelineModel.removeLutFromPipeline(getPipelineLuts(), getPipelineSteps(), lutId);
-  if (result.error) {
-    showStatus(result.error, 'error');
-    return;
-  }
-
-  setPipelineLuts(result.luts);
-  setPipelineSteps(result.steps);
-  commitPipelineHistorySnapshot(before);
-  renderSteps();
-  scheduleApply();
-  if (result.removed) {
-    showStatus(t('main.status.lutRemoved', { name: result.removed.name }), 'info');
-  }
 }
 
 function renderLutStrip(): void {
@@ -1130,33 +730,6 @@ function updateStepSwatches(): void {
   }
 }
 
-function assignParamToSocket(stepId: number, axis: SocketAxis, param: ParamName): boolean {
-  if (!isValidSocketAxis(axis)) {
-    return false;
-  }
-
-  if (!isValidParamName(param)) {
-    return false;
-  }
-
-  const step = getStepById(stepId);
-  if (!step) return false;
-
-  const currentParam = axis === 'x' ? step.xParam : step.yParam;
-  if (currentParam === param) {
-    return false;
-  }
-
-  const before = capturePipelineSnapshot();
-  if (axis === 'x') step.xParam = param;
-  else step.yParam = param;
-
-  commitPipelineHistorySnapshot(before);
-  renderSteps();
-  scheduleApply();
-  return true;
-}
-
 function clearSocketDropTarget(): void {
   setSocketDropTarget(null);
 }
@@ -1193,7 +766,7 @@ function handleSocketDragEnd(event: PointerEvent): void {
     applyDropConnection: (dragState, dropTarget) => applySocketDropConnection({
       dragState,
       dropTarget,
-      assignParamToSocket,
+      assignParamToSocket: pipelineCommands.assignParamToSocket,
     }),
     onDidDrag: () => {
       setSuppressClickUntil(performance.now() + 240);
@@ -1244,25 +817,6 @@ function getStepDropPlacement(clientY: number): { stepId: number | null; after: 
   return { stepId: placement.targetId, after: placement.after };
 }
 
-function moveStepToPosition(stepId: number, targetStepId: number | null, after: boolean): void {
-  const before = capturePipelineSnapshot();
-  const steps = getPipelineSteps();
-  const draggedExists = steps.some(step => step.id === stepId);
-  if (!draggedExists) {
-    showStatus(t('main.status.moveStepNotFound', { stepId }), 'error');
-    return;
-  }
-
-  const nextSteps = reorderItemsById(steps, stepId, targetStepId, after, step => step.id);
-  if (!nextSteps) return;
-
-  setPipelineSteps(nextSteps);
-  commitPipelineHistorySnapshot(before);
-  renderSteps();
-  scheduleApply();
-  showStatus(t('main.status.stepOrderUpdated'), 'info');
-}
-
 function clearLutDropIndicators(): void {
   pipelineView.clearLutDropIndicators(lutStripListEl);
 }
@@ -1290,25 +844,6 @@ function getLutDropPlacement(clientX: number): { lutId: string | null; after: bo
 
   const placement = getLinearDropPlacement(candidates, clientX);
   return { lutId: placement.targetId, after: placement.after };
-}
-
-function moveLutToPosition(lutId: string, targetLutId: string | null, after: boolean): void {
-  const before = capturePipelineSnapshot();
-  const luts = getPipelineLuts();
-  const draggedExists = luts.some(lut => lut.id === lutId);
-  if (!draggedExists) {
-    showStatus(t('main.status.moveLutNotFound'), 'error');
-    return;
-  }
-
-  const nextLuts = reorderItemsById(luts, lutId, targetLutId, after, lut => lut.id);
-  if (!nextLuts) return;
-
-  setPipelineLuts(nextLuts);
-  commitPipelineHistorySnapshot(before);
-  renderSteps();
-  scheduleApply();
-  showStatus(t('main.status.lutOrderUpdated'), 'info');
 }
 
 function applyPipelineNow(): void {
@@ -1340,6 +875,30 @@ function scheduleApply(): void {
     applyTimer = null;
   }, 220);
 }
+
+const pipelineCommands = createPipelineCommandController({
+  maxStepLabelLength: MAX_STEP_LABEL_LENGTH,
+  getSteps: getPipelineSteps,
+  setSteps: setPipelineSteps,
+  getLuts: getPipelineLuts,
+  setLuts: setPipelineLuts,
+  getNextStepId: getPipelineNextStepId,
+  setNextStepId: setPipelineNextStepId,
+  parseLutId,
+  isValidParamName,
+  isValidSocketAxis,
+  captureSnapshot: capturePipelineSnapshot,
+  commitSnapshot: commitPipelineHistorySnapshot,
+  renderSteps,
+  scheduleApply,
+  onStepOpsChanged: () => {
+    stepPreviewSystem?.bumpPipelineVersion();
+    updateStepSwatches();
+    updateShaderCodePanel();
+  },
+  status: showStatus,
+  t,
+});
 
 function setupMaterialPanel(): void {
   const panel = $<HTMLElement>('#material-panel');
@@ -1396,8 +955,8 @@ function setupUI(): void {
   mountLanguageSwitcher($<HTMLElement>('#header-language-switcher'));
   mountHeaderActionGroup($<HTMLElement>('#header-action-group'), {
     initialAutoApplyEnabled: isAutoApplyEnabled(),
-    initialCanUndo: pipelineUndoStack.length > 0,
-    initialCanRedo: pipelineRedoStack.length > 0,
+    initialCanUndo: pipelineHistory.canUndo(),
+    initialCanRedo: pipelineHistory.canRedo(),
     onUndoPipeline: () => {
       undoPipeline();
     },
@@ -1411,7 +970,7 @@ function setupUI(): void {
         nextStepId: 1,
       });
       clearPipelineHistory();
-      addStep({ recordHistory: false });
+      pipelineCommands.addStep({ recordHistory: false });
       showStatus(t('main.status.resetStepChain'), 'info');
     },
     onSavePipeline: async () => {
@@ -1485,42 +1044,42 @@ function setupUI(): void {
   setupLightPanel();
   setupShaderPanel();
 
-  setupLutReorderBindings({
-    lutStripListEl,
-    parseLutId,
-    getLutDropPlacement,
-    getLutReorderDragState,
-    setLutReorderDragState,
-    clearLutReorderDragState,
-    updateLutDropIndicators,
-    clearLutDropIndicators,
-    moveLutToPosition,
-    onStatus: showStatus,
-  });
-
-  setupSocketPointerBindings({
-    paramNodeListEl,
-    stepListEl,
-    parseStepId,
-    isValidParamName,
-    isValidSocketAxis,
-    setSocketDragState,
-    handleSocketDragMove,
-    handleSocketDragEnd,
-    onStatus: showStatus,
-  });
-
-  setupStepReorderBindings({
-    stepListEl,
-    parseStepId,
-    getStepDropPlacement,
-    getStepReorderDragState,
-    setStepReorderDragState,
-    clearStepReorderDragState,
-    updateStepDropIndicators,
-    clearStepDropIndicators,
-    moveStepToPosition,
-    onStatus: showStatus,
+  setupPipelineDndBindings({
+    lutReorder: {
+      lutStripListEl,
+      parseLutId,
+      getLutDropPlacement,
+      getLutReorderDragState,
+      setLutReorderDragState,
+      clearLutReorderDragState,
+      updateLutDropIndicators,
+      clearLutDropIndicators,
+      moveLutToPosition: pipelineCommands.moveLutToPosition,
+      onStatus: showStatus,
+    },
+    socketPointer: {
+      paramNodeListEl,
+      stepListEl,
+      parseStepId,
+      isValidParamName,
+      isValidSocketAxis,
+      setSocketDragState,
+      handleSocketDragMove,
+      handleSocketDragEnd,
+      onStatus: showStatus,
+    },
+    stepReorder: {
+      stepListEl,
+      parseStepId,
+      getStepDropPlacement,
+      getStepReorderDragState,
+      setStepReorderDragState,
+      clearStepReorderDragState,
+      updateStepDropIndicators,
+      clearStepDropIndicators,
+      moveStepToPosition: pipelineCommands.moveStepToPosition,
+      onStatus: showStatus,
+    },
   });
 
   stepListEl.addEventListener('scroll', () => scheduleConnectionDraw());
@@ -1680,28 +1239,28 @@ window.addEventListener('DOMContentLoaded', () => {
     steps: getPipelineSteps(),
     luts: getPipelineLuts(),
     onAddStep: () => {
-      addStep();
+      pipelineCommands.addStep();
     },
     onDuplicateStep: stepId => {
-      duplicateStep(stepId);
+      pipelineCommands.duplicateStep(stepId);
     },
     onRemoveStep: stepId => {
-      removeStep(stepId);
+      pipelineCommands.removeStep(stepId);
     },
     onStepMuteChange: (stepId, muted) => {
-      setStepMuted(stepId, muted);
+      pipelineCommands.setStepMuted(stepId, muted);
     },
     onStepLabelChange: (stepId, label) => {
-      setStepLabel(stepId, label);
+      pipelineCommands.setStepLabel(stepId, label);
     },
     onStepLutChange: (stepId, lutId) => {
-      setStepLut(stepId, lutId);
+      pipelineCommands.setStepLut(stepId, lutId);
     },
     onStepBlendModeChange: (stepId, blendMode) => {
-      setStepBlendMode(stepId, blendMode);
+      pipelineCommands.setStepBlendMode(stepId, blendMode);
     },
     onStepOpChange: (stepId, channel, op) => {
-      setStepChannelOp(stepId, channel, op);
+      pipelineCommands.setStepChannelOp(stepId, channel, op);
     },
     shouldSuppressClick: isClickSuppressed,
     onStatus: showStatus,
@@ -1710,7 +1269,7 @@ window.addEventListener('DOMContentLoaded', () => {
     luts: getPipelineLuts(),
     steps: getPipelineSteps(),
     onRemoveLut: lutId => {
-      removeLut(lutId);
+      pipelineCommands.removeLut(lutId);
     },
     onAddLutFiles: async files => {
       if (!Array.isArray(files) || files.some(file => !(file instanceof File))) {
@@ -1781,7 +1340,7 @@ window.addEventListener('DOMContentLoaded', () => {
     },
   });
 
-  addStep({ recordHistory: false });
+  pipelineCommands.addStep({ recordHistory: false });
   applyPipelineNow();
   if (renderSystem && !renderSystem.isRunning()) {
     renderSystem.start();
