@@ -51,7 +51,6 @@ import {
 import {
   syncPreviewShapeBarState,
   syncPreviewWireframeState,
-  type PreviewShapeType,
 } from './shared/components/solid-preview-shape-bar.tsx';
 import {
   syncShaderDialogState,
@@ -105,6 +104,10 @@ import {
 import { resolveMainDomElements } from './shared/ui/main-dom-elements.ts';
 import { setupMainPanels } from './shared/ui/main-panels-setup.ts';
 import {
+  createPreviewShapeController,
+  type PreviewShapeController,
+} from './shared/ui/preview-shape-controller.ts';
+import {
   getLightSettings,
   getMaterialSettings,
   setLightSettings,
@@ -116,7 +119,6 @@ import {
   setAutoApplyEnabled,
   setPreviewWireframeOverlayEnabled,
 } from './shared/ui/ui-state.ts';
-import { createCube, createSphere, createTorus } from './shared/utils/geometry.ts';
 import {
   buildPreviewDownloadFilename,
   canvasToPngBlob,
@@ -124,8 +126,6 @@ import {
   downloadBlobAsFile,
 } from './shared/utils/preview-export.ts';
 import { updateStepSwatches as updateStepSwatchesHelper } from './features/step/step-swatch-updater.ts';
-
-type PrimitiveType = PreviewShapeType;
 
 interface StaticTranslationTarget {
   selector: string;
@@ -192,8 +192,8 @@ let renderer: Renderer;
 let pipelineApply: PipelineApplyController;
 let pipelineDropIndicators: PipelineDropIndicatorController;
 let pipelineSocketDnd: PipelineSocketDndController;
+let previewShapeController: PreviewShapeController;
 let stepPreviewRenderer: StepPreviewRenderer | null = null;
-let currentPrimitive: PrimitiveType = 'sphere';
 
 let orbitPitchDeg = 25.0;
 let orbitYawDeg = 45.0;
@@ -456,42 +456,6 @@ function applyLoadedPipeline(loaded: pipelineModel.LoadedPipelineData): void {
   pipelineApply.applyNow();
 }
 
-function buildGeometry(type: PrimitiveType) {
-  switch (type) {
-    case 'sphere': return createSphere(1.0, 40, 40);
-    case 'cube': return createCube(1.6);
-    case 'torus': return createTorus(0.65, 0.28, 48, 24);
-  }
-}
-
-function setActiveShape(type: PrimitiveType): void {
-  currentPrimitive = type;
-  renderer.uploadGeometry(buildGeometry(type));
-  syncPreviewShapeBarState(type);
-}
-
-function setWireframeOverlayEnabled(enabled: unknown): void {
-  if (typeof enabled !== 'boolean') {
-    showStatus(t('main.status.wireframeInvalidValue', { value: String(enabled) }), 'error');
-    return;
-  }
-
-  if (!(renderer instanceof Renderer)) {
-    showStatus(t('main.status.previewExportRendererMissing'), 'error');
-    return;
-  }
-
-  setPreviewWireframeOverlayEnabled(enabled);
-  renderer.setWireframeOverlayEnabled(enabled);
-  syncPreviewWireframeState(isPreviewWireframeOverlayEnabled());
-  showStatus(
-    t('main.status.wireframeChanged', {
-      state: enabled ? t('common.on') : t('common.off'),
-    }),
-    'info',
-  );
-}
-
 function normalizeSteps(): void {
   pipelineModel.normalizeSteps(getPipelineSteps(), getPipelineLuts());
 }
@@ -629,13 +593,13 @@ function setupUI(): void {
 
   setupStepPreviewShapeUi({
     target: $<HTMLElement>('#preview-shape-bar'),
-    initialShape: currentPrimitive,
+    initialShape: previewShapeController.getCurrentShape(),
     isWireframeEnabled: isPreviewWireframeOverlayEnabled,
     onShapeChange: nextShape => {
-      setActiveShape(nextShape);
+      previewShapeController.setActiveShape(nextShape);
     },
     onWireframeChange: enabled => {
-      setWireframeOverlayEnabled(enabled);
+      previewShapeController.setWireframeOverlayEnabled(enabled);
     },
     onExportMainPreviewPng: async () => {
       await exportMainPreviewPng();
@@ -714,7 +678,7 @@ function setupUI(): void {
     onRedoPipeline: pipelineHistoryActions.redo,
   });
 
-  setActiveShape('sphere');
+  previewShapeController.setActiveShape('sphere');
 }
 
 window.addEventListener('DOMContentLoaded', () => {
@@ -789,6 +753,16 @@ window.addEventListener('DOMContentLoaded', () => {
     renderer,
     isAutoApplyEnabled,
     onUpdateShaderCodePanel: frag => updateShaderCodePanel(frag),
+    onStatus: showStatus,
+    t,
+  });
+  previewShapeController = createPreviewShapeController({
+    renderer,
+    initialShape: 'sphere',
+    getWireframeEnabled: isPreviewWireframeOverlayEnabled,
+    setWireframeEnabled: setPreviewWireframeOverlayEnabled,
+    syncPreviewShapeState: syncPreviewShapeBarState,
+    syncPreviewWireframeState,
     onStatus: showStatus,
     t,
   });
