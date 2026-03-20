@@ -26,14 +26,10 @@ export {
   getBlendModeStrategy,
   getCustomChannelsForBlendMode,
   applyStepColor,
-  opExprGlsl,
-  opExprHlsl,
 } from './step-blend-strategies';
 
 export {
   PARAM_EVALUATORS,
-  paramExprGlsl,
-  paramExprHlsl,
   evaluateStepParam,
 } from './step-param-evaluators';
 
