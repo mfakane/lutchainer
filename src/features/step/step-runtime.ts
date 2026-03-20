@@ -37,7 +37,7 @@ function clamp01(v: number): number {
   return Math.max(0, Math.min(1, v));
 }
 
-export function sanitizePreviewColor(color: Color): Color {
+function sanitizePreviewColor(color: Color): Color {
   const r = Number.isFinite(color[0]) ? clamp01(color[0]) : 0.5;
   const g = Number.isFinite(color[1]) ? clamp01(color[1]) : 0.5;
   const b = Number.isFinite(color[2]) ? clamp01(color[2]) : 0.5;

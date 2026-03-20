@@ -66,21 +66,6 @@ function assertValidShaderBuildInput(input: ShaderBuildInput): void {
   }
 }
 
-function glslFloat(value: number): string {
-  const safeValue = Number.isFinite(value) ? value : 0;
-  if (Math.abs(safeValue - Math.round(safeValue)) < 1e-6) {
-    return `${Math.round(safeValue)}.0`;
-  }
-  return safeValue.toFixed(4);
-}
-
-function glslVec3(value: readonly [number, number, number]): string {
-  return `vec3(${glslFloat(value[0])}, ${glslFloat(value[1])}, ${glslFloat(value[2])})`;
-}
-
-function hlslVec3(value: readonly [number, number, number]): string {
-  return `float3(${glslFloat(value[0])}, ${glslFloat(value[1])}, ${glslFloat(value[2])})`;
-}
 
 function buildSampleBody(
   luts: LutModel[],

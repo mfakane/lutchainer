@@ -66,15 +66,6 @@ export function mat4LookAt(eye: Vec3, center: Vec3, up: Vec3): Mat4 {
   return out;
 }
 
-export function mat4RotateX(angle: number): Mat4 {
-  const c = Math.cos(angle), s = Math.sin(angle);
-  return new Float32Array([1, 0, 0, 0, 0, c, s, 0, 0, -s, c, 0, 0, 0, 0, 1]);
-}
-
-export function mat4RotateY(angle: number): Mat4 {
-  const c = Math.cos(angle), s = Math.sin(angle);
-  return new Float32Array([c, 0, -s, 0, 0, 1, 0, 0, s, 0, c, 0, 0, 0, 0, 1]);
-}
 
 /** Extract upper 3x3 as normal matrix (assumes no non-uniform scale) */
 export function normalMatrixFromMat4(m: Mat4): Mat3 {

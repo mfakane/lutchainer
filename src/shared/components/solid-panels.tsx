@@ -217,32 +217,6 @@ function isLightAngleBinding(binding: pipelineModel.LightRangeBinding): boolean 
   return binding.key === 'azimuthDeg' || binding.key === 'elevationDeg';
 }
 
-function getMaterialPresetByKey(value: unknown): MaterialPresetDefinition | null {
-  if (typeof value !== 'string') {
-    return null;
-  }
-
-  const key = value.trim();
-  if (key.length === 0) {
-    return null;
-  }
-
-  return MATERIAL_PRESETS.find(preset => preset.key === key) ?? null;
-}
-
-function getLightPresetByKey(value: unknown): LightPresetDefinition | null {
-  if (typeof value !== 'string') {
-    return null;
-  }
-
-  const key = value.trim();
-  if (key.length === 0) {
-    return null;
-  }
-
-  return LIGHT_PRESETS.find(preset => preset.key === key) ?? null;
-}
-
 function ensureMaterialMountOptions(value: unknown): asserts value is MaterialPanelMountOptions {
   if (!value || typeof value !== 'object') {
     throw new Error('Materialパネルの初期化オプションが不正です。');

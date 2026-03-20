@@ -15,7 +15,7 @@ import {
   resolveStepRuntimeModels,
 } from './step-runtime';
 
-export interface ResolveLutUvAtPixelInput {
+interface ResolveLutUvAtPixelInput {
   pixelX: number;
   pixelY: number;
   canvasWidth: number;
@@ -27,7 +27,7 @@ export interface ResolveLutUvAtPixelInput {
   lightSettings: LightSettings;
 }
 
-export interface LutUvCoord {
+interface LutUvCoord {
   u: number;
   v: number;
 }

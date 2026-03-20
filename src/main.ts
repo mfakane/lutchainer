@@ -60,7 +60,6 @@ import {
 import {
   type PipelineSocketDndController,
 } from './features/pipeline/pipeline-socket-dnd-controller.ts';
-import { Renderer } from './shared/rendering/renderer.ts';
 import {
   clearSocketDragState,
   getLutReorderDragState,
@@ -113,7 +112,6 @@ const resolveSocketDropTargetForDrag = createSocketDropTargetResolver({
   isValidParamName,
 });
 
-let renderer: Renderer;
 let pipelineApply: PipelineApplyController;
 let pipelineDropIndicators: PipelineDropIndicatorController;
 let pipelineSocketDnd: PipelineSocketDndController;
@@ -347,7 +345,6 @@ window.addEventListener('DOMContentLoaded', () => {
   const canvas = selectRequired<HTMLCanvasElement>('#gl-canvas');
   ({
     pipelineDropIndicators,
-    renderer,
     pipelineApply,
     previewShapeController,
     stepPreviewRenderer,
