@@ -1,5 +1,4 @@
 import type { LightSettings, MaterialSettings } from '../pipeline/pipeline-model';
-import * as shaderGenerator from '../shader/shader-generator';
 import {
   type LutModel,
   type StepModel,
@@ -8,6 +7,10 @@ import { StepPreviewRenderer } from './step-preview-renderer';
 import {
   drawStepPreviewSphereCpu,
 } from './step-preview-cpu-render';
+import {
+  buildStepPreviewDrawOptions,
+  ensureStepPreviewRendererProgram,
+} from './step-preview-webgl';
 
 interface StepPreviewSystemOptions {
   getSteps: () => StepModel[];
@@ -174,22 +177,13 @@ export function createStepPreviewSystem(options: StepPreviewSystemOptions): Step
       return true;
     }
 
-    const steps = options.getSteps();
-    const luts = options.getLuts();
-    const lutError = renderer.setLutTextures(luts.map(lut => lut.image));
-    if (lutError) {
-      reportError(`Stepプレビュー(WebGL) のLUT設定に失敗しました: ${lutError}`);
-      return false;
-    }
-
-    const compileResult = renderer.compileProgram(
-      shaderGenerator.buildStepPreviewFragmentShader({ steps, luts }),
-    );
-    if (!compileResult.success) {
-      const details = compileResult.errors
-        .map(error => `[${error.type.toUpperCase()}]\n${error.message.trim()}`)
-        .join('\n\n');
-      reportError(`Stepプレビュー(WebGL) のシェーダー生成に失敗しました。\n${details}`);
+    const ensureResult = ensureStepPreviewRendererProgram({
+      renderer,
+      steps: options.getSteps(),
+      luts: options.getLuts(),
+    });
+    if (!ensureResult.ok) {
+      reportError(ensureResult.message ?? 'Stepプレビュー(WebGL) の初期化に失敗しました。');
       return false;
     }
 
@@ -222,23 +216,16 @@ export function createStepPreviewSystem(options: StepPreviewSystemOptions): Step
   const renderPreviewPngBytes = async (): Promise<Uint8Array> => {
     const size = PREVIEW_EXPORT_SIZE;
     const targetStepIndex = Math.max(0, options.getSteps().length - 1);
-    const materialSettings = options.getMaterialSettings();
-    const lightSettings = options.getLightSettings();
     const renderer = options.getStepPreviewRenderer();
 
     if (renderer && ensureStepPreviewProgram()) {
-      const err = renderer.drawToSize(size, size, {
+      const drawOptions = buildStepPreviewDrawOptions({
         targetStepIndex,
-        baseColor: materialSettings.baseColor,
-        lightIntensity: lightSettings.lightIntensity,
-        lightColor: lightSettings.lightColor,
-        ambientColor: lightSettings.ambientColor,
-        specularStrength: materialSettings.specularStrength,
-        specularPower: materialSettings.specularPower,
-        fresnelStrength: materialSettings.fresnelStrength,
-        fresnelPower: materialSettings.fresnelPower,
+        materialSettings: options.getMaterialSettings(),
+        lightSettings: options.getLightSettings(),
         lightDirection,
       });
+      const err = renderer.drawToSize(size, size, drawOptions);
       if (!err) {
         return await canvasToPreviewPngBytes(renderer.getInternalCanvas());
       }
