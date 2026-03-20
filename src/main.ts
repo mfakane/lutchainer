@@ -71,7 +71,6 @@ import {
   createSocketDropTargetResolver,
 } from './shared/interactions/socket-dnd.ts';
 import {
-  createPipelineApplyController,
   type PipelineApplyController,
 } from './features/pipeline/pipeline-apply.ts';
 import {
@@ -102,8 +101,8 @@ import {
 import { resolveMainDomElements } from './shared/ui/main-dom-elements.ts';
 import { setupMainPipelineLists } from './shared/ui/main-pipeline-lists-setup.ts';
 import { setupMainPanels } from './shared/ui/main-panels-setup.ts';
+import { setupMainPreviewRuntime } from './shared/ui/main-preview-runtime-setup.ts';
 import {
-  createPreviewShapeController,
   type PreviewShapeController,
 } from './shared/ui/preview-shape-controller.ts';
 import {
@@ -739,37 +738,30 @@ window.addEventListener('DOMContentLoaded', () => {
   });
 
   const canvas = $<HTMLCanvasElement>('#gl-canvas');
-  renderer = new Renderer(canvas);
-  pipelineApply = createPipelineApplyController({
-    getShaderBuildInput,
+  ({
     renderer,
+    pipelineApply,
+    previewShapeController,
+    stepPreviewRenderer,
+    stepPreviewSystem,
+  } = setupMainPreviewRuntime({
+    canvas,
+    getShaderBuildInput,
     isAutoApplyEnabled,
     onUpdateShaderCodePanel: frag => updateShaderCodePanel(frag),
     onStatus: showStatus,
     t,
-  });
-  previewShapeController = createPreviewShapeController({
-    renderer,
-    initialShape: 'sphere',
     getWireframeEnabled: isPreviewWireframeOverlayEnabled,
     setWireframeEnabled: setPreviewWireframeOverlayEnabled,
     syncPreviewShapeState: syncPreviewShapeBarState,
     syncPreviewWireframeState,
-    onStatus: showStatus,
-    t,
-  });
-  renderer.setWireframeOverlayEnabled(isPreviewWireframeOverlayEnabled());
-  stepPreviewRenderer = StepPreviewRenderer.create();
-  stepPreviewSystem = createStepPreviewSystem({
     getSteps: getPipelineSteps,
     getLuts: getPipelineLuts,
     getMaterialSettings,
     getLightSettings,
-    getStepPreviewRenderer: () => stepPreviewRenderer,
-    onError: message => showStatus(message, 'error'),
-    lightDirection: pipelineModel.STEP_PREVIEW_LIGHT_DIR,
-    viewDirection: pipelineModel.STEP_PREVIEW_VIEW_DIR,
-  });
+    stepPreviewLightDirection: pipelineModel.STEP_PREVIEW_LIGHT_DIR,
+    stepPreviewViewDirection: pipelineModel.STEP_PREVIEW_VIEW_DIR,
+  }));
 
   const stepPreviewDebugApi: StepPreviewDebugApi = {
     forceCpu: (value: unknown): StepPreviewDebugApiResult => setStepPreviewForceCpu(value),
