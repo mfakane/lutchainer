@@ -14,7 +14,7 @@ import {
 import {
   createPipelineHeaderActionController,
 } from './features/pipeline/pipeline-header-actions-controller.ts';
-import { createPipelineIoSystem } from './features/pipeline/pipeline-io-system.ts';
+import { setupMainPipelineIoSystem } from './features/pipeline/main-pipeline-io-setup.ts';
 import * as pipelineModel from './features/pipeline/pipeline-model.ts';
 import {
   getLuts as getPipelineLuts,
@@ -185,7 +185,7 @@ let axisGizmoLabelZEl: SVGTextElement;
 let paramColumnEl: HTMLElement;
 let mainRenderPipeline: MainRenderPipeline | null = null;
 let stepPreviewSystem: ReturnType<typeof createStepPreviewSystem> | null = null;
-let pipelineIoSystem: ReturnType<typeof createPipelineIoSystem> | null = null;
+let pipelineIoSystem: ReturnType<typeof setupMainPipelineIoSystem> | null = null;
 let mainPreviewCapture: MainPreviewCaptureController;
 
 const connectionDrawScheduler = createConnectionDrawScheduler({
@@ -513,24 +513,12 @@ window.addEventListener('DOMContentLoaded', () => {
     t,
   });
 
-  pipelineIoSystem = createPipelineIoSystem({
+  pipelineIoSystem = setupMainPipelineIoSystem({
     getNextStepId: getPipelineNextStepId,
     getLuts: getPipelineLuts,
     getSteps: getPipelineSteps,
-    renderPreviewPngBytes: async () => {
-      if (!stepPreviewSystem) {
-        throw new Error(t('main.status.stepPreviewNotInitialized'));
-      }
-      return await stepPreviewSystem.renderPreviewPngBytes();
-    },
-    maxPipelineFileBytes: pipelineModel.MAX_PIPELINE_FILE_BYTES,
-    serializePipelineAsZip: pipelineModel.serializePipelineAsZip,
-    buildPipelineDownloadFilename: pipelineModel.buildPipelineDownloadFilename,
-    loadPipelineFromZip: pipelineModel.loadPipelineFromZip,
-    loadPipelineData: pipelineModel.loadPipelineData,
-    isZipLikeFile: pipelineModel.isZipLikeFile,
-    isJsonLikeFile: pipelineModel.isJsonLikeFile,
-    toErrorMessage: pipelineModel.toErrorMessage,
+    getStepPreviewSystem: () => stepPreviewSystem,
+    t,
   });
 
   mainRenderPipeline = setupMainRenderPipeline({
