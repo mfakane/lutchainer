@@ -67,9 +67,6 @@ import {
   subscribeLanguageChange,
   t,
 } from './shared/i18n.ts';
-import {
-  updatePointerDragStateForMove,
-} from './shared/interactions/dnd.ts';
 import { createHistoryShortcutHandler } from './shared/interactions/keyboard-history.ts';
 import {
   setupOrbitPointerControls,
@@ -77,12 +74,7 @@ import {
   setupPreviewPanelLayoutResizer,
 } from './shared/interactions/layout-interactions.ts';
 import {
-  applySocketDropConnection,
-  cleanupSocketDragInteraction,
   createSocketDropTargetResolver,
-  handleSocketDragEnd as processSocketDragEnd,
-  handleSocketDragMove as processSocketDragMove,
-  syncSocketDropTargetState
 } from './shared/interactions/socket-dnd.ts';
 import {
   createPipelineApplyController,
@@ -92,6 +84,10 @@ import {
   createPipelineDropIndicatorController,
   type PipelineDropIndicatorController,
 } from './features/pipeline/pipeline-drop-indicators.ts';
+import {
+  createPipelineSocketDndController,
+  type PipelineSocketDndController,
+} from './features/pipeline/pipeline-socket-dnd-controller.ts';
 import { createRenderSystem } from './shared/rendering/render-system.ts';
 import { Renderer } from './shared/rendering/renderer.ts';
 import {
@@ -131,7 +127,6 @@ import {
 import { updateStepSwatches as updateStepSwatchesHelper } from './features/step/step-swatch-updater.ts';
 
 type PrimitiveType = PreviewShapeType;
-type SocketDropTarget = pipelineView.SocketDropTarget;
 
 interface StaticTranslationTarget {
   selector: string;
@@ -205,6 +200,7 @@ function syncLightPanel(): void {
 let renderer: Renderer;
 let pipelineApply: PipelineApplyController;
 let pipelineDropIndicators: PipelineDropIndicatorController;
+let pipelineSocketDnd: PipelineSocketDndController;
 let stepPreviewRenderer: StepPreviewRenderer | null = null;
 let currentPrimitive: PrimitiveType = 'sphere';
 
@@ -587,64 +583,6 @@ function updateStepSwatches(): void {
   });
 }
 
-function clearSocketDropTarget(): void {
-  setSocketDropTarget(null);
-}
-
-function setSocketDropTarget(nextTarget: SocketDropTarget | null): void {
-  syncSocketDropTargetState({
-    currentTarget: getSocketDropTargetState(),
-    nextTarget,
-    setState: setSocketDropTargetState,
-  });
-}
-
-function handleSocketDragMove(event: PointerEvent): void {
-  processSocketDragMove({
-    event,
-    socketDragState: getSocketDragState(),
-    updateDragState: (dragState, clientX, clientY) => updatePointerDragStateForMove(dragState, clientX, clientY),
-    setSocketDragState,
-    resolveDropTarget: resolveSocketDropTargetForDrag,
-    setSocketDropTarget,
-    onDragStart: dragState => {
-      dragState.sourceEl.classList.add('socket-source-active');
-      document.body.style.userSelect = 'none';
-    },
-    onDragProgress: scheduleConnectionDraw,
-  });
-}
-
-function handleSocketDragEnd(event: PointerEvent): void {
-  processSocketDragEnd({
-    event,
-    socketDragState: getSocketDragState(),
-    resolveDropTarget: resolveSocketDropTargetForDrag,
-    applyDropConnection: (dragState, dropTarget) => applySocketDropConnection({
-      dragState,
-      dropTarget,
-      assignParamToSocket: pipelineCommands.assignParamToSocket,
-    }),
-    onDidDrag: () => {
-      setSuppressClickUntil(performance.now() + 240);
-    },
-    onApplied: () => {
-      showStatus(t('main.status.socketConnected'), 'info');
-    },
-    cleanup: () => {
-      cleanupSocketDragInteraction({
-        socketDragState: getSocketDragState(),
-        clearSocketDragState,
-        clearSocketDropTarget,
-        clearUserSelect: () => {
-          document.body.style.userSelect = '';
-        },
-        onAfterCleanup: scheduleConnectionDraw,
-      });
-    },
-  });
-}
-
 const pipelineCommands = createPipelineCommandController({
   maxStepLabelLength: MAX_STEP_LABEL_LENGTH,
   getSteps: getPipelineSteps,
@@ -667,6 +605,24 @@ const pipelineCommands = createPipelineCommandController({
   },
   status: showStatus,
   t,
+});
+
+pipelineSocketDnd = createPipelineSocketDndController({
+  getSocketDragState,
+  setSocketDragState,
+  clearSocketDragState,
+  getSocketDropTargetState,
+  setSocketDropTargetState,
+  resolveDropTarget: resolveSocketDropTargetForDrag,
+  assignParamToSocket: pipelineCommands.assignParamToSocket,
+  scheduleConnectionDraw,
+  setSuppressClickUntil,
+  setUserSelect: value => {
+    document.body.style.userSelect = value;
+  },
+  onStatus: showStatus,
+  t,
+  now: () => performance.now(),
 });
 
 function setupMaterialPanel(): void {
@@ -833,8 +789,8 @@ function setupUI(): void {
       isValidParamName,
       isValidSocketAxis,
       setSocketDragState,
-      handleSocketDragMove,
-      handleSocketDragEnd,
+      handleSocketDragMove: pipelineSocketDnd.handleSocketDragMove,
+      handleSocketDragEnd: pipelineSocketDnd.handleSocketDragEnd,
       onStatus: showStatus,
     },
     stepReorder: {
