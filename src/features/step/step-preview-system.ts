@@ -1,4 +1,4 @@
-import type { MaterialSettings } from '../pipeline/pipeline-model';
+import type { LightSettings, MaterialSettings } from '../pipeline/pipeline-model';
 import * as shaderGenerator from '../shader/shader-generator';
 import {
   type Color,
@@ -17,6 +17,7 @@ interface StepPreviewSystemOptions {
   getSteps: () => StepModel[];
   getLuts: () => LutModel[];
   getMaterialSettings: () => MaterialSettings;
+  getLightSettings: () => LightSettings;
   getStepPreviewRenderer: () => StepPreviewRenderer | null;
   onError: (message: string) => void;
   lightDirection: readonly [number, number, number];
@@ -87,6 +88,9 @@ function assertValidOptions(options: StepPreviewSystemOptions): void {
   if (typeof options.getMaterialSettings !== 'function') {
     throw new Error('Step preview system option getMaterialSettings must be a function.');
   }
+  if (typeof options.getLightSettings !== 'function') {
+    throw new Error('Step preview system option getLightSettings must be a function.');
+  }
   if (typeof options.getStepPreviewRenderer !== 'function') {
     throw new Error('Step preview system option getStepPreviewRenderer must be a function.');
   }
@@ -141,11 +145,17 @@ export function createStepPreviewSystem(options: StepPreviewSystemOptions): Step
 
   const composePreviewColor = (stepModels: StepRuntimeModel[], context: StepParamContext): Color => {
     const materialSettings = options.getMaterialSettings();
-    const composed = composeColorFromSteps(stepModels, materialSettings.baseColor, context);
+    const lightSettings = options.getLightSettings();
+    const litBaseColor: Color = [
+      clamp01(materialSettings.baseColor[0] * lightSettings.lightColor[0]),
+      clamp01(materialSettings.baseColor[1] * lightSettings.lightColor[1]),
+      clamp01(materialSettings.baseColor[2] * lightSettings.lightColor[2]),
+    ];
+    const composed = composeColorFromSteps(stepModels, litBaseColor, context);
     return [
-      clamp01(composed[0] + materialSettings.ambientColor[0]),
-      clamp01(composed[1] + materialSettings.ambientColor[1]),
-      clamp01(composed[2] + materialSettings.ambientColor[2]),
+      clamp01(composed[0] + lightSettings.ambientColor[0]),
+      clamp01(composed[1] + lightSettings.ambientColor[1]),
+      clamp01(composed[2] + lightSettings.ambientColor[2]),
     ];
   };
 
@@ -177,6 +187,7 @@ export function createStepPreviewSystem(options: StepPreviewSystemOptions): Step
 
     const stepModels = resolveStepRuntimeModels(options.getSteps(), options.getLuts(), targetStepIndex);
     const materialSettings = options.getMaterialSettings();
+    const lightSettings = options.getLightSettings();
     const image = ctx.createImageData(pixelWidth, pixelHeight);
     const data = image.data;
 
@@ -347,13 +358,15 @@ export function createStepPreviewSystem(options: StepPreviewSystemOptions): Step
     const size = PREVIEW_EXPORT_SIZE;
     const targetStepIndex = Math.max(0, options.getSteps().length - 1);
     const materialSettings = options.getMaterialSettings();
+    const lightSettings = options.getLightSettings();
     const renderer = options.getStepPreviewRenderer();
 
     if (renderer && ensureStepPreviewProgram()) {
       const err = renderer.drawToSize(size, size, {
         targetStepIndex,
         baseColor: materialSettings.baseColor,
-        ambientColor: materialSettings.ambientColor,
+        lightColor: lightSettings.lightColor,
+        ambientColor: lightSettings.ambientColor,
         specularStrength: materialSettings.specularStrength,
         specularPower: materialSettings.specularPower,
         fresnelStrength: materialSettings.fresnelStrength,

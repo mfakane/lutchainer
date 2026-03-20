@@ -30,7 +30,6 @@ const MATERIAL_PRESETS: MaterialPresetDefinition[] = [
     labelKey: 'panel.preset.material.matteClay',
     settings: {
       baseColor: [0.70, 0.62, 0.54],
-      ambientColor: [0.06, 0.06, 0.07],
       specularStrength: 0.12,
       specularPower: 7,
       fresnelStrength: 0.08,
@@ -42,7 +41,6 @@ const MATERIAL_PRESETS: MaterialPresetDefinition[] = [
     labelKey: 'panel.preset.material.glossMetal',
     settings: {
       baseColor: [0.78, 0.80, 0.84],
-      ambientColor: [0.02, 0.02, 0.03],
       specularStrength: 1.05,
       specularPower: 72,
       fresnelStrength: 0.36,
@@ -54,7 +52,6 @@ const MATERIAL_PRESETS: MaterialPresetDefinition[] = [
     labelKey: 'panel.preset.material.neonLacquer',
     settings: {
       baseColor: [0.18, 0.82, 0.95],
-      ambientColor: [0.00, 0.03, 0.05],
       specularStrength: 0.62,
       specularPower: 44,
       fresnelStrength: 0.46,
@@ -75,6 +72,8 @@ const LIGHT_PRESETS: LightPresetDefinition[] = [
     settings: {
       azimuthDeg: 20,
       elevationDeg: 48,
+      lightColor: [1, 1, 1],
+      ambientColor: [0, 0, 0],
       showGizmo: true,
     },
   },
@@ -84,6 +83,8 @@ const LIGHT_PRESETS: LightPresetDefinition[] = [
     settings: {
       azimuthDeg: -115,
       elevationDeg: 18,
+      lightColor: [1, 1, 1],
+      ambientColor: [0, 0, 0],
       showGizmo: true,
     },
   },
@@ -93,6 +94,8 @@ const LIGHT_PRESETS: LightPresetDefinition[] = [
     settings: {
       azimuthDeg: 0,
       elevationDeg: 82,
+      lightColor: [1, 1, 1],
+      ambientColor: [0, 0, 0],
       showGizmo: true,
     },
   },
@@ -149,7 +152,6 @@ function isValidMaterialSettings(value: unknown): value is pipelineModel.Materia
 
   const material = value as Partial<pipelineModel.MaterialSettings>;
   return isValidColor(material.baseColor)
-    && isValidColor(material.ambientColor)
     && Number.isFinite(material.specularStrength)
     && Number.isFinite(material.specularPower)
     && Number.isFinite(material.fresnelStrength)
@@ -164,13 +166,14 @@ function isValidLightSettings(value: unknown): value is pipelineModel.LightSetti
   const light = value as Partial<pipelineModel.LightSettings>;
   return Number.isFinite(light.azimuthDeg)
     && Number.isFinite(light.elevationDeg)
+    && isValidColor(light.lightColor)
+    && isValidColor(light.ambientColor)
     && typeof light.showGizmo === 'boolean';
 }
 
 function cloneMaterialSettings(settings: pipelineModel.MaterialSettings): pipelineModel.MaterialSettings {
   return {
     baseColor: [settings.baseColor[0], settings.baseColor[1], settings.baseColor[2]],
-    ambientColor: [settings.ambientColor[0], settings.ambientColor[1], settings.ambientColor[2]],
     specularStrength: settings.specularStrength,
     specularPower: settings.specularPower,
     fresnelStrength: settings.fresnelStrength,
@@ -182,6 +185,8 @@ function cloneLightSettings(settings: pipelineModel.LightSettings): pipelineMode
   return {
     azimuthDeg: settings.azimuthDeg,
     elevationDeg: settings.elevationDeg,
+    lightColor: [settings.lightColor[0], settings.lightColor[1], settings.lightColor[2]],
+    ambientColor: [settings.ambientColor[0], settings.ambientColor[1], settings.ambientColor[2]],
     showGizmo: settings.showGizmo,
   };
 }
@@ -285,26 +290,6 @@ function MaterialPanel(props: MaterialPanelProps): JSX.Element {
     });
   };
 
-  const handleAmbientColorInput = (event: Event): void => {
-    const input = event.currentTarget as HTMLInputElement | null;
-    if (!input) {
-      props.onStatus(tr('panel.ambientColorInputMissing'), 'error');
-      return;
-    }
-
-    const parsed = pipelineModel.parseHexColor(input.value);
-    if (!parsed) {
-      props.onStatus(tr('panel.ambientColorInvalid'), 'error');
-      return;
-    }
-
-    const current = props.settings();
-    props.commitSettings({
-      ...current,
-      ambientColor: [parsed[0], parsed[1], parsed[2]],
-    });
-  };
-
   const handleRangeInput = (event: Event, binding: pipelineModel.MaterialRangeBinding): void => {
     const input = event.currentTarget as HTMLInputElement | null;
     if (!input) {
@@ -388,20 +373,6 @@ function MaterialPanel(props: MaterialPanelProps): JSX.Element {
           />
         </label>
 
-        <label class="material-field material-field-color">
-          <span class="material-label-row">
-            <span class="material-label">Ambient Color</span>
-            <span class="material-value" id="mat-ambient-color-value">{pipelineModel.colorToHex(props.settings().ambientColor)}</span>
-          </span>
-          <input
-            class="material-color-input"
-            type="color"
-            id="mat-ambient-color"
-            value={pipelineModel.colorToHex(props.settings().ambientColor)}
-            onInput={handleAmbientColorInput}
-          />
-        </label>
-
         <For each={pipelineModel.MATERIAL_RANGE_BINDINGS}>
           {binding => (
             <label class="material-field">
@@ -436,6 +407,46 @@ function LightPanel(props: LightPanelProps): JSX.Element {
   const tr = (key: string, values?: Record<string, string | number>): string => {
     language();
     return t(key, values);
+  };
+
+  const handleLightColorInput = (event: Event): void => {
+    const input = event.currentTarget as HTMLInputElement | null;
+    if (!input) {
+      props.onStatus(tr('panel.lightColorInputMissing'), 'error');
+      return;
+    }
+
+    const parsed = pipelineModel.parseHexColor(input.value);
+    if (!parsed) {
+      props.onStatus(tr('panel.lightColorInvalid'), 'error');
+      return;
+    }
+
+    const current = props.settings();
+    props.commitSettings({
+      ...current,
+      lightColor: [parsed[0], parsed[1], parsed[2]],
+    });
+  };
+
+  const handleAmbientColorInput = (event: Event): void => {
+    const input = event.currentTarget as HTMLInputElement | null;
+    if (!input) {
+      props.onStatus(tr('panel.ambientColorInputMissing'), 'error');
+      return;
+    }
+
+    const parsed = pipelineModel.parseHexColor(input.value);
+    if (!parsed) {
+      props.onStatus(tr('panel.ambientColorInvalid'), 'error');
+      return;
+    }
+
+    const current = props.settings();
+    props.commitSettings({
+      ...current,
+      ambientColor: [parsed[0], parsed[1], parsed[2]],
+    });
   };
 
   const handleRangeInput = (event: Event, binding: pipelineModel.LightRangeBinding): void => {
@@ -528,6 +539,34 @@ function LightPanel(props: LightPanelProps): JSX.Element {
       </div>
 
       <div class="light-grid">
+        <label class="material-field material-field-color">
+          <span class="material-label-row">
+            <span class="material-label">Light Color</span>
+            <span class="material-value" id="light-color-value">{pipelineModel.colorToHex(props.settings().lightColor)}</span>
+          </span>
+          <input
+            class="material-color-input"
+            type="color"
+            id="light-color"
+            value={pipelineModel.colorToHex(props.settings().lightColor)}
+            onInput={handleLightColorInput}
+          />
+        </label>
+
+        <label class="material-field material-field-color">
+          <span class="material-label-row">
+            <span class="material-label">Ambient Color</span>
+            <span class="material-value" id="light-ambient-color-value">{pipelineModel.colorToHex(props.settings().ambientColor)}</span>
+          </span>
+          <input
+            class="material-color-input"
+            type="color"
+            id="light-ambient-color"
+            value={pipelineModel.colorToHex(props.settings().ambientColor)}
+            onInput={handleAmbientColorInput}
+          />
+        </label>
+
         <For each={pipelineModel.LIGHT_RANGE_BINDINGS}>
           {binding => (
             <label class="material-field">

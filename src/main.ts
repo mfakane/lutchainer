@@ -1086,6 +1086,7 @@ function updateStepSwatches(): void {
 
   const steps = getPipelineSteps();
   const materialSettings = getMaterialSettings();
+  const lightSettings = getLightSettings();
   if (steps.length === 0) {
     return;
   }
@@ -1106,7 +1107,8 @@ function updateStepSwatches(): void {
       const drawError = stepPreviewRenderer.drawToCanvas(afterCanvas, {
         targetStepIndex: index,
         baseColor: materialSettings.baseColor,
-        ambientColor: materialSettings.ambientColor,
+        lightColor: lightSettings.lightColor,
+        ambientColor: lightSettings.ambientColor,
         specularStrength: materialSettings.specularStrength,
         specularPower: materialSettings.specularPower,
         fresnelStrength: materialSettings.fresnelStrength,
@@ -1594,6 +1596,7 @@ window.addEventListener('DOMContentLoaded', () => {
     getSteps: getPipelineSteps,
     getLuts: getPipelineLuts,
     getMaterialSettings,
+    getLightSettings,
     getStepPreviewRenderer: () => stepPreviewRenderer,
     onError: message => showStatus(message, 'error'),
     lightDirection: pipelineModel.STEP_PREVIEW_LIGHT_DIR,

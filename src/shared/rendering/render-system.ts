@@ -66,6 +66,16 @@ function isLightSettings(value: unknown): value is LightSettings {
   const candidate = value as Partial<LightSettings>;
   return isFiniteNumber(candidate.azimuthDeg)
     && isFiniteNumber(candidate.elevationDeg)
+    && Array.isArray(candidate.lightColor)
+    && candidate.lightColor.length === 3
+    && isFiniteNumber(candidate.lightColor[0])
+    && isFiniteNumber(candidate.lightColor[1])
+    && isFiniteNumber(candidate.lightColor[2])
+    && Array.isArray(candidate.ambientColor)
+    && candidate.ambientColor.length === 3
+    && isFiniteNumber(candidate.ambientColor[0])
+    && isFiniteNumber(candidate.ambientColor[1])
+    && isFiniteNumber(candidate.ambientColor[2])
     && typeof candidate.showGizmo === 'boolean';
 }
 
@@ -80,11 +90,6 @@ function isMaterialSettings(value: unknown): value is MaterialSettings {
     && isFiniteNumber(candidate.baseColor[0])
     && isFiniteNumber(candidate.baseColor[1])
     && isFiniteNumber(candidate.baseColor[2])
-    && Array.isArray(candidate.ambientColor)
-    && candidate.ambientColor.length === 3
-    && isFiniteNumber(candidate.ambientColor[0])
-    && isFiniteNumber(candidate.ambientColor[1])
-    && isFiniteNumber(candidate.ambientColor[2])
     && isFiniteNumber(candidate.specularStrength)
     && isFiniteNumber(candidate.specularPower)
     && isFiniteNumber(candidate.fresnelStrength)
@@ -215,6 +220,8 @@ export function createRenderSystem(options: CreateRenderSystemOptions): RenderSy
       normal,
       [eyeX, eyeY, eyeZ],
       lightDirection,
+      lightSettings.lightColor,
+      lightSettings.ambientColor,
       showLightGuide,
       materialSettings,
     );

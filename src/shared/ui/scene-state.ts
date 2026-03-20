@@ -156,9 +156,6 @@ function assertValidMaterialSettings(value: unknown): asserts value is MaterialS
   if (!isRgbColor(candidate.baseColor)) {
     throw new Error('Material baseColor must be a [number, number, number] tuple.');
   }
-  if (!isRgbColor(candidate.ambientColor)) {
-    throw new Error('Material ambientColor must be a [number, number, number] tuple.');
-  }
   if (!isFiniteNumber(candidate.specularStrength)) {
     throw new Error('Material specularStrength must be a finite number.');
   }
@@ -185,6 +182,12 @@ function assertValidLightSettings(value: unknown): asserts value is LightSetting
   if (!isFiniteNumber(candidate.elevationDeg)) {
     throw new Error('Light elevationDeg must be a finite number.');
   }
+  if (!isRgbColor(candidate.lightColor)) {
+    throw new Error('Light lightColor must be a [number, number, number] tuple.');
+  }
+  if (!isRgbColor(candidate.ambientColor)) {
+    throw new Error('Light ambientColor must be a [number, number, number] tuple.');
+  }
   if (typeof candidate.showGizmo !== 'boolean') {
     throw new Error('Light showGizmo must be a boolean.');
   }
@@ -204,11 +207,6 @@ export function cloneMaterialSettings(settings: MaterialSettings): MaterialSetti
       clamp(settings.baseColor[1], 0, 1),
       clamp(settings.baseColor[2], 0, 1),
     ],
-    ambientColor: [
-      clamp(settings.ambientColor[0], 0, 1),
-      clamp(settings.ambientColor[1], 0, 1),
-      clamp(settings.ambientColor[2], 0, 1),
-    ],
     specularStrength: clamp(settings.specularStrength, specularStrengthRange.min, specularStrengthRange.max),
     specularPower: clamp(settings.specularPower, specularPowerRange.min, specularPowerRange.max),
     fresnelStrength: clamp(settings.fresnelStrength, fresnelStrengthRange.min, fresnelStrengthRange.max),
@@ -225,6 +223,16 @@ export function cloneLightSettings(settings: LightSettings): LightSettings {
   return {
     azimuthDeg: clamp(settings.azimuthDeg, azimuthRange.min, azimuthRange.max),
     elevationDeg: clamp(settings.elevationDeg, elevationRange.min, elevationRange.max),
+    lightColor: [
+      clamp(settings.lightColor[0], 0, 1),
+      clamp(settings.lightColor[1], 0, 1),
+      clamp(settings.lightColor[2], 0, 1),
+    ],
+    ambientColor: [
+      clamp(settings.ambientColor[0], 0, 1),
+      clamp(settings.ambientColor[1], 0, 1),
+      clamp(settings.ambientColor[2], 0, 1),
+    ],
     showGizmo: settings.showGizmo,
   };
 }

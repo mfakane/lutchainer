@@ -14,6 +14,7 @@ export interface StepPreviewCompileResult {
 export interface StepPreviewDrawOptions {
   targetStepIndex: number;
   baseColor: Color;
+  lightColor: Color;
   ambientColor: Color;
   specularStrength: number;
   specularPower: number;
@@ -35,6 +36,7 @@ interface ProgramBindings {
   resolution: WebGLUniformLocation | null;
   targetStep: WebGLUniformLocation | null;
   baseColor: WebGLUniformLocation | null;
+  lightColor: WebGLUniformLocation | null;
   ambientColor: WebGLUniformLocation | null;
   specularStrength: WebGLUniformLocation | null;
   specularPower: WebGLUniformLocation | null;
@@ -204,6 +206,7 @@ export class StepPreviewRenderer {
       resolution: gl.getUniformLocation(program, 'u_resolution'),
       targetStep: gl.getUniformLocation(program, 'u_targetStep'),
       baseColor: gl.getUniformLocation(program, 'u_materialBaseColor'),
+      lightColor: gl.getUniformLocation(program, 'u_lightColor'),
       ambientColor: gl.getUniformLocation(program, 'u_ambientColor'),
       specularStrength: gl.getUniformLocation(program, 'u_specularStrength'),
       specularPower: gl.getUniformLocation(program, 'u_specularPower'),
@@ -233,6 +236,12 @@ export class StepPreviewRenderer {
       clamp01(options.baseColor[0]),
       clamp01(options.baseColor[1]),
       clamp01(options.baseColor[2]),
+    ];
+
+    const lightColor: Color = [
+      clamp01(options.lightColor[0]),
+      clamp01(options.lightColor[1]),
+      clamp01(options.lightColor[2]),
     ];
 
     const ambientColor: Color = [
@@ -272,6 +281,9 @@ export class StepPreviewRenderer {
     }
     if (this.bindings.baseColor) {
       gl.uniform3f(this.bindings.baseColor, baseColor[0], baseColor[1], baseColor[2]);
+    }
+    if (this.bindings.lightColor) {
+      gl.uniform3f(this.bindings.lightColor, lightColor[0], lightColor[1], lightColor[2]);
     }
     if (this.bindings.ambientColor) {
       gl.uniform3f(this.bindings.ambientColor, ambientColor[0], ambientColor[1], ambientColor[2]);

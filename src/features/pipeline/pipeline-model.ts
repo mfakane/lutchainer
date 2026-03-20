@@ -36,7 +36,6 @@ export type MaterialNumericKey =
 
 export interface MaterialSettings {
   baseColor: Color;
-  ambientColor: Color;
   specularStrength: number;
   specularPower: number;
   fresnelStrength: number;
@@ -58,6 +57,8 @@ export type LightAngleKey = 'azimuthDeg' | 'elevationDeg';
 export interface LightSettings {
   azimuthDeg: number;
   elevationDeg: number;
+  lightColor: Color;
+  ambientColor: Color;
   showGizmo: boolean;
 }
 
@@ -195,7 +196,6 @@ export const PARAM_GROUPS: ParamGroupDef[] = [
 
 export const DEFAULT_MATERIAL_SETTINGS: MaterialSettings = {
   baseColor: [158 / 255, 145 / 255, 122 / 255],
-  ambientColor: [0, 0, 0],
   specularStrength: 0.4,
   specularPower: 24,
   fresnelStrength: 0.18,
@@ -205,6 +205,8 @@ export const DEFAULT_MATERIAL_SETTINGS: MaterialSettings = {
 export const DEFAULT_LIGHT_SETTINGS: LightSettings = {
   azimuthDeg: 0.0,
   elevationDeg: 50.0,
+  lightColor: [1, 1, 1],
+  ambientColor: [0, 0, 0],
   showGizmo: true,
 };
 

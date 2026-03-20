@@ -50,8 +50,6 @@ function isValidMaterialSettings(value: MaterialSettings): boolean {
     && value !== null
     && Array.isArray(value.baseColor)
     && value.baseColor.length === 3
-    && Array.isArray(value.ambientColor)
-    && value.ambientColor.length === 3
     && Number.isFinite(value.specularStrength)
     && Number.isFinite(value.specularPower)
     && Number.isFinite(value.fresnelStrength)
@@ -481,6 +479,7 @@ precision mediump float;
 uniform vec2 u_resolution;
 uniform int u_targetStep;
 uniform vec3 u_materialBaseColor;
+uniform vec3 u_lightColor;
 uniform vec3 u_ambientColor;
 uniform float u_specularStrength;
 uniform float u_specularPower;
@@ -533,7 +532,8 @@ void main() {
 
     ${previewParamLines.join('\n    ')}
 
-    vec3 color = clamp(u_materialBaseColor, 0.0, 1.0);
+    vec3 lightColor = clamp(u_lightColor, 0.0, 1.0);
+    vec3 color = clamp(u_materialBaseColor * lightColor, 0.0, 1.0);
 
     ${stepCode.join('\n    ')}
 
@@ -562,6 +562,7 @@ uniform float u_time;
 uniform vec2  u_resolution;
 uniform vec3  u_cameraPos;
 uniform vec3  u_lightDir;
+uniform vec3  u_lightColor;
 uniform vec3  u_materialBaseColor;
 uniform vec3  u_ambientColor;
 uniform float u_specularStrength;
@@ -595,13 +596,14 @@ vec4 sampleLut(int lutIndex, vec2 uv) {
 }
 
 void main() {
+  vec3 lightColor = clamp(u_lightColor, 0.0, 1.0);
   vec3 materialBaseColor = clamp(u_materialBaseColor, 0.0, 1.0);
   vec3 ambientColor = clamp(u_ambientColor, 0.0, 1.0);
   vec4 textureSample = texture2D(u_texture, v_texcoord);
 
   ${fragmentParamLines.join('\n  ')}
 
-  vec3 color = clamp(materialBaseColor * textureSample.rgb, 0.0, 1.0);
+  vec3 color = clamp(materialBaseColor * lightColor * textureSample.rgb, 0.0, 1.0);
 
   ${stepCode.join('\n  ')}
 
@@ -632,6 +634,7 @@ cbuffer SceneUniforms : register(b0)
   float2 u_resolution;
   float3 u_cameraPos;
   float3 u_lightDir;
+  float3 u_lightColor;
   float3 u_materialBaseColor;
   float3 u_ambientColor;
   float u_specularStrength;
@@ -719,13 +722,14 @@ PSInput VSMain(VSInput input) {
 }
 
 float4 PSMain(PSInput input) : SV_TARGET {
+  float3 lightColor = saturate(u_lightColor);
   float3 materialBaseColor = saturate(u_materialBaseColor);
   float3 ambientColor = saturate(u_ambientColor);
   float4 textureSample = u_texture.SampleLevel(u_lutSampler, input.texcoord, 0.0);
 
   ${hlslParamLines.join('\n  ')}
 
-  float3 color = saturate(materialBaseColor * textureSample.rgb);
+  float3 color = saturate(materialBaseColor * lightColor * textureSample.rgb);
 
   ${stepCode.join('\n  ')}
 

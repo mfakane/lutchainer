@@ -180,15 +180,10 @@ export function syncMaterialPanel(materialSettings: MaterialSettings, root: Pare
 
   const baseColorInput = root.querySelector<HTMLInputElement>('#mat-base-color');
   const baseColorValue = root.querySelector<HTMLElement>('#mat-base-color-value');
-  const ambientColorInput = root.querySelector<HTMLInputElement>('#mat-ambient-color');
-  const ambientColorValue = root.querySelector<HTMLElement>('#mat-ambient-color-value');
   const hexColor = colorToHex(materialSettings.baseColor);
-  const ambientHexColor = colorToHex(materialSettings.ambientColor);
 
   if (baseColorInput) baseColorInput.value = hexColor;
   if (baseColorValue) baseColorValue.textContent = hexColor;
-  if (ambientColorInput) ambientColorInput.value = ambientHexColor;
-  if (ambientColorValue) ambientColorValue.textContent = ambientHexColor;
 
   for (const binding of MATERIAL_RANGE_BINDINGS) {
     const input = root.querySelector<HTMLInputElement>(`#${binding.inputId}`);
@@ -204,6 +199,18 @@ export function syncLightPanel(lightSettings: LightSettings, root: ParentNode | 
   if (!isValidQueryableRoot(root)) {
     return;
   }
+
+  const lightColorInput = root.querySelector<HTMLInputElement>('#light-color');
+  const lightColorValue = root.querySelector<HTMLElement>('#light-color-value');
+  const ambientColorInput = root.querySelector<HTMLInputElement>('#light-ambient-color');
+  const ambientColorValue = root.querySelector<HTMLElement>('#light-ambient-color-value');
+  const lightHexColor = colorToHex(lightSettings.lightColor);
+  const ambientHexColor = colorToHex(lightSettings.ambientColor);
+
+  if (lightColorInput) lightColorInput.value = lightHexColor;
+  if (lightColorValue) lightColorValue.textContent = lightHexColor;
+  if (ambientColorInput) ambientColorInput.value = ambientHexColor;
+  if (ambientColorValue) ambientColorValue.textContent = ambientHexColor;
 
   for (const binding of LIGHT_RANGE_BINDINGS) {
     const input = root.querySelector<HTMLInputElement>(`#${binding.inputId}`);
