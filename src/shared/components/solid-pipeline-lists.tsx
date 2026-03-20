@@ -515,7 +515,6 @@ function StepList(props: StepListProps): JSX.Element {
                     <select
                       class="step-lut-select"
                       data-step-id={String(step.id)}
-                      value={step.lutId}
                       onChange={event => {
                         const input = event.currentTarget as HTMLSelectElement | null;
                         if (!input) {
@@ -539,7 +538,7 @@ function StepList(props: StepListProps): JSX.Element {
                       }}
                     >
                       <For each={props.luts()}>
-                        {lutOpt => <option value={lutOpt.id}>{lutOpt.name}</option>}
+                        {lutOpt => <option value={lutOpt.id} selected={lutOpt.id === step.lutId}>{lutOpt.name}</option>}
                       </For>
                     </select>
                   </div>
