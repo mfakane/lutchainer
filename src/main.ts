@@ -61,6 +61,7 @@ import {
   subscribeLanguageChange,
   t,
 } from './shared/i18n.ts';
+import { setupStaticLocaleSync } from './shared/i18n/static-locale-sync.ts';
 import {
   setupOrbitPointerControls,
   setupPipelinePanelResizer,
@@ -678,15 +679,10 @@ function setupUI(): void {
 }
 
 window.addEventListener('DOMContentLoaded', () => {
-  syncStaticLocaleText();
-
-  const disposeLanguageSync = subscribeLanguageChange(() => {
-    syncStaticLocaleText();
+  setupStaticLocaleSync({
+    syncStaticLocaleText,
+    subscribeLanguageChange,
   });
-
-  window.addEventListener('beforeunload', () => {
-    disposeLanguageSync();
-  }, { once: true });
 
   ({
     pipelineWorkspaceEl,
