@@ -28,6 +28,7 @@ import {
 import * as pipelineView from './features/pipeline/pipeline-view.ts';
 import * as shaderGenerator from './features/shader/shader-generator.ts';
 import { MAX_STEP_LABEL_LENGTH } from './features/step/step-model.ts';
+import { createMainStepRenderingController } from './features/step/main-step-rendering-controller.ts';
 import { StepPreviewRenderer } from './features/step/step-preview-renderer.ts';
 import {
   createStepPreviewDebugController,
@@ -37,10 +38,6 @@ import {
   syncHeaderActionAutoApplyState,
   syncHeaderActionHistoryState,
 } from './shared/components/solid-header-actions.tsx';
-import {
-  syncLutStripListState,
-  syncStepListState,
-} from './shared/components/solid-pipeline-lists.tsx';
 import {
   syncPreviewShapeBarState,
   syncPreviewWireframeState,
@@ -113,7 +110,6 @@ import {
   createMainPreviewCaptureController,
   type MainPreviewCaptureController,
 } from './shared/ui/main-preview-capture-controller.ts';
-import { updateStepSwatches as updateStepSwatchesHelper } from './features/step/step-swatch-updater.ts';
 
 interface StaticTranslationTarget {
   selector: string;
@@ -273,6 +269,23 @@ const pipelineHistoryActions = createPipelineHistoryActionsController({
   t,
 });
 
+const mainStepRendering = createMainStepRenderingController({
+  getStepListElement: () => stepListEl,
+  getSteps: getPipelineSteps,
+  getLuts: getPipelineLuts,
+  getMaterialSettings,
+  getLightSettings,
+  getStepPreviewRenderer: () => stepPreviewRenderer,
+  getStepPreviewSystem: () => stepPreviewSystem,
+  onUpdateShaderCodePanel: () => {
+    updateShaderCodePanel();
+  },
+  onScheduleConnectionDraw: () => {
+    connectionDrawScheduler.schedule();
+  },
+  t,
+});
+
 
 
 
@@ -299,13 +312,11 @@ function applyLoadedPipeline(loaded: pipelineModel.LoadedPipelineData): void {
 }
 
 function normalizeSteps(): void {
-  pipelineModel.normalizeSteps(getPipelineSteps(), getPipelineLuts());
+  mainStepRendering.normalizeSteps();
 }
 
 function renderLutStrip(): void {
-  const steps = getPipelineSteps();
-  const luts = getPipelineLuts();
-  syncLutStripListState(luts, steps);
+  mainStepRendering.renderLutStrip();
 }
 
 function scheduleConnectionDraw(): void {
@@ -313,45 +324,11 @@ function scheduleConnectionDraw(): void {
 }
 
 function renderSteps(): void {
-  const steps = getPipelineSteps();
-  const luts = getPipelineLuts();
-  stepPreviewSystem?.bumpPipelineVersion();
-  syncStepListState(steps, luts);
-  renderLutStrip();
-  updateShaderCodePanel();
-
-  if (steps.length === 0) {
-    scheduleConnectionDraw();
-    return;
-  }
-
-  updateStepSwatches();
-  scheduleConnectionDraw();
+  mainStepRendering.renderSteps();
 }
 
 function updateStepSwatches(): void {
-  if (!stepPreviewSystem) {
-    return;
-  }
-
-  const steps = getPipelineSteps();
-  if (steps.length === 0) {
-    return;
-  }
-
-  updateStepSwatchesHelper({
-    stepListEl,
-    steps,
-    materialSettings: getMaterialSettings(),
-    lightSettings: getLightSettings(),
-    stepPreviewRenderer,
-    canUseWebglPreview: stepPreviewSystem.ensureStepPreviewProgram(),
-    drawSpherePreviewCpu: (canvas, index) => stepPreviewSystem!.drawSpherePreview(canvas, index),
-    onWebglDrawError: message =>
-      stepPreviewSystem!.reportError(
-        t('main.status.stepPreviewWebglDrawFailed', { message }),
-      ),
-  });
+  mainStepRendering.updateStepSwatches();
 }
 
 const stepPreviewDebugController = createStepPreviewDebugController({
