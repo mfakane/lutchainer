@@ -117,11 +117,9 @@ import {
   setPreviewWireframeOverlayEnabled,
 } from './shared/ui/ui-state.ts';
 import {
-  buildPreviewDownloadFilename,
-  canvasToPngBlob,
-  copyCanvasSnapshot,
-  downloadBlobAsFile,
-} from './shared/utils/preview-export.ts';
+  createMainPreviewCaptureController,
+  type MainPreviewCaptureController,
+} from './shared/ui/main-preview-capture-controller.ts';
 import { updateStepSwatches as updateStepSwatchesHelper } from './features/step/step-swatch-updater.ts';
 
 interface StaticTranslationTarget {
@@ -130,17 +128,6 @@ interface StaticTranslationTarget {
   attribute?: 'textContent' | 'aria-label';
 }
 
-interface PendingMainPreviewCapture {
-  resolve: (blob: Blob) => void;
-  reject: (error: Error) => void;
-  timeoutHandle: ReturnType<typeof setTimeout>;
-}
-
-interface MainPreviewCaptureRequestOptions {
-  hideLightGuide?: boolean;
-}
-
-const MAIN_PREVIEW_CAPTURE_TIMEOUT_MS = 2000;
 const PIPELINE_HISTORY_LIMIT = 100;
 const STATIC_TRANSLATION_TARGETS: StaticTranslationTarget[] = [
   {
@@ -207,8 +194,7 @@ let gizmoOverlayController: ReturnType<typeof createGizmoOverlayController> | nu
 let renderSystem: ReturnType<typeof createRenderSystem> | null = null;
 let stepPreviewSystem: ReturnType<typeof createStepPreviewSystem> | null = null;
 let pipelineIoSystem: ReturnType<typeof createPipelineIoSystem> | null = null;
-let pendingMainPreviewCapture: PendingMainPreviewCapture | null = null;
-let suppressLightGuideForMainPreviewCapture = false;
+let mainPreviewCapture: MainPreviewCaptureController;
 
 const connectionDrawScheduler = createConnectionDrawScheduler({
   draw: () => {
@@ -300,99 +286,7 @@ const pipelineHistoryActions = createPipelineHistoryActionsController({
 
 
 function settleMainPreviewCaptureFromFrame(canvas: HTMLCanvasElement): void {
-  const pending = pendingMainPreviewCapture;
-  if (!pending) {
-    return;
-  }
-
-  pendingMainPreviewCapture = null;
-  suppressLightGuideForMainPreviewCapture = false;
-  clearTimeout(pending.timeoutHandle);
-
-  let snapshot: HTMLCanvasElement;
-  try {
-    snapshot = copyCanvasSnapshot(canvas);
-  } catch (error) {
-    pending.reject(error instanceof Error ? error : new Error(t('common.unknownError')));
-    return;
-  }
-
-  canvasToPngBlob(snapshot)
-    .then(blob => pending.resolve(blob))
-    .catch(error => {
-      pending.reject(error instanceof Error ? error : new Error(t('common.unknownError')));
-    });
-}
-
-function requestMainPreviewPngBlob(options?: MainPreviewCaptureRequestOptions): Promise<Blob> {
-  if (options !== undefined && (typeof options !== 'object' || options === null || Array.isArray(options))) {
-    return Promise.reject(new Error('キャプチャオプションが不正です。'));
-  }
-
-  const hideLightGuideRaw = options?.hideLightGuide;
-  if (hideLightGuideRaw !== undefined && typeof hideLightGuideRaw !== 'boolean') {
-    return Promise.reject(new Error('hideLightGuide は boolean で指定してください。'));
-  }
-
-  if (pendingMainPreviewCapture) {
-    return Promise.reject(new Error(t('main.status.previewExportBusy')));
-  }
-
-  suppressLightGuideForMainPreviewCapture = hideLightGuideRaw ?? false;
-
-  return new Promise<Blob>((resolve, reject) => {
-    const timeoutHandle = setTimeout(() => {
-      const pending = pendingMainPreviewCapture;
-      if (!pending || pending.timeoutHandle !== timeoutHandle) {
-        return;
-      }
-
-      pendingMainPreviewCapture = null;
-      suppressLightGuideForMainPreviewCapture = false;
-      pending.reject(new Error(t('main.status.previewExportCaptureTimeout')));
-    }, MAIN_PREVIEW_CAPTURE_TIMEOUT_MS);
-
-    pendingMainPreviewCapture = {
-      resolve,
-      reject,
-      timeoutHandle,
-    };
-  });
-}
-
-async function exportMainPreviewPng(): Promise<void> {
-  if (!(renderer instanceof Renderer)) {
-    throw new Error(t('main.status.previewExportRendererMissing'));
-  }
-
-  if (!renderSystem) {
-    throw new Error(t('main.status.previewExportRendererMissing'));
-  }
-
-  if (!renderSystem.isRunning()) {
-    renderSystem.start();
-  }
-
-  const blob = await requestMainPreviewPngBlob({ hideLightGuide: true });
-  downloadBlobAsFile(blob, buildPreviewDownloadFilename('main'));
-  showStatus(t('main.status.previewExportMainSaved'), 'success');
-}
-
-async function exportStepPreviewPng(): Promise<void> {
-  if (!stepPreviewSystem) {
-    throw new Error(t('main.status.stepPreviewNotInitialized'));
-  }
-
-  const bytes = await stepPreviewSystem.renderPreviewPngBytes();
-  if (!(bytes instanceof Uint8Array) || bytes.byteLength <= 0) {
-    throw new Error(t('main.status.previewExportBytesInvalid'));
-  }
-
-  const blob = new Blob([(bytes.buffer as ArrayBuffer).slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength)], {
-    type: 'image/png',
-  });
-  downloadBlobAsFile(blob, buildPreviewDownloadFilename('step'));
-  showStatus(t('main.status.previewExportStepSaved'), 'success');
+  mainPreviewCapture.settleFromFrame(canvas);
 }
 
 function isClickSuppressed(): boolean {
@@ -565,10 +459,10 @@ function setupUI(): void {
       previewShapeController.setWireframeOverlayEnabled(enabled);
     },
     onExportMainPreviewPng: async () => {
-      await exportMainPreviewPng();
+      await mainPreviewCapture.exportMainPreviewPng();
     },
     onExportStepPreviewPng: async () => {
-      await exportStepPreviewPng();
+      await mainPreviewCapture.exportStepPreviewPng();
     },
     onStatus: showStatus,
   });
@@ -735,6 +629,14 @@ window.addEventListener('DOMContentLoaded', () => {
     globalObject: window as unknown as Record<string, unknown>,
   });
 
+  mainPreviewCapture = createMainPreviewCaptureController({
+    getRenderer: () => renderer,
+    getRenderSystem: () => renderSystem,
+    getStepPreviewSystem: () => stepPreviewSystem,
+    onStatus: showStatus,
+    t,
+  });
+
   pipelineIoSystem = createPipelineIoSystem({
     getNextStepId: getPipelineNextStepId,
     getLuts: getPipelineLuts,
@@ -765,7 +667,7 @@ window.addEventListener('DOMContentLoaded', () => {
     getLightSettings,
     getLightDirectionWorld,
     getMaterialSettings,
-    shouldSuppressLightGuide: () => suppressLightGuideForMainPreviewCapture,
+    shouldSuppressLightGuide: () => mainPreviewCapture.isSuppressLightGuide(),
     onAfterDraw: ({ view, proj, canvas: drawCanvas, lightDirection, lightSettings }) => {
       settleMainPreviewCaptureFromFrame(drawCanvas);
 
