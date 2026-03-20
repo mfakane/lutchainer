@@ -109,6 +109,7 @@ import {
   setStepReorderDragState,
   setSuppressClickUntil,
 } from './shared/ui/interaction-state.ts';
+import { resolveMainDomElements } from './shared/ui/main-dom-elements.ts';
 import {
   getLightSettings,
   getMaterialSettings,
@@ -774,27 +775,29 @@ window.addEventListener('DOMContentLoaded', () => {
     disposeLanguageSync();
   }, { once: true });
 
-  pipelineWorkspaceEl = $<HTMLElement>('#pipeline-workspace');
-  stepListEl = $<HTMLElement>('#step-list');
-  lutStripListEl = $<HTMLElement>('#lut-strip-list');
-  paramNodeListEl = $<HTMLElement>('#param-node-list');
-  connectionLayerEl = $<SVGSVGElement>('#connection-layer');
-  lightGizmoLayerEl = $<SVGSVGElement>('#light-gizmo-layer');
-  lightGizmoOriginEl = $<SVGCircleElement>('#light-gizmo-origin');
-  lightGizmoTipEl = $<SVGCircleElement>('#light-gizmo-tip');
-  lightGizmoLabelEl = $<SVGTextElement>('#light-gizmo-label');
-  axisGizmoLayerEl = $<SVGSVGElement>('#axis-gizmo-layer');
-  axisGizmoOriginEl = $<SVGCircleElement>('#axis-gizmo-origin');
-  axisGizmoLineXEl = $<SVGPathElement>('#axis-gizmo-line-x');
-  axisGizmoLineYEl = $<SVGPathElement>('#axis-gizmo-line-y');
-  axisGizmoLineZEl = $<SVGPathElement>('#axis-gizmo-line-z');
-  axisGizmoTipXEl = $<SVGCircleElement>('#axis-gizmo-tip-x');
-  axisGizmoTipYEl = $<SVGCircleElement>('#axis-gizmo-tip-y');
-  axisGizmoTipZEl = $<SVGCircleElement>('#axis-gizmo-tip-z');
-  axisGizmoLabelXEl = $<SVGTextElement>('#axis-gizmo-label-x');
-  axisGizmoLabelYEl = $<SVGTextElement>('#axis-gizmo-label-y');
-  axisGizmoLabelZEl = $<SVGTextElement>('#axis-gizmo-label-z');
-  paramColumnEl = $<HTMLElement>('.param-column');
+  ({
+    pipelineWorkspaceEl,
+    stepListEl,
+    lutStripListEl,
+    paramNodeListEl,
+    connectionLayerEl,
+    lightGizmoLayerEl,
+    lightGizmoOriginEl,
+    lightGizmoTipEl,
+    lightGizmoLabelEl,
+    axisGizmoLayerEl,
+    axisGizmoOriginEl,
+    axisGizmoLineXEl,
+    axisGizmoLineYEl,
+    axisGizmoLineZEl,
+    axisGizmoTipXEl,
+    axisGizmoTipYEl,
+    axisGizmoTipZEl,
+    axisGizmoLabelXEl,
+    axisGizmoLabelYEl,
+    axisGizmoLabelZEl,
+    paramColumnEl,
+  } = resolveMainDomElements({ select: $ }));
 
   pipelineDropIndicators = createPipelineDropIndicatorController({
     stepListEl,
