@@ -49,7 +49,6 @@ import {
   syncShaderDialogState,
 } from './shared/components/solid-shader-dialog.tsx';
 import {
-  mountStatusLog,
   syncStatusLogState,
 } from './shared/components/solid-status.tsx';
 import {
@@ -74,34 +73,25 @@ import {
 } from './features/pipeline/pipeline-socket-dnd-controller.ts';
 import { Renderer } from './shared/rendering/renderer.ts';
 import {
-  clearLutReorderDragState,
   clearSocketDragState,
-  clearStepReorderDragState,
   getLutReorderDragState,
   getSocketDragState,
   getSocketDropTargetState,
   getStepReorderDragState,
-  getSuppressClickUntil,
-  setLutReorderDragState,
   setSocketDragState,
   setSocketDropTargetState,
-  setStepReorderDragState,
   setSuppressClickUntil,
 } from './shared/ui/interaction-state.ts';
 import { resolveMainDomElements } from './shared/ui/main-dom-elements.ts';
-import { setupMainLayoutControls } from './shared/ui/main-layout-controls-setup.ts';
-import { setupMainPipelineEditor } from './shared/ui/main-pipeline-editor-setup.ts';
+import { bootstrapMainPostRuntime } from './shared/ui/main-post-runtime-bootstrap.ts';
 import { type MainRenderPipeline } from './shared/ui/main-render-pipeline-setup.ts';
 import { bootstrapMainRuntime } from './shared/ui/main-runtime-bootstrap.ts';
-import { setupMainUi } from './shared/ui/main-ui-setup.ts';
 import {
   type PreviewShapeController,
 } from './shared/ui/preview-shape-controller.ts';
 import {
   getLightSettings,
   getMaterialSettings,
-  setLightSettings,
-  setMaterialSettings
 } from './shared/ui/scene-state.ts';
 import {
   isAutoApplyEnabled,
@@ -119,7 +109,6 @@ const parseStepId = pipelineModel.parseStepId;
 const parseLutId = pipelineModel.parseLutId;
 const isValidParamName = pipelineModel.isValidParamName;
 const isValidSocketAxis = pipelineView.isValidSocketAxis;
-const createBuiltinLuts = pipelineModel.createBuiltinLuts;
 const resolveSocketDropTargetForDrag = createSocketDropTargetResolver({
   parseStepId,
   isValidSocketAxis,
@@ -245,10 +234,6 @@ const mainStepRendering = createMainStepRenderingController({
   },
   t,
 });
-
-function isClickSuppressed(): boolean {
-  return performance.now() < getSuppressClickUntil();
-}
 
 function scheduleConnectionDraw(): void {
   connectionDrawScheduler.schedule();
@@ -447,87 +432,28 @@ window.addEventListener('DOMContentLoaded', () => {
     getLightDirectionWorld,
   }));
 
-  replacePipelineState({
-    luts: createBuiltinLuts(),
-    steps: [],
-    nextStepId: 1,
-  });
-  pipelineHistoryActions.clearHistory();
-
-  mountStatusLog($<HTMLElement>('#error-log'), {
-    initialMessage: t('main.status.initialPrompt'),
-    initialKind: 'info',
-  });
-
-  setupMainPipelineEditor({
-    paramNodeListEl,
-    stepListEl,
-    lutStripListEl,
-    getSteps: getPipelineSteps,
-    getLuts: getPipelineLuts,
-    shouldSuppressClick: isClickSuppressed,
-    pipelineCommands,
-    createLutFromFile: pipelineModel.createLutFromFile,
-    maxLuts: pipelineModel.MAX_LUTS,
-    pipelineHistoryActions,
-    normalizeSteps: () => mainStepRendering.normalizeSteps(),
-    renderSteps: () => mainStepRendering.renderSteps(),
-    scheduleApply: () => pipelineApply.scheduleApply(),
-    renderLutStrip: () => mainStepRendering.renderLutStrip(),
-    onStatus: showStatus,
-    t,
-  });
-
-  setupMainUi({
+  bootstrapMainPostRuntime({
     select: $,
-    pipelineHeaderActions,
-    previewShapeController,
-    mainPreviewCapture,
-    isPreviewWireframeOverlayEnabled,
-    lightGizmoLayerEl,
-    getMaterialSettings,
-    setMaterialSettings,
-    getLightSettings,
-    setLightSettings,
-    getShaderBuildInput,
-    onUpdateStepSwatches: () => mainStepRendering.updateStepSwatches(),
-    onUpdateShaderCodePanel: () => {
-      updateShaderCodePanel();
-    },
-    onScheduleApply: () => {
-      pipelineApply.scheduleApply();
-    },
+    canvas,
     paramNodeListEl,
     stepListEl,
     lutStripListEl,
     paramColumnEl,
-    parseStepId,
-    parseLutId,
-    isValidParamName,
-    isValidSocketAxis,
+    lightGizmoLayerEl,
+    pipelineCommands,
+    pipelineHistoryActions,
+    pipelineHeaderActions,
+    previewShapeController,
+    mainPreviewCapture,
     pipelineDropIndicators,
-    getLutReorderDragState,
-    setLutReorderDragState,
-    clearLutReorderDragState,
-    getStepReorderDragState,
-    setStepReorderDragState,
-    clearStepReorderDragState,
-    setSocketDragState,
     pipelineSocketDnd,
-    moveLutToPosition: pipelineCommands.moveLutToPosition,
-    moveStepToPosition: pipelineCommands.moveStepToPosition,
-    onScheduleConnectionDraw: scheduleConnectionDraw,
-    onUndoPipeline: pipelineHistoryActions.undo,
-    onRedoPipeline: pipelineHistoryActions.redo,
-    onStatus: showStatus,
-  });
-  setupMainLayoutControls({
-    canvas,
-    pipelinePanel: $<HTMLElement>('#pipeline-panel'),
-    pipelineResizer: $<HTMLElement>('#resizer'),
-    previewPanel: $<HTMLElement>('.preview-panel'),
-    previewDisplay: $<HTMLElement>('#preview-display-section'),
-    previewResizer: $<HTMLElement>('#preview-layout-resizer'),
+    pipelineApply,
+    mainRenderPipeline,
+    mainStepRendering,
+    getShaderBuildInput,
+    onUpdateShaderCodePanel: () => {
+      updateShaderCodePanel();
+    },
     getOrbitState: () => ({
       orbitPitchDeg,
       orbitYawDeg,
@@ -538,15 +464,8 @@ window.addEventListener('DOMContentLoaded', () => {
       orbitYawDeg = nextState.orbitYawDeg;
       orbitDist = nextState.orbitDist;
     },
-    onPanelResized: scheduleConnectionDraw,
+    onScheduleConnectionDraw: scheduleConnectionDraw,
     onStatus: showStatus,
+    t,
   });
-
-  pipelineCommands.addStep({ recordHistory: false });
-  pipelineApply.applyNow();
-  if (mainRenderPipeline && !mainRenderPipeline.renderSystem.isRunning()) {
-    mainRenderPipeline.renderSystem.start();
-  }
-
-  scheduleConnectionDraw();
 });
