@@ -203,7 +203,7 @@ const pipelineHistory = createPipelineHistoryController({
   }),
   restoreSnapshot: snapshot => {
     replacePipelineState(snapshot);
-    renderSteps();
+    mainStepRendering.renderSteps();
     pipelineApply.scheduleApply();
   },
   onHistoryStateChange: (canUndo, canRedo) => {
@@ -295,35 +295,19 @@ function applyLoadedPipeline(loaded: pipelineModel.LoadedPipelineData): void {
     nextStepId: loaded.nextStepId,
   });
   pipelineHistoryActions.clearHistory();
-  renderSteps();
+  mainStepRendering.renderSteps();
   pipelineApply.cancelPending();
   showStatus(t('main.status.pipelineLoadedApplying'), 'info');
   pipelineApply.applyNow();
-}
-
-function normalizeSteps(): void {
-  mainStepRendering.normalizeSteps();
-}
-
-function renderLutStrip(): void {
-  mainStepRendering.renderLutStrip();
 }
 
 function scheduleConnectionDraw(): void {
   connectionDrawScheduler.schedule();
 }
 
-function renderSteps(): void {
-  mainStepRendering.renderSteps();
-}
-
-function updateStepSwatches(): void {
-  mainStepRendering.updateStepSwatches();
-}
-
 const stepPreviewDebugController = createStepPreviewDebugController({
   getStepPreviewSystem: () => stepPreviewSystem,
-  onUpdateStepSwatches: updateStepSwatches,
+  onUpdateStepSwatches: () => mainStepRendering.updateStepSwatches(),
   onStatus: showStatus,
   t,
 });
@@ -341,11 +325,11 @@ const pipelineCommands = createPipelineCommandController({
   isValidSocketAxis,
   captureSnapshot: () => pipelineHistoryActions.captureSnapshot(),
   commitSnapshot: before => pipelineHistoryActions.commitSnapshot(before),
-  renderSteps,
+  renderSteps: () => mainStepRendering.renderSteps(),
   scheduleApply: () => pipelineApply.scheduleApply(),
   onStepOpsChanged: () => {
     stepPreviewSystem?.bumpPipelineVersion();
-    updateStepSwatches();
+    mainStepRendering.updateStepSwatches();
     updateShaderCodePanel();
   },
   status: showStatus,
@@ -523,10 +507,10 @@ window.addEventListener('DOMContentLoaded', () => {
     createLutFromFile: pipelineModel.createLutFromFile,
     maxLuts: pipelineModel.MAX_LUTS,
     pipelineHistoryActions,
-    normalizeSteps,
-    renderSteps,
+    normalizeSteps: () => mainStepRendering.normalizeSteps(),
+    renderSteps: () => mainStepRendering.renderSteps(),
     scheduleApply: () => pipelineApply.scheduleApply(),
-    renderLutStrip,
+    renderLutStrip: () => mainStepRendering.renderLutStrip(),
     onStatus: showStatus,
     t,
   });
@@ -543,7 +527,7 @@ window.addEventListener('DOMContentLoaded', () => {
     getLightSettings,
     setLightSettings,
     getShaderBuildInput,
-    onUpdateStepSwatches: updateStepSwatches,
+    onUpdateStepSwatches: () => mainStepRendering.updateStepSwatches(),
     onUpdateShaderCodePanel: () => {
       updateShaderCodePanel();
     },
