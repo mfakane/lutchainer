@@ -201,7 +201,6 @@ button:disabled:hover {
 .pipeline-header,
 .preview-header {
   display: flex;
-  align-items: baseline;
   justify-content: space-between;
   gap: 8px;
   padding: 10px 12px;
@@ -768,7 +767,6 @@ button:disabled:hover {
 
 .material-panel-head {
   display: flex;
-  align-items: baseline;
   justify-content: space-between;
   gap: 8px;
   margin-bottom: 10px;
@@ -876,8 +874,6 @@ button:disabled:hover {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  flex-wrap: wrap;
-  justify-content: flex-end;
 }
 
 .light-grid {
@@ -916,7 +912,6 @@ button:disabled:hover {
 .preview-action-menu-wrap,
 .material-action-menu-wrap,
 .light-action-menu-wrap {
-  margin-left: auto;
   position: relative;
   display: inline-flex;
   align-items: center;

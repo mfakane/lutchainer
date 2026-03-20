@@ -511,6 +511,16 @@ function LightPanel(props: LightPanelProps): JSX.Element {
         </div>
 
         <div class="light-panel-actions">
+          <button
+            type="button"
+            class="btn-secondary light-toggle-btn"
+            id="btn-toggle-light-gizmo"
+            aria-pressed={props.settings().showGizmo ? 'true' : 'false'}
+            onClick={toggleGizmo}
+          >
+            {tr('panel.guide')}
+          </button>
+
           <DropdownMenu
             wrapperClass="light-action-menu-wrap"
             triggerClass="light-kebab-btn"
@@ -540,16 +550,6 @@ function LightPanel(props: LightPanelProps): JSX.Element {
               </>
             )}
           </DropdownMenu>
-
-          <button
-            type="button"
-            class="btn-secondary light-toggle-btn"
-            id="btn-toggle-light-gizmo"
-            aria-pressed={props.settings().showGizmo ? 'true' : 'false'}
-            onClick={toggleGizmo}
-          >
-            {tr('panel.guide', { state: props.settings().showGizmo ? tr('common.on') : tr('common.off') })}
-          </button>
         </div>
       </div>
 
