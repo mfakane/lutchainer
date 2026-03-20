@@ -30,6 +30,9 @@ import type {
   StepModel,
 } from '../../features/step/step-model.ts';
 import {
+  resolveLutUvAtPixel,
+} from '../../features/step/step-lut-uv-resolver.ts';
+import {
   mountStatusLog,
 } from '../components/solid-status.tsx';
 import {
@@ -258,6 +261,18 @@ export function bootstrapMainPostRuntime(options: BootstrapMainPostRuntimeOption
     getSteps: getPipelineSteps,
     getLuts: getPipelineLuts,
     shouldSuppressClick: () => performance.now() < getSuppressClickUntil(),
+    computeLutUv: (stepIndex, pixelX, pixelY, canvasWidth, canvasHeight) =>
+      resolveLutUvAtPixel({
+        pixelX,
+        pixelY,
+        canvasWidth,
+        canvasHeight,
+        targetStepIndex: stepIndex,
+        steps: getPipelineSteps(),
+        luts: getPipelineLuts(),
+        materialSettings: getMaterialSettings(),
+        lightSettings: getLightSettings(),
+      }),
     pipelineCommands: options.pipelineCommands,
     createLutFromFile: pipelineModel.createLutFromFile,
     maxLuts: pipelineModel.MAX_LUTS,

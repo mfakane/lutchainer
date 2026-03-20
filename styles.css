@@ -625,6 +625,13 @@ button:disabled:hover {
   align-items: center;
 }
 
+.lut-thumb-wrap {
+  position: relative;
+  width: 72px;
+  height: 72px;
+  flex-shrink: 0;
+}
+
 .lut-thumb {
   width: 72px;
   height: 72px;
@@ -633,6 +640,38 @@ button:disabled:hover {
   border-radius: 8px;
   border: 1px solid var(--panel-border-strong);
   background: #212833;
+}
+
+.lut-crosshair {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.lut-crosshair::before,
+.lut-crosshair::after {
+  content: '';
+  position: absolute;
+  background: rgba(255, 255, 255, 0.85);
+  box-shadow: 0 0 2px rgba(0, 0, 0, 0.8);
+}
+
+.lut-crosshair::before {
+  left: 0;
+  right: 0;
+  top: var(--ch-y, 50%);
+  height: 1px;
+  transform: translateY(-50%);
+}
+
+.lut-crosshair::after {
+  top: 0;
+  bottom: 0;
+  left: var(--ch-x, 50%);
+  width: 1px;
+  transform: translateX(-50%);
 }
 
 .step-lut-select,

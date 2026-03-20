@@ -22,6 +22,7 @@ export interface SetupMainPipelineListsOptions {
   getSteps: () => StepModel[];
   getLuts: () => LutModel[];
   shouldSuppressClick: () => boolean;
+  computeLutUv?: (stepIndex: number, pixelX: number, pixelY: number, canvasWidth: number, canvasHeight: number) => { u: number; v: number } | null;
   onAddStep: () => void;
   onDuplicateStep: (stepId: number) => void;
   onRemoveStep: (stepId: number) => void;
@@ -112,6 +113,7 @@ export function setupMainPipelineLists(options: SetupMainPipelineListsOptions): 
     onStepBlendModeChange: options.onStepBlendModeChange,
     onStepOpChange: options.onStepOpChange,
     shouldSuppressClick: options.shouldSuppressClick,
+    computeLutUv: options.computeLutUv,
     onStatus: options.onStatus,
   });
 

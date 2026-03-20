@@ -35,6 +35,7 @@ export interface SetupMainPipelineEditorOptions {
   getSteps: () => StepModel[];
   getLuts: () => LutModel[];
   shouldSuppressClick: () => boolean;
+  computeLutUv?: (stepIndex: number, pixelX: number, pixelY: number, canvasWidth: number, canvasHeight: number) => { u: number; v: number } | null;
   pipelineCommands: PipelineCommandsLike;
   createLutFromFile: (file: File) => Promise<LutModel>;
   maxLuts: number;
@@ -124,6 +125,7 @@ export function setupMainPipelineEditor(options: SetupMainPipelineEditorOptions)
     getSteps: options.getSteps,
     getLuts: options.getLuts,
     shouldSuppressClick: options.shouldSuppressClick,
+    computeLutUv: options.computeLutUv,
     onAddStep: () => {
       options.pipelineCommands.addStep();
     },

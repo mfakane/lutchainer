@@ -40,6 +40,7 @@ interface StepListMountOptions {
   onStepBlendModeChange: (stepId: number, blendMode: StepModel['blendMode']) => void;
   onStepOpChange: (stepId: number, channel: ChannelName, op: BlendOp) => void;
   shouldSuppressClick?: () => boolean;
+  computeLutUv?: (stepIndex: number, pixelX: number, pixelY: number, canvasWidth: number, canvasHeight: number) => { u: number; v: number } | null;
   onStatus: StatusReporter;
 }
 
@@ -65,6 +66,7 @@ interface StepListProps {
   onStepBlendModeChange: (stepId: number, blendMode: StepModel['blendMode']) => void;
   onStepOpChange: (stepId: number, channel: ChannelName, op: BlendOp) => void;
   shouldSuppressClick?: () => boolean;
+  computeLutUv?: (stepIndex: number, pixelX: number, pixelY: number, canvasWidth: number, canvasHeight: number) => { u: number; v: number } | null;
   onStatus: StatusReporter;
 }
 
@@ -230,6 +232,9 @@ function ensureStepListMountOptions(value: unknown): asserts value is StepListMo
   if (options.shouldSuppressClick !== undefined && typeof options.shouldSuppressClick !== 'function') {
     throw new Error('Stepリストのクリック抑止判定コールバックが不正です。');
   }
+  if (options.computeLutUv !== undefined && typeof options.computeLutUv !== 'function') {
+    throw new Error('StepリストのLUT UV計算コールバックが不正です。');
+  }
   ensureStatusReporter(options.onStatus, 'Stepリスト');
 }
 
@@ -392,6 +397,7 @@ function StepList(props: StepListProps): JSX.Element {
             const selectedLut = (): LutModel | null => resolveLut(step.lutId);
             const editableChannels = (): ChannelName[] => getCustomChannelsForBlendMode(step.blendMode);
             const displayIndex = (): number => index() + 1;
+            const [crosshairUv, setCrosshairUv] = createSignal<{ u: number; v: number } | null>(null);
 
             return (
               <article class={step.muted ? 'step-item step-item-muted' : 'step-item'} data-step-id={String(step.id)}>
@@ -511,7 +517,16 @@ function StepList(props: StepListProps): JSX.Element {
 
                 <section class="step-core">
                   <div class="lut-row">
-                    <img class="lut-thumb" src={selectedLut()?.thumbUrl ?? ''} alt="LUT thumbnail" />
+                    <div class="lut-thumb-wrap">
+                      <img class="lut-thumb" src={selectedLut()?.thumbUrl ?? ''} alt="LUT thumbnail" />
+                      <Show when={crosshairUv() !== null}>
+                        <div
+                          class="lut-crosshair"
+                          style={`--ch-x: ${(crosshairUv()?.u ?? 0) * 100}%; --ch-y: ${(crosshairUv()?.v ?? 0) * 100}%`}
+                          aria-hidden="true"
+                        />
+                      </Show>
+                    </div>
                     <select
                       class="step-lut-select"
                       data-step-id={String(step.id)}
@@ -617,6 +632,17 @@ function StepList(props: StepListProps): JSX.Element {
                     data-step-id={String(step.id)}
                     data-preview="after"
                     aria-label={tr('pipeline.step.previewAria', { index: index() + 1 })}
+                    onMouseMove={event => {
+                      if (!props.computeLutUv) return;
+                      const canvas = event.currentTarget as HTMLCanvasElement;
+                      const rect = canvas.getBoundingClientRect();
+                      const scaleX = canvas.width / rect.width;
+                      const scaleY = canvas.height / rect.height;
+                      const pixelX = (event.clientX - rect.left) * scaleX;
+                      const pixelY = (event.clientY - rect.top) * scaleY;
+                      setCrosshairUv(props.computeLutUv(index(), pixelX, pixelY, canvas.width, canvas.height));
+                    }}
+                    onMouseLeave={() => setCrosshairUv(null)}
                   ></canvas>
                 </aside>
               </article>
@@ -799,6 +825,7 @@ export function mountStepList(target: HTMLElement, options: StepListMountOptions
         onStepBlendModeChange={options.onStepBlendModeChange}
         onStepOpChange={options.onStepOpChange}
         shouldSuppressClick={options.shouldSuppressClick}
+        computeLutUv={options.computeLutUv}
         onStatus={options.onStatus}
       />
     );
