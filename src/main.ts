@@ -1,8 +1,4 @@
 import {
-  createConnectionDrawScheduler,
-  renderConnectionLayer,
-} from './connection-renderer.ts';
-import {
   createPipelineCommandController,
 } from './features/pipeline/pipeline-command-controller.ts';
 import {
@@ -14,6 +10,7 @@ import {
 import {
   applyLoadedPipelineState,
 } from './features/pipeline/main-pipeline-load-apply.ts';
+import { setupMainPipelineSocketDnd } from './features/pipeline/main-pipeline-socket-dnd-setup.ts';
 import {
   createPipelineHeaderActionController,
 } from './features/pipeline/pipeline-header-actions-controller.ts';
@@ -29,7 +26,6 @@ import {
   setSteps as setPipelineSteps,
 } from './features/pipeline/pipeline-state.ts';
 import * as pipelineView from './features/pipeline/pipeline-view.ts';
-import * as shaderGenerator from './features/shader/shader-generator.ts';
 import { MAX_STEP_LABEL_LENGTH } from './features/step/step-model.ts';
 import { createMainStepRenderingController } from './features/step/main-step-rendering-controller.ts';
 import { StepPreviewRenderer } from './features/step/step-preview-renderer.ts';
@@ -45,12 +41,6 @@ import {
   syncPreviewShapeBarState,
   syncPreviewWireframeState,
 } from './shared/components/solid-preview-shape-bar.tsx';
-import {
-  syncShaderDialogState,
-} from './shared/components/solid-shader-dialog.tsx';
-import {
-  syncStatusLogState,
-} from './shared/components/solid-status.tsx';
 import {
   getLanguage,
   subscribeLanguageChange,
@@ -68,7 +58,6 @@ import {
   type PipelineDropIndicatorController,
 } from './features/pipeline/pipeline-drop-indicators.ts';
 import {
-  createPipelineSocketDndController,
   type PipelineSocketDndController,
 } from './features/pipeline/pipeline-socket-dnd-controller.ts';
 import { Renderer } from './shared/rendering/renderer.ts';
@@ -82,10 +71,19 @@ import {
   setSocketDropTargetState,
   setSuppressClickUntil,
 } from './shared/ui/interaction-state.ts';
+import { setupMainConnectionDrawController } from './shared/ui/main-connection-draw-controller.ts';
 import { resolveMainDomElements } from './shared/ui/main-dom-elements.ts';
+import { createRequiredDomSelector } from './shared/ui/main-dom-select.ts';
+import { createMainOrbitStateController } from './shared/ui/main-orbit-state.ts';
 import { bootstrapMainPostRuntime } from './shared/ui/main-post-runtime-bootstrap.ts';
 import { type MainRenderPipeline } from './shared/ui/main-render-pipeline-setup.ts';
 import { bootstrapMainRuntime } from './shared/ui/main-runtime-bootstrap.ts';
+import {
+  createLightDirectionWorldGetter,
+  createShaderBuildInputGetter,
+  createShaderCodePanelUpdater,
+  createStatusReporter,
+} from './shared/ui/main-shader-status-helpers.ts';
 import {
   type PreviewShapeController,
 } from './shared/ui/preview-shape-controller.ts';
@@ -122,9 +120,14 @@ let pipelineSocketDnd: PipelineSocketDndController;
 let previewShapeController: PreviewShapeController;
 let stepPreviewRenderer: StepPreviewRenderer | null = null;
 
-let orbitPitchDeg = 25.0;
-let orbitYawDeg = 45.0;
-let orbitDist = 2.8;
+const selectRequired = createRequiredDomSelector();
+const orbitStateController = createMainOrbitStateController({
+  initialState: {
+    orbitPitchDeg: 25.0,
+    orbitYawDeg: 45.0,
+    orbitDist: 2.8,
+  },
+});
 
 let pipelineWorkspaceEl: HTMLElement;
 let stepListEl: HTMLElement;
@@ -152,17 +155,17 @@ let stepPreviewSystem: ReturnType<typeof createStepPreviewSystem> | null = null;
 let pipelineIoSystem: ReturnType<typeof setupMainPipelineIoSystem> | null = null;
 let mainPreviewCapture: MainPreviewCaptureController;
 
-const connectionDrawScheduler = createConnectionDrawScheduler({
-  draw: () => {
-    renderConnectionLayer({
-      pipelineWorkspaceEl,
-      connectionLayerEl,
-      steps: getPipelineSteps(),
-      socketDragState: getSocketDragState(),
-      socketDropTarget: getSocketDropTargetState(),
-    });
-  },
+const connectionDrawController = setupMainConnectionDrawController({
+  getPipelineWorkspaceEl: () => pipelineWorkspaceEl,
+  getConnectionLayerEl: () => connectionLayerEl,
+  getSteps: getPipelineSteps,
+  getSocketDragState,
+  getSocketDropTarget: getSocketDropTargetState,
 });
+
+const scheduleConnectionDraw = (): void => {
+  connectionDrawController.scheduleConnectionDraw();
+};
 
 const pipelineHistory = createPipelineHistoryController({
   historyLimit: PIPELINE_HISTORY_LIMIT,
@@ -181,36 +184,21 @@ const pipelineHistory = createPipelineHistoryController({
   },
 });
 
-function $<T extends Element>(selector: string): T {
-  const el = document.querySelector<T>(selector);
-  if (!el) {
-    throw new Error(`Required DOM element was not found: ${selector}`);
-  }
-  return el;
-}
+const getLightDirectionWorld = createLightDirectionWorldGetter({
+  getLightSettings,
+});
 
-function getLightDirectionWorld(): [number, number, number] {
-  return pipelineModel.getLightDirectionWorld(getLightSettings());
-}
+const getShaderBuildInput = createShaderBuildInputGetter({
+  getSteps: getPipelineSteps,
+  getLuts: getPipelineLuts,
+  getMaterialSettings,
+});
 
-function getShaderBuildInput(): shaderGenerator.ShaderBuildInput {
-  return {
-    steps: getPipelineSteps(),
-    luts: getPipelineLuts(),
-    materialSettings: getMaterialSettings(),
-  };
-}
+const updateShaderCodePanel = createShaderCodePanelUpdater({
+  getShaderBuildInput,
+});
 
-function updateShaderCodePanel(fragmentShader?: string): void {
-  syncShaderDialogState(getShaderBuildInput(), fragmentShader);
-}
-
-function showStatus(message: string, kind: 'success' | 'error' | 'info' = 'info'): void {
-  syncStatusLogState({
-    message,
-    kind,
-  });
-}
+const showStatus = createStatusReporter();
 
 const pipelineHistoryActions = createPipelineHistoryActionsController({
   history: pipelineHistory,
@@ -229,15 +217,9 @@ const mainStepRendering = createMainStepRenderingController({
   onUpdateShaderCodePanel: () => {
     updateShaderCodePanel();
   },
-  onScheduleConnectionDraw: () => {
-    connectionDrawScheduler.schedule();
-  },
+  onScheduleConnectionDraw: scheduleConnectionDraw,
   t,
 });
-
-function scheduleConnectionDraw(): void {
-  connectionDrawScheduler.schedule();
-}
 
 const stepPreviewDebugController = createStepPreviewDebugController({
   getStepPreviewSystem: () => stepPreviewSystem,
@@ -270,7 +252,7 @@ const pipelineCommands = createPipelineCommandController({
   t,
 });
 
-pipelineSocketDnd = createPipelineSocketDndController({
+pipelineSocketDnd = setupMainPipelineSocketDnd({
   getSocketDragState,
   setSocketDragState,
   clearSocketDragState,
@@ -280,9 +262,6 @@ pipelineSocketDnd = createPipelineSocketDndController({
   assignParamToSocket: pipelineCommands.assignParamToSocket,
   scheduleConnectionDraw,
   setSuppressClickUntil,
-  setUserSelect: value => {
-    document.body.style.userSelect = value;
-  },
   onStatus: showStatus,
   t,
   now: () => performance.now(),
@@ -363,9 +342,9 @@ window.addEventListener('DOMContentLoaded', () => {
     axisGizmoLabelYEl,
     axisGizmoLabelZEl,
     paramColumnEl,
-  } = resolveMainDomElements({ select: $ }));
+  } = resolveMainDomElements({ select: selectRequired }));
 
-  const canvas = $<HTMLCanvasElement>('#gl-canvas');
+  const canvas = selectRequired<HTMLCanvasElement>('#gl-canvas');
   ({
     pipelineDropIndicators,
     renderer,
@@ -424,16 +403,12 @@ window.addEventListener('DOMContentLoaded', () => {
       labelY: axisGizmoLabelYEl,
       labelZ: axisGizmoLabelZEl,
     },
-    getCameraOrbit: () => ({
-      orbitPitchDeg,
-      orbitYawDeg,
-      orbitDist,
-    }),
+    getCameraOrbit: orbitStateController.getOrbitState,
     getLightDirectionWorld,
   }));
 
   bootstrapMainPostRuntime({
-    select: $,
+    select: selectRequired,
     canvas,
     paramNodeListEl,
     stepListEl,
@@ -451,19 +426,9 @@ window.addEventListener('DOMContentLoaded', () => {
     mainRenderPipeline,
     mainStepRendering,
     getShaderBuildInput,
-    onUpdateShaderCodePanel: () => {
-      updateShaderCodePanel();
-    },
-    getOrbitState: () => ({
-      orbitPitchDeg,
-      orbitYawDeg,
-      orbitDist,
-    }),
-    setOrbitState: nextState => {
-      orbitPitchDeg = nextState.orbitPitchDeg;
-      orbitYawDeg = nextState.orbitYawDeg;
-      orbitDist = nextState.orbitDist;
-    },
+    onUpdateShaderCodePanel: updateShaderCodePanel,
+    getOrbitState: orbitStateController.getOrbitState,
+    setOrbitState: orbitStateController.setOrbitState,
     onScheduleConnectionDraw: scheduleConnectionDraw,
     onStatus: showStatus,
     t,
