@@ -37,7 +37,6 @@ import {
 } from './features/step/step-preview-debug-controller.ts';
 import { setupStepPreviewShapeUi } from './features/step/step-preview-shape-ui.ts';
 import { createStepPreviewSystem } from './features/step/step-preview-system.ts';
-import { createGizmoOverlayController } from './gizmo-overlay.ts';
 import {
   mountHeaderActionGroup,
   mountLanguageSwitcher,
@@ -79,7 +78,6 @@ import {
   createPipelineSocketDndController,
   type PipelineSocketDndController,
 } from './features/pipeline/pipeline-socket-dnd-controller.ts';
-import { createRenderSystem } from './shared/rendering/render-system.ts';
 import { Renderer } from './shared/rendering/renderer.ts';
 import {
   clearLutReorderDragState,
@@ -98,6 +96,7 @@ import {
 } from './shared/ui/interaction-state.ts';
 import { resolveMainDomElements } from './shared/ui/main-dom-elements.ts';
 import { setupMainLayoutControls } from './shared/ui/main-layout-controls-setup.ts';
+import { setupMainRenderPipeline, type MainRenderPipeline } from './shared/ui/main-render-pipeline-setup.ts';
 import { setupMainPipelineLists } from './shared/ui/main-pipeline-lists-setup.ts';
 import { setupMainPanels } from './shared/ui/main-panels-setup.ts';
 import { setupMainPreviewRuntime } from './shared/ui/main-preview-runtime-setup.ts';
@@ -190,8 +189,7 @@ let axisGizmoLabelXEl: SVGTextElement;
 let axisGizmoLabelYEl: SVGTextElement;
 let axisGizmoLabelZEl: SVGTextElement;
 let paramColumnEl: HTMLElement;
-let gizmoOverlayController: ReturnType<typeof createGizmoOverlayController> | null = null;
-let renderSystem: ReturnType<typeof createRenderSystem> | null = null;
+let mainRenderPipeline: MainRenderPipeline | null = null;
 let stepPreviewSystem: ReturnType<typeof createStepPreviewSystem> | null = null;
 let pipelineIoSystem: ReturnType<typeof createPipelineIoSystem> | null = null;
 let mainPreviewCapture: MainPreviewCaptureController;
@@ -576,28 +574,6 @@ window.addEventListener('DOMContentLoaded', () => {
     getLutReorderDragState,
   });
 
-  gizmoOverlayController = createGizmoOverlayController({
-    light: {
-      layer: lightGizmoLayerEl,
-      origin: lightGizmoOriginEl,
-      tip: lightGizmoTipEl,
-      label: lightGizmoLabelEl,
-    },
-    axis: {
-      layer: axisGizmoLayerEl,
-      origin: axisGizmoOriginEl,
-      lineX: axisGizmoLineXEl,
-      lineY: axisGizmoLineYEl,
-      lineZ: axisGizmoLineZEl,
-      tipX: axisGizmoTipXEl,
-      tipY: axisGizmoTipYEl,
-      tipZ: axisGizmoTipZEl,
-      labelX: axisGizmoLabelXEl,
-      labelY: axisGizmoLabelYEl,
-      labelZ: axisGizmoLabelZEl,
-    },
-  });
-
   const canvas = $<HTMLCanvasElement>('#gl-canvas');
   ({
     renderer,
@@ -631,7 +607,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
   mainPreviewCapture = createMainPreviewCaptureController({
     getRenderer: () => renderer,
-    getRenderSystem: () => renderSystem,
+    getRenderSystem: () => mainRenderPipeline?.renderSystem ?? null,
     getStepPreviewSystem: () => stepPreviewSystem,
     onStatus: showStatus,
     t,
@@ -657,8 +633,27 @@ window.addEventListener('DOMContentLoaded', () => {
     toErrorMessage: pipelineModel.toErrorMessage,
   });
 
-  renderSystem = createRenderSystem({
+  mainRenderPipeline = setupMainRenderPipeline({
     renderer,
+    lightGizmoElements: {
+      layer: lightGizmoLayerEl,
+      origin: lightGizmoOriginEl,
+      tip: lightGizmoTipEl,
+      label: lightGizmoLabelEl,
+    },
+    axisGizmoElements: {
+      layer: axisGizmoLayerEl,
+      origin: axisGizmoOriginEl,
+      lineX: axisGizmoLineXEl,
+      lineY: axisGizmoLineYEl,
+      lineZ: axisGizmoLineZEl,
+      tipX: axisGizmoTipXEl,
+      tipY: axisGizmoTipYEl,
+      tipZ: axisGizmoTipZEl,
+      labelX: axisGizmoLabelXEl,
+      labelY: axisGizmoLabelYEl,
+      labelZ: axisGizmoLabelZEl,
+    },
     getCameraOrbit: () => ({
       orbitPitchDeg,
       orbitYawDeg,
@@ -668,22 +663,7 @@ window.addEventListener('DOMContentLoaded', () => {
     getLightDirectionWorld,
     getMaterialSettings,
     shouldSuppressLightGuide: () => mainPreviewCapture.isSuppressLightGuide(),
-    onAfterDraw: ({ view, proj, canvas: drawCanvas, lightDirection, lightSettings }) => {
-      settleMainPreviewCaptureFromFrame(drawCanvas);
-
-      if (!gizmoOverlayController) {
-        return;
-      }
-
-      gizmoOverlayController.updateLightDirectionGizmo({
-        view,
-        proj,
-        canvas: drawCanvas,
-        lightDirectionWorld: lightDirection,
-        showGizmo: lightSettings.showGizmo,
-      });
-      gizmoOverlayController.updateAxisGizmo({ view });
-    },
+    onSettleFrameCapture: settleMainPreviewCaptureFromFrame,
   });
 
   replacePipelineState({
@@ -768,8 +748,8 @@ window.addEventListener('DOMContentLoaded', () => {
 
   pipelineCommands.addStep({ recordHistory: false });
   pipelineApply.applyNow();
-  if (renderSystem && !renderSystem.isRunning()) {
-    renderSystem.start();
+  if (mainRenderPipeline && !mainRenderPipeline.renderSystem.isRunning()) {
+    mainRenderPipeline.renderSystem.start();
   }
 
   scheduleConnectionDraw();
