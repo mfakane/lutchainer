@@ -42,9 +42,6 @@ import {
   syncHeaderActionHistoryState,
 } from './shared/components/solid-header-actions.tsx';
 import {
-  mountLutStripList,
-  mountParamNodeList,
-  mountStepList,
   syncLutStripListState,
   syncStepListState,
 } from './shared/components/solid-pipeline-lists.tsx';
@@ -102,6 +99,7 @@ import {
   setSuppressClickUntil,
 } from './shared/ui/interaction-state.ts';
 import { resolveMainDomElements } from './shared/ui/main-dom-elements.ts';
+import { setupMainPipelineLists } from './shared/ui/main-pipeline-lists-setup.ts';
 import { setupMainPanels } from './shared/ui/main-panels-setup.ts';
 import {
   createPreviewShapeController,
@@ -180,8 +178,6 @@ const parseLutId = pipelineModel.parseLutId;
 const isValidParamName = pipelineModel.isValidParamName;
 const isValidSocketAxis = pipelineView.isValidSocketAxis;
 const createBuiltinLuts = pipelineModel.createBuiltinLuts;
-const createLutFromFile = pipelineModel.createLutFromFile;
-const MAX_LUTS = pipelineModel.MAX_LUTS;
 const resolveSocketDropTargetForDrag = createSocketDropTargetResolver({
   parseStepId,
   isValidSocketAxis,
@@ -848,12 +844,13 @@ window.addEventListener('DOMContentLoaded', () => {
     initialKind: 'info',
   });
 
-  mountParamNodeList(paramNodeListEl, {
-    onStatus: showStatus,
-  });
-  mountStepList(stepListEl, {
-    steps: getPipelineSteps(),
-    luts: getPipelineLuts(),
+  setupMainPipelineLists({
+    paramNodeListEl,
+    stepListEl,
+    lutStripListEl,
+    getSteps: getPipelineSteps,
+    getLuts: getPipelineLuts,
+    shouldSuppressClick: isClickSuppressed,
     onAddStep: () => {
       pipelineCommands.addStep();
     },
@@ -878,58 +875,21 @@ window.addEventListener('DOMContentLoaded', () => {
     onStepOpChange: (stepId, channel, op) => {
       pipelineCommands.setStepChannelOp(stepId, channel, op);
     },
-    shouldSuppressClick: isClickSuppressed,
-    onStatus: showStatus,
-  });
-  mountLutStripList(lutStripListEl, {
-    luts: getPipelineLuts(),
-    steps: getPipelineSteps(),
     onRemoveLut: lutId => {
       pipelineCommands.removeLut(lutId);
     },
-    onAddLutFiles: async files => {
-      if (!Array.isArray(files) || files.some(file => !(file instanceof File))) {
-        showStatus(t('main.status.invalidLutAddInput'), 'error');
-        return;
-      }
-
-      const luts = getPipelineLuts();
-      const room = Math.max(0, MAX_LUTS - luts.length);
-      if (room === 0) {
-        showStatus(t('main.status.maxLutLimit', { max: MAX_LUTS }), 'error');
-        return;
-      }
-
-      const selected = files.slice(0, room);
-      const errors: string[] = [];
-      let added = 0;
-      const before = pipelineHistoryActions.captureSnapshot();
-
-      for (const file of selected) {
-        try {
-          const lut = await createLutFromFile(file);
-          luts.push(lut);
-          added += 1;
-        } catch (err) {
-          errors.push(err instanceof Error ? err.message : `${t('common.unknownError')}: ${file.name}`);
-        }
-      }
-
-      normalizeSteps();
-      pipelineHistoryActions.commitSnapshot(before);
-      renderSteps();
-      pipelineApply.scheduleApply();
-
-      if (errors.length > 0) {
-        showStatus(errors.join('\n'), 'error');
-      } else {
-        showStatus(t('main.status.lutAdded', { count: added }), 'success');
-      }
-    },
+    createLutFromFile: pipelineModel.createLutFromFile,
+    maxLuts: pipelineModel.MAX_LUTS,
+    captureHistorySnapshot: () => pipelineHistoryActions.captureSnapshot(),
+    commitHistorySnapshot: before => pipelineHistoryActions.commitSnapshot(before),
+    normalizeSteps,
+    renderSteps,
+    scheduleApply: () => pipelineApply.scheduleApply(),
+    renderLutStrip,
     onStatus: showStatus,
+    t,
   });
 
-  renderLutStrip();
   setupUI();
   setupPipelinePanelResizer({
     panel: $<HTMLElement>('#pipeline-panel'),
