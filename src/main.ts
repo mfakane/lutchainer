@@ -12,6 +12,9 @@ import {
   createPipelineHistoryActionsController,
 } from './features/pipeline/pipeline-history-actions.ts';
 import {
+  applyLoadedPipelineState,
+} from './features/pipeline/main-pipeline-load-apply.ts';
+import {
   createPipelineHeaderActionController,
 } from './features/pipeline/pipeline-header-actions-controller.ts';
 import { setupMainPipelineIoSystem } from './features/pipeline/main-pipeline-io-setup.ts';
@@ -54,6 +57,7 @@ import {
   subscribeLanguageChange,
   t,
 } from './shared/i18n.ts';
+import { syncMainStaticLocaleText } from './shared/i18n/main-static-locale-text.ts';
 import { setupStaticLocaleSync } from './shared/i18n/static-locale-sync.ts';
 import {
   createSocketDropTargetResolver,
@@ -109,30 +113,7 @@ import {
   type MainPreviewCaptureController,
 } from './shared/ui/main-preview-capture-controller.ts';
 
-interface StaticTranslationTarget {
-  selector: string;
-  key: string;
-  attribute?: 'textContent' | 'aria-label';
-}
-
 const PIPELINE_HISTORY_LIMIT = 100;
-const STATIC_TRANSLATION_TARGETS: StaticTranslationTarget[] = [
-  {
-    selector: '#pipeline-help-text',
-    key: 'static.pipelineHelp',
-    attribute: 'textContent',
-  },
-  {
-    selector: '#preview-help-text',
-    key: 'static.previewHelp',
-    attribute: 'textContent',
-  },
-  {
-    selector: '#preview-layout-resizer',
-    key: 'static.previewResizerAria',
-    attribute: 'aria-label',
-  },
-];
 
 const parseStepId = pipelineModel.parseStepId;
 const parseLutId = pipelineModel.parseLutId;
@@ -219,25 +200,6 @@ function $<T extends Element>(selector: string): T {
   return el;
 }
 
-function syncStaticLocaleText(): void {
-  document.documentElement.setAttribute('lang', getLanguage());
-
-  for (const target of STATIC_TRANSLATION_TARGETS) {
-    const element = document.querySelector(target.selector);
-    if (!element) {
-      continue;
-    }
-
-    const translated = t(target.key);
-    if (target.attribute === 'aria-label') {
-      element.setAttribute('aria-label', translated);
-      continue;
-    }
-
-    element.textContent = translated;
-  }
-}
-
 function getLightDirectionWorld(): [number, number, number] {
   return pipelineModel.getLightDirectionWorld(getLightSettings());
 }
@@ -286,19 +248,6 @@ const mainStepRendering = createMainStepRenderingController({
 
 function isClickSuppressed(): boolean {
   return performance.now() < getSuppressClickUntil();
-}
-
-function applyLoadedPipeline(loaded: pipelineModel.LoadedPipelineData): void {
-  replacePipelineState({
-    luts: loaded.luts,
-    steps: loaded.steps,
-    nextStepId: loaded.nextStepId,
-  });
-  pipelineHistoryActions.clearHistory();
-  mainStepRendering.renderSteps();
-  pipelineApply.cancelPending();
-  showStatus(t('main.status.pipelineLoadedApplying'), 'info');
-  pipelineApply.applyNow();
 }
 
 function scheduleConnectionDraw(): void {
@@ -377,7 +326,16 @@ const pipelineHeaderActions = createPipelineHeaderActionController({
     pipelineApply.applyNow();
   },
   onApplyLoadedPipeline: loaded => {
-    applyLoadedPipeline(loaded);
+    applyLoadedPipelineState({
+      loaded,
+      replacePipelineState,
+      clearHistory: pipelineHistoryActions.clearHistory,
+      renderSteps: () => mainStepRendering.renderSteps(),
+      cancelPendingApply: () => pipelineApply.cancelPending(),
+      applyNow: () => pipelineApply.applyNow(),
+      onStatus: showStatus,
+      t,
+    });
   },
   getPipelineIoSystem: () => pipelineIoSystem,
   setAutoApplyEnabled,
@@ -389,7 +347,12 @@ const pipelineHeaderActions = createPipelineHeaderActionController({
 
 window.addEventListener('DOMContentLoaded', () => {
   setupStaticLocaleSync({
-    syncStaticLocaleText,
+    syncStaticLocaleText: () => {
+      syncMainStaticLocaleText({
+        getLanguage,
+        t,
+      });
+    },
     subscribeLanguageChange,
   });
 
