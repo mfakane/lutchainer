@@ -11,6 +11,9 @@ import {
 import {
   createPipelineHistoryController,
 } from './features/pipeline/pipeline-history.ts';
+import {
+  createPipelineHistoryActionsController,
+} from './features/pipeline/pipeline-history-actions.ts';
 import { createPipelineIoSystem } from './features/pipeline/pipeline-io-system.ts';
 import * as pipelineModel from './features/pipeline/pipeline-model.ts';
 import {
@@ -21,7 +24,6 @@ import {
   setLuts as setPipelineLuts,
   setNextStepId as setPipelineNextStepId,
   setSteps as setPipelineSteps,
-  type PipelineStateSnapshot,
 } from './features/pipeline/pipeline-state.ts';
 import * as pipelineView from './features/pipeline/pipeline-view.ts';
 import * as shaderGenerator from './features/shader/shader-generator.ts';
@@ -314,37 +316,11 @@ function showStatus(message: string, kind: 'success' | 'error' | 'info' = 'info'
   });
 }
 
-function capturePipelineSnapshot(): PipelineStateSnapshot {
-  return pipelineHistory.captureSnapshot();
-}
-
-function clearPipelineHistory(): void {
-  pipelineHistory.clearHistory();
-}
-
-function commitPipelineHistorySnapshot(before: PipelineStateSnapshot): boolean {
-  return pipelineHistory.commitSnapshot(before);
-}
-
-function undoPipeline(): boolean {
-  if (!pipelineHistory.undo()) {
-    showStatus(t('main.status.undoUnavailable'), 'info');
-    return false;
-  }
-
-  showStatus(t('main.status.undoApplied'), 'info');
-  return true;
-}
-
-function redoPipeline(): boolean {
-  if (!pipelineHistory.redo()) {
-    showStatus(t('main.status.redoUnavailable'), 'info');
-    return false;
-  }
-
-  showStatus(t('main.status.redoApplied'), 'info');
-  return true;
-}
+const pipelineHistoryActions = createPipelineHistoryActionsController({
+  history: pipelineHistory,
+  onStatus: showStatus,
+  t,
+});
 
 
 
@@ -483,7 +459,7 @@ function applyLoadedPipeline(loaded: pipelineModel.LoadedPipelineData): void {
     steps: loaded.steps,
     nextStepId: loaded.nextStepId,
   });
-  clearPipelineHistory();
+  pipelineHistoryActions.clearHistory();
   renderSteps();
   pipelineApply.cancelPending();
   showStatus(t('main.status.pipelineLoadedApplying'), 'info');
@@ -593,8 +569,8 @@ const pipelineCommands = createPipelineCommandController({
   parseLutId,
   isValidParamName,
   isValidSocketAxis,
-  captureSnapshot: capturePipelineSnapshot,
-  commitSnapshot: commitPipelineHistorySnapshot,
+  captureSnapshot: () => pipelineHistoryActions.captureSnapshot(),
+  commitSnapshot: before => pipelineHistoryActions.commitSnapshot(before),
   renderSteps,
   scheduleApply: () => pipelineApply.scheduleApply(),
   onStepOpsChanged: () => {
@@ -682,10 +658,10 @@ function setupUI(): void {
     initialCanUndo: pipelineHistory.canUndo(),
     initialCanRedo: pipelineHistory.canRedo(),
     onUndoPipeline: () => {
-      undoPipeline();
+      pipelineHistoryActions.undo();
     },
     onRedoPipeline: () => {
-      redoPipeline();
+      pipelineHistoryActions.redo();
     },
     onResetPipeline: () => {
       replacePipelineState({
@@ -693,7 +669,7 @@ function setupUI(): void {
         steps: [],
         nextStepId: 1,
       });
-      clearPipelineHistory();
+      pipelineHistoryActions.clearHistory();
       pipelineCommands.addStep({ recordHistory: false });
       showStatus(t('main.status.resetStepChain'), 'info');
     },
@@ -810,8 +786,8 @@ function setupUI(): void {
     paramColumnEl,
     onScheduleConnectionDraw: scheduleConnectionDraw,
     onUpdateStepSwatches: updateStepSwatches,
-    onUndoPipeline: undoPipeline,
-    onRedoPipeline: redoPipeline,
+    onUndoPipeline: pipelineHistoryActions.undo,
+    onRedoPipeline: pipelineHistoryActions.redo,
   });
 
   setActiveShape('sphere');
@@ -965,7 +941,7 @@ window.addEventListener('DOMContentLoaded', () => {
     steps: [],
     nextStepId: 1,
   });
-  clearPipelineHistory();
+  pipelineHistoryActions.clearHistory();
 
   mountStatusLog($<HTMLElement>('#error-log'), {
     initialMessage: t('main.status.initialPrompt'),
@@ -1027,7 +1003,7 @@ window.addEventListener('DOMContentLoaded', () => {
       const selected = files.slice(0, room);
       const errors: string[] = [];
       let added = 0;
-      const before = capturePipelineSnapshot();
+      const before = pipelineHistoryActions.captureSnapshot();
 
       for (const file of selected) {
         try {
@@ -1040,7 +1016,7 @@ window.addEventListener('DOMContentLoaded', () => {
       }
 
       normalizeSteps();
-      commitPipelineHistorySnapshot(before);
+      pipelineHistoryActions.commitSnapshot(before);
       renderSteps();
       pipelineApply.scheduleApply();
 
