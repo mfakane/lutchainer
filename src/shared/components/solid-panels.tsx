@@ -72,8 +72,9 @@ const LIGHT_PRESETS: LightPresetDefinition[] = [
     settings: {
       azimuthDeg: 20,
       elevationDeg: 48,
-      lightColor: [1, 1, 1],
-      ambientColor: [0, 0, 0],
+      lightIntensity: 1.10,
+      lightColor: [1.00, 0.94, 0.86],
+      ambientColor: [0.10, 0.08, 0.06],
       showGizmo: true,
     },
   },
@@ -83,8 +84,9 @@ const LIGHT_PRESETS: LightPresetDefinition[] = [
     settings: {
       azimuthDeg: -115,
       elevationDeg: 18,
-      lightColor: [1, 1, 1],
-      ambientColor: [0, 0, 0],
+      lightIntensity: 1.25,
+      lightColor: [0.66, 0.79, 1.00],
+      ambientColor: [0.03, 0.05, 0.09],
       showGizmo: true,
     },
   },
@@ -94,8 +96,9 @@ const LIGHT_PRESETS: LightPresetDefinition[] = [
     settings: {
       azimuthDeg: 0,
       elevationDeg: 82,
-      lightColor: [1, 1, 1],
-      ambientColor: [0, 0, 0],
+      lightIntensity: 0.92,
+      lightColor: [0.93, 0.98, 1.00],
+      ambientColor: [0.02, 0.03, 0.05],
       showGizmo: true,
     },
   },
@@ -166,6 +169,7 @@ function isValidLightSettings(value: unknown): value is pipelineModel.LightSetti
   const light = value as Partial<pipelineModel.LightSettings>;
   return Number.isFinite(light.azimuthDeg)
     && Number.isFinite(light.elevationDeg)
+    && Number.isFinite(light.lightIntensity)
     && isValidColor(light.lightColor)
     && isValidColor(light.ambientColor)
     && typeof light.showGizmo === 'boolean';
@@ -185,6 +189,7 @@ function cloneLightSettings(settings: pipelineModel.LightSettings): pipelineMode
   return {
     azimuthDeg: settings.azimuthDeg,
     elevationDeg: settings.elevationDeg,
+    lightIntensity: settings.lightIntensity,
     lightColor: [settings.lightColor[0], settings.lightColor[1], settings.lightColor[2]],
     ambientColor: [settings.ambientColor[0], settings.ambientColor[1], settings.ambientColor[2]],
     showGizmo: settings.showGizmo,
@@ -200,6 +205,16 @@ function getMaterialRangeStep(key: pipelineModel.MaterialNumericKey): string {
     default:
       return '0.01';
   }
+}
+
+function getLightRangeStep(binding: pipelineModel.LightRangeBinding): string {
+  const precision = Math.max(0, Math.trunc(binding.fractionDigits));
+  const step = 1 / (10 ** precision);
+  return Number.isFinite(step) && step > 0 ? String(step) : '1';
+}
+
+function isLightAngleBinding(binding: pipelineModel.LightRangeBinding): boolean {
+  return binding.key === 'azimuthDeg' || binding.key === 'elevationDeg';
 }
 
 function getMaterialPresetByKey(value: unknown): MaterialPresetDefinition | null {
@@ -573,7 +588,9 @@ function LightPanel(props: LightPanelProps): JSX.Element {
               <span class="material-label-row">
                 <span class="material-label">{binding.label}</span>
                 <span class="material-value" id={binding.outputId}>
-                  {`${props.settings()[binding.key].toFixed(binding.fractionDigits)}°`}
+                  {isLightAngleBinding(binding)
+                    ? `${props.settings()[binding.key].toFixed(binding.fractionDigits)}°`
+                    : props.settings()[binding.key].toFixed(binding.fractionDigits)}
                 </span>
               </span>
               <input
@@ -582,7 +599,7 @@ function LightPanel(props: LightPanelProps): JSX.Element {
                 id={binding.inputId}
                 min={String(binding.min)}
                 max={String(binding.max)}
-                step="1"
+                step={getLightRangeStep(binding)}
                 value={String(props.settings()[binding.key])}
                 onInput={event => handleRangeInput(event, binding)}
                 onChange={event => handleRangeInput(event, binding)}

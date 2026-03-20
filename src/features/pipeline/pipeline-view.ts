@@ -216,9 +216,11 @@ export function syncLightPanel(lightSettings: LightSettings, root: ParentNode | 
     const input = root.querySelector<HTMLInputElement>(`#${binding.inputId}`);
     const output = root.querySelector<HTMLElement>(`#${binding.outputId}`);
     const currentValue = lightSettings[binding.key];
+    const isAngle = binding.key === 'azimuthDeg' || binding.key === 'elevationDeg';
+    const formatted = currentValue.toFixed(binding.fractionDigits);
 
-    if (input) input.value = String(Math.round(currentValue));
-    if (output) output.textContent = `${currentValue.toFixed(binding.fractionDigits)}°`;
+    if (input) input.value = formatted;
+    if (output) output.textContent = isAngle ? `${formatted}°` : formatted;
   }
 
   const toggleButton = root.querySelector<HTMLButtonElement>('#btn-toggle-light-gizmo');

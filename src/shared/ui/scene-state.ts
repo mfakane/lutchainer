@@ -182,6 +182,9 @@ function assertValidLightSettings(value: unknown): asserts value is LightSetting
   if (!isFiniteNumber(candidate.elevationDeg)) {
     throw new Error('Light elevationDeg must be a finite number.');
   }
+  if (!isFiniteNumber(candidate.lightIntensity)) {
+    throw new Error('Light lightIntensity must be a finite number.');
+  }
   if (!isRgbColor(candidate.lightColor)) {
     throw new Error('Light lightColor must be a [number, number, number] tuple.');
   }
@@ -219,10 +222,12 @@ export function cloneLightSettings(settings: LightSettings): LightSettings {
 
   const azimuthRange = getNumericRange(pipelineModel.LIGHT_RANGE_BINDINGS, 'azimuthDeg');
   const elevationRange = getNumericRange(pipelineModel.LIGHT_RANGE_BINDINGS, 'elevationDeg');
+  const intensityRange = getNumericRange(pipelineModel.LIGHT_RANGE_BINDINGS, 'lightIntensity');
 
   return {
     azimuthDeg: clamp(settings.azimuthDeg, azimuthRange.min, azimuthRange.max),
     elevationDeg: clamp(settings.elevationDeg, elevationRange.min, elevationRange.max),
+    lightIntensity: clamp(settings.lightIntensity, intensityRange.min, intensityRange.max),
     lightColor: [
       clamp(settings.lightColor[0], 0, 1),
       clamp(settings.lightColor[1], 0, 1),

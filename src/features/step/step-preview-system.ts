@@ -146,10 +146,11 @@ export function createStepPreviewSystem(options: StepPreviewSystemOptions): Step
   const composePreviewColor = (stepModels: StepRuntimeModel[], context: StepParamContext): Color => {
     const materialSettings = options.getMaterialSettings();
     const lightSettings = options.getLightSettings();
+    const intensity = Math.max(0, Math.min(2, Number.isFinite(lightSettings.lightIntensity) ? lightSettings.lightIntensity : 1));
     const litBaseColor: Color = [
-      clamp01(materialSettings.baseColor[0] * lightSettings.lightColor[0]),
-      clamp01(materialSettings.baseColor[1] * lightSettings.lightColor[1]),
-      clamp01(materialSettings.baseColor[2] * lightSettings.lightColor[2]),
+      clamp01(materialSettings.baseColor[0] * lightSettings.lightColor[0] * intensity),
+      clamp01(materialSettings.baseColor[1] * lightSettings.lightColor[1] * intensity),
+      clamp01(materialSettings.baseColor[2] * lightSettings.lightColor[2] * intensity),
     ];
     const composed = composeColorFromSteps(stepModels, litBaseColor, context);
     return [
@@ -365,6 +366,7 @@ export function createStepPreviewSystem(options: StepPreviewSystemOptions): Step
       const err = renderer.drawToSize(size, size, {
         targetStepIndex,
         baseColor: materialSettings.baseColor,
+        lightIntensity: lightSettings.lightIntensity,
         lightColor: lightSettings.lightColor,
         ambientColor: lightSettings.ambientColor,
         specularStrength: materialSettings.specularStrength,

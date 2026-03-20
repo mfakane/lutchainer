@@ -479,6 +479,7 @@ precision mediump float;
 uniform vec2 u_resolution;
 uniform int u_targetStep;
 uniform vec3 u_materialBaseColor;
+uniform float u_lightIntensity;
 uniform vec3 u_lightColor;
 uniform vec3 u_ambientColor;
 uniform float u_specularStrength;
@@ -532,7 +533,8 @@ void main() {
 
     ${previewParamLines.join('\n    ')}
 
-    vec3 lightColor = clamp(u_lightColor, 0.0, 1.0);
+    float lightIntensity = clamp(u_lightIntensity, 0.0, 2.0);
+    vec3 lightColor = clamp(u_lightColor, 0.0, 1.0) * lightIntensity;
     vec3 color = clamp(u_materialBaseColor * lightColor, 0.0, 1.0);
 
     ${stepCode.join('\n    ')}
@@ -562,6 +564,7 @@ uniform float u_time;
 uniform vec2  u_resolution;
 uniform vec3  u_cameraPos;
 uniform vec3  u_lightDir;
+uniform float u_lightIntensity;
 uniform vec3  u_lightColor;
 uniform vec3  u_materialBaseColor;
 uniform vec3  u_ambientColor;
@@ -596,7 +599,8 @@ vec4 sampleLut(int lutIndex, vec2 uv) {
 }
 
 void main() {
-  vec3 lightColor = clamp(u_lightColor, 0.0, 1.0);
+  float lightIntensity = clamp(u_lightIntensity, 0.0, 2.0);
+  vec3 lightColor = clamp(u_lightColor, 0.0, 1.0) * lightIntensity;
   vec3 materialBaseColor = clamp(u_materialBaseColor, 0.0, 1.0);
   vec3 ambientColor = clamp(u_ambientColor, 0.0, 1.0);
   vec4 textureSample = texture2D(u_texture, v_texcoord);
@@ -634,6 +638,7 @@ cbuffer SceneUniforms : register(b0)
   float2 u_resolution;
   float3 u_cameraPos;
   float3 u_lightDir;
+  float u_lightIntensity;
   float3 u_lightColor;
   float3 u_materialBaseColor;
   float3 u_ambientColor;
@@ -722,7 +727,8 @@ PSInput VSMain(VSInput input) {
 }
 
 float4 PSMain(PSInput input) : SV_TARGET {
-  float3 lightColor = saturate(u_lightColor);
+  float lightIntensity = clamp(u_lightIntensity, 0.0, 2.0);
+  float3 lightColor = saturate(u_lightColor) * lightIntensity;
   float3 materialBaseColor = saturate(u_materialBaseColor);
   float3 ambientColor = saturate(u_ambientColor);
   float4 textureSample = u_texture.SampleLevel(u_lutSampler, input.texcoord, 0.0);

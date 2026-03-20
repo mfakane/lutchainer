@@ -233,6 +233,7 @@ export class Renderer {
     normalMat: Mat3,
     cameraPos: readonly [number, number, number] = [0, 0, 3],
     lightDir: readonly [number, number, number] = [0.38, 0.72, 0.4],
+    lightIntensity = 1.0,
     lightColor: readonly [number, number, number] = [1, 1, 1],
     ambientColor: readonly [number, number, number] = [0, 0, 0],
     showLightGuide = true,
@@ -273,6 +274,7 @@ export class Renderer {
     uni2f('u_resolution', gl.drawingBufferWidth, gl.drawingBufferHeight);
     uni3f('u_cameraPos', cameraPos[0], cameraPos[1], cameraPos[2]);
     uni3f('u_lightDir', lightDir[0], lightDir[1], lightDir[2]);
+    uni1f('u_lightIntensity', Number.isFinite(lightIntensity) ? lightIntensity : 1.0);
     uni3f(
       'u_lightColor',
       Number.isFinite(lightColor[0]) ? lightColor[0] : 1,

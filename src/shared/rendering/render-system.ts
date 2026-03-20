@@ -66,6 +66,7 @@ function isLightSettings(value: unknown): value is LightSettings {
   const candidate = value as Partial<LightSettings>;
   return isFiniteNumber(candidate.azimuthDeg)
     && isFiniteNumber(candidate.elevationDeg)
+    && isFiniteNumber(candidate.lightIntensity)
     && Array.isArray(candidate.lightColor)
     && candidate.lightColor.length === 3
     && isFiniteNumber(candidate.lightColor[0])
@@ -220,6 +221,7 @@ export function createRenderSystem(options: CreateRenderSystemOptions): RenderSy
       normal,
       [eyeX, eyeY, eyeZ],
       lightDirection,
+      lightSettings.lightIntensity,
       lightSettings.lightColor,
       lightSettings.ambientColor,
       showLightGuide,

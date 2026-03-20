@@ -1107,6 +1107,7 @@ function updateStepSwatches(): void {
       const drawError = stepPreviewRenderer.drawToCanvas(afterCanvas, {
         targetStepIndex: index,
         baseColor: materialSettings.baseColor,
+        lightIntensity: lightSettings.lightIntensity,
         lightColor: lightSettings.lightColor,
         ambientColor: lightSettings.ambientColor,
         specularStrength: materialSettings.specularStrength,

@@ -14,6 +14,7 @@ export interface StepPreviewCompileResult {
 export interface StepPreviewDrawOptions {
   targetStepIndex: number;
   baseColor: Color;
+  lightIntensity: number;
   lightColor: Color;
   ambientColor: Color;
   specularStrength: number;
@@ -36,6 +37,7 @@ interface ProgramBindings {
   resolution: WebGLUniformLocation | null;
   targetStep: WebGLUniformLocation | null;
   baseColor: WebGLUniformLocation | null;
+  lightIntensity: WebGLUniformLocation | null;
   lightColor: WebGLUniformLocation | null;
   ambientColor: WebGLUniformLocation | null;
   specularStrength: WebGLUniformLocation | null;
@@ -206,6 +208,7 @@ export class StepPreviewRenderer {
       resolution: gl.getUniformLocation(program, 'u_resolution'),
       targetStep: gl.getUniformLocation(program, 'u_targetStep'),
       baseColor: gl.getUniformLocation(program, 'u_materialBaseColor'),
+      lightIntensity: gl.getUniformLocation(program, 'u_lightIntensity'),
       lightColor: gl.getUniformLocation(program, 'u_lightColor'),
       ambientColor: gl.getUniformLocation(program, 'u_ambientColor'),
       specularStrength: gl.getUniformLocation(program, 'u_specularStrength'),
@@ -254,6 +257,7 @@ export class StepPreviewRenderer {
     const specularPower = Math.max(1.0, safePositiveNumber(options.specularPower, 1.0));
     const fresnelStrength = Math.max(0.0, Number.isFinite(options.fresnelStrength) ? options.fresnelStrength : 0.0);
     const fresnelPower = Math.max(0.01, safePositiveNumber(options.fresnelPower, 0.01));
+    const lightIntensity = Math.max(0.0, Math.min(2.0, Number.isFinite(options.lightIntensity) ? options.lightIntensity : 1.0));
 
     let lx = Number.isFinite(options.lightDirection[0]) ? options.lightDirection[0] : 0;
     let ly = Number.isFinite(options.lightDirection[1]) ? options.lightDirection[1] : 0.7071067812;
@@ -281,6 +285,9 @@ export class StepPreviewRenderer {
     }
     if (this.bindings.baseColor) {
       gl.uniform3f(this.bindings.baseColor, baseColor[0], baseColor[1], baseColor[2]);
+    }
+    if (this.bindings.lightIntensity) {
+      gl.uniform1f(this.bindings.lightIntensity, lightIntensity);
     }
     if (this.bindings.lightColor) {
       gl.uniform3f(this.bindings.lightColor, lightColor[0], lightColor[1], lightColor[2]);

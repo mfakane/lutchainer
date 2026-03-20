@@ -52,11 +52,12 @@ export interface MaterialRangeBinding {
   label: string;
 }
 
-export type LightAngleKey = 'azimuthDeg' | 'elevationDeg';
+export type LightAngleKey = 'azimuthDeg' | 'elevationDeg' | 'lightIntensity';
 
 export interface LightSettings {
   azimuthDeg: number;
   elevationDeg: number;
+  lightIntensity: number;
   lightColor: Color;
   ambientColor: Color;
   showGizmo: boolean;
@@ -205,6 +206,7 @@ export const DEFAULT_MATERIAL_SETTINGS: MaterialSettings = {
 export const DEFAULT_LIGHT_SETTINGS: LightSettings = {
   azimuthDeg: 0.0,
   elevationDeg: 50.0,
+  lightIntensity: 1.0,
   lightColor: [1, 1, 1],
   ambientColor: [0, 0, 0],
   showGizmo: true,
@@ -239,6 +241,15 @@ export const LIGHT_RANGE_BINDINGS: LightRangeBinding[] = [
     max: 85,
     fractionDigits: 0,
     label: 'Elevation',
+  },
+  {
+    key: 'lightIntensity',
+    inputId: 'light-intensity',
+    outputId: 'light-intensity-value',
+    min: 0,
+    max: 2,
+    fractionDigits: 2,
+    label: 'Intensity',
   },
 ];
 
