@@ -4,7 +4,7 @@ import type {
   ShaderLocalKey,
   StepRuntimeModel,
 } from '../step/step-model';
-import { PARAM_EVALUATORS } from '../step/step-runtime';
+import { PARAM_EVALUATORS } from '../step/step-param-evaluators';
 
 export type ShaderLocalDeclarationStage = 'previewGlsl' | 'fragmentGlsl' | 'hlsl';
 

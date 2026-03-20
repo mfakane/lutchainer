@@ -1,17 +1,13 @@
 import type { LightSettings, MaterialSettings } from '../pipeline/pipeline-model';
 import * as shaderGenerator from '../shader/shader-generator';
 import {
-  type Color,
   type LutModel,
   type StepModel,
-  type StepParamContext,
-  type StepRuntimeModel,
 } from './step-model';
 import { StepPreviewRenderer } from './step-preview-renderer';
 import {
-  composeColorFromSteps,
-  resolveStepRuntimeModels,
-} from './step-runtime';
+  drawStepPreviewSphereCpu,
+} from './step-preview-cpu-render';
 
 interface StepPreviewSystemOptions {
   getSteps: () => StepModel[];
@@ -44,13 +40,6 @@ const FALLBACK_LIGHT_DIRECTION: readonly [number, number, number] = [0, 0.707106
 const FALLBACK_VIEW_DIRECTION: readonly [number, number, number] = [0, 0, 1];
 const PREVIEW_EXPORT_SIZE = 256;
 const MAX_PIPELINE_VERSION = 1_000_000_000;
-
-function clamp01(v: number): number {
-  if (!Number.isFinite(v)) {
-    return 0;
-  }
-  return Math.max(0, Math.min(1, v));
-}
 
 function isFiniteTuple3(value: unknown): value is readonly [number, number, number] {
   return Array.isArray(value)
@@ -143,149 +132,24 @@ export function createStepPreviewSystem(options: StepPreviewSystemOptions): Step
     options.onError(message);
   };
 
-  const composePreviewColor = (stepModels: StepRuntimeModel[], context: StepParamContext): Color => {
-    const materialSettings = options.getMaterialSettings();
-    const lightSettings = options.getLightSettings();
-    const intensity = Math.max(0, Math.min(2, Number.isFinite(lightSettings.lightIntensity) ? lightSettings.lightIntensity : 1));
-    const litBaseColor: Color = [
-      clamp01(materialSettings.baseColor[0] * lightSettings.lightColor[0] * intensity),
-      clamp01(materialSettings.baseColor[1] * lightSettings.lightColor[1] * intensity),
-      clamp01(materialSettings.baseColor[2] * lightSettings.lightColor[2] * intensity),
-    ];
-    const composed = composeColorFromSteps(stepModels, litBaseColor, context);
-    return [
-      clamp01(composed[0] + lightSettings.ambientColor[0]),
-      clamp01(composed[1] + lightSettings.ambientColor[1]),
-      clamp01(composed[2] + lightSettings.ambientColor[2]),
-    ];
-  };
-
   const drawSpherePreviewCore = (
     canvas: HTMLCanvasElement,
     targetStepIndex: number,
     pixelWidth: number,
     pixelHeight: number,
   ): void => {
-    if (!(canvas instanceof HTMLCanvasElement)) {
-      throw new Error('描画先キャンバスが不正です。');
-    }
-    if (!Number.isInteger(targetStepIndex) || targetStepIndex < 0) {
-      throw new Error(`不正な targetStepIndex です: ${targetStepIndex}`);
-    }
-    if (!Number.isInteger(pixelWidth) || pixelWidth <= 0 || !Number.isInteger(pixelHeight) || pixelHeight <= 0) {
-      throw new Error('不正なプレビュー解像度です。');
-    }
-
-    if (canvas.width !== pixelWidth || canvas.height !== pixelHeight) {
-      canvas.width = pixelWidth;
-      canvas.height = pixelHeight;
-    }
-
-    const ctx = canvas.getContext('2d');
-    if (!ctx) {
-      return;
-    }
-
-    const stepModels = resolveStepRuntimeModels(options.getSteps(), options.getLuts(), targetStepIndex);
-    const materialSettings = options.getMaterialSettings();
-    const lightSettings = options.getLightSettings();
-    const image = ctx.createImageData(pixelWidth, pixelHeight);
-    const data = image.data;
-
-    const centerX = pixelWidth * 0.5;
-    const centerY = pixelHeight * 0.5;
-    const radius = Math.min(pixelWidth, pixelHeight) * 0.34;
-    if (!Number.isFinite(radius) || radius < 1) {
-      return;
-    }
-    const invRadius = 1 / radius;
-
-    const cameraPos: [number, number, number] = [0, 0, 3];
-    const minSpecPower = Math.max(1.0, materialSettings.specularPower);
-    const minFresnelPower = Math.max(0.01, materialSettings.fresnelPower);
-
-    for (let py = 0; py < pixelHeight; py++) {
-      for (let px = 0; px < pixelWidth; px++) {
-        const idx = (py * pixelWidth + px) * 4;
-
-        let outR = 0;
-        let outG = 0;
-        let outB = 0;
-        let outA = 0;
-
-        const dx = (px + 0.5 - centerX) * invRadius;
-        const dy = (py + 0.5 - centerY) * invRadius;
-        const dist2 = dx * dx + dy * dy;
-
-        if (dist2 <= 1.0) {
-          const nx = dx;
-          const ny = -dy;
-          const nz = Math.sqrt(Math.max(0, 1 - dist2));
-
-          let vx = cameraPos[0] - nx;
-          let vy = cameraPos[1] - ny;
-          let vz = cameraPos[2] - nz;
-          const viewLength = Math.hypot(vx, vy, vz);
-          if (viewLength > 1e-6) {
-            vx /= viewLength;
-            vy /= viewLength;
-            vz /= viewLength;
-          } else {
-            vx = viewDirection[0];
-            vy = viewDirection[1];
-            vz = viewDirection[2];
-          }
-
-          const lambert = Math.max(0, nx * lightDirection[0] + ny * lightDirection[1] + nz * lightDirection[2]);
-          const halfLambert = lambert * 0.5 + 0.5;
-          const hxRaw = lightDirection[0] + vx;
-          const hyRaw = lightDirection[1] + vy;
-          const hzRaw = lightDirection[2] + vz;
-          const hLength = Math.hypot(hxRaw, hyRaw, hzRaw);
-          const hx = hLength > 1e-6 ? hxRaw / hLength : 0;
-          const hy = hLength > 1e-6 ? hyRaw / hLength : 0;
-          const hz = hLength > 1e-6 ? hzRaw / hLength : 1;
-
-          const nDotH = Math.max(nx * hx + ny * hy + nz * hz, 0);
-          const specular = Math.pow(nDotH, minSpecPower) * materialSettings.specularStrength;
-          const facing = Math.max(nx * vx + ny * vy + nz * vz, 0);
-          const fresnel = Math.pow(1.0 - facing, minFresnelPower) * materialSettings.fresnelStrength;
-          const cameraDist = Math.hypot(cameraPos[0], cameraPos[1], cameraPos[2]);
-          const nearDepth = Math.max(0, cameraDist - 1);
-          const farDepth = cameraDist + 1;
-          const depthDenom = Math.max(1e-4, farDepth - nearDepth);
-          const linearDepth = clamp01((viewLength - nearDepth) / depthDenom);
-
-          let texU = Math.atan2(nz, nx) / (Math.PI * 2);
-          if (texU < 0) texU += 1;
-          const texV = Math.acos(Math.max(-1, Math.min(1, ny))) / Math.PI;
-
-          const composed = composePreviewColor(stepModels, {
-            lambert,
-            halfLambert,
-            specular,
-            fresnel,
-            facing,
-            nDotH,
-            linearDepth,
-            texU,
-            texV,
-          });
-
-          outR = composed[0];
-          outG = composed[1];
-          outB = composed[2];
-          outA = 1;
-        }
-
-        data[idx + 0] = Math.round(clamp01(outR) * 255);
-        data[idx + 1] = Math.round(clamp01(outG) * 255);
-        data[idx + 2] = Math.round(clamp01(outB) * 255);
-        data[idx + 3] = Math.round(clamp01(outA) * 255);
-      }
-    }
-
-    ctx.putImageData(image, 0, 0);
+    drawStepPreviewSphereCpu({
+      canvas,
+      targetStepIndex,
+      pixelWidth,
+      pixelHeight,
+      steps: options.getSteps(),
+      luts: options.getLuts(),
+      materialSettings: options.getMaterialSettings(),
+      lightSettings: options.getLightSettings(),
+      lightDirection,
+      viewDirection,
+    });
   };
 
   const bumpPipelineVersion = (): void => {

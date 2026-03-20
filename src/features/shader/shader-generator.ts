@@ -1,12 +1,10 @@
 import { type MaterialSettings } from '../pipeline/pipeline-model';
-import type { LutModel, StepModel, StepRuntimeModel } from '../step/step-model';
+import type { LutModel, StepModel } from '../step/step-model';
 import {
-  getBlendModeStrategy,
-  paramExprGlsl,
-  paramExprHlsl,
   resolveStepRuntimeModels,
 } from '../step/step-runtime';
 import { buildShaderLocalDeclarations } from './shader-local-decls';
+import { buildShaderStepCode } from './shader-step-code';
 
 export const DEFAULT_VERT = `// SPDX-License-Identifier: CC0-1.0
 precision mediump float;
@@ -134,117 +132,6 @@ function buildHlslSampleBody(luts: LutModel[]): string {
   );
 }
 
-function buildPreviewStepCode(stepModels: StepRuntimeModel[]): string[] {
-  const stepCode: string[] = [];
-  for (let index = 0; index < stepModels.length; index++) {
-    const stepModel = stepModels[index];
-    const step = stepModel.step;
-    const lutIndex = stepModel.lutIndex;
-
-    const px = `px${index}`;
-    const py = `py${index}`;
-    const lutSample = `lutSample${index}`;
-    const lutColor = `lutColor${index}`;
-    const lutAlpha = `lutAlpha${index}`;
-    const targetColor = `targetColor${index}`;
-    const hsvCur = `hsvCur${index}`;
-    const hsvLut = `hsvLut${index}`;
-
-    stepCode.push(`if (${index} <= u_targetStep) {`);
-    stepCode.push(`  float ${px} = clamp(${paramExprGlsl(step.xParam)}, 0.0, 1.0);`);
-    stepCode.push(`  float ${py} = clamp(${paramExprGlsl(step.yParam)}, 0.0, 1.0);`);
-    stepCode.push(`  vec4 ${lutSample} = sampleLut(${lutIndex}, vec2(${px}, ${py}));`);
-    stepCode.push(`  vec3 ${lutColor} = ${lutSample}.rgb;`);
-    stepCode.push(`  float ${lutAlpha} = clamp(${lutSample}.a, 0.0, 1.0);`);
-    const emitted = getBlendModeStrategy(step.blendMode).emitGlsl({
-      lutColorVar: lutColor,
-      lutAlphaVar: lutAlpha,
-      targetColorVar: targetColor,
-      hsvCurVar: hsvCur,
-      hsvLutVar: hsvLut,
-      ops: step.ops,
-    });
-    for (const line of emitted) {
-      stepCode.push(`  ${line}`);
-    }
-    stepCode.push('}');
-  }
-
-  return stepCode;
-}
-
-function buildFragmentStepCode(stepModels: StepRuntimeModel[]): string[] {
-  const stepCode: string[] = [];
-  for (let index = 0; index < stepModels.length; index++) {
-    const stepModel = stepModels[index];
-    const step = stepModel.step;
-    const lutIndex = stepModel.lutIndex;
-
-    const px = `px${index}`;
-    const py = `py${index}`;
-    const lutSample = `lutSample${index}`;
-    const lutColor = `lutColor${index}`;
-    const lutAlpha = `lutAlpha${index}`;
-    const targetColor = `targetColor${index}`;
-    const hsvCur = `hsvCur${index}`;
-    const hsvLut = `hsvLut${index}`;
-
-    stepCode.push(`float ${px} = clamp(${paramExprGlsl(step.xParam)}, 0.0, 1.0);`);
-    stepCode.push(`float ${py} = clamp(${paramExprGlsl(step.yParam)}, 0.0, 1.0);`);
-    stepCode.push(`vec4 ${lutSample} = sampleLut(${lutIndex}, vec2(${px}, ${py}));`);
-    stepCode.push(`vec3 ${lutColor} = ${lutSample}.rgb;`);
-    stepCode.push(`float ${lutAlpha} = clamp(${lutSample}.a, 0.0, 1.0);`);
-    stepCode.push(
-      ...getBlendModeStrategy(step.blendMode).emitGlsl({
-        lutColorVar: lutColor,
-        lutAlphaVar: lutAlpha,
-        targetColorVar: targetColor,
-        hsvCurVar: hsvCur,
-        hsvLutVar: hsvLut,
-        ops: step.ops,
-      }),
-    );
-  }
-
-  return stepCode;
-}
-
-function buildHlslStepCode(stepModels: StepRuntimeModel[]): string[] {
-  const stepCode: string[] = [];
-  for (let index = 0; index < stepModels.length; index++) {
-    const stepModel = stepModels[index];
-    const step = stepModel.step;
-    const lutIndex = stepModel.lutIndex;
-
-    const px = `px${index}`;
-    const py = `py${index}`;
-    const lutSample = `lutSample${index}`;
-    const lutColor = `lutColor${index}`;
-    const lutAlpha = `lutAlpha${index}`;
-    const targetColor = `targetColor${index}`;
-    const hsvCur = `hsvCur${index}`;
-    const hsvLut = `hsvLut${index}`;
-
-    stepCode.push(`float ${px} = saturate(${paramExprHlsl(step.xParam)});`);
-    stepCode.push(`float ${py} = saturate(${paramExprHlsl(step.yParam)});`);
-    stepCode.push(`float4 ${lutSample} = SampleLut(${lutIndex}, float2(${px}, ${py}));`);
-    stepCode.push(`float3 ${lutColor} = ${lutSample}.rgb;`);
-    stepCode.push(`float ${lutAlpha} = saturate(${lutSample}.a);`);
-    stepCode.push(
-      ...getBlendModeStrategy(step.blendMode).emitHlsl({
-        lutColorVar: lutColor,
-        lutAlphaVar: lutAlpha,
-        targetColorVar: targetColor,
-        hsvCurVar: hsvCur,
-        hsvLutVar: hsvLut,
-        ops: step.ops,
-      }),
-    );
-  }
-
-  return stepCode;
-}
-
 export function isValidShaderStage(value: string): value is ShaderStage {
   return value === 'fragment' || value === 'vertex' || value === 'hlsl';
 }
@@ -261,7 +148,7 @@ export function buildStepPreviewFragmentShader(input: StepPreviewShaderBuildInpu
   const samplerDecl = input.luts.map((_, index) => `uniform sampler2D u_lut${index};`).join('\n');
   const sampleBody = buildGlslSampleBody(input.luts);
   const stepModels = resolveStepRuntimeModels(input.steps, input.luts);
-  const stepCode = buildPreviewStepCode(stepModels);
+  const stepCode = buildShaderStepCode(stepModels, 'previewGlsl');
   const previewParamLines = buildShaderLocalDeclarations(stepModels, 'previewGlsl');
 
   return `// SPDX-License-Identifier: CC0-1.0
@@ -345,7 +232,7 @@ export function buildFragmentShader(input: ShaderBuildInput): string {
   const samplerDecl = input.luts.map((_, index) => `uniform sampler2D u_lut${index};`).join('\n');
   const sampleBody = buildGlslSampleBody(input.luts);
   const stepModels = resolveStepRuntimeModels(input.steps, input.luts);
-  const stepCode = buildFragmentStepCode(stepModels);
+  const stepCode = buildShaderStepCode(stepModels, 'fragmentGlsl');
   const fragmentParamLines = buildShaderLocalDeclarations(stepModels, 'fragmentGlsl', input.materialSettings);
 
   return `// SPDX-License-Identifier: CC0-1.0
@@ -415,7 +302,7 @@ export function buildHlslShader(input: ShaderBuildInput): string {
   const textureDecl = input.luts.map((_, index) => `Texture2D u_lut${index} : register(t${index});`).join('\n');
   const sampleBody = buildHlslSampleBody(input.luts);
   const stepModels = resolveStepRuntimeModels(input.steps, input.luts);
-  const stepCode = buildHlslStepCode(stepModels);
+  const stepCode = buildShaderStepCode(stepModels, 'hlsl');
   const hlslParamLines = buildShaderLocalDeclarations(stepModels, 'hlsl', input.materialSettings);
 
   return `// SPDX-License-Identifier: CC0-1.0
