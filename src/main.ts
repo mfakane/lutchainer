@@ -72,6 +72,7 @@ import {
   updatePointerDragStateForMove,
   type LinearDropCandidate,
 } from './shared/interactions/dnd.ts';
+import { createHistoryShortcutHandler } from './shared/interactions/keyboard-history.ts';
 import {
   setupOrbitPointerControls,
   setupPipelinePanelResizer,
@@ -85,6 +86,10 @@ import {
   handleSocketDragMove as processSocketDragMove,
   syncSocketDropTargetState
 } from './shared/interactions/socket-dnd.ts';
+import {
+  createPipelineApplyController,
+  type PipelineApplyController,
+} from './features/pipeline/pipeline-apply.ts';
 import { createRenderSystem } from './shared/rendering/render-system.ts';
 import { Renderer } from './shared/rendering/renderer.ts';
 import {
@@ -196,14 +201,13 @@ function syncLightPanel(): void {
 }
 
 let renderer: Renderer;
+let pipelineApply: PipelineApplyController;
 let stepPreviewRenderer: StepPreviewRenderer | null = null;
 let currentPrimitive: PrimitiveType = 'sphere';
 
 let orbitPitchDeg = 25.0;
 let orbitYawDeg = 45.0;
 let orbitDist = 2.8;
-
-let applyTimer: ReturnType<typeof setTimeout> | null = null;
 
 let pipelineWorkspaceEl: HTMLElement;
 let stepListEl: HTMLElement;
@@ -255,7 +259,7 @@ const pipelineHistory = createPipelineHistoryController({
   restoreSnapshot: snapshot => {
     replacePipelineState(snapshot);
     renderSteps();
-    scheduleApply();
+    pipelineApply.scheduleApply();
   },
   onHistoryStateChange: (canUndo, canRedo) => {
     syncHeaderActionHistoryState(canUndo, canRedo);
@@ -344,57 +348,7 @@ function redoPipeline(): boolean {
   return true;
 }
 
-function isEditableEventTarget(target: EventTarget | null): boolean {
-  if (!(target instanceof Element)) {
-    return false;
-  }
 
-  if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target instanceof HTMLSelectElement) {
-    return true;
-  }
-
-  if (target instanceof HTMLElement && target.isContentEditable) {
-    return true;
-  }
-
-  return target.closest('[contenteditable=""], [contenteditable="true"], [contenteditable="plaintext-only"]') !== null;
-}
-
-function handleHistoryShortcutKeydown(event: KeyboardEvent): void {
-  if (!(event instanceof KeyboardEvent)) {
-    return;
-  }
-
-  if (event.defaultPrevented) {
-    return;
-  }
-
-  if (isEditableEventTarget(event.target)) {
-    return;
-  }
-
-  const hasModifier = event.ctrlKey || event.metaKey;
-  if (!hasModifier || event.altKey) {
-    return;
-  }
-
-  const key = event.key.toLowerCase();
-  if (key === 'z') {
-    event.preventDefault();
-    if (event.shiftKey) {
-      redoPipeline();
-      return;
-    }
-
-    undoPipeline();
-    return;
-  }
-
-  if (key === 'y' && !event.shiftKey) {
-    event.preventDefault();
-    redoPipeline();
-  }
-}
 
 
 
@@ -533,12 +487,9 @@ function applyLoadedPipeline(loaded: pipelineModel.LoadedPipelineData): void {
   });
   clearPipelineHistory();
   renderSteps();
-  if (applyTimer !== null) {
-    clearTimeout(applyTimer);
-    applyTimer = null;
-  }
+  pipelineApply.cancelPending();
   showStatus(t('main.status.pipelineLoadedApplying'), 'info');
-  applyPipelineNow();
+  pipelineApply.applyNow();
 }
 
 function buildGeometry(type: PrimitiveType) {
@@ -749,36 +700,6 @@ function getLutDropPlacement(clientX: number): { lutId: string | null; after: bo
   return { lutId: placement.targetId, after: placement.after };
 }
 
-function applyPipelineNow(): void {
-  const steps = getPipelineSteps();
-  const luts = getPipelineLuts();
-  const lutError = renderer.setLutTextures(luts.map(l => l.image));
-  if (lutError) {
-    showStatus(lutError, 'error');
-    return;
-  }
-
-  const frag = shaderGenerator.buildFragmentShader(getShaderBuildInput());
-  updateShaderCodePanel(frag);
-  const result = renderer.compileProgram(shaderGenerator.DEFAULT_VERT, frag);
-
-  if (result.success) {
-    showStatus(t('main.status.applySuccess', { steps: steps.length, luts: luts.length }), 'success');
-  } else {
-    const msgs = result.errors.map(e => `[${e.type.toUpperCase()}]\n${e.message.trim()}`).join('\n\n');
-    showStatus(msgs, 'error');
-  }
-}
-
-function scheduleApply(): void {
-  if (!isAutoApplyEnabled()) return;
-  if (applyTimer !== null) clearTimeout(applyTimer);
-  applyTimer = setTimeout(() => {
-    applyPipelineNow();
-    applyTimer = null;
-  }, 220);
-}
-
 const pipelineCommands = createPipelineCommandController({
   maxStepLabelLength: MAX_STEP_LABEL_LENGTH,
   getSteps: getPipelineSteps,
@@ -793,7 +714,7 @@ const pipelineCommands = createPipelineCommandController({
   captureSnapshot: capturePipelineSnapshot,
   commitSnapshot: commitPipelineHistorySnapshot,
   renderSteps,
-  scheduleApply,
+  scheduleApply: () => pipelineApply.scheduleApply(),
   onStepOpsChanged: () => {
     stepPreviewSystem?.bumpPipelineVersion();
     updateStepSwatches();
@@ -811,7 +732,7 @@ function setupMaterialPanel(): void {
       setMaterialSettings(nextSettings);
       updateStepSwatches();
       updateShaderCodePanel();
-      scheduleApply();
+      pipelineApply.scheduleApply();
     },
     onStatus: showStatus,
   });
@@ -896,7 +817,7 @@ function setupUI(): void {
       );
     },
     onApplyPipeline: () => {
-      applyPipelineNow();
+      pipelineApply.applyNow();
     },
     onPipelineFileSelected: async file => {
       if (!pipelineIoSystem) {
@@ -920,7 +841,7 @@ function setupUI(): void {
     onAutoApplyChange: enabled => {
       setAutoApplyEnabled(enabled);
       syncHeaderActionAutoApplyState(isAutoApplyEnabled());
-      if (isAutoApplyEnabled()) scheduleApply();
+      if (isAutoApplyEnabled()) pipelineApply.scheduleApply();
     },
     onStatus: showStatus,
   });
@@ -987,7 +908,7 @@ function setupUI(): void {
 
   stepListEl.addEventListener('scroll', () => scheduleConnectionDraw());
   paramColumnEl.addEventListener('scroll', () => scheduleConnectionDraw());
-  window.addEventListener('keydown', handleHistoryShortcutKeydown);
+  window.addEventListener('keydown', createHistoryShortcutHandler({ onUndo: undoPipeline, onRedo: redoPipeline }));
   window.addEventListener('resize', () => {
     scheduleConnectionDraw();
     updateStepSwatches();
@@ -1053,6 +974,14 @@ window.addEventListener('DOMContentLoaded', () => {
 
   const canvas = $<HTMLCanvasElement>('#gl-canvas');
   renderer = new Renderer(canvas);
+  pipelineApply = createPipelineApplyController({
+    getShaderBuildInput,
+    renderer,
+    isAutoApplyEnabled,
+    onUpdateShaderCodePanel: frag => updateShaderCodePanel(frag),
+    onStatus: showStatus,
+    t,
+  });
   renderer.setWireframeOverlayEnabled(isPreviewWireframeOverlayEnabled());
   stepPreviewRenderer = StepPreviewRenderer.create();
   stepPreviewSystem = createStepPreviewSystem({
@@ -1205,7 +1134,7 @@ window.addEventListener('DOMContentLoaded', () => {
       normalizeSteps();
       commitPipelineHistorySnapshot(before);
       renderSteps();
-      scheduleApply();
+      pipelineApply.scheduleApply();
 
       if (errors.length > 0) {
         showStatus(errors.join('\n'), 'error');
@@ -1244,7 +1173,7 @@ window.addEventListener('DOMContentLoaded', () => {
   });
 
   pipelineCommands.addStep({ recordHistory: false });
-  applyPipelineNow();
+  pipelineApply.applyNow();
   if (renderSystem && !renderSystem.isRunning()) {
     renderSystem.start();
   }
