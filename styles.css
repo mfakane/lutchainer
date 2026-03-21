@@ -1655,16 +1655,25 @@ button:disabled:hover {
   image-rendering: pixelated;
 }
 
-.lut-editor-canvas-labels {
+.lut-editor-axis-options {
   display: flex;
-  justify-content: space-between;
-  padding: 2px 2px 0;
+  gap: 10px;
+  padding: 4px 2px 0;
 }
 
-.lut-editor-canvas-label-u,
-.lut-editor-canvas-label-v {
+.lut-editor-axis-option {
+  display: flex;
+  align-items: center;
+  gap: 4px;
   font-size: 11px;
   color: var(--muted);
+  cursor: pointer;
+  user-select: none;
+}
+
+.lut-editor-axis-option input[type="radio"] {
+  accent-color: var(--accent);
+  cursor: pointer;
 }
 
 /* Ramp knob strip (right side of canvas) */
@@ -1742,6 +1751,41 @@ button:disabled:hover {
   transform: translateX(-50%) scale(0.75);
   border-color: #f44;
   cursor: no-drop;
+}
+
+/* Axis-swapped: ramp strip moves to bottom, stop strip moves to right */
+.lut-editor-canvas-area.axis-swapped .lut-editor-ramp-knob-strip {
+  grid-row: 2;
+  grid-column: 1;
+}
+
+.lut-editor-canvas-area.axis-swapped .lut-editor-stop-knob-strip {
+  grid-row: 1;
+  grid-column: 2;
+}
+
+/* Ramp knob in bottom rail: horizontal positioning */
+.lut-editor-canvas-area.axis-swapped .lut-editor-ramp-knob {
+  left: auto;
+  top: 4px;
+  transform: translateX(-50%);
+  cursor: ew-resize;
+}
+
+.lut-editor-canvas-area.axis-swapped .lut-editor-ramp-knob.pending-delete {
+  transform: translateX(-50%) scale(0.75);
+}
+
+/* Stop knob in right rail: vertical positioning */
+.lut-editor-canvas-area.axis-swapped .lut-editor-stop-knob {
+  top: auto;
+  left: 4px;
+  transform: translateY(-50%);
+  cursor: ns-resize;
+}
+
+.lut-editor-canvas-area.axis-swapped .lut-editor-stop-knob.pending-delete {
+  transform: translateY(-50%) scale(0.75);
 }
 
 /* Right: ramp list + stop editor */

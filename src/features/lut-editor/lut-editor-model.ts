@@ -19,6 +19,8 @@ export interface ColorRamp2dLutData {
   width: number;    // Pixel width of the generated LUT (typically 256)
   height: number;   // Pixel height of the generated LUT (typically 256)
   ramps: ColorRamp[]; // At least 2 ramps, sorted by yPosition ascending
+  /** When true, X axis = ramp Y-position, Y axis = stop position (swapped from default) */
+  axisSwap?: boolean;
 }
 
 export const LUT_EDITOR_DEFAULT_WIDTH = 256;

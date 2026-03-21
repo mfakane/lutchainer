@@ -111,8 +111,10 @@ export function renderColorRamp2dToPixels(data: ColorRamp2dLutData): Uint8Clampe
 
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
-      const u = width > 1 ? x / (width - 1) : 0;
-      const v = height > 1 ? y / (height - 1) : 0;
+      const px = width > 1 ? x / (width - 1) : 0;
+      const py = height > 1 ? y / (height - 1) : 0;
+      const u = data.axisSwap ? py : px;
+      const v = data.axisSwap ? px : py;
       const [r, g, b, a] = sampleColorRamp2d(data, u, v);
       const idx = (y * width + x) * 4;
       pixels[idx] = Math.round(clamp01(r) * 255);

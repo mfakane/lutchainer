@@ -8,7 +8,9 @@ import { sampleColorRamp2d } from './lut-editor-runtime.ts';
 // Callers that need to preserve the original LUT id should replace it: { ...lut, id: originalId }
 export function createLutFromColorRamp2d(data: ColorRamp2dLutData): LutModel {
   const lut = createLutFromPainter(data.name, (u, v) => {
-    const [r, g, b] = sampleColorRamp2d(data, u, v);
+    const su = data.axisSwap ? v : u;
+    const sv = data.axisSwap ? u : v;
+    const [r, g, b] = sampleColorRamp2d(data, su, sv);
     return [r, g, b];
   });
   return { ...lut, ramp2dData: data };

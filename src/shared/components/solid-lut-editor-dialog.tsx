@@ -187,16 +187,23 @@ function LutEditorDialogContent(props: { options: LutEditorDialogContentOptions 
     imageData.data.set(pixels);
     ctx.putImageData(imageData, 0, 0);
 
+    const swapped = !!data.axisSwap;
+
     // Draw selected ramp indicator line
     const selRamp = selectedRamp();
     if (selRamp) {
-      const y = Math.round(selRamp.yPosition * (data.height - 1));
+      const pos = Math.round(selRamp.yPosition * ((swapped ? data.width : data.height) - 1));
       ctx.strokeStyle = 'rgba(255,255,255,0.5)';
       ctx.lineWidth = 1;
       ctx.setLineDash([3, 3]);
       ctx.beginPath();
-      ctx.moveTo(0, y + 0.5);
-      ctx.lineTo(data.width, y + 0.5);
+      if (swapped) {
+        ctx.moveTo(pos + 0.5, 0);
+        ctx.lineTo(pos + 0.5, data.height);
+      } else {
+        ctx.moveTo(0, pos + 0.5);
+        ctx.lineTo(data.width, pos + 0.5);
+      }
       ctx.stroke();
       ctx.setLineDash([]);
     }
@@ -204,13 +211,18 @@ function LutEditorDialogContent(props: { options: LutEditorDialogContentOptions 
     // Draw focused stop indicator line
     const stop = focusedStop();
     if (stop) {
-      const x = Math.round(stop.position * (data.width - 1));
+      const pos = Math.round(stop.position * ((swapped ? data.height : data.width) - 1));
       ctx.strokeStyle = 'rgba(255,255,255,0.5)';
       ctx.lineWidth = 1;
       ctx.setLineDash([3, 3]);
       ctx.beginPath();
-      ctx.moveTo(x + 0.5, 0);
-      ctx.lineTo(x + 0.5, data.height);
+      if (swapped) {
+        ctx.moveTo(0, pos + 0.5);
+        ctx.lineTo(data.width, pos + 0.5);
+      } else {
+        ctx.moveTo(pos + 0.5, 0);
+        ctx.lineTo(pos + 0.5, data.height);
+      }
       ctx.stroke();
       ctx.setLineDash([]);
     }
@@ -358,10 +370,13 @@ function LutEditorDialogContent(props: { options: LutEditorDialogContentOptions 
       const strip = rampKnobStripRef;
       if (!strip) return;
       const rect = strip.getBoundingClientRect();
-      const newY = Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height));
-      // Distance dragged to the LEFT of the strip's left edge → delete gesture
-      const horizDist = e.clientX - rect.right;
-      const nowDelete = horizDist > DRAG_DELETE_THRESHOLD;
+      const swapped = !!rampData()?.axisSwap;
+      const newY = swapped
+        ? Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width))
+        : Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height));
+      // Delete gesture: drag away from canvas edge (right when on right rail, down when on bottom rail)
+      const deleteDist = swapped ? e.clientY - rect.bottom : e.clientX - rect.right;
+      const nowDelete = deleteDist > DRAG_DELETE_THRESHOLD;
       pendingDelete = nowDelete;
       setDraggingRampDeleteId(nowDelete ? rampId : null);
       if (!nowDelete) {
@@ -392,10 +407,13 @@ function LutEditorDialogContent(props: { options: LutEditorDialogContentOptions 
       const strip = stopKnobStripRef;
       if (!strip) return;
       const rect = strip.getBoundingClientRect();
-      const newPos = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-      // Distance dragged BELOW the strip's bottom edge → delete gesture
-      const vertDistBelow = e.clientY - rect.bottom;
-      const nowDelete = vertDistBelow > DRAG_DELETE_THRESHOLD;
+      const swapped = !!rampData()?.axisSwap;
+      const newPos = swapped
+        ? Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height))
+        : Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+      // Delete gesture: drag away from canvas edge (down when on bottom rail, right when on right rail)
+      const deleteDist = swapped ? e.clientX - rect.right : e.clientY - rect.bottom;
+      const nowDelete = deleteDist > DRAG_DELETE_THRESHOLD;
       pendingDelete = nowDelete;
       setDraggingStopDeleteId(nowDelete ? stopId : null);
       if (!nowDelete) {
@@ -450,7 +468,10 @@ function LutEditorDialogContent(props: { options: LutEditorDialogContentOptions 
     // Only fire when clicking the strip itself, not a child knob
     if (!strip || ev.target !== strip) return;
     const rect = strip.getBoundingClientRect();
-    const y = Math.max(0, Math.min(1, (ev.clientY - rect.top) / rect.height));
+    const swapped = !!rampData()?.axisSwap;
+    const y = swapped
+      ? Math.max(0, Math.min(1, (ev.clientX - rect.left) / rect.width))
+      : Math.max(0, Math.min(1, (ev.clientY - rect.top) / rect.height));
     handleAddRampAtY(y);
   };
 
@@ -458,7 +479,10 @@ function LutEditorDialogContent(props: { options: LutEditorDialogContentOptions 
     const strip = stopKnobStripRef;
     if (!strip || ev.target !== strip) return;
     const rect = strip.getBoundingClientRect();
-    const x = Math.max(0, Math.min(1, (ev.clientX - rect.left) / rect.width));
+    const swapped = !!rampData()?.axisSwap;
+    const x = swapped
+      ? Math.max(0, Math.min(1, (ev.clientY - rect.top) / rect.height))
+      : Math.max(0, Math.min(1, (ev.clientX - rect.left) / rect.width));
     handleAddStopAtPos(x);
   };
 
@@ -472,21 +496,25 @@ function LutEditorDialogContent(props: { options: LutEditorDialogContentOptions 
     const relX = (ev.clientX - rect.left) / rect.width;
     const relY = (ev.clientY - rect.top) / rect.height;
 
-    // Find nearest ramp by Y
+    const swapped = !!data.axisSwap;
+    const rampAxis = swapped ? relX : relY;
+    const stopAxis = swapped ? relY : relX;
+
+    // Find nearest ramp along the ramp axis
     let nearestRamp: ColorRamp | null = null;
     let bestRampDist = Infinity;
     for (const ramp of data.ramps) {
-      const dist = Math.abs(ramp.yPosition - relY);
+      const dist = Math.abs(ramp.yPosition - rampAxis);
       if (dist < bestRampDist) { bestRampDist = dist; nearestRamp = ramp; }
     }
     if (!nearestRamp) return;
     setSelectedRampId(nearestRamp.id);
 
-    // Find nearest stop by X within that ramp
+    // Find nearest stop along the stop axis within that ramp
     let nearestStop: ColorStop | null = null;
     let bestStopDist = Infinity;
     for (const stop of nearestRamp.stops) {
-      const dist = Math.abs(stop.position - relX);
+      const dist = Math.abs(stop.position - stopAxis);
       if (dist < bestStopDist) { bestStopDist = dist; nearestStop = stop; }
     }
     if (nearestStop) setFocusedStopId(nearestStop.id);
@@ -651,7 +679,7 @@ function LutEditorDialogContent(props: { options: LutEditorDialogContentOptions 
       <div class="lut-editor-body">
         {/* Left: canvas + knob rails */}
         <div class="lut-editor-preview-col">
-          <div class="lut-editor-canvas-area">
+          <div class={`lut-editor-canvas-area${rampData()?.axisSwap ? ' axis-swapped' : ''}`}>
             {/* Main 2D preview canvas */}
             <div class="lut-editor-canvas-wrap" onClick={handleCanvasClick}>
               <canvas
@@ -675,7 +703,9 @@ function LutEditorDialogContent(props: { options: LutEditorDialogContentOptions 
                 {ramp => (
                   <div
                     class={rampKnobClass(ramp)}
-                    style={{ top: `${ramp.yPosition * 100}%` }}
+                    style={rampData()?.axisSwap
+                      ? { left: `${ramp.yPosition * 100}%` }
+                      : { top: `${ramp.yPosition * 100}%` }}
                     onPointerDown={ev => {
                       ev.preventDefault();
                       ev.stopPropagation();
@@ -700,10 +730,9 @@ function LutEditorDialogContent(props: { options: LutEditorDialogContentOptions 
                 {stop => (
                   <div
                     class={stopKnobClass(stop)}
-                    style={{
-                      left: `${stop.position * 100}%`,
-                      'background-color': colorToHex(stop.color),
-                    }}
+                    style={rampData()?.axisSwap
+                      ? { top: `${stop.position * 100}%`, 'background-color': colorToHex(stop.color) }
+                      : { left: `${stop.position * 100}%`, 'background-color': colorToHex(stop.color) }}
                     onPointerDown={ev => {
                       ev.preventDefault();
                       ev.stopPropagation();
@@ -716,10 +745,32 @@ function LutEditorDialogContent(props: { options: LutEditorDialogContentOptions 
             </div>
           </div>
 
-          {/* Axis labels */}
-          <div class="lut-editor-canvas-labels">
-            <span class="lut-editor-canvas-label-u">U →</span>
-            <span class="lut-editor-canvas-label-v">V ↓</span>
+          {/* Axis orientation selector */}
+          <div class="lut-editor-axis-options">
+            <label class="lut-editor-axis-option">
+              <input
+                type="radio"
+                name="lut-editor-axis"
+                checked={!rampData()?.axisSwap}
+                onChange={() => {
+                  const data = rampData();
+                  if (data) setRampData({ ...data, axisSwap: false });
+                }}
+              />
+              {tr('lutEditor.axisStopXRampY')}
+            </label>
+            <label class="lut-editor-axis-option">
+              <input
+                type="radio"
+                name="lut-editor-axis"
+                checked={!!rampData()?.axisSwap}
+                onChange={() => {
+                  const data = rampData();
+                  if (data) setRampData({ ...data, axisSwap: true });
+                }}
+              />
+              {tr('lutEditor.axisRampXStopY')}
+            </label>
           </div>
         </div>
 
