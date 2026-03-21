@@ -222,7 +222,7 @@ const TRANSLATIONS: Record<Language, TranslationMap> = {
     'pipeline.lut.duplicate': '複製',
     'pipeline.lut.copyNameSuffix': 'コピー',
     'pipeline.lut.kebabAria': '{name} のメニューを開く',
-    'pipeline.lut.browse': 'ファイルから',
+    'pipeline.lut.browse': '参照...',
     'pipeline.lut.browseAria': 'ローカルファイルからLUTを追加',
   },
   en: {
@@ -430,7 +430,7 @@ const TRANSLATIONS: Record<Language, TranslationMap> = {
     'pipeline.lut.duplicate': 'Duplicate',
     'pipeline.lut.copyNameSuffix': 'Copy',
     'pipeline.lut.kebabAria': 'Open menu for {name}',
-    'pipeline.lut.browse': 'From file',
+    'pipeline.lut.browse': 'Browse...',
     'pipeline.lut.browseAria': 'Add LUT from local file',
   },
 };
