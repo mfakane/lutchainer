@@ -1,4 +1,5 @@
 import { Show, createEffect, createSignal, onCleanup, type Accessor, type JSX } from 'solid-js';
+import { Portal } from 'solid-js/web';
 
 export interface DropdownMenuControls {
   closeMenu: () => void;
@@ -17,6 +18,8 @@ interface DropdownMenuProps {
   triggerContent?: JSX.Element;
   menuRole?: DropdownMenuRole;
   initialOpen?: boolean;
+  /** When true the menu uses position:fixed anchored to the trigger, escaping ancestor overflow clipping. */
+  floating?: boolean;
   children: (controls: DropdownMenuControls) => JSX.Element;
 }
 
@@ -57,6 +60,7 @@ function ensureDropdownMenuProps(value: unknown): asserts value is DropdownMenuP
   }
 
   assertBooleanOrUndefined(props.initialOpen, 'initialOpen');
+  assertBooleanOrUndefined(props.floating, 'floating');
   assertFunction(props.children, 'children');
 }
 
@@ -64,6 +68,7 @@ export function DropdownMenu(props: DropdownMenuProps): JSX.Element {
   ensureDropdownMenuProps(props);
 
   const [isOpen, setIsOpen] = createSignal<boolean>(props.initialOpen ?? false);
+  const [floatingStyle, setFloatingStyle] = createSignal<string>('');
   const menuRole = props.menuRole ?? 'menu';
   let wrapperElement: HTMLDivElement | null = null;
   let triggerElement: HTMLButtonElement | null = null;
@@ -147,7 +152,11 @@ export function DropdownMenu(props: DropdownMenuProps): JSX.Element {
       return;
     }
 
-    if (!wrapperElement || wrapperElement.contains(target)) {
+    if (wrapperElement?.contains(target) ?? false) {
+      return;
+    }
+
+    if (menuElement?.contains(target) ?? false) {
       return;
     }
 
@@ -242,7 +251,19 @@ export function DropdownMenu(props: DropdownMenuProps): JSX.Element {
         aria-label={props.triggerAriaLabel}
         aria-haspopup={menuRole}
         aria-expanded={isOpen() ? 'true' : 'false'}
-        onClick={toggleMenu}
+        onClick={() => {
+            if (props.floating && triggerElement && !isOpen()) {
+              const rect = triggerElement.getBoundingClientRect();
+              setFloatingStyle(
+                `position:fixed;` +
+                `right:${Math.round(window.innerWidth - rect.right)}px;` +
+                `bottom:${Math.round(window.innerHeight - rect.top)}px;`,
+              );
+            } else if (!props.floating) {
+              setFloatingStyle('');
+            }
+            toggleMenu();
+          }}
         onKeyDown={event => {
           handleTriggerKeyDown(event as KeyboardEvent);
         }}
@@ -250,16 +271,31 @@ export function DropdownMenu(props: DropdownMenuProps): JSX.Element {
         {props.triggerContent ?? '･･･'}
       </button>
       <Show when={isOpen()}>
-        <div
-          ref={element => { menuElement = element; }}
-          class={props.menuClass}
-          role={menuRole}
-          onKeyDown={event => {
-            handleMenuKeyDown(event as KeyboardEvent);
-          }}
+        <Show
+          when={props.floating}
+          fallback={
+            <div
+              ref={element => { menuElement = element; }}
+              class={props.menuClass}
+              role={menuRole}
+              onKeyDown={event => { handleMenuKeyDown(event as KeyboardEvent); }}
+            >
+              {props.children(controls)}
+            </div>
+          }
         >
-          {props.children(controls)}
-        </div>
+          <Portal mount={document.body}>
+            <div
+              ref={element => { menuElement = element; }}
+              class={props.menuClass}
+              role={menuRole}
+              style={floatingStyle() || undefined}
+              onKeyDown={event => { handleMenuKeyDown(event as KeyboardEvent); }}
+            >
+              {props.children(controls)}
+            </div>
+          </Portal>
+        </Show>
       </Show>
     </div>
   );

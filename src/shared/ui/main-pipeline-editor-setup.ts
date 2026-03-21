@@ -38,6 +38,7 @@ export interface SetupMainPipelineEditorOptions {
   computeLutUv?: (stepIndex: number, pixelX: number, pixelY: number, canvasWidth: number, canvasHeight: number) => { u: number; v: number } | null;
   pipelineCommands: PipelineCommandsLike;
   onEditLut?: (lutId: string) => void;
+  onDuplicateLut?: (lutId: string) => void;
   onNewLut?: () => void;
   createLutFromFile: (file: File) => Promise<LutModel>;
   maxLuts: number;
@@ -156,6 +157,7 @@ export function setupMainPipelineEditor(options: SetupMainPipelineEditorOptions)
       options.pipelineCommands.removeLut(lutId);
     },
     onEditLut: options.onEditLut,
+    onDuplicateLut: options.onDuplicateLut,
     onNewLut: options.onNewLut,
     createLutFromFile: options.createLutFromFile,
     maxLuts: options.maxLuts,

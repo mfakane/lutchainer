@@ -95,6 +95,7 @@ interface PipelineCommandsLike {
   setStepBlendMode: (stepId: number, blendMode: StepModel['blendMode']) => void;
   setStepChannelOp: (stepId: number, channel: ChannelName, op: BlendOp) => void;
   removeLut: (lutId: string) => void;
+  duplicateLut: (lutId: string) => void;
   moveLutToPosition: (lutId: string, targetLutId: string | null, after: boolean) => void;
   moveStepToPosition: (stepId: number, targetStepId: number | null, after: boolean) => void;
 }
@@ -167,6 +168,7 @@ function assertPipelineCommands(value: unknown): asserts value is PipelineComman
   ensureFunction(commands.setStepBlendMode, 'Main post-runtime pipelineCommands.setStepBlendMode');
   ensureFunction(commands.setStepChannelOp, 'Main post-runtime pipelineCommands.setStepChannelOp');
   ensureFunction(commands.removeLut, 'Main post-runtime pipelineCommands.removeLut');
+  ensureFunction(commands.duplicateLut, 'Main post-runtime pipelineCommands.duplicateLut');
   ensureFunction(commands.moveLutToPosition, 'Main post-runtime pipelineCommands.moveLutToPosition');
   ensureFunction(commands.moveStepToPosition, 'Main post-runtime pipelineCommands.moveStepToPosition');
 }
@@ -296,6 +298,7 @@ export function bootstrapMainPostRuntime(options: BootstrapMainPostRuntimeOption
       }),
     pipelineCommands: options.pipelineCommands,
     onEditLut: lutId => lutEditorController.openForLut(lutId),
+    onDuplicateLut: lutId => options.pipelineCommands.duplicateLut(lutId),
     onNewLut: () => lutEditorController.createNewLut(),
     createLutFromFile: pipelineModel.createLutFromFile,
     maxLuts: pipelineModel.MAX_LUTS,

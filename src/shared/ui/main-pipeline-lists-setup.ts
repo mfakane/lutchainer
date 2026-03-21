@@ -33,6 +33,7 @@ export interface SetupMainPipelineListsOptions {
   onStepOpChange: (stepId: number, channel: ChannelName, op: BlendOp) => void;
   onRemoveLut: (lutId: string) => void;
   onEditLut?: (lutId: string) => void;
+  onDuplicateLut?: (lutId: string) => void;
   onNewLut?: () => void;
   createLutFromFile: (file: File) => Promise<LutModel>;
   maxLuts: number;
@@ -124,6 +125,7 @@ export function setupMainPipelineLists(options: SetupMainPipelineListsOptions): 
     steps: options.getSteps(),
     onRemoveLut: options.onRemoveLut,
     onEditLut: options.onEditLut,
+    onDuplicateLut: options.onDuplicateLut,
     onNewLut: options.onNewLut,
     onAddLutFiles: async files => {
       if (!Array.isArray(files) || files.some(file => !(file instanceof File))) {

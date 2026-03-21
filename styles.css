@@ -1325,7 +1325,6 @@ button:disabled:hover {
   border: 1px solid var(--panel-border-strong);
   border-radius: 12px;
   background: var(--surface-inset);
-  overflow: hidden;
   position: relative;
   cursor: grab;
 }
@@ -1414,6 +1413,8 @@ button:disabled:hover {
   position: absolute;
   inset: 0;
   background: var(--surface-inset);
+  border-radius: inherit;
+  overflow: hidden;
 }
 
 .lut-strip-thumb {
@@ -1473,6 +1474,50 @@ button:disabled:hover {
   font-size: 10px;
   padding: 4px 7px;
   color: var(--accent);
+}
+
+.lut-strip-kebab-wrap {
+  position: relative;
+}
+
+.lut-strip-kebab {
+  font-size: 13px;
+  padding: 3px 7px;
+  letter-spacing: 2px;
+  line-height: 1;
+}
+
+.lut-strip-menu {
+  z-index: 200;
+  background: var(--panel);
+  border: 1px solid var(--panel-border-strong);
+  border-radius: 8px;
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 110px;
+  white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+}
+
+.lut-strip-menu-item {
+  text-align: left;
+  font-size: 12px;
+  padding: 6px 10px;
+  border: none;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.lut-strip-menu-item:hover {
+  background: var(--surface-inset);
+}
+
+.lut-strip-menu-item--danger {
+  color: var(--remove-text);
 }
 
 /* LUT Editor Dialog */

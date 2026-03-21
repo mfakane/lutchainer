@@ -1,4 +1,5 @@
 import { For, Show, createSignal, type Accessor, type JSX } from 'solid-js';
+import { DropdownMenu } from './solid-dropdown-menu.tsx';
 import { render } from 'solid-js/web';
 import * as pipelineModel from '../../features/pipeline/pipeline-model';
 import {
@@ -50,6 +51,7 @@ interface LutStripListMountOptions {
   onRemoveLut: (lutId: string) => void;
   onAddLutFiles: (files: File[]) => void | Promise<void>;
   onEditLut?: (lutId: string) => void;
+  onDuplicateLut?: (lutId: string) => void;
   onNewLut?: () => void;
   onStatus: StatusReporter;
 }
@@ -78,6 +80,7 @@ interface LutStripListProps {
   onRemoveLut: (lutId: string) => void;
   onAddLutFiles: (files: File[]) => void | Promise<void>;
   onEditLut?: (lutId: string) => void;
+  onDuplicateLut?: (lutId: string) => void;
   onNewLut?: () => void;
   onStatus: StatusReporter;
 }
@@ -739,26 +742,52 @@ function LutStripList(props: LutStripListProps): JSX.Element {
                 <div class="lut-strip-name">{lut.name}</div>
                 <div class="lut-strip-stats">{tr('pipeline.lut.stats', { width: lut.width, height: lut.height, count: usageCount(lut.id) })}</div>
                 <div class="lut-strip-actions">
-                  <Show when={props.onEditLut && lut.ramp2dData}>
-                    <button
-                      type="button"
-                      class="lut-strip-edit"
-                      data-lut-id={lut.id}
-                      aria-label={tr('pipeline.lut.editAria', { name: lut.name })}
-                      onClick={() => props.onEditLut!(lut.id)}
-                    >
-                      {tr('pipeline.lut.edit')}
-                    </button>
-                  </Show>
-                  <button
-                    type="button"
-                    class="lut-strip-remove"
-                    data-lut-id={lut.id}
-                    aria-label={tr('pipeline.lut.removeAria', { name: lut.name })}
-                    onClick={() => handleRemoveLut(lut.id)}
+                  <Show
+                    when={lut.ramp2dData}
+                    fallback={
+                      <button
+                        type="button"
+                        class="lut-strip-remove"
+                        data-lut-id={lut.id}
+                        aria-label={tr('pipeline.lut.removeAria', { name: lut.name })}
+                        onClick={() => handleRemoveLut(lut.id)}
+                      >
+                        {tr('pipeline.step.remove')}
+                      </button>
+                    }
                   >
-                    {tr('pipeline.step.remove')}
-                  </button>
+                    <DropdownMenu
+                      wrapperClass="lut-strip-kebab-wrap"
+                      triggerClass="lut-strip-kebab"
+                      menuClass="lut-strip-menu"
+                      triggerAriaLabel={tr('pipeline.lut.kebabAria', { name: lut.name })}
+                      menuRole="menu"
+                      floating={true}
+                    >
+                      {controls => (
+                        <>
+                          <button
+                            type="button"
+                            class="lut-strip-menu-item"
+                            role="menuitem"
+                            onClick={() => { controls.closeMenu(); props.onEditLut?.(lut.id); }}
+                          >{tr('pipeline.lut.edit')}</button>
+                          <button
+                            type="button"
+                            class="lut-strip-menu-item"
+                            role="menuitem"
+                            onClick={() => { controls.closeMenu(); props.onDuplicateLut?.(lut.id); }}
+                          >{tr('pipeline.lut.duplicate')}</button>
+                          <button
+                            type="button"
+                            class="lut-strip-menu-item lut-strip-menu-item--danger"
+                            role="menuitem"
+                            onClick={() => { controls.closeMenu(); handleRemoveLut(lut.id); }}
+                          >{tr('pipeline.step.remove')}</button>
+                        </>
+                      )}
+                    </DropdownMenu>
+                  </Show>
                 </div>
               </div>
             </article>
@@ -920,6 +949,7 @@ export function mountLutStripList(target: HTMLElement, options: LutStripListMoun
         onRemoveLut={options.onRemoveLut}
         onAddLutFiles={options.onAddLutFiles}
         onEditLut={options.onEditLut}
+        onDuplicateLut={options.onDuplicateLut}
         onNewLut={options.onNewLut}
         onStatus={options.onStatus}
       />

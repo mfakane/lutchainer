@@ -46,6 +46,7 @@ interface PipelineCommandController {
   setStepChannelOp: (stepId: number, channel: unknown, op: unknown) => void;
   removeStep: (stepId: number) => void;
   removeLut: (lutId: string) => void;
+  duplicateLut: (lutId: string) => void;
   assignParamToSocket: (stepId: number, axis: SocketAxis, param: ParamName) => boolean;
   moveStepToPosition: (stepId: number, targetStepId: number | null, after: boolean) => void;
   moveLutToPosition: (lutId: string, targetLutId: string | null, after: boolean) => void;
@@ -392,6 +393,35 @@ export function createPipelineCommandController(options: PipelineCommandControll
     }
   };
 
+  const duplicateLut = (lutId: string): void => {
+    if (!isNonEmptyString(lutId)) {
+      options.status(options.t('main.status.moveLutNotFound'), 'error');
+      return;
+    }
+
+    const luts = options.getLuts();
+    const idx = luts.findIndex(l => l.id === lutId);
+    if (idx < 0) {
+      options.status(options.t('main.status.moveLutNotFound'), 'error');
+      return;
+    }
+
+    const original = luts[idx]!;
+    const before = options.captureSnapshot();
+    const suffix = options.t('pipeline.lut.copyNameSuffix');
+    const newLut: LutModel = {
+      ...original,
+      id: pipelineModel.uid('lut'),
+      name: `${original.name} (${suffix})`,
+    };
+    const newLuts = [...luts.slice(0, idx + 1), newLut, ...luts.slice(idx + 1)];
+    options.setLuts(newLuts);
+    options.commitSnapshot(before);
+    options.renderSteps();
+    options.scheduleApply();
+    options.status(options.t('main.status.lutDuplicated', { name: newLut.name }), 'success');
+  };
+
   const assignParamToSocket = (stepId: number, axis: SocketAxis, param: ParamName): boolean => {
     if (typeof axis !== 'string' || !options.isValidSocketAxis(axis)) {
       return false;
@@ -504,6 +534,7 @@ export function createPipelineCommandController(options: PipelineCommandControll
     setStepChannelOp,
     removeStep,
     removeLut,
+    duplicateLut,
     assignParamToSocket,
     moveStepToPosition,
     moveLutToPosition,
