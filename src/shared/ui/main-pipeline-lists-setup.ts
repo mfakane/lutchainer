@@ -32,6 +32,8 @@ export interface SetupMainPipelineListsOptions {
   onStepBlendModeChange: (stepId: number, blendMode: StepModel['blendMode']) => void;
   onStepOpChange: (stepId: number, channel: ChannelName, op: BlendOp) => void;
   onRemoveLut: (lutId: string) => void;
+  onEditLut?: (lutId: string) => void;
+  onNewLut?: () => void;
   createLutFromFile: (file: File) => Promise<LutModel>;
   maxLuts: number;
   captureHistorySnapshot: () => PipelineStateSnapshot;
@@ -121,6 +123,8 @@ export function setupMainPipelineLists(options: SetupMainPipelineListsOptions): 
     luts: options.getLuts(),
     steps: options.getSteps(),
     onRemoveLut: options.onRemoveLut,
+    onEditLut: options.onEditLut,
+    onNewLut: options.onNewLut,
     onAddLutFiles: async files => {
       if (!Array.isArray(files) || files.some(file => !(file instanceof File))) {
         options.onStatus(options.t('main.status.invalidLutAddInput'), 'error');

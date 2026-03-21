@@ -37,6 +37,8 @@ export interface SetupMainPipelineEditorOptions {
   shouldSuppressClick: () => boolean;
   computeLutUv?: (stepIndex: number, pixelX: number, pixelY: number, canvasWidth: number, canvasHeight: number) => { u: number; v: number } | null;
   pipelineCommands: PipelineCommandsLike;
+  onEditLut?: (lutId: string) => void;
+  onNewLut?: () => void;
   createLutFromFile: (file: File) => Promise<LutModel>;
   maxLuts: number;
   pipelineHistoryActions: PipelineHistoryActionsLike;
@@ -153,6 +155,8 @@ export function setupMainPipelineEditor(options: SetupMainPipelineEditorOptions)
     onRemoveLut: lutId => {
       options.pipelineCommands.removeLut(lutId);
     },
+    onEditLut: options.onEditLut,
+    onNewLut: options.onNewLut,
     createLutFromFile: options.createLutFromFile,
     maxLuts: options.maxLuts,
     captureHistorySnapshot: () => options.pipelineHistoryActions.captureSnapshot(),

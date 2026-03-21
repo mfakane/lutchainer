@@ -12,6 +12,7 @@ import {
   getLuts as getPipelineLuts,
   getSteps as getPipelineSteps,
   replacePipelineState,
+  setLuts as setPipelineLuts,
 } from '../../features/pipeline/pipeline-state.ts';
 import * as pipelineView from '../../features/pipeline/pipeline-view.ts';
 import type {
@@ -51,6 +52,9 @@ import {
 import {
   setupMainPipelineEditor,
 } from './main-pipeline-editor-setup.ts';
+import {
+  setupMainLutEditorDialog,
+} from './main-lut-editor-dialog-setup.ts';
 import type {
   MainRenderPipeline,
 } from './main-render-pipeline-setup.ts';
@@ -254,6 +258,23 @@ export function bootstrapMainPostRuntime(options: BootstrapMainPostRuntimeOption
     initialKind: 'info',
   });
 
+  const lutEditorDialogEl = options.select<HTMLDialogElement>('#lut-editor-dialog');
+  const lutEditorSurfaceEl = options.select<HTMLElement>('.lut-editor-dialog-surface');
+  const lutEditorController = setupMainLutEditorDialog({
+    dialogEl: lutEditorDialogEl,
+    surfaceEl: lutEditorSurfaceEl,
+    getLuts: getPipelineLuts,
+    setLuts: setPipelineLuts,
+    maxLuts: pipelineModel.MAX_LUTS,
+    captureHistorySnapshot: () => options.pipelineHistoryActions.captureSnapshot(),
+    commitHistorySnapshot: before => options.pipelineHistoryActions.commitSnapshot(before as ReturnType<typeof options.pipelineHistoryActions.captureSnapshot>),
+    renderSteps: () => options.mainStepRendering.renderSteps(),
+    scheduleApply: () => options.pipelineApply.scheduleApply(),
+    renderLutStrip: () => options.mainStepRendering.renderLutStrip(),
+    onStatus: options.onStatus,
+    t: options.t,
+  });
+
   setupMainPipelineEditor({
     paramNodeListEl: options.paramNodeListEl,
     stepListEl: options.stepListEl,
@@ -274,6 +295,8 @@ export function bootstrapMainPostRuntime(options: BootstrapMainPostRuntimeOption
         lightSettings: getLightSettings(),
       }),
     pipelineCommands: options.pipelineCommands,
+    onEditLut: lutId => lutEditorController.openForLut(lutId),
+    onNewLut: () => lutEditorController.createNewLut(),
     createLutFromFile: pipelineModel.createLutFromFile,
     maxLuts: pipelineModel.MAX_LUTS,
     pipelineHistoryActions: options.pipelineHistoryActions,

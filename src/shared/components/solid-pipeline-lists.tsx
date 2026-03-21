@@ -49,6 +49,8 @@ interface LutStripListMountOptions {
   steps: StepModel[];
   onRemoveLut: (lutId: string) => void;
   onAddLutFiles: (files: File[]) => void | Promise<void>;
+  onEditLut?: (lutId: string) => void;
+  onNewLut?: () => void;
   onStatus: StatusReporter;
 }
 
@@ -75,6 +77,8 @@ interface LutStripListProps {
   steps: Accessor<StepModel[]>;
   onRemoveLut: (lutId: string) => void;
   onAddLutFiles: (files: File[]) => void | Promise<void>;
+  onEditLut?: (lutId: string) => void;
+  onNewLut?: () => void;
   onStatus: StatusReporter;
 }
 
@@ -733,22 +737,59 @@ function LutStripList(props: LutStripListProps): JSX.Element {
               <div class="lut-strip-meta">
                 <div class="lut-strip-name">{lut.name}</div>
                 <div class="lut-strip-stats">{tr('pipeline.lut.stats', { width: lut.width, height: lut.height, count: usageCount(lut.id) })}</div>
-                <button
-                  type="button"
-                  class="lut-strip-remove"
-                  data-lut-id={lut.id}
-                  aria-label={tr('pipeline.lut.removeAria', { name: lut.name })}
-                  onClick={() => handleRemoveLut(lut.id)}
-                >
-                  {tr('pipeline.step.remove')}
-                </button>
+                <div class="lut-strip-actions">
+                  <Show when={props.onEditLut}>
+                    <button
+                      type="button"
+                      class="lut-strip-edit"
+                      data-lut-id={lut.id}
+                      aria-label={tr('pipeline.lut.editAria', { name: lut.name })}
+                      onClick={() => props.onEditLut!(lut.id)}
+                    >
+                      {tr('pipeline.lut.edit')}
+                    </button>
+                  </Show>
+                  <button
+                    type="button"
+                    class="lut-strip-remove"
+                    data-lut-id={lut.id}
+                    aria-label={tr('pipeline.lut.removeAria', { name: lut.name })}
+                    onClick={() => handleRemoveLut(lut.id)}
+                  >
+                    {tr('pipeline.step.remove')}
+                  </button>
+                </div>
               </div>
             </article>
           )}
         </For>
-        <div class="lut-strip-add-item" onClick={openFilePicker} title={tr('pipeline.lut.add')}>
-          <button type="button">{tr('pipeline.lut.add')}</button>
-        </div>
+        <Show
+          when={props.onNewLut}
+          fallback={
+            <div class="lut-strip-add-item" onClick={openFilePicker} title={tr('pipeline.lut.add')}>
+              <button type="button">{tr('pipeline.lut.add')}</button>
+            </div>
+          }
+        >
+          <div class="lut-strip-add-item lut-strip-add-item--split">
+            <button
+              type="button"
+              class="lut-strip-add-new"
+              aria-label={tr('lutEditor.newLutAria')}
+              onClick={props.onNewLut}
+            >
+              {tr('lutEditor.newLut')}
+            </button>
+            <button
+              type="button"
+              class="lut-strip-add-browse"
+              aria-label={tr('pipeline.lut.browseAria')}
+              onClick={openFilePicker}
+            >
+              {tr('pipeline.lut.browse')}
+            </button>
+          </div>
+        </Show>
       </Show>
       <input
         ref={element => {
@@ -877,6 +918,8 @@ export function mountLutStripList(target: HTMLElement, options: LutStripListMoun
         steps={steps}
         onRemoveLut={options.onRemoveLut}
         onAddLutFiles={options.onAddLutFiles}
+        onEditLut={options.onEditLut}
+        onNewLut={options.onNewLut}
         onStatus={options.onStatus}
       />
     );
