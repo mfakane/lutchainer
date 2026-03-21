@@ -171,6 +171,7 @@ function cloneLutModel(lut: LutModel): LutModel {
     height: lut.height,
     pixels: lut.pixels,
     thumbUrl: lut.thumbUrl,
+    ramp2dData: lut.ramp2dData,
   };
 }
 
@@ -738,7 +739,7 @@ function LutStripList(props: LutStripListProps): JSX.Element {
                 <div class="lut-strip-name">{lut.name}</div>
                 <div class="lut-strip-stats">{tr('pipeline.lut.stats', { width: lut.width, height: lut.height, count: usageCount(lut.id) })}</div>
                 <div class="lut-strip-actions">
-                  <Show when={props.onEditLut}>
+                  <Show when={props.onEditLut && lut.ramp2dData}>
                     <button
                       type="button"
                       class="lut-strip-edit"

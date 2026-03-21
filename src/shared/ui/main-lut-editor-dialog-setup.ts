@@ -138,7 +138,7 @@ export function setupMainLutEditorDialog(
         options.onStatus(options.t('lutEditor.status.notFound') as string, 'error');
         return;
       }
-      const rampData = createDefaultColorRamp2dLutData(lut.name);
+      const rampData = lut.ramp2dData ?? createDefaultColorRamp2dLutData(lut.name);
       syncLutEditorDialogState(rampData, lutId);
       openLutEditorDialog();
     },

@@ -51,6 +51,8 @@ export interface LutModel {
   height: number;
   pixels: Uint8ClampedArray;
   thumbUrl: string;
+  /** Present only for LUTs created/edited via the color ramp editor. Absent for file-imported LUTs. */
+  ramp2dData?: import('../lut-editor/lut-editor-model.ts').ColorRamp2dLutData;
 }
 
 export interface BlendModeDef {
