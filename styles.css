@@ -1585,10 +1585,28 @@ button:disabled:hover {
   flex-shrink: 0;
 }
 
-.lut-editor-title {
+.lut-editor-title-input {
+  min-width: 0;
+  flex: 1;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-strong);
   font-size: 13px;
   font-weight: 600;
-  color: var(--text-strong);
+  padding: 4px 6px;
+  margin: -4px 0 -4px -6px;
+}
+
+.lut-editor-title-input:hover {
+  border-color: color-mix(in srgb, var(--line), var(--accent) 32%);
+  background: color-mix(in srgb, var(--panel-2), #000 10%);
+}
+
+.lut-editor-title-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--panel-2), #000 6%);
 }
 
 .lut-editor-head-actions {

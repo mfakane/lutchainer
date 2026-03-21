@@ -627,7 +627,17 @@ function LutEditorDialogContent(props: { options: LutEditorDialogContentOptions 
   return (
     <>
       <div class="lut-editor-head">
-        <div class="lut-editor-title" id="lut-editor-dialog-title">{tr('lutEditor.title')}</div>
+        <input
+          id="lut-editor-dialog-title"
+          type="text"
+          class="lut-editor-title-input"
+          value={rampData()?.name ?? ''}
+          onInput={e => {
+            const name = (e.target as HTMLInputElement).value;
+            const data = rampData();
+            if (data) setRampData({ ...data, name });
+          }}
+        />
         <div class="lut-editor-head-actions">
           <button type="button" class="btn-primary" onClick={handleApply} disabled={!rampData()}>
             {tr('lutEditor.apply')}
