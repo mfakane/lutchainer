@@ -268,7 +268,7 @@ export function DropdownMenu(props: DropdownMenuProps): JSX.Element {
           handleTriggerKeyDown(event as KeyboardEvent);
         }}
       >
-        {props.triggerContent ?? '･･･'}
+        {props.triggerContent ?? <span class="symbol-kebab">･･･</span>}
       </button>
       <Show when={isOpen()}>
         <Show
