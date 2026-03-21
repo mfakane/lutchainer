@@ -11,7 +11,7 @@
       },
       "problemMatcher": "$tsc",
       "presentation": {
-        "reveal": "always",
+        "reveal": "silent",
         "panel": "shared",
         "showReuseMessage": true,
         "clear": true
@@ -24,7 +24,7 @@
       "group": "build",
       "problemMatcher": "$tsc",
       "presentation": {
-        "reveal": "always",
+        "reveal": "silent",
         "panel": "shared",
         "showReuseMessage": true,
         "clear": true
