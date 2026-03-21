@@ -295,6 +295,33 @@ export function parseHexColor(hex: string): [number, number, number] {
   ];
 }
 
+// Reorder ramps by moving fromIndex to insertBeforeIndex, then reassign yPositions in-place.
+// All ramps including boundary ones can be reordered.
+// insertBeforeIndex = n means "append at end".
+export function reorderRamps(
+  data: ColorRamp2dLutData,
+  fromIndex: number,
+  insertBeforeIndex: number,
+): ColorRamp2dLutData {
+  const n = data.ramps.length;
+  if (fromIndex < 0 || fromIndex >= n) return data;
+  if (insertBeforeIndex < 0 || insertBeforeIndex > n) return data;
+  // No-op: inserting immediately before or after itself
+  if (insertBeforeIndex === fromIndex || insertBeforeIndex === fromIndex + 1) return data;
+
+  const yPositions = data.ramps.map(r => r.yPosition);
+
+  // Remove the ramp from its current position
+  const without = data.ramps.filter((_, i) => i !== fromIndex);
+  // After removal, indices > fromIndex shift down by 1
+  const adjustedInsert = insertBeforeIndex > fromIndex ? insertBeforeIndex - 1 : insertBeforeIndex;
+  without.splice(adjustedInsert, 0, data.ramps[fromIndex]!);
+
+  // Reassign yPositions to keep the sorted structure
+  const reordered = without.map((ramp, i) => ({ ...ramp, yPosition: yPositions[i]! }));
+  return { ...data, ramps: reordered };
+}
+
 // Move a ramp to a new Y position, re-sorting the array (boundary ramps cannot be moved)
 export function moveRamp(data: ColorRamp2dLutData, rampId: string, newY: number): ColorRamp2dLutData {
   const idx = data.ramps.findIndex(r => r.id === rampId);

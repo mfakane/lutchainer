@@ -19,6 +19,7 @@ import {
   parseHexColor,
   removeRamp,
   removeStop,
+  reorderRamps,
   renderColorRamp2dToPixels,
   updateRamp,
   updateStopAlpha,
@@ -92,6 +93,11 @@ function LutEditorDialogContent(props: { options: LutEditorDialogContentOptions 
   const [draggingRampDeleteId, setDraggingRampDeleteId] = createSignal<string | null>(null);
   const [draggingStopDeleteId, setDraggingStopDeleteId] = createSignal<string | null>(null);
 
+  // Ramp list D&D reorder state
+  const [draggingRampListIdx, setDraggingRampListIdx] = createSignal<number | null>(null);
+  const [rampListDropIdx, setRampListDropIdx] = createSignal<number | null>(null);
+  const rampRowElMap = new Map<string, HTMLElement>();
+
   syncLutEditorDialogInternal = (data, lutId) => {
     setRampData(data);
     setEditingLutId(lutId);
@@ -128,6 +134,44 @@ function LutEditorDialogContent(props: { options: LutEditorDialogContentOptions 
   let previewCanvasRef: HTMLCanvasElement | undefined;
   let rampKnobStripRef: HTMLDivElement | undefined;
   let stopKnobStripRef: HTMLDivElement | undefined;
+  let stopPreviewBarRef: HTMLDivElement | undefined;
+
+  // Mutable ref to gate onClick after a ramp-list drag
+  let rampListDragOccurredRef = false;
+
+  // Compute above/below placement for preview-bar stop knobs to avoid overlap.
+  // Knobs default to "below". If a knob would be within OVERLAP_THRESHOLD pixels
+  // of the previous "below" knob, it is moved "above" instead.
+  const OVERLAP_THRESHOLD_PX = 14;
+  const stopKnobPlacements = createMemo((): Map<string, 'below' | 'above'> => {
+    const ramp = selectedRamp();
+    const placements = new Map<string, 'below' | 'above'>();
+    if (!ramp) return placements;
+
+    const barWidth = stopPreviewBarRef?.getBoundingClientRect().width ?? 256;
+    const threshold = OVERLAP_THRESHOLD_PX / barWidth;
+
+    const sorted = [...ramp.stops].sort((a, b) => a.position - b.position);
+    let lastBelowPos = -Infinity;
+    let lastAbovePos = -Infinity;
+
+    for (const stop of sorted) {
+      const belowClear = stop.position - lastBelowPos >= threshold;
+      const aboveClear = stop.position - lastAbovePos >= threshold;
+      if (belowClear) {
+        placements.set(stop.id, 'below');
+        lastBelowPos = stop.position;
+      } else if (aboveClear) {
+        placements.set(stop.id, 'above');
+        lastAbovePos = stop.position;
+      } else {
+        // Both lanes occupied — force below (best effort)
+        placements.set(stop.id, 'below');
+        lastBelowPos = stop.position;
+      }
+    }
+    return placements;
+  });
 
   // Canvas redraw
   const redrawPreview = (): void => {
@@ -374,6 +418,30 @@ function LutEditorDialogContent(props: { options: LutEditorDialogContentOptions 
     document.addEventListener('pointerup', onUp);
   };
 
+  // --- Drag: preview bar stop knobs (move only, no delete) ---
+
+  const startPreviewStopDrag = (stopId: string, ev: PointerEvent): void => {
+    ev.preventDefault();
+    const onMove = (e: PointerEvent): void => {
+      const bar = stopPreviewBarRef;
+      if (!bar) return;
+      const rect = bar.getBoundingClientRect();
+      const newPos = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+      const data = rampData();
+      const ramp = selectedRamp();
+      if (data && ramp) {
+        const newRamp = moveStop(ramp, stopId, newPos);
+        setRampData(updateRamp(data, newRamp));
+      }
+    };
+    const onUp = (): void => {
+      document.removeEventListener('pointermove', onMove);
+      document.removeEventListener('pointerup', onUp);
+    };
+    document.addEventListener('pointermove', onMove);
+    document.addEventListener('pointerup', onUp);
+  };
+
   // --- Rail click handlers: click on empty strip area to add ---
 
   const handleRampStripPointerDown = (ev: PointerEvent): void => {
@@ -423,6 +491,89 @@ function LutEditorDialogContent(props: { options: LutEditorDialogContentOptions 
     if (nearestStop) setFocusedStopId(nearestStop.id);
   };
 
+  // --- Ramp list DnD reorder ---
+
+  const startRampListDrag = (rampIdx: number, ev: PointerEvent): void => {
+    const startX = ev.clientX;
+    const startY = ev.clientY;
+    const MOVE_THRESHOLD = 4;
+    let dragStarted = false;
+    rampListDragOccurredRef = false;
+
+    const onMove = (e: PointerEvent): void => {
+      if (!dragStarted) {
+        if (Math.abs(e.clientX - startX) < MOVE_THRESHOLD && Math.abs(e.clientY - startY) < MOVE_THRESHOLD) return;
+        dragStarted = true;
+        rampListDragOccurredRef = true;
+        e.preventDefault();
+        setDraggingRampListIdx(rampIdx);
+        setRampListDropIdx(null);
+      }
+
+      const data = rampData();
+      if (!data) return;
+      const n = data.ramps.length;
+      // Determine insertBeforeIndex from pointer Y vs each row's midpoint
+      let dropIdx = 0;
+      for (let i = 0; i < n; i++) {
+        const ramp = data.ramps[i]!;
+        const el = rampRowElMap.get(ramp.id);
+        if (!el) continue;
+        const rect = el.getBoundingClientRect();
+        if (e.clientY < rect.top + rect.height / 2) {
+          dropIdx = i;
+          break;
+        }
+        dropIdx = i + 1;
+      }
+      setRampListDropIdx(dropIdx);
+    };
+
+    const onUp = (): void => {
+      document.removeEventListener('pointermove', onMove);
+      document.removeEventListener('pointerup', onUp);
+      if (dragStarted) {
+        const dropIdx = rampListDropIdx();
+        if (dropIdx !== null) {
+          const data = rampData();
+          if (data) {
+            const newData = reorderRamps(data, rampIdx, dropIdx);
+            if (newData !== data) setRampData(newData);
+          }
+        }
+        setDraggingRampListIdx(null);
+        setRampListDropIdx(null);
+      }
+    };
+
+    document.addEventListener('pointermove', onMove);
+    document.addEventListener('pointerup', onUp);
+  };
+
+  // Returns true when a drop indicator should appear before list item at `idx`
+  const showDropBefore = (idx: number): boolean => {
+    const dragIdx = draggingRampListIdx();
+    const dropIdx = rampListDropIdx();
+    if (dragIdx === null || dropIdx === null) return false;
+    if (dropIdx !== idx) return false;
+    // Skip no-op positions (inserting immediately before or after self)
+    if (idx === dragIdx || idx === dragIdx + 1) return false;
+    return true;
+  };
+
+  // Returns true when a drop indicator should appear after the last list item
+  const showDropAfterLast = (): boolean => {
+    const data = rampData();
+    const dragIdx = draggingRampListIdx();
+    const dropIdx = rampListDropIdx();
+    if (!data || dragIdx === null || dropIdx === null) return false;
+    const n = data.ramps.length;
+    if (dropIdx !== n) return false;
+    // Skip no-op: dragging the last item after itself
+    if (dragIdx === n - 1) return false;
+    return true;
+  };
+
   // --- Apply ---
 
   const handleApply = (): void => {
@@ -460,6 +611,14 @@ function LutEditorDialogContent(props: { options: LutEditorDialogContentOptions 
     if (focusedStopId() === stop.id) parts.push('focused');
     if (isStopBoundary(stop.id)) parts.push('boundary');
     if (draggingStopDeleteId() === stop.id) parts.push('pending-delete');
+    return parts.join(' ');
+  };
+
+  const previewStopKnobClass = (stop: ColorStop): string => {
+    const placement = stopKnobPlacements().get(stop.id) ?? 'below';
+    const parts = ['lut-editor-preview-stop-knob', placement];
+    if (focusedStopId() === stop.id) parts.push('focused');
+    if (isStopBoundary(stop.id)) parts.push('boundary');
     return parts.join(' ');
   };
 
@@ -559,30 +718,40 @@ function LutEditorDialogContent(props: { options: LutEditorDialogContentOptions 
             <div class="lut-editor-section-label">{tr('lutEditor.rampListLabel')}</div>
             <div class="lut-editor-ramp-list">
               <For each={rampData()?.ramps ?? []}>
-                {ramp => (
-                  <div
-                    class={`lut-editor-ramp-row${selectedRampId() === ramp.id ? ' selected' : ''}`}
-                    onClick={() => setSelectedRampId(ramp.id)}
-                  >
-                    <div class="lut-editor-ramp-swatch" style={rampSwatchStyle(ramp)} />
-                    <span class="lut-editor-ramp-y">
-                      {tr('lutEditor.yPosition')}: {(ramp.yPosition * 100).toFixed(0)}%
-                    </span>
-                    <Show when={canRemoveRamp(ramp.id)}>
-                      <button
-                        type="button"
-                        class="btn-ghost lut-editor-ramp-remove"
-                        onClick={ev => {
-                          ev.stopPropagation();
-                          handleRemoveRamp(ramp.id);
-                        }}
-                      >
-                        {tr('lutEditor.removeRamp')}
-                      </button>
+                {(ramp, getIdx) => (
+                  <>
+                    <Show when={showDropBefore(getIdx())}>
+                      <div class="lut-editor-ramp-drop-indicator" />
                     </Show>
-                  </div>
+                    <div
+                      class={`lut-editor-ramp-row${selectedRampId() === ramp.id ? ' selected' : ''}${draggingRampListIdx() === getIdx() ? ' dragging' : ''}`}
+                      ref={el => { rampRowElMap.set(ramp.id, el); }}
+                      onPointerDown={ev => startRampListDrag(getIdx(), ev)}
+                      onClick={() => { if (!rampListDragOccurredRef) setSelectedRampId(ramp.id); }}
+                    >
+                      <div class="lut-editor-ramp-swatch" style={rampSwatchStyle(ramp)} />
+                      <span class="lut-editor-ramp-y">
+                        {tr('lutEditor.yPosition')}: {(ramp.yPosition * 100).toFixed(0)}%
+                      </span>
+                      <Show when={canRemoveRamp(ramp.id)}>
+                        <button
+                          type="button"
+                          class="btn-ghost lut-editor-ramp-remove"
+                          onClick={ev => {
+                            ev.stopPropagation();
+                            handleRemoveRamp(ramp.id);
+                          }}
+                        >
+                          {tr('lutEditor.removeRamp')}
+                        </button>
+                      </Show>
+                    </div>
+                  </>
                 )}
               </For>
+              <Show when={showDropAfterLast()}>
+                <div class="lut-editor-ramp-drop-indicator" />
+              </Show>
             </div>
             <button
               type="button"
@@ -598,13 +767,34 @@ function LutEditorDialogContent(props: { options: LutEditorDialogContentOptions 
           <div class="lut-editor-stop-section">
             <div class="lut-editor-section-label">{tr('lutEditor.stopEditorLabel')}</div>
 
-            {/* Gradient preview bar for selected ramp */}
+            {/* Gradient preview bar + draggable stop knobs */}
             <Show when={selectedRamp()}>
               {getSelectedRamp => (
-                <div
-                  class="lut-editor-stop-preview"
-                  style={rampSwatchStyle(getSelectedRamp())}
-                />
+                <div class="lut-editor-stop-preview-area">
+                  <div
+                    class="lut-editor-stop-preview"
+                    ref={el => { stopPreviewBarRef = el as HTMLDivElement; }}
+                    style={rampSwatchStyle(getSelectedRamp())}
+                  >
+                    <For each={getSelectedRamp().stops}>
+                      {stop => (
+                        <div
+                          class={previewStopKnobClass(stop)}
+                          style={{
+                            left: `${stop.position * 100}%`,
+                            'background-color': colorToHex(stop.color),
+                          }}
+                          onPointerDown={ev => {
+                            ev.preventDefault();
+                            ev.stopPropagation();
+                            setFocusedStopId(stop.id);
+                            if (!isStopBoundary(stop.id)) startPreviewStopDrag(stop.id, ev);
+                          }}
+                        />
+                      )}
+                    </For>
+                  </div>
+                </div>
               )}
             </Show>
 
