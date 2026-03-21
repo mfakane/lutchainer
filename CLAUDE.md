@@ -1,4 +1,29 @@
-# CLAUDE.md — LUT Chainer AI Agent ガイド
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+---
+
+## 🛠️ Development Commands
+
+```bash
+# Build (outputs to dist/bundle.js)
+npm run build
+
+# Watch mode (rebuild on file changes)
+npm run dev
+
+# Type check only (no emit)
+npx tsc --noEmit
+```
+
+There are no tests or linting configured. Use `npx tsc --noEmit` to validate TypeScript before committing.
+
+Open `index.html` directly in a browser (or via a local static file server) to run the app — no dev server required.
+
+---
+
+# LUT Chainer AI Agent ガイド
 
 本ドキュメントは、LUT Chainer プロジェクトに対して AI Agent（GitHub Copilot、カスタムエージェント等）が的確に支援できるよう設計ガイドを記載しています。
 
@@ -315,11 +340,8 @@ lutchainer/
 
 分野別ガイドは `.claude/rules/` に分割：
 
-- **[coding-style.md](.claude/rules/coding-style.md)** — TypeScript 厳密性、SolidJS JSX 制限、ファイル構成
-- **[architecture.md](.claude/rules/architecture.md)** —層間依存関係、DI pattern、モジュール責務
-- **[patterns.md](.claude/rules/patterns.md)** — SolidJS signal pattern、validation patterns、DnD detail
-- **[specializations.md](.claude/rules/specializations.md)** — WebGL/shader、LUT texture、interaction delegates
-- **[common-mistakes.md](.claude/rules/common-mistakes.md)** — CPU↔GPU mismatch、type inference 罠、edge cases
+- TypeScript 厳密性、SolidJS JSX 制限、ファイル構成: @.claude/rules/coding-style.md
+- CPU↔GPU mismatch、type inference 罠、edge cases: @.claude/rules/common-mistakes.md
 
 ---
 
