@@ -31,7 +31,7 @@ export type ParamName =
   | 'texV';
 
 export type Color = [number, number, number];
-
+export type ColorWithAlpha = [number, number, number, number?];
 export interface StepModel {
   id: number;
   lutId: string;

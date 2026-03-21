@@ -10,8 +10,8 @@ export function createLutFromColorRamp2d(data: ColorRamp2dLutData): LutModel {
   const lut = createLutFromPainter(data.name, (u, v) => {
     const su = data.axisSwap ? v : u;
     const sv = data.axisSwap ? u : v;
-    const [r, g, b] = sampleColorRamp2d(data, su, sv);
-    return [r, g, b];
+    const [r, g, b, a] = sampleColorRamp2d(data, su, sv);
+    return [r, g, b, a];
   });
   return { ...lut, ramp2dData: data };
 }

@@ -9,6 +9,7 @@ import {
   type BlendOp,
   type ChannelName,
   type Color,
+  type ColorWithAlpha,
   type LutModel,
   type ParamName,
   type StepModel,
@@ -302,10 +303,11 @@ export const PIPELINE_ZIP_FILE_VERSION = 2;
 const PIPELINE_DOWNLOAD_BASENAME = 'lutchainer-pipeline';
 const PIPELINE_ARCHIVE_EXTENSION = '.lutchain';
 
-function hasFiniteColor(value: Color): boolean {
-  return Array.isArray(value)
-    && value.length === 3
-    && value.every(component => typeof component === 'number' && Number.isFinite(component));
+function hasFiniteColor(value: ColorWithAlpha): boolean {
+  if (!Array.isArray(value) || value.length < 3 || value.length > 4) return false;
+  if (!value.slice(0, 3).every(c => typeof c === 'number' && Number.isFinite(c))) return false;
+  if (value.length === 4 && (typeof value[3] !== 'number' || !Number.isFinite(value[3]))) return false;
+  return true;
 }
 
 export function clamp01(v: number): number {
@@ -685,7 +687,7 @@ export function removeLutFromPipeline(
   return { luts: nextLuts, steps: nextSteps, removed, error: null };
 }
 
-export function createLutFromPainter(name: string, painter: (u: number, v: number) => Color): LutModel {
+export function createLutFromPainter(name: string, painter: (u: number, v: number) => ColorWithAlpha): LutModel {
   const safeName = parseNonEmptyText(name, 'name');
   if (typeof painter !== 'function') {
     throw new Error('LUT painter が不正です。');
@@ -714,7 +716,7 @@ export function createLutFromPainter(name: string, painter: (u: number, v: numbe
       d[idx + 0] = Math.round(clamp01(c[0]) * 255);
       d[idx + 1] = Math.round(clamp01(c[1]) * 255);
       d[idx + 2] = Math.round(clamp01(c[2]) * 255);
-      d[idx + 3] = 255;
+      d[idx + 3] = Math.round(clamp01(c[3] ?? 1) * 255);
     }
   }
 
