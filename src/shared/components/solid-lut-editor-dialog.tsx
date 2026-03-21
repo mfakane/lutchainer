@@ -1,15 +1,14 @@
 import { For, Show, createEffect, createMemo, createSignal } from 'solid-js';
 import { render } from 'solid-js/web';
-import { createLutFromColorRamp2d } from '../../features/lut-editor/lut-editor-painter.ts';
 import {
   MAX_RAMPS,
   MAX_STOPS_PER_RAMP,
   MIN_RAMPS,
-  MIN_STOPS_PER_RAMP,
   type ColorRamp,
   type ColorRamp2dLutData,
-  type ColorStop,
+  type ColorStop
 } from '../../features/lut-editor/lut-editor-model.ts';
+import { createLutFromColorRamp2d } from '../../features/lut-editor/lut-editor-painter.ts';
 import {
   addRamp,
   addStop,
@@ -19,8 +18,8 @@ import {
   parseHexColor,
   removeRamp,
   removeStop,
-  reorderRamps,
   renderColorRamp2dToPixels,
+  reorderRamps,
   updateRamp,
   updateStopAlpha,
   updateStopColor,
@@ -192,7 +191,7 @@ function LutEditorDialogContent(props: { options: LutEditorDialogContentOptions 
     // Draw selected ramp indicator line
     const selRamp = selectedRamp();
     if (selRamp) {
-      const pos = Math.round(selRamp.yPosition * ((swapped ? data.width : data.height) - 1));
+      const pos = Math.round(selRamp.position * ((swapped ? data.width : data.height) - 1));
       ctx.strokeStyle = 'rgba(255,255,255,0.5)';
       ctx.lineWidth = 1;
       ctx.setLineDash([3, 3]);
@@ -280,10 +279,10 @@ function LutEditorDialogContent(props: { options: LutEditorDialogContentOptions 
     let bestGap = 0;
     let bestY = 0.5;
     for (let i = 0; i < ramps.length - 1; i++) {
-      const gap = ramps[i + 1]!.yPosition - ramps[i]!.yPosition;
+      const gap = ramps[i + 1]!.position - ramps[i]!.position;
       if (gap > bestGap) {
         bestGap = gap;
-        bestY = (ramps[i]!.yPosition + ramps[i + 1]!.yPosition) / 2;
+        bestY = (ramps[i]!.position + ramps[i + 1]!.position) / 2;
       }
     }
     handleAddRampAtY(bestY);
@@ -504,7 +503,7 @@ function LutEditorDialogContent(props: { options: LutEditorDialogContentOptions 
     let nearestRamp: ColorRamp | null = null;
     let bestRampDist = Infinity;
     for (const ramp of data.ramps) {
-      const dist = Math.abs(ramp.yPosition - rampAxis);
+      const dist = Math.abs(ramp.position - rampAxis);
       if (dist < bestRampDist) { bestRampDist = dist; nearestRamp = ramp; }
     }
     if (!nearestRamp) return;
@@ -704,8 +703,8 @@ function LutEditorDialogContent(props: { options: LutEditorDialogContentOptions 
                   <div
                     class={rampKnobClass(ramp)}
                     style={rampData()?.axisSwap
-                      ? { left: `${ramp.yPosition * 100}%` }
-                      : { top: `${ramp.yPosition * 100}%` }}
+                      ? { left: `${ramp.position * 100}%` }
+                      : { top: `${ramp.position * 100}%` }}
                     onPointerDown={ev => {
                       ev.preventDefault();
                       ev.stopPropagation();
@@ -804,7 +803,7 @@ function LutEditorDialogContent(props: { options: LutEditorDialogContentOptions 
                     >
                       <div class="lut-editor-ramp-swatch" style={rampSwatchStyle(ramp)} />
                       <span class="lut-editor-ramp-y">
-                        {tr('lutEditor.yPosition')}: {(ramp.yPosition * 100).toFixed(0)}%
+                        {tr('lutEditor.rampPosition')}: {(ramp.position * 100).toFixed(0)}%
                       </span>
                       <Show when={canRemoveRamp(ramp.id)}>
                         <button

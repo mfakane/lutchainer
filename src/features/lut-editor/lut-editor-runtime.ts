@@ -76,14 +76,14 @@ export function sampleColorRamp2d(
 
   const cv = clamp01(v);
 
-  // Find bracketing ramps by yPosition
+  // Find bracketing ramps by position
   let loRamp = ramps[0]!;
   let hiRamp = ramps[ramps.length - 1]!;
 
   for (let i = 0; i < ramps.length - 1; i++) {
     const a = ramps[i]!;
     const b = ramps[i + 1]!;
-    if (cv >= a.yPosition && cv <= b.yPosition) {
+    if (cv >= a.position && cv <= b.position) {
       loRamp = a;
       hiRamp = b;
       break;
@@ -93,8 +93,8 @@ export function sampleColorRamp2d(
   const loColor = interpolateColorStops(loRamp.stops, u);
   const hiColor = interpolateColorStops(hiRamp.stops, u);
 
-  const span = hiRamp.yPosition - loRamp.yPosition;
-  const localT = span > 0 ? (cv - loRamp.yPosition) / span : 0;
+  const span = hiRamp.position - loRamp.position;
+  const localT = span > 0 ? (cv - loRamp.position) / span : 0;
 
   return [
     lerp(loColor[0], hiColor[0], localT),
@@ -134,8 +134,8 @@ export function createDefaultColorRamp2dLutData(name: string): ColorRamp2dLutDat
   const topStop0: ColorStop = { id: makeStopId(), position: 0, color: [0, 0, 0], alpha: 1 };
   const topStop1: ColorStop = { id: makeStopId(), position: 1, color: [1, 1, 1], alpha: 1 };
 
-  const ramp0: ColorRamp = { id: makeRampId(), yPosition: 0, stops: [bottomStop0, bottomStop1] };
-  const ramp1: ColorRamp = { id: makeRampId(), yPosition: 1, stops: [topStop0, topStop1] };
+  const ramp0: ColorRamp = { id: makeRampId(), position: 0, stops: [bottomStop0, bottomStop1] };
+  const ramp1: ColorRamp = { id: makeRampId(), position: 1, stops: [topStop0, topStop1] };
 
   return {
     name,
@@ -145,11 +145,11 @@ export function createDefaultColorRamp2dLutData(name: string): ColorRamp2dLutDat
   };
 }
 
-// Insert a new ramp at yPosition, with stops interpolated from neighbors
-export function addRamp(data: ColorRamp2dLutData, yPosition: number): ColorRamp2dLutData {
+// Insert a new ramp at position, with stops interpolated from neighbors
+export function addRamp(data: ColorRamp2dLutData, position: number): ColorRamp2dLutData {
   if (data.ramps.length >= MAX_RAMPS) return data;
 
-  const cv = clamp01(yPosition);
+  const cv = clamp01(position);
 
   // Find neighbors
   const sorted = data.ramps;
@@ -159,7 +159,7 @@ export function addRamp(data: ColorRamp2dLutData, yPosition: number): ColorRamp2
   for (let i = 0; i < sorted.length - 1; i++) {
     const a = sorted[i]!;
     const b = sorted[i + 1]!;
-    if (cv >= a.yPosition && cv <= b.yPosition) {
+    if (cv >= a.position && cv <= b.position) {
       loRamp = a;
       hiRamp = b;
       break;
@@ -171,8 +171,8 @@ export function addRamp(data: ColorRamp2dLutData, yPosition: number): ColorRamp2
   const newStops: ColorStop[] = refStops.map(s => {
     const loColor = interpolateColorStops(loRamp.stops, s.position);
     const hiColor = interpolateColorStops(hiRamp.stops, s.position);
-    const span = hiRamp.yPosition - loRamp.yPosition;
-    const localT = span > 0 ? (cv - loRamp.yPosition) / span : 0;
+    const span = hiRamp.position - loRamp.position;
+    const localT = span > 0 ? (cv - loRamp.position) / span : 0;
     return {
       id: makeStopId(),
       position: s.position,
@@ -185,8 +185,8 @@ export function addRamp(data: ColorRamp2dLutData, yPosition: number): ColorRamp2
     };
   });
 
-  const newRamp: ColorRamp = { id: makeRampId(), yPosition: cv, stops: newStops };
-  const newRamps = [...data.ramps, newRamp].sort((a, b) => a.yPosition - b.yPosition);
+  const newRamp: ColorRamp = { id: makeRampId(), position: cv, stops: newStops };
+  const newRamps = [...data.ramps, newRamp].sort((a, b) => a.position - b.position);
 
   return { ...data, ramps: newRamps };
 }
@@ -297,7 +297,7 @@ export function parseHexColor(hex: string): [number, number, number] {
   ];
 }
 
-// Reorder ramps by moving fromIndex to insertBeforeIndex, then reassign yPositions in-place.
+// Reorder ramps by moving fromIndex to insertBeforeIndex, then reassign positions in-place.
 // All ramps including boundary ones can be reordered.
 // insertBeforeIndex = n means "append at end".
 export function reorderRamps(
@@ -311,7 +311,7 @@ export function reorderRamps(
   // No-op: inserting immediately before or after itself
   if (insertBeforeIndex === fromIndex || insertBeforeIndex === fromIndex + 1) return data;
 
-  const yPositions = data.ramps.map(r => r.yPosition);
+  const positions = data.ramps.map(r => r.position);
 
   // Remove the ramp from its current position
   const without = data.ramps.filter((_, i) => i !== fromIndex);
@@ -319,19 +319,19 @@ export function reorderRamps(
   const adjustedInsert = insertBeforeIndex > fromIndex ? insertBeforeIndex - 1 : insertBeforeIndex;
   without.splice(adjustedInsert, 0, data.ramps[fromIndex]!);
 
-  // Reassign yPositions to keep the sorted structure
-  const reordered = without.map((ramp, i) => ({ ...ramp, yPosition: yPositions[i]! }));
+  // Reassign positions to keep the sorted structure
+  const reordered = without.map((ramp, i) => ({ ...ramp, position: positions[i]! }));
   return { ...data, ramps: reordered };
 }
 
-// Move a ramp to a new Y position, re-sorting the array (boundary ramps cannot be moved)
-export function moveRamp(data: ColorRamp2dLutData, rampId: string, newY: number): ColorRamp2dLutData {
+// Move a ramp to a new position, re-sorting the array (boundary ramps cannot be moved)
+export function moveRamp(data: ColorRamp2dLutData, rampId: string, newPosition: number): ColorRamp2dLutData {
   const idx = data.ramps.findIndex(r => r.id === rampId);
   if (idx < 0 || idx === 0 || idx === data.ramps.length - 1) return data;
   const ramp = data.ramps[idx]!;
-  const clamped = clamp01(newY);
-  const updatedRamp = { ...ramp, yPosition: clamped };
+  const clamped = clamp01(newPosition);
+  const updatedRamp = { ...ramp, position: clamped };
   const newRamps = data.ramps.map(r => r.id === rampId ? updatedRamp : r)
-    .sort((a, b) => a.yPosition - b.yPosition);
+    .sort((a, b) => a.position - b.position);
   return { ...data, ramps: newRamps };
 }

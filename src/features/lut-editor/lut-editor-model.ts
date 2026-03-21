@@ -6,10 +6,10 @@ export interface ColorStop {
   alpha: number;      // [0, 1]
 }
 
-// A horizontal color ramp at a specific Y position
+// A horizontal color ramp at a specific position
 export interface ColorRamp {
   id: string;
-  yPosition: number;  // [0, 1]; first ramp is always 0, last is always 1
+  position: number;  // [0, 1]; first ramp is always 0, last is always 1
   stops: ColorStop[]; // At least 2 stops, sorted by position ascending
 }
 
@@ -18,8 +18,8 @@ export interface ColorRamp2dLutData {
   name: string;
   width: number;    // Pixel width of the generated LUT (typically 256)
   height: number;   // Pixel height of the generated LUT (typically 256)
-  ramps: ColorRamp[]; // At least 2 ramps, sorted by yPosition ascending
-  /** When true, X axis = ramp Y-position, Y axis = stop position (swapped from default) */
+  ramps: ColorRamp[]; // At least 2 ramps, sorted by position ascending
+  /** When true, X axis = ramp position, Y axis = stop position (swapped from default) */
   axisSwap?: boolean;
 }
 
