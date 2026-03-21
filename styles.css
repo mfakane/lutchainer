@@ -1674,6 +1674,20 @@ button:disabled:hover {
   overflow: auto;
 }
 
+.lut-editor-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.lut-editor-section-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
 .lut-editor-section-label {
   font-size: 11px;
   font-weight: 600;
@@ -1772,7 +1786,6 @@ button:disabled:hover {
 .lut-editor-ramp-add {
   font-size: 11px;
   padding: 5px 10px;
-  align-self: flex-start;
 }
 
 /* Stop editor */
@@ -1896,15 +1909,14 @@ button:disabled:hover {
 }
 
 .lut-editor-stop-remove {
-  font-size: 10px;
-  padding: 3px 6px;
+  font-size: 11px;
+  padding: 5px 10px;
   color: var(--remove-text);
 }
 
 .lut-editor-stop-add {
   font-size: 11px;
   padding: 5px 10px;
-  align-self: flex-start;
 }
 
 .lut-editor-no-ramp {

@@ -148,7 +148,8 @@ function LutEditorDialogContent(props: { options: LutEditorDialogContentOptions 
     const placements = new Map<string, 'below' | 'above'>();
     if (!ramp) return placements;
 
-    const barWidth = stopPreviewBarRef?.getBoundingClientRect().width ?? 256;
+    const rawWidth = stopPreviewBarRef?.getBoundingClientRect().width ?? 0;
+    const barWidth = rawWidth > 0 ? rawWidth : 256;
     const threshold = OVERLAP_THRESHOLD_PX / barWidth;
 
     const sorted = [...ramp.stops].sort((a, b) => a.position - b.position);
@@ -582,6 +583,7 @@ function LutEditorDialogContent(props: { options: LutEditorDialogContentOptions 
     const lutId = editingLutId();
     const newLut = createLutFromColorRamp2d(data);
     props.options.onApply(lutId, newLut);
+    props.options.onClose();
   };
 
   // --- Style helpers ---
@@ -715,7 +717,17 @@ function LutEditorDialogContent(props: { options: LutEditorDialogContentOptions 
         <div class="lut-editor-right-col">
           {/* Ramp list */}
           <div class="lut-editor-ramp-section">
-            <div class="lut-editor-section-label">{tr('lutEditor.rampListLabel')}</div>
+            <div class="lut-editor-section-header">
+              <div class="lut-editor-section-label">{tr('lutEditor.rampListLabel')}</div>
+              <button
+                type="button"
+                class="btn-secondary lut-editor-ramp-add"
+                onClick={handleAddRamp}
+                disabled={!rampData() || (rampData()?.ramps.length ?? 0) >= MAX_RAMPS}
+              >
+                {tr('lutEditor.addRamp')}
+              </button>
+            </div>
             <div class="lut-editor-ramp-list">
               <For each={rampData()?.ramps ?? []}>
                 {(ramp, getIdx) => (
@@ -753,19 +765,32 @@ function LutEditorDialogContent(props: { options: LutEditorDialogContentOptions 
                 <div class="lut-editor-ramp-drop-indicator" />
               </Show>
             </div>
-            <button
-              type="button"
-              class="btn-secondary lut-editor-ramp-add"
-              onClick={handleAddRamp}
-              disabled={!rampData() || (rampData()?.ramps.length ?? 0) >= MAX_RAMPS}
-            >
-              {tr('lutEditor.addRamp')}
-            </button>
           </div>
 
           {/* Focused stop editor */}
           <div class="lut-editor-stop-section">
-            <div class="lut-editor-section-label">{tr('lutEditor.stopEditorLabel')}</div>
+            <div class="lut-editor-section-header">
+              <div class="lut-editor-section-label">{tr('lutEditor.stopEditorLabel')}</div>
+              <div class="lut-editor-section-header-actions">
+                <button
+                  type="button"
+                  class="btn-secondary lut-editor-stop-add"
+                  onClick={handleAddStop}
+                  disabled={!selectedRamp() || (selectedRamp()?.stops.length ?? 0) >= MAX_STOPS_PER_RAMP}
+                >
+                  {tr('lutEditor.addStop')}
+                </button>
+                <Show when={focusedStop() && !isStopBoundary(focusedStop()!.id)}>
+                  <button
+                    type="button"
+                    class="btn-ghost lut-editor-stop-remove"
+                    onClick={() => { const s = focusedStop(); if (s) handleRemoveStop(s.id); }}
+                  >
+                    {tr('lutEditor.removeStop')}
+                  </button>
+                </Show>
+              </div>
+            </div>
 
             {/* Gradient preview bar + draggable stop knobs */}
             <Show when={selectedRamp()}>
@@ -839,25 +864,6 @@ function LutEditorDialogContent(props: { options: LutEditorDialogContentOptions 
                       onInput={ev => handleStopAlphaChange(getStop().id, (ev.currentTarget as HTMLInputElement).value)}
                     />
                     <span class="lut-editor-stop-editor-unit">{Math.round(getStop().alpha * 100)}%</span>
-                  </div>
-                  <div class="lut-editor-stop-editor-actions">
-                    <button
-                      type="button"
-                      class="btn-secondary lut-editor-stop-add"
-                      onClick={handleAddStop}
-                      disabled={!selectedRamp() || (selectedRamp()?.stops.length ?? 0) >= MAX_STOPS_PER_RAMP}
-                    >
-                      {tr('lutEditor.addStop')}
-                    </button>
-                    <Show when={!isStopBoundary(getStop().id)}>
-                      <button
-                        type="button"
-                        class="btn-ghost lut-editor-stop-remove"
-                        onClick={() => handleRemoveStop(getStop().id)}
-                      >
-                        {tr('lutEditor.removeStop')}
-                      </button>
-                    </Show>
                   </div>
                 </div>
               )}
