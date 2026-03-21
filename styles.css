@@ -1854,6 +1854,7 @@ button:disabled:hover {
   cursor: pointer;
   border: 1px solid transparent;
   transition: background 0.1s, opacity 0.1s;
+  user-select: none;
 }
 
 .lut-editor-ramp-row:hover {
