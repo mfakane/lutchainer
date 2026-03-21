@@ -681,7 +681,7 @@ function LutEditorDialogContent(props: { options: LutEditorDialogContentOptions 
         <div class="lut-editor-preview-col">
           <div class={`lut-editor-canvas-area${rampData()?.axisSwap ? ' axis-swapped' : ''}`}>
             {/* Main 2D preview canvas */}
-            <div class="lut-editor-canvas-wrap" onClick={handleCanvasClick}>
+            <div class="lut-editor-canvas-wrap checker-bg" onClick={handleCanvasClick}>
               <canvas
                 ref={el => { previewCanvasRef = el; }}
                 class="lut-editor-canvas"

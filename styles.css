@@ -28,6 +28,18 @@
   --axis-z: #8dc4ff;
   --warn: #ef8f7a;
   --ok: #7adf9f;
+  --checker-a: #808080;
+  --checker-b: #666666;
+  --checker-size: 12px;
+}
+
+.checker-bg {
+  background-color: var(--checker-a);
+  background-image:
+    linear-gradient(45deg, var(--checker-b) 25%, transparent 25%, transparent 75%, var(--checker-b) 75%),
+    linear-gradient(45deg, var(--checker-b) 25%, transparent 25%, transparent 75%, var(--checker-b) 75%);
+  background-size: var(--checker-size) var(--checker-size);
+  background-position: 0 0, calc(var(--checker-size) / 2) calc(var(--checker-size) / 2);
 }
 
 *,
@@ -639,7 +651,6 @@ button:disabled:hover {
   aspect-ratio: 1 / 1;
   object-fit: cover;
   border: 1px solid var(--panel-border-strong);
-  background: #212833;
 }
 
 .lut-crosshair {
@@ -1415,7 +1426,6 @@ button:disabled:hover {
 .lut-strip-thumb-wrap {
   position: absolute;
   inset: 0;
-  background: var(--surface-inset);
   border-radius: inherit;
   overflow: hidden;
 }

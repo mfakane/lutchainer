@@ -559,7 +559,7 @@ function StepList(props: StepListProps): JSX.Element {
                     </label>
 
                     <div class="lut-thumb-wrap">
-                      <img class="lut-thumb" src={selectedLut()?.thumbUrl ?? ''} alt="LUT thumbnail" />
+                      <img class="lut-thumb checker-bg" src={selectedLut()?.thumbUrl ?? ''} alt="LUT thumbnail" />
                       <Show when={crosshairUv() !== null}>
                         <div
                           class="lut-crosshair"
@@ -735,7 +735,7 @@ function LutStripList(props: LutStripListProps): JSX.Element {
         <For each={props.luts()}>
           {lut => (
             <article class="lut-strip-item" draggable={true} data-lut-id={lut.id}>
-              <div class="lut-strip-thumb-wrap">
+              <div class="lut-strip-thumb-wrap checker-bg">
                 <img class="lut-strip-thumb" src={lut.thumbUrl} alt={`${lut.name} thumbnail`} loading="lazy" />
               </div>
               <div class="lut-strip-meta">
