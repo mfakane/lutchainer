@@ -20,8 +20,10 @@
 	- GLSL Fragment / GLSL Vertex / HLSL のタブ切り替え
 	- クリップボードコピー
 - パイプラインの保存・読み込み
-	- JSONにエクスポート/インポート
-	- LUT画像を Base64 (data URL) で埋め込み
+	- `.lutchain` 形式（ZIP）でエクスポート/インポート
+	- LUT画像を PNG ファイルとして ZIP 内に埋め込み
+	- レガシー JSON ファイルの読み込みにも対応
+- 操作履歴（Undo/Redo）
 
 ## UI構成
 
@@ -56,11 +58,21 @@ npm run build
 
 ## 起動
 
+ビルド後、`index.html` をブラウザで直接開くだけで動作します（サーバ不要）。
+
+### ローカルサーバで配信
+
+```bash
+# 事前に npm run build を実行
+npm run serve
+# http://localhost:8000
+```
+
 ### Nixで起動（ビルド成果物を配信）
 
 ```bash
 nix run
-# http://localhost:8080
+# http://localhost:8000
 ```
 
 ### Nixで成果物だけ生成
@@ -70,14 +82,6 @@ nix build
 # result/ に index.html と dist/ が出力される
 ```
 
-### 手動配信
-
-```bash
-# 事前に npm run build を実行
-python3 -m http.server 8080
-# http://localhost:8080
-```
-
 ## 使い方の流れ
 
 1. LUT Library で LUT 画像を追加
@@ -85,58 +89,15 @@ python3 -m http.server 8080
 3. 必要に応じて customRgb / customHsv の各チャンネル演算を設定
 4. 自動反映ONなら変更が自動で適用、OFFなら「適用」ボタンで手動適用
 5. 「コードを開く」で GLSL/HLSL を確認・コピー
+6. 「保存」で `.lutchain` ファイルとしてエクスポート
 
-※ 現状、専用キーボードショートカットはありません（ボタン操作・ドラッグ操作中心）。
+### キーボードショートカット
 
-## 保存・読み込み仕様
-
-- 保存形式: JSON (`version: 1`)
-- 保存ファイル名: `lutchainer-pipeline-YYYYMMDD-HHMMSS.json`
-- 保存対象
-	- `steps`
-	- `luts`（画像は `imageDataUrl` として保存）
-	- `nextStepId`
-- 保存対象外
-	- Material 設定
-	- Light 設定
-- 読み込み時
-	- JSON内容を検証後に復元
-	- 復元完了後、パイプラインを即時適用（自動反映のON/OFFに依存しない）
-
-### JSON例
-
-```json
-{
-	"version": 1,
-	"nextStepId": 4,
-	"luts": [
-		{
-			"id": "lut-file-abc123",
-			"name": "my-lut.png",
-			"imageDataUrl": "data:image/png;base64,...",
-			"width": 256,
-			"height": 256
-		}
-	],
-	"steps": [
-		{
-			"id": 1,
-			"lutId": "lut-file-abc123",
-			"blendMode": "multiply",
-			"xParam": "lightness",
-			"yParam": "facing",
-			"ops": {
-				"r": "replace",
-				"g": "replace",
-				"b": "replace",
-				"h": "none",
-				"s": "none",
-				"v": "none"
-			}
-		}
-	]
-}
-```
+| ショートカット | 動作 |
+|--------------|------|
+| `Ctrl+Z` / `Cmd+Z` | Undo |
+| `Ctrl+Shift+Z` / `Cmd+Shift+Z` | Redo |
+| `Ctrl+Y` / `Cmd+Y` | Redo（代替） |
 
 ## 制限値
 

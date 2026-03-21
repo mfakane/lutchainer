@@ -1,5 +1,5 @@
 {
-  description = "GLSL Shader Editor — browser-based WebGL shader editor";
+  description = "LUT Chainer — browser-based LUT chaining shader editor with WebGL preview";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
@@ -15,7 +15,7 @@
       # ── Dev shell ────────────────────────────────────────────────────────
       # 使い方: nix develop
       devShells.${system}.default = pkgs.mkShell {
-        name = "shader-editor";
+        name = "lutchainer";
 
         packages = [
           nodejs
@@ -24,11 +24,12 @@
 
         shellHook = ''
           echo ""
-          echo "  🐾  shader-editor dev shell (Node $(node --version))"
+          echo "  🐾  lutchainer dev shell (Node $(node --version))"
           echo ""
           echo "  npm install      — 依存関係のインストール"
           echo "  npm run build    — バンドル生成 (dist/bundle.js)"
           echo "  npm run dev      — ウォッチモード"
+          echo "  npm run serve    — ローカルサーバ起動"
           echo "  npx tsc --noEmit — 型チェックのみ"
           echo ""
         '';
@@ -37,7 +38,7 @@
       # ── Package (静的ファイルのビルド成果物) ─────────────────────────────
       # 使い方: nix build  →  result/ に index.html + dist/ が入る
       packages.${system}.default = pkgs.buildNpmPackage {
-        pname   = "shader-editor";
+        pname   = "lutchainer";
         version = "1.0.0";
 
         src = ./.;
@@ -65,9 +66,9 @@
         '';
 
         meta = {
-          description = "Browser-based GLSL shader editor with WebGL preview";
-          license     = pkgs.lib.licenses.mit;
-          mainProgram = "shader-editor";
+          description = "Browser-based LUT chaining shader editor with WebGL preview";
+          license     = pkgs.lib.licenses.cc0;
+          mainProgram = "lutchainer";
         };
       };
 
@@ -75,14 +76,14 @@
       # 使い方: nix run
       apps.${system}.default = {
         type    = "app";
-        program = toString (pkgs.writeShellScript "serve-shader-editor" ''
+        program = toString (pkgs.writeShellScript "serve-lutchainer" ''
           set -e
           DIST="${self.packages.${system}.default}"
           echo ""
-          echo "  🐾  Shader Editor → http://localhost:8080"
+          echo "  🐾  lutchainer → http://localhost:8000"
           echo "  Ctrl+C で停止"
           echo ""
-          exec ${pkgs.python3}/bin/python3 -m http.server 8080 --directory "$DIST"
+          exec ${pkgs.nodejs}/bin/npm run serve --prefix "$DIST"
         '');
       };
 
