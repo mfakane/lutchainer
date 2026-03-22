@@ -665,8 +665,6 @@ button:disabled:hover {
 .lut-crosshair::after {
   content: '';
   position: absolute;
-  background: rgba(255, 255, 255, 0.85);
-  box-shadow: 0 0 2px rgba(0, 0, 0, 0.8);
 }
 
 .lut-crosshair::before {
@@ -674,7 +672,7 @@ button:disabled:hover {
   right: 0;
   top: var(--ch-y, 50%);
   height: 1px;
-  transform: translateY(-50%);
+  border-top: 1px dashed rgba(255, 255, 255, 0.5);
 }
 
 .lut-crosshair::after {
@@ -682,7 +680,7 @@ button:disabled:hover {
   bottom: 0;
   left: var(--ch-x, 50%);
   width: 1px;
-  transform: translateX(-50%);
+  border-left: 1px dashed rgba(255, 255, 255, 0.5);
 }
 
 .step-lut-select,
