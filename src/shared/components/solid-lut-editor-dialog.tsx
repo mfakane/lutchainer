@@ -348,6 +348,14 @@ function LutEditorDialogContent(props: { options: LutEditorDialogContentOptions 
     setRampData(updateRamp(data, newRamp));
   };
 
+  const handleRampPositionChange = (rampId: string, percentValue: string): void => {
+    const data = rampData();
+    if (!data) return;
+    const parsed = Number(percentValue);
+    if (!Number.isFinite(parsed)) return;
+    setRampData(moveRamp(data, rampId, parsed / 100));
+  };
+
   const handleStopPositionChange = (stopId: string, percentValue: string): void => {
     const data = rampData();
     const ramp = selectedRamp();
@@ -825,6 +833,23 @@ function LutEditorDialogContent(props: { options: LutEditorDialogContentOptions 
                 <div class="lut-editor-ramp-drop-indicator" />
               </Show>
             </div>
+            <Show when={selectedRamp()}>
+              {getSelectedRamp => (
+                <div class="lut-editor-ramp-position-editor">
+                  <label class="lut-editor-stop-editor-label">{tr('lutEditor.rampPosition')}</label>
+                  <input
+                    type="number"
+                    class="lut-editor-stop-pos-input"
+                    min="0"
+                    max="100"
+                    step="1"
+                    value={Math.round(getSelectedRamp().position * 100)}
+                    onInput={ev => handleRampPositionChange(getSelectedRamp().id, (ev.currentTarget as HTMLInputElement).value)}
+                  />
+                  <span class="lut-editor-stop-editor-unit">%</span>
+                </div>
+              )}
+            </Show>
           </div>
 
           {/* Focused stop editor */}
