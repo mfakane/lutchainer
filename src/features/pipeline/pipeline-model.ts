@@ -1,4 +1,5 @@
 import { strToU8, unzipSync, zipSync } from 'fflate';
+import type { ColorRamp2dLutData } from '../lut-editor/lut-editor-model';
 import {
   BLEND_MODES,
   BLEND_OPS,
@@ -108,6 +109,7 @@ export interface PipelineZipLutEntry {
   filename: string;
   width: number;
   height: number;
+  ramp2dData?: ColorRamp2dLutData;
 }
 
 export interface PipelineZipData {
@@ -1207,6 +1209,7 @@ export async function serializePipelineAsZip(
       filename,
       width: lut.width,
       height: lut.height,
+      ...(lut.ramp2dData !== undefined ? { ramp2dData: lut.ramp2dData } : {}),
     });
   }
 
@@ -1223,6 +1226,53 @@ export async function serializePipelineAsZip(
 
   zipFiles['pipeline.json'] = strToU8(JSON.stringify(manifest, null, 2));
   return zipSync(zipFiles);
+}
+
+function parseColorRamp2dLutData(value: unknown): ColorRamp2dLutData | undefined {
+  if (value === undefined || value === null) {
+    return undefined;
+  }
+  try {
+    if (!isRecord(value)) return undefined;
+    if (typeof value.name !== 'string' || value.name.trim() === '') return undefined;
+    if (typeof value.width !== 'number' || !Number.isInteger(value.width) || value.width < 2) return undefined;
+    if (typeof value.height !== 'number' || !Number.isInteger(value.height) || value.height < 2) return undefined;
+    if (!Array.isArray(value.ramps) || value.ramps.length < 2) return undefined;
+
+    const ramps = value.ramps.map((ramp: unknown) => {
+      if (!isRecord(ramp)) return null;
+      if (typeof ramp.id !== 'string' || ramp.id === '') return null;
+      if (typeof ramp.position !== 'number' || !Number.isFinite(ramp.position)) return null;
+      if (!Array.isArray(ramp.stops) || ramp.stops.length < 2) return null;
+
+      const stops = ramp.stops.map((stop: unknown) => {
+        if (!isRecord(stop)) return null;
+        if (typeof stop.id !== 'string' || stop.id === '') return null;
+        if (typeof stop.position !== 'number' || !Number.isFinite(stop.position)) return null;
+        if (typeof stop.alpha !== 'number' || !Number.isFinite(stop.alpha)) return null;
+        if (!Array.isArray(stop.color) || stop.color.length !== 3) return null;
+        const [r, g, b] = stop.color as unknown[];
+        if (typeof r !== 'number' || typeof g !== 'number' || typeof b !== 'number') return null;
+        if (!Number.isFinite(r) || !Number.isFinite(g) || !Number.isFinite(b)) return null;
+        return { id: stop.id as string, position: stop.position as number, color: [r, g, b] as [number, number, number], alpha: stop.alpha as number };
+      });
+
+      if (stops.some((s) => s === null)) return null;
+      return { id: ramp.id as string, position: ramp.position as number, stops: stops as NonNullable<typeof stops[number]>[] };
+    });
+
+    if (ramps.some((r) => r === null)) return undefined;
+
+    return {
+      name: value.name as string,
+      width: value.width as number,
+      height: value.height as number,
+      ramps: ramps as NonNullable<typeof ramps[number]>[],
+      ...(value.axisSwap === true ? { axisSwap: true } : {}),
+    };
+  } catch {
+    return undefined;
+  }
 }
 
 function parsePipelineZipLutEntry(value: unknown, index: number): PipelineZipLutEntry {
@@ -1245,7 +1295,9 @@ function parsePipelineZipLutEntry(value: unknown, index: number): PipelineZipLut
   const width = parsePositiveInteger(value.width, `${fieldPrefix}.width`, 2, MAX_PIPELINE_IMAGE_SIDE);
   const height = parsePositiveInteger(value.height, `${fieldPrefix}.height`, 2, MAX_PIPELINE_IMAGE_SIDE);
 
-  return { id: lutId, name, filename, width, height };
+  const ramp2dData = parseColorRamp2dLutData(value.ramp2dData);
+
+  return { id: lutId, name, filename, width, height, ...(ramp2dData !== undefined ? { ramp2dData } : {}) };
 }
 
 async function createLutFromZipPngBytes(
@@ -1297,6 +1349,7 @@ async function createLutFromZipPngBytes(
     height: canvas.height,
     pixels: imageData.data,
     thumbUrl: canvas.toDataURL('image/png'),
+    ...(entry.ramp2dData !== undefined ? { ramp2dData: entry.ramp2dData } : {}),
   };
 }
 
