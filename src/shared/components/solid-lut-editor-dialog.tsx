@@ -378,6 +378,27 @@ function LutEditorDialogContent(props: { options: LutEditorDialogContentOptions 
     setRampData(updateRamp(data, newRamp));
   };
 
+  const handleRampPositionWheel = (rampId: string, currentPosition: number, ev: WheelEvent): void => {
+    ev.preventDefault();
+    const delta = ev.deltaY < 0 ? 0.01 : -0.01;
+    const newPercent = String(Math.round(Math.max(0, Math.min(1, currentPosition + delta)) * 100));
+    handleRampPositionChange(rampId, newPercent);
+  };
+
+  const handleStopPositionWheel = (stopId: string, currentPosition: number, ev: WheelEvent): void => {
+    ev.preventDefault();
+    const delta = ev.deltaY < 0 ? 0.01 : -0.01;
+    const newPercent = String(Math.round(Math.max(0, Math.min(1, currentPosition + delta)) * 100));
+    handleStopPositionChange(stopId, newPercent);
+  };
+
+  const handleStopAlphaWheel = (stopId: string, currentAlpha: number, ev: WheelEvent): void => {
+    ev.preventDefault();
+    const delta = ev.deltaY < 0 ? 0.01 : -0.01;
+    const newAlpha = Math.round(Math.max(0, Math.min(1, currentAlpha + delta)) * 100);
+    handleStopAlphaChange(stopId, String(newAlpha));
+  };
+
   // --- Drag: ramp knobs (vertical rail on right edge of canvas) ---
   // Drag left past threshold → pending delete; release → delete
 
@@ -857,6 +878,7 @@ function LutEditorDialogContent(props: { options: LutEditorDialogContentOptions 
                     step="1"
                     value={Math.round(getSelectedRamp().position * 100)}
                     onInput={ev => handleRampPositionChange(getSelectedRamp().id, (ev.currentTarget as HTMLInputElement).value)}
+                    onWheel={ev => handleRampPositionWheel(getSelectedRamp().id, getSelectedRamp().position, ev)}
                   />
                   <span class="lut-editor-stop-editor-unit">%</span>
                 </div>
@@ -946,6 +968,7 @@ function LutEditorDialogContent(props: { options: LutEditorDialogContentOptions 
                       step="1"
                       value={Math.round(getStop().position * 100)}
                       onInput={ev => handleStopPositionChange(getStop().id, (ev.currentTarget as HTMLInputElement).value)}
+                      onWheel={ev => handleStopPositionWheel(getStop().id, getStop().position, ev)}
                     />
                     <span class="lut-editor-stop-editor-unit">%</span>
                   </div>
@@ -958,6 +981,7 @@ function LutEditorDialogContent(props: { options: LutEditorDialogContentOptions 
                       max="100"
                       value={Math.round(getStop().alpha * 100)}
                       onInput={ev => handleStopAlphaChange(getStop().id, (ev.currentTarget as HTMLInputElement).value)}
+                      onWheel={ev => handleStopAlphaWheel(getStop().id, getStop().alpha, ev)}
                     />
                     <span class="lut-editor-stop-editor-unit">{Math.round(getStop().alpha * 100)}%</span>
                   </div>

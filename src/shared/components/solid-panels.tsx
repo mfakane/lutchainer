@@ -298,6 +298,16 @@ function MaterialPanel(props: MaterialPanelProps): JSX.Element {
     props.commitSettings(next);
   };
 
+  const handleMaterialRangeWheel = (event: WheelEvent, binding: pipelineModel.MaterialRangeBinding): void => {
+    event.preventDefault();
+    const step = Number(getMaterialRangeStep(binding.key));
+    const delta = event.deltaY < 0 ? step : -step;
+    const current = props.settings();
+    const next = cloneMaterialSettings(current);
+    next[binding.key] = clamp(current[binding.key] + delta, binding.min, binding.max);
+    props.commitSettings(next);
+  };
+
   const applyMaterialPreset = (preset: MaterialPresetDefinition): boolean => {
     if (!isValidMaterialSettings(preset.settings)) {
       props.onStatus(tr('panel.status.materialPresetInvalidValue', { value: preset.key }), 'error');
@@ -381,6 +391,7 @@ function MaterialPanel(props: MaterialPanelProps): JSX.Element {
                 value={String(props.settings()[binding.key])}
                 onInput={event => handleRangeInput(event, binding)}
                 onChange={event => handleRangeInput(event, binding)}
+                onWheel={event => handleMaterialRangeWheel(event, binding)}
               />
             </label>
           )}
@@ -454,6 +465,16 @@ function LightPanel(props: LightPanelProps): JSX.Element {
     const current = props.settings();
     const next = cloneLightSettings(current);
     next[binding.key] = clamp(parsed, binding.min, binding.max);
+    props.commitSettings(next);
+  };
+
+  const handleLightRangeWheel = (event: WheelEvent, binding: pipelineModel.LightRangeBinding): void => {
+    event.preventDefault();
+    const step = Number(getLightRangeStep(binding));
+    const delta = event.deltaY < 0 ? step : -step;
+    const current = props.settings();
+    const next = cloneLightSettings(current);
+    next[binding.key] = clamp(current[binding.key] + delta, binding.min, binding.max);
     props.commitSettings(next);
   };
 
@@ -577,6 +598,7 @@ function LightPanel(props: LightPanelProps): JSX.Element {
                 value={String(props.settings()[binding.key])}
                 onInput={event => handleRangeInput(event, binding)}
                 onChange={event => handleRangeInput(event, binding)}
+                onWheel={event => handleLightRangeWheel(event, binding)}
               />
             </label>
           )}
