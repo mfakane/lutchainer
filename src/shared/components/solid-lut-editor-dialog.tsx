@@ -375,7 +375,7 @@ function LutEditorDialogContent(props: { options: LutEditorDialogContentOptions 
         : Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height));
       // Delete gesture: drag away from canvas edge (right when on right rail, down when on bottom rail)
       const deleteDist = swapped ? e.clientY - rect.bottom : e.clientX - rect.right;
-      const nowDelete = deleteDist > DRAG_DELETE_THRESHOLD;
+      const nowDelete = !isRampBoundary(rampId) && deleteDist > DRAG_DELETE_THRESHOLD;
       pendingDelete = nowDelete;
       setDraggingRampDeleteId(nowDelete ? rampId : null);
       if (!nowDelete) {
@@ -412,7 +412,7 @@ function LutEditorDialogContent(props: { options: LutEditorDialogContentOptions 
         : Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
       // Delete gesture: drag away from canvas edge (down when on bottom rail, right when on right rail)
       const deleteDist = swapped ? e.clientX - rect.right : e.clientY - rect.bottom;
-      const nowDelete = deleteDist > DRAG_DELETE_THRESHOLD;
+      const nowDelete = !isStopBoundary(stopId) && deleteDist > DRAG_DELETE_THRESHOLD;
       pendingDelete = nowDelete;
       setDraggingStopDeleteId(nowDelete ? stopId : null);
       if (!nowDelete) {
@@ -709,7 +709,7 @@ function LutEditorDialogContent(props: { options: LutEditorDialogContentOptions 
                       ev.preventDefault();
                       ev.stopPropagation();
                       setSelectedRampId(ramp.id);
-                      if (!isRampBoundary(ramp.id)) startRampDrag(ramp.id, ev);
+                      startRampDrag(ramp.id, ev);
                     }}
                   />
                 )}
@@ -736,7 +736,7 @@ function LutEditorDialogContent(props: { options: LutEditorDialogContentOptions 
                       ev.preventDefault();
                       ev.stopPropagation();
                       setFocusedStopId(stop.id);
-                      if (!isStopBoundary(stop.id)) startStopDrag(stop.id, ev);
+                      startStopDrag(stop.id, ev);
                     }}
                   />
                 )}
@@ -873,7 +873,7 @@ function LutEditorDialogContent(props: { options: LutEditorDialogContentOptions 
                             ev.preventDefault();
                             ev.stopPropagation();
                             setFocusedStopId(stop.id);
-                            if (!isStopBoundary(stop.id)) startPreviewStopDrag(stop.id, ev);
+                            startPreviewStopDrag(stop.id, ev);
                           }}
                         />
                       )}
@@ -907,7 +907,6 @@ function LutEditorDialogContent(props: { options: LutEditorDialogContentOptions 
                       min="0"
                       max="100"
                       step="1"
-                      disabled={isStopBoundary(getStop().id)}
                       value={Math.round(getStop().position * 100)}
                       onInput={ev => handleStopPositionChange(getStop().id, (ev.currentTarget as HTMLInputElement).value)}
                     />

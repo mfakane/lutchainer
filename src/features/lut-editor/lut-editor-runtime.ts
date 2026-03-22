@@ -39,9 +39,16 @@ export function interpolateColorStops(
 
   const clamped = clamp01(t);
 
+  const first = stops[0]!;
+  const last = stops[stops.length - 1]!;
+
+  // Outside the stop range: clamp to boundary stop color
+  if (clamped <= first.position) return [first.color[0], first.color[1], first.color[2], first.alpha];
+  if (clamped >= last.position) return [last.color[0], last.color[1], last.color[2], last.alpha];
+
   // Find bracketing stops
-  let lo = stops[0]!;
-  let hi = stops[stops.length - 1]!;
+  let lo = first;
+  let hi = last;
 
   for (let i = 0; i < stops.length - 1; i++) {
     const a = stops[i]!;
@@ -76,9 +83,16 @@ export function sampleColorRamp2d(
 
   const cv = clamp01(v);
 
+  const firstRamp = ramps[0]!;
+  const lastRamp = ramps[ramps.length - 1]!;
+
+  // Outside the ramp range: clamp to boundary ramp color
+  if (cv <= firstRamp.position) return interpolateColorStops(firstRamp.stops, u);
+  if (cv >= lastRamp.position) return interpolateColorStops(lastRamp.stops, u);
+
   // Find bracketing ramps by position
-  let loRamp = ramps[0]!;
-  let hiRamp = ramps[ramps.length - 1]!;
+  let loRamp = firstRamp;
+  let hiRamp = lastRamp;
 
   for (let i = 0; i < ramps.length - 1; i++) {
     const a = ramps[i]!;
@@ -252,18 +266,12 @@ export function updateStopAlpha(ramp: ColorRamp, stopId: string, alpha: number):
   return { ...ramp, stops: newStops };
 }
 
-// Move a stop to a new position (re-sorts, clamps, boundary stops are fixed)
+// Move a stop to a new position (re-sorts, clamps to [0, 1])
 export function moveStop(ramp: ColorRamp, stopId: string, newPosition: number): ColorRamp {
   const idx = ramp.stops.findIndex(s => s.id === stopId);
   if (idx < 0) return ramp;
 
-  // Cannot move boundary stops
-  if (idx === 0 || idx === ramp.stops.length - 1) return ramp;
-
-  // Clamp within non-boundary range to avoid swapping with boundaries
-  const minPos = ramp.stops[0]!.position;
-  const maxPos = ramp.stops[ramp.stops.length - 1]!.position;
-  const clamped = Math.max(minPos, Math.min(maxPos, clamp01(newPosition)));
+  const clamped = clamp01(newPosition);
 
   const newStops = ramp.stops.map(s =>
     s.id === stopId ? { ...s, position: clamped } : s,
@@ -324,10 +332,10 @@ export function reorderRamps(
   return { ...data, ramps: reordered };
 }
 
-// Move a ramp to a new position, re-sorting the array (boundary ramps cannot be moved)
+// Move a ramp to a new position, re-sorting the array
 export function moveRamp(data: ColorRamp2dLutData, rampId: string, newPosition: number): ColorRamp2dLutData {
   const idx = data.ramps.findIndex(r => r.id === rampId);
-  if (idx < 0 || idx === 0 || idx === data.ramps.length - 1) return data;
+  if (idx < 0) return data;
   const ramp = data.ramps[idx]!;
   const clamped = clamp01(newPosition);
   const updatedRamp = { ...ramp, position: clamped };
