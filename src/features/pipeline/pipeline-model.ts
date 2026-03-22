@@ -75,14 +75,6 @@ export interface LightRangeBinding {
   label: string;
 }
 
-export interface PipelineFileLutEntry {
-  id: string;
-  name: string;
-  imageDataUrl: string;
-  width: number;
-  height: number;
-}
-
 export type PipelineStepOpsEntry = Partial<Record<ChannelName, BlendOp>>;
 
 export interface PipelineStepEntry {
@@ -96,12 +88,6 @@ export interface PipelineStepEntry {
   ops?: PipelineStepOpsEntry;
 }
 
-export interface PipelineFileData {
-  version: number;
-  nextStepId: number;
-  luts: PipelineFileLutEntry[];
-  steps: PipelineStepEntry[];
-}
 
 export interface PipelineZipLutEntry {
   id: string;
@@ -300,7 +286,6 @@ export const MAX_LUTS = 12;
 export const MAX_LUT_FILE_BYTES = 12 * 1024 * 1024;
 export const MAX_PIPELINE_FILE_BYTES = 64 * 1024 * 1024;
 export const MAX_PIPELINE_IMAGE_SIDE = 4096;
-export const PIPELINE_FILE_VERSION = 1;
 export const PIPELINE_ZIP_FILE_VERSION = 2;
 const PIPELINE_DOWNLOAD_BASENAME = 'lutchainer-pipeline';
 const PIPELINE_ARCHIVE_EXTENSION = '.lutchain';
@@ -478,14 +463,6 @@ export function parseNonEmptyText(value: unknown, fieldName: string, maxLength =
   }
 
   return text;
-}
-
-export function isJsonLikeFile(file: File): boolean {
-  const mimeType = file.type.trim().toLowerCase();
-  const fileName = file.name.trim().toLowerCase();
-  return mimeType === 'application/json'
-    || mimeType === 'text/json'
-    || fileName.endsWith('.json');
 }
 
 export function isZipLikeFile(file: File): boolean {
@@ -811,18 +788,6 @@ function loadImageFromFile(file: File): Promise<HTMLImageElement> {
   });
 }
 
-function loadImageFromDataUrl(dataUrl: string): Promise<HTMLImageElement> {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.onload = () => {
-      resolve(img);
-    };
-    img.onerror = () => {
-      reject(new Error('JSON内のLUT画像データを読み込めませんでした。'));
-    };
-    img.src = dataUrl;
-  });
-}
 
 export async function createLutFromFile(file: File): Promise<LutModel> {
   if (!(file instanceof File)) {
@@ -852,75 +817,6 @@ export async function createLutFromFile(file: File): Promise<LutModel> {
   ctx.drawImage(img, 0, 0, w, h);
 
   return createLutFromCanvas(file.name, canvas);
-}
-
-export async function createLutFromDataUrl(entry: PipelineFileLutEntry): Promise<LutModel> {
-  if (!isRecord(entry)) {
-    throw new Error('LUT エントリが不正です。');
-  }
-
-  const img = await loadImageFromDataUrl(entry.imageDataUrl);
-  if (img.width < 2 || img.height < 2) {
-    throw new Error(`LUT「${entry.name}」の画像サイズが小さすぎます。2x2以上が必要です。`);
-  }
-  if (img.width > MAX_PIPELINE_IMAGE_SIDE || img.height > MAX_PIPELINE_IMAGE_SIDE) {
-    throw new Error(`LUT「${entry.name}」の画像サイズが大きすぎます。最大 ${MAX_PIPELINE_IMAGE_SIDE}px です。`);
-  }
-
-  const canvas = document.createElement('canvas');
-  canvas.width = img.width;
-  canvas.height = img.height;
-
-  const ctx = canvas.getContext('2d');
-  if (!ctx) {
-    throw new Error(`LUT「${entry.name}」のキャンバス生成に失敗しました。`);
-  }
-
-  ctx.drawImage(img, 0, 0);
-  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-
-  if (canvas.width !== entry.width || canvas.height !== entry.height) {
-    throw new Error(`LUT「${entry.name}」の画像サイズがJSONの情報と一致しません。`);
-  }
-
-  return {
-    id: entry.id,
-    name: entry.name,
-    image: canvas,
-    width: canvas.width,
-    height: canvas.height,
-    pixels: imageData.data,
-    thumbUrl: canvas.toDataURL('image/png'),
-  };
-}
-
-function parsePipelineLutEntry(value: unknown, index: number): PipelineFileLutEntry {
-  const fieldPrefix = `luts[${index}]`;
-  if (!isRecord(value)) {
-    throw new Error(`${fieldPrefix} はオブジェクトである必要があります。`);
-  }
-
-  const lutId = parseLutId(typeof value.id === 'string' ? value.id : undefined);
-  if (!lutId) {
-    throw new Error(`${fieldPrefix}.id が不正です。`);
-  }
-
-  const name = parseNonEmptyText(value.name, `${fieldPrefix}.name`);
-  const imageDataUrl = parseNonEmptyText(value.imageDataUrl, `${fieldPrefix}.imageDataUrl`, 32 * 1024 * 1024);
-  if (!imageDataUrl.startsWith('data:image/')) {
-    throw new Error(`${fieldPrefix}.imageDataUrl は data:image/ 形式である必要があります。`);
-  }
-
-  const width = parsePositiveInteger(value.width, `${fieldPrefix}.width`, 2, MAX_PIPELINE_IMAGE_SIDE);
-  const height = parsePositiveInteger(value.height, `${fieldPrefix}.height`, 2, MAX_PIPELINE_IMAGE_SIDE);
-
-  return {
-    id: lutId,
-    name,
-    imageDataUrl,
-    width,
-    height,
-  };
 }
 
 function parsePipelineStepEntry(value: unknown, index: number): StepModel {
@@ -1073,96 +969,6 @@ function serializePipelineStepEntry(step: StepModel, index: number): PipelineSte
   }
 
   return entry;
-}
-
-export function serializePipeline(nextStepId: number, luts: LutModel[], steps: StepModel[]): PipelineFileData {
-  if (!Number.isSafeInteger(nextStepId) || nextStepId <= 0) {
-    throw new Error('nextStepId が不正です。');
-  }
-  if (!Array.isArray(luts) || !Array.isArray(steps)) {
-    throw new Error('パイプライン状態が不正です。');
-  }
-
-  return {
-    version: PIPELINE_FILE_VERSION,
-    nextStepId,
-    luts: luts.map(lut => ({
-      id: lut.id,
-      name: lut.name,
-      imageDataUrl: lut.thumbUrl,
-      width: lut.width,
-      height: lut.height,
-    })),
-    steps: steps.map((step, index) => serializePipelineStepEntry(step, index)),
-  };
-}
-
-export async function loadPipelineData(payload: unknown): Promise<LoadedPipelineData> {
-  if (!isRecord(payload)) {
-    throw new Error('JSONルートはオブジェクトである必要があります。');
-  }
-
-  const version = parsePositiveInteger(payload.version, 'version');
-  if (version !== PIPELINE_FILE_VERSION) {
-    throw new Error(`未対応のパイプラインバージョンです: ${version}`);
-  }
-
-  const parsedNextStepId = parsePositiveInteger(payload.nextStepId, 'nextStepId');
-
-  const rawLuts = payload.luts;
-  if (!Array.isArray(rawLuts)) {
-    throw new Error('luts は配列である必要があります。');
-  }
-  if (rawLuts.length === 0) {
-    throw new Error('luts が空です。1件以上必要です。');
-  }
-  if (rawLuts.length > MAX_LUTS) {
-    throw new Error(`luts は最大 ${MAX_LUTS} 件までです。`);
-  }
-
-  const rawSteps = payload.steps;
-  if (!Array.isArray(rawSteps)) {
-    throw new Error('steps は配列である必要があります。');
-  }
-  if (rawSteps.length > MAX_STEPS) {
-    throw new Error(`steps は最大 ${MAX_STEPS} 件までです。`);
-  }
-
-  const lutEntries = rawLuts.map((entry, index) => parsePipelineLutEntry(entry, index));
-  const lutIdSet = new Set<string>();
-  for (const lutEntry of lutEntries) {
-    if (lutIdSet.has(lutEntry.id)) {
-      throw new Error(`luts に重複IDがあります: ${lutEntry.id}`);
-    }
-    lutIdSet.add(lutEntry.id);
-  }
-
-  const loadedLuts: LutModel[] = [];
-  for (const lutEntry of lutEntries) {
-    const lut = await createLutFromDataUrl(lutEntry);
-    loadedLuts.push(lut);
-  }
-
-  const loadedSteps = rawSteps.map((entry, index) => parsePipelineStepEntry(entry, index));
-  const stepIdSet = new Set<number>();
-  const fallbackLutId = loadedLuts[0].id;
-  for (const step of loadedSteps) {
-    if (stepIdSet.has(step.id)) {
-      throw new Error(`steps に重複IDがあります: ${step.id}`);
-    }
-    stepIdSet.add(step.id);
-
-    if (!lutIdSet.has(step.lutId)) {
-      step.lutId = fallbackLutId;
-    }
-  }
-
-  const maxStepId = loadedSteps.reduce((maxId, step) => Math.max(maxId, step.id), 0);
-  return {
-    luts: loadedLuts,
-    steps: loadedSteps,
-    nextStepId: Math.max(parsedNextStepId, maxStepId + 1),
-  };
 }
 
 // ---------------------------------------------------------------------------

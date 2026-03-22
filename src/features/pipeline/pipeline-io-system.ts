@@ -1,9 +1,9 @@
 import type {
-    LutModel,
-    StepModel,
+  LutModel,
+  StepModel,
 } from '../step/step-model';
 import type {
-    LoadedPipelineData,
+  LoadedPipelineData,
 } from './pipeline-model';
 
 export interface SavePipelineAsFileResult {
@@ -31,9 +31,7 @@ interface PipelineIoSystemOptions {
   ) => Promise<Uint8Array>;
   buildPipelineDownloadFilename: () => string;
   loadPipelineFromZip: (data: ArrayBuffer) => Promise<LoadedPipelineData>;
-  loadPipelineData: (payload: unknown) => Promise<LoadedPipelineData>;
   isZipLikeFile: (file: File) => boolean;
-  isJsonLikeFile: (file: File) => boolean;
   toErrorMessage: (error: unknown) => string;
 }
 
@@ -83,14 +81,8 @@ function assertValidOptions(options: PipelineIoSystemOptions): void {
   if (typeof options.loadPipelineFromZip !== 'function') {
     throw new Error('Pipeline I/O option loadPipelineFromZip must be a function.');
   }
-  if (typeof options.loadPipelineData !== 'function') {
-    throw new Error('Pipeline I/O option loadPipelineData must be a function.');
-  }
   if (typeof options.isZipLikeFile !== 'function') {
     throw new Error('Pipeline I/O option isZipLikeFile must be a function.');
-  }
-  if (typeof options.isJsonLikeFile !== 'function') {
-    throw new Error('Pipeline I/O option isJsonLikeFile must be a function.');
   }
   if (typeof options.toErrorMessage !== 'function') {
     throw new Error('Pipeline I/O option toErrorMessage must be a function.');
@@ -131,16 +123,13 @@ function validatePipelineFile(
   file: File,
   maxBytes: number,
   isZipLikeFile: (file: File) => boolean,
-  isJsonLikeFile: (file: File) => boolean,
 ): string | null {
   if (!isFile(file)) {
     return 'ファイル入力が不正です。';
   }
 
-  const isZip = isZipLikeFile(file);
-  const isJson = isJsonLikeFile(file);
-  if (!isZip && !isJson) {
-    return '.lutchain または JSON ファイルを選択してください。';
+  if (!isZipLikeFile(file)) {
+    return '.lutchain ファイルを選択してください。';
   }
 
   if (!Number.isFinite(file.size) || file.size <= 0) {
@@ -217,7 +206,6 @@ export function createPipelineIoSystem(options: PipelineIoSystemOptions): Pipeli
         file,
         options.maxPipelineFileBytes,
         options.isZipLikeFile,
-        options.isJsonLikeFile,
       );
       if (fileValidationError) {
         return {
@@ -226,18 +214,8 @@ export function createPipelineIoSystem(options: PipelineIoSystemOptions): Pipeli
         };
       }
 
-      if (options.isZipLikeFile(file)) {
-        const arrayBuffer = await file.arrayBuffer();
-        const loaded = await options.loadPipelineFromZip(arrayBuffer);
-        return {
-          ok: true,
-          loaded,
-        };
-      }
-
-      const text = await file.text();
-      const parsed = JSON.parse(text) as unknown;
-      const loaded = await options.loadPipelineData(parsed);
+      const arrayBuffer = await file.arrayBuffer();
+      const loaded = await options.loadPipelineFromZip(arrayBuffer);
       return {
         ok: true,
         loaded,

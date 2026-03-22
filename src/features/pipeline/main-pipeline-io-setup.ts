@@ -54,9 +54,7 @@ export function setupMainPipelineIoSystem(options: SetupMainPipelineIoSystemOpti
     serializePipelineAsZip: pipelineModel.serializePipelineAsZip,
     buildPipelineDownloadFilename: pipelineModel.buildPipelineDownloadFilename,
     loadPipelineFromZip: pipelineModel.loadPipelineFromZip,
-    loadPipelineData: pipelineModel.loadPipelineData,
     isZipLikeFile: pipelineModel.isZipLikeFile,
-    isJsonLikeFile: pipelineModel.isJsonLikeFile,
     toErrorMessage: pipelineModel.toErrorMessage,
   });
 }
