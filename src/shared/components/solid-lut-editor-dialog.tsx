@@ -12,10 +12,8 @@ import { createLutFromColorRamp2d } from '../../features/lut-editor/lut-editor-p
 import {
   addRamp,
   addStop,
-  colorToHex,
   moveRamp,
   moveStop,
-  parseHexColor,
   removeRamp,
   removeStop,
   renderColorRamp2dToPixels,
@@ -24,6 +22,7 @@ import {
   updateStopAlpha,
   updateStopColor,
 } from '../../features/lut-editor/lut-editor-runtime.ts';
+import { colorToHex, parseHexColor } from '../../features/pipeline/pipeline-model.ts';
 import type { LutModel } from '../../features/step/step-model.ts';
 import { t, useLanguage } from '../i18n.ts';
 
@@ -227,11 +226,22 @@ function LutEditorDialogContent(props: { options: LutEditorDialogContentOptions 
     }
   };
 
+  // Throttle canvas redraws to one per animation frame so dragging knobs
+  // (which updates rampData on every pointermove) doesn't block the main thread.
+  let rafPendingId: number | null = null;
+  const scheduleRedraw = (): void => {
+    if (rafPendingId !== null) return;
+    rafPendingId = requestAnimationFrame(() => {
+      rafPendingId = null;
+      redrawPreview();
+    });
+  };
+
   createEffect(() => {
     rampData();
     selectedRampId();
     focusedStopId();
-    redrawPreview();
+    scheduleRedraw();
   });
 
   // --- Boundary checks ---
@@ -257,6 +267,7 @@ function LutEditorDialogContent(props: { options: LutEditorDialogContentOptions 
     if (!data) return;
     const newData = removeRamp(data, rampId);
     setRampData(newData);
+    rampRowElMap.delete(rampId);
     if (selectedRampId() === rampId) {
       setSelectedRampId(newData.ramps[0]?.id ?? null);
     }
@@ -335,6 +346,7 @@ function LutEditorDialogContent(props: { options: LutEditorDialogContentOptions 
     const ramp = selectedRamp();
     if (!data || !ramp) return;
     const color = parseHexColor(hexValue);
+    if (!color) return;
     const newRamp = updateStopColor(ramp, stopId, color);
     setRampData(updateRamp(data, newRamp));
   };
@@ -1007,14 +1019,9 @@ export function mountLutEditorDialogShell(options: LutEditorDialogShellOptions):
     closeLutEditorDialog();
   };
 
+  // Clicks on the <dialog> element itself (not any child) are backdrop clicks.
   const onDialogClick = (event: MouseEvent) => {
-    if (event.target !== options.dialogEl) return;
-    const rect = options.dialogEl.getBoundingClientRect();
-    const isOutside = event.clientX < rect.left || event.clientX > rect.right
-      || event.clientY < rect.top || event.clientY > rect.bottom;
-    if (isOutside) {
-      closeLutEditorDialog();
-    }
+    if (event.target === options.dialogEl) closeLutEditorDialog();
   };
 
   options.dialogEl.addEventListener('cancel', onCancel);

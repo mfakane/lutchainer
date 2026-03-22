@@ -1,3 +1,4 @@
+import { clamp01, uid } from '../pipeline/pipeline-model.ts';
 import {
   LUT_EDITOR_DEFAULT_HEIGHT,
   LUT_EDITOR_DEFAULT_WIDTH,
@@ -10,20 +11,8 @@ import {
   type ColorStop,
 } from './lut-editor-model.ts';
 
-function clamp01(x: number): number {
-  return x < 0 ? 0 : x > 1 ? 1 : x;
-}
-
 function lerp(a: number, b: number, t: number): number {
   return a + (b - a) * t;
-}
-
-function makeStopId(): string {
-  return `stop-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
-}
-
-function makeRampId(): string {
-  return `ramp-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
 }
 
 // Sample a 1D color ramp at position t ∈ [0, 1]
@@ -143,13 +132,13 @@ export function renderColorRamp2dToPixels(data: ColorRamp2dLutData): Uint8Clampe
 
 // Create a default 2D color ramp (black to white, two ramps)
 export function createDefaultColorRamp2dLutData(name: string): ColorRamp2dLutData {
-  const bottomStop0: ColorStop = { id: makeStopId(), position: 0, color: [0, 0, 0], alpha: 1 };
-  const bottomStop1: ColorStop = { id: makeStopId(), position: 1, color: [1, 1, 1], alpha: 1 };
-  const topStop0: ColorStop = { id: makeStopId(), position: 0, color: [0, 0, 0], alpha: 1 };
-  const topStop1: ColorStop = { id: makeStopId(), position: 1, color: [1, 1, 1], alpha: 1 };
+  const bottomStop0: ColorStop = { id: uid('stop'), position: 0, color: [0, 0, 0], alpha: 1 };
+  const bottomStop1: ColorStop = { id: uid('stop'), position: 1, color: [1, 1, 1], alpha: 1 };
+  const topStop0: ColorStop = { id: uid('stop'), position: 0, color: [0, 0, 0], alpha: 1 };
+  const topStop1: ColorStop = { id: uid('stop'), position: 1, color: [1, 1, 1], alpha: 1 };
 
-  const ramp0: ColorRamp = { id: makeRampId(), position: 0, stops: [bottomStop0, bottomStop1] };
-  const ramp1: ColorRamp = { id: makeRampId(), position: 1, stops: [topStop0, topStop1] };
+  const ramp0: ColorRamp = { id: uid('ramp'), position: 0, stops: [bottomStop0, bottomStop1] };
+  const ramp1: ColorRamp = { id: uid('ramp'), position: 1, stops: [topStop0, topStop1] };
 
   return {
     name,
@@ -188,7 +177,7 @@ export function addRamp(data: ColorRamp2dLutData, position: number): ColorRamp2d
     const span = hiRamp.position - loRamp.position;
     const localT = span > 0 ? (cv - loRamp.position) / span : 0;
     return {
-      id: makeStopId(),
+      id: uid('stop'),
       position: s.position,
       color: [
         lerp(loColor[0], hiColor[0], localT),
@@ -199,7 +188,7 @@ export function addRamp(data: ColorRamp2dLutData, position: number): ColorRamp2d
     };
   });
 
-  const newRamp: ColorRamp = { id: makeRampId(), position: cv, stops: newStops };
+  const newRamp: ColorRamp = { id: uid('ramp'), position: cv, stops: newStops };
   const newRamps = [...data.ramps, newRamp].sort((a, b) => a.position - b.position);
 
   return { ...data, ramps: newRamps };
@@ -226,7 +215,7 @@ export function addStop(ramp: ColorRamp, position: number): ColorRamp {
   const cp = clamp01(position);
   const color = interpolateColorStops(ramp.stops, cp);
   const newStop: ColorStop = {
-    id: makeStopId(),
+    id: uid('stop'),
     position: cp,
     color: [color[0], color[1], color[2]],
     alpha: color[3],
@@ -284,25 +273,6 @@ export function moveStop(ramp: ColorRamp, stopId: string, newPosition: number): 
 export function updateRamp(data: ColorRamp2dLutData, updatedRamp: ColorRamp): ColorRamp2dLutData {
   const newRamps = data.ramps.map(r => r.id === updatedRamp.id ? updatedRamp : r);
   return { ...data, ramps: newRamps };
-}
-
-// Convert [0, 1] color component to hex string
-export function colorToHex(color: [number, number, number]): string {
-  const toHex = (v: number): string => Math.round(clamp01(v) * 255).toString(16).padStart(2, '0');
-  return `#${toHex(color[0])}${toHex(color[1])}${toHex(color[2])}`;
-}
-
-// Parse a hex color string to [0, 1] RGB
-export function parseHexColor(hex: string): [number, number, number] {
-  const clean = hex.replace('#', '');
-  const r = parseInt(clean.slice(0, 2), 16) / 255;
-  const g = parseInt(clean.slice(2, 4), 16) / 255;
-  const b = parseInt(clean.slice(4, 6), 16) / 255;
-  return [
-    Number.isFinite(r) ? r : 0,
-    Number.isFinite(g) ? g : 0,
-    Number.isFinite(b) ? b : 0,
-  ];
 }
 
 // Reorder ramps by moving fromIndex to insertBeforeIndex, then reassign positions in-place.
