@@ -5,6 +5,7 @@ import type {
 import type {
   Color,
   LutModel,
+  ParamName,
   StepModel,
   StepParamContext,
   StepRuntimeModel,
@@ -13,6 +14,9 @@ import {
   composeColorFromSteps,
   resolveStepRuntimeModels,
 } from './step-runtime';
+import {
+  evaluateStepParam,
+} from './step-param-evaluators';
 
 export interface DrawStepPreviewSphereCpuInput {
   canvas: HTMLCanvasElement;
@@ -23,6 +27,16 @@ export interface DrawStepPreviewSphereCpuInput {
   luts: readonly LutModel[];
   materialSettings: MaterialSettings;
   lightSettings: LightSettings;
+  lightDirection: readonly [number, number, number];
+  viewDirection: readonly [number, number, number];
+}
+
+export interface DrawParamPreviewSphereCpuInput {
+  canvas: HTMLCanvasElement;
+  param: ParamName;
+  pixelWidth: number;
+  pixelHeight: number;
+  materialSettings: MaterialSettings;
   lightDirection: readonly [number, number, number];
   viewDirection: readonly [number, number, number];
 }
@@ -122,6 +136,31 @@ function assertValidInput(input: DrawStepPreviewSphereCpuInput): void {
   }
 }
 
+function assertValidParamPreviewInput(input: DrawParamPreviewSphereCpuInput): void {
+  if (!input || typeof input !== 'object') {
+    throw new Error('Param preview 入力が不正です。');
+  }
+  if (!(input.canvas instanceof HTMLCanvasElement)) {
+    throw new Error('描画先キャンバスが不正です。');
+  }
+  if (!Number.isInteger(input.pixelWidth) || input.pixelWidth <= 0
+    || !Number.isInteger(input.pixelHeight) || input.pixelHeight <= 0) {
+    throw new Error('不正なプレビュー解像度です。');
+  }
+  if (typeof input.param !== 'string') {
+    throw new Error('param が不正です。');
+  }
+  if (!isValidMaterialSettings(input.materialSettings)) {
+    throw new Error('materialSettings が不正です。');
+  }
+  if (!isFiniteTuple3(input.lightDirection)) {
+    throw new Error('lightDirection が不正です。');
+  }
+  if (!isFiniteTuple3(input.viewDirection)) {
+    throw new Error('viewDirection が不正です。');
+  }
+}
+
 function composePreviewColor(
   stepModels: readonly StepRuntimeModel[],
   context: StepParamContext,
@@ -145,6 +184,152 @@ function composePreviewColor(
   ];
 }
 
+interface SpherePixelSample {
+  current: Color;
+  context: StepParamContext;
+}
+
+function renderSphereImage(
+  canvas: HTMLCanvasElement,
+  pixelWidth: number,
+  pixelHeight: number,
+  samplePixel: (sample: SpherePixelSample) => Color | null,
+): void {
+  if (canvas.width !== pixelWidth || canvas.height !== pixelHeight) {
+    canvas.width = pixelWidth;
+    canvas.height = pixelHeight;
+  }
+
+  const ctx = canvas.getContext('2d');
+  if (!ctx) {
+    return;
+  }
+
+  const image = ctx.createImageData(pixelWidth, pixelHeight);
+  const data = image.data;
+
+  const centerX = pixelWidth * 0.5;
+  const centerY = pixelHeight * 0.5;
+  const radius = Math.min(pixelWidth, pixelHeight) * 0.34;
+  if (!Number.isFinite(radius) || radius < 1) {
+    return;
+  }
+  const invRadius = 1 / radius;
+
+  const cameraDist = Math.hypot(CAMERA_POSITION[0], CAMERA_POSITION[1], CAMERA_POSITION[2]);
+  const nearDepth = Math.max(0, cameraDist - 1);
+  const farDepth = cameraDist + 1;
+  const depthDenom = Math.max(1e-4, farDepth - nearDepth);
+
+  for (let py = 0; py < pixelHeight; py += 1) {
+    for (let px = 0; px < pixelWidth; px += 1) {
+      const idx = (py * pixelWidth + px) * 4;
+      const dx = (px + 0.5 - centerX) * invRadius;
+      const dy = (py + 0.5 - centerY) * invRadius;
+      const dist2 = dx * dx + dy * dy;
+
+      if (dist2 > 1.0) {
+        data[idx + 0] = 0;
+        data[idx + 1] = 0;
+        data[idx + 2] = 0;
+        data[idx + 3] = 0;
+        continue;
+      }
+
+      const nx = dx;
+      const ny = -dy;
+      const nz = Math.sqrt(Math.max(0, 1 - dist2));
+
+      let vx = CAMERA_POSITION[0] - nx;
+      let vy = CAMERA_POSITION[1] - ny;
+      let vz = CAMERA_POSITION[2] - nz;
+      const viewLength = Math.hypot(vx, vy, vz);
+      if (viewLength > 1e-6) {
+        vx /= viewLength;
+        vy /= viewLength;
+        vz /= viewLength;
+      } else {
+        vx = 0;
+        vy = 0;
+        vz = 1;
+      }
+
+      const sample = samplePixel({
+        current: [0, 0, 0],
+        context: buildStepParamContext(
+          nx,
+          ny,
+          nz,
+          vx,
+          vy,
+          vz,
+          viewLength,
+          nearDepth,
+          depthDenom,
+        ),
+      });
+
+      const color = sample ?? [0, 0, 0];
+      data[idx + 0] = Math.round(clamp01(color[0]) * 255);
+      data[idx + 1] = Math.round(clamp01(color[1]) * 255);
+      data[idx + 2] = Math.round(clamp01(color[2]) * 255);
+      data[idx + 3] = sample ? 255 : 0;
+    }
+  }
+
+  ctx.putImageData(image, 0, 0);
+}
+
+function buildStepParamContext(
+  nx: number,
+  ny: number,
+  nz: number,
+  vx: number,
+  vy: number,
+  vz: number,
+  viewLength: number,
+  nearDepth: number,
+  depthDenom: number,
+): StepParamContext {
+  const lambert = Math.max(0, nx * activeLightDirection[0] + ny * activeLightDirection[1] + nz * activeLightDirection[2]);
+  const halfLambert = lambert * 0.5 + 0.5;
+  const hxRaw = activeLightDirection[0] + vx;
+  const hyRaw = activeLightDirection[1] + vy;
+  const hzRaw = activeLightDirection[2] + vz;
+  const hLength = Math.hypot(hxRaw, hyRaw, hzRaw);
+  const hx = hLength > 1e-6 ? hxRaw / hLength : 0;
+  const hy = hLength > 1e-6 ? hyRaw / hLength : 0;
+  const hz = hLength > 1e-6 ? hzRaw / hLength : 1;
+
+  const nDotH = Math.max(nx * hx + ny * hy + nz * hz, 0);
+  const specular = Math.pow(nDotH, activeSpecularPower) * activeSpecularStrength;
+  const facing = Math.max(nx * vx + ny * vy + nz * vz, 0);
+  const fresnel = Math.pow(1.0 - facing, activeFresnelPower) * activeFresnelStrength;
+  const linearDepth = clamp01((viewLength - nearDepth) / depthDenom);
+
+  let texU = Math.atan2(nz, nx) / (Math.PI * 2);
+  if (texU < 0) texU += 1;
+  const texV = Math.acos(Math.max(-1, Math.min(1, ny))) / Math.PI;
+
+  return {
+    lambert,
+    halfLambert,
+    specular,
+    fresnel,
+    facing,
+    nDotH,
+    linearDepth,
+    texU,
+    texV,
+  };
+}
+
+let activeLightDirection: readonly [number, number, number] = [0, 0.7071067812, 0.7071067812];
+let activeSpecularStrength = 0;
+let activeSpecularPower = 1;
+let activeFresnelStrength = 0;
+let activeFresnelPower = 0.01;
+
 export function drawStepPreviewSphereCpu(input: DrawStepPreviewSphereCpuInput): void {
   assertValidInput(input);
 
@@ -158,119 +343,39 @@ export function drawStepPreviewSphereCpu(input: DrawStepPreviewSphereCpuInput): 
     materialSettings,
     lightSettings,
     lightDirection,
-    viewDirection,
   } = input;
 
-  if (canvas.width !== pixelWidth || canvas.height !== pixelHeight) {
-    canvas.width = pixelWidth;
-    canvas.height = pixelHeight;
-  }
-
-  const ctx = canvas.getContext('2d');
-  if (!ctx) {
-    return;
-  }
-
   const stepModels = resolveStepRuntimeModels(steps, luts, targetStepIndex);
-  const image = ctx.createImageData(pixelWidth, pixelHeight);
-  const data = image.data;
+  activeLightDirection = lightDirection;
+  activeSpecularStrength = materialSettings.specularStrength;
+  activeSpecularPower = Math.max(1.0, materialSettings.specularPower);
+  activeFresnelStrength = materialSettings.fresnelStrength;
+  activeFresnelPower = Math.max(0.01, materialSettings.fresnelPower);
 
-  const centerX = pixelWidth * 0.5;
-  const centerY = pixelHeight * 0.5;
-  const radius = Math.min(pixelWidth, pixelHeight) * 0.34;
-  if (!Number.isFinite(radius) || radius < 1) {
-    return;
-  }
-  const invRadius = 1 / radius;
+  renderSphereImage(
+    canvas,
+    pixelWidth,
+    pixelHeight,
+    ({ context }) => composePreviewColor(stepModels, context, materialSettings, lightSettings),
+  );
+}
 
-  const minSpecPower = Math.max(1.0, materialSettings.specularPower);
-  const minFresnelPower = Math.max(0.01, materialSettings.fresnelPower);
+export function drawParamPreviewSphereCpu(input: DrawParamPreviewSphereCpuInput): void {
+  assertValidParamPreviewInput(input);
 
-  for (let py = 0; py < pixelHeight; py += 1) {
-    for (let px = 0; px < pixelWidth; px += 1) {
-      const idx = (py * pixelWidth + px) * 4;
+  activeLightDirection = input.lightDirection;
+  activeSpecularStrength = input.materialSettings.specularStrength;
+  activeSpecularPower = Math.max(1.0, input.materialSettings.specularPower);
+  activeFresnelStrength = input.materialSettings.fresnelStrength;
+  activeFresnelPower = Math.max(0.01, input.materialSettings.fresnelPower);
 
-      let outR = 0;
-      let outG = 0;
-      let outB = 0;
-      let outA = 0;
-
-      const dx = (px + 0.5 - centerX) * invRadius;
-      const dy = (py + 0.5 - centerY) * invRadius;
-      const dist2 = dx * dx + dy * dy;
-
-      if (dist2 <= 1.0) {
-        const nx = dx;
-        const ny = -dy;
-        const nz = Math.sqrt(Math.max(0, 1 - dist2));
-
-        let vx = CAMERA_POSITION[0] - nx;
-        let vy = CAMERA_POSITION[1] - ny;
-        let vz = CAMERA_POSITION[2] - nz;
-        const viewLength = Math.hypot(vx, vy, vz);
-        if (viewLength > 1e-6) {
-          vx /= viewLength;
-          vy /= viewLength;
-          vz /= viewLength;
-        } else {
-          vx = viewDirection[0];
-          vy = viewDirection[1];
-          vz = viewDirection[2];
-        }
-
-        const lambert = Math.max(0, nx * lightDirection[0] + ny * lightDirection[1] + nz * lightDirection[2]);
-        const halfLambert = lambert * 0.5 + 0.5;
-        const hxRaw = lightDirection[0] + vx;
-        const hyRaw = lightDirection[1] + vy;
-        const hzRaw = lightDirection[2] + vz;
-        const hLength = Math.hypot(hxRaw, hyRaw, hzRaw);
-        const hx = hLength > 1e-6 ? hxRaw / hLength : 0;
-        const hy = hLength > 1e-6 ? hyRaw / hLength : 0;
-        const hz = hLength > 1e-6 ? hzRaw / hLength : 1;
-
-        const nDotH = Math.max(nx * hx + ny * hy + nz * hz, 0);
-        const specular = Math.pow(nDotH, minSpecPower) * materialSettings.specularStrength;
-        const facing = Math.max(nx * vx + ny * vy + nz * vz, 0);
-        const fresnel = Math.pow(1.0 - facing, minFresnelPower) * materialSettings.fresnelStrength;
-        const cameraDist = Math.hypot(CAMERA_POSITION[0], CAMERA_POSITION[1], CAMERA_POSITION[2]);
-        const nearDepth = Math.max(0, cameraDist - 1);
-        const farDepth = cameraDist + 1;
-        const depthDenom = Math.max(1e-4, farDepth - nearDepth);
-        const linearDepth = clamp01((viewLength - nearDepth) / depthDenom);
-
-        let texU = Math.atan2(nz, nx) / (Math.PI * 2);
-        if (texU < 0) texU += 1;
-        const texV = Math.acos(Math.max(-1, Math.min(1, ny))) / Math.PI;
-
-        const composed = composePreviewColor(
-          stepModels,
-          {
-            lambert,
-            halfLambert,
-            specular,
-            fresnel,
-            facing,
-            nDotH,
-            linearDepth,
-            texU,
-            texV,
-          },
-          materialSettings,
-          lightSettings,
-        );
-
-        outR = composed[0];
-        outG = composed[1];
-        outB = composed[2];
-        outA = 1;
-      }
-
-      data[idx + 0] = Math.round(clamp01(outR) * 255);
-      data[idx + 1] = Math.round(clamp01(outG) * 255);
-      data[idx + 2] = Math.round(clamp01(outB) * 255);
-      data[idx + 3] = Math.round(clamp01(outA) * 255);
-    }
-  }
-
-  ctx.putImageData(image, 0, 0);
+  renderSphereImage(
+    input.canvas,
+    input.pixelWidth,
+    input.pixelHeight,
+    ({ current, context }) => {
+      const value = clamp01(evaluateStepParam(input.param, current, context));
+      return [value, value, value];
+    },
+  );
 }

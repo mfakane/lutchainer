@@ -1,4 +1,5 @@
 import type { PipelineStateSnapshot } from '../../features/pipeline/pipeline-state.ts';
+import type { MaterialSettings } from '../../features/pipeline/pipeline-model.ts';
 import type {
   BlendOp,
   ChannelName,
@@ -34,6 +35,7 @@ export interface SetupMainPipelineEditorOptions {
   lutStripListEl: HTMLElement;
   getSteps: () => StepModel[];
   getLuts: () => LutModel[];
+  getMaterialSettings: () => MaterialSettings;
   shouldSuppressClick: () => boolean;
   computeLutUv?: (stepIndex: number, pixelX: number, pixelY: number, canvasWidth: number, canvasHeight: number) => { u: number; v: number } | null;
   pipelineCommands: PipelineCommandsLike;
@@ -101,6 +103,7 @@ function assertSetupMainPipelineEditorOptions(options: SetupMainPipelineEditorOp
 
   ensureFunction(options.getSteps, 'Main pipeline editor getSteps');
   ensureFunction(options.getLuts, 'Main pipeline editor getLuts');
+  ensureFunction(options.getMaterialSettings, 'Main pipeline editor getMaterialSettings');
   ensureFunction(options.shouldSuppressClick, 'Main pipeline editor shouldSuppressClick');
   assertPipelineCommandsLike(options.pipelineCommands);
   ensureFunction(options.createLutFromFile, 'Main pipeline editor createLutFromFile');
@@ -127,6 +130,7 @@ export function setupMainPipelineEditor(options: SetupMainPipelineEditorOptions)
     lutStripListEl: options.lutStripListEl,
     getSteps: options.getSteps,
     getLuts: options.getLuts,
+    getMaterialSettings: options.getMaterialSettings,
     shouldSuppressClick: options.shouldSuppressClick,
     computeLutUv: options.computeLutUv,
     onAddStep: () => {

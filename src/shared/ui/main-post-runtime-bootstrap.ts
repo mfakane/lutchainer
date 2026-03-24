@@ -283,6 +283,7 @@ export function bootstrapMainPostRuntime(options: BootstrapMainPostRuntimeOption
     lutStripListEl: options.lutStripListEl,
     getSteps: getPipelineSteps,
     getLuts: getPipelineLuts,
+    getMaterialSettings,
     shouldSuppressClick: () => performance.now() < getSuppressClickUntil(),
     computeLutUv: (stepIndex, pixelX, pixelY, canvasWidth, canvasHeight) =>
       resolveLutUvAtPixel({

@@ -1,4 +1,5 @@
 import type { PipelineStateSnapshot } from '../../features/pipeline/pipeline-state.ts';
+import type { MaterialSettings } from '../../features/pipeline/pipeline-model.ts';
 import type {
   BlendOp,
   ChannelName,
@@ -21,6 +22,7 @@ export interface SetupMainPipelineListsOptions {
   lutStripListEl: HTMLElement;
   getSteps: () => StepModel[];
   getLuts: () => LutModel[];
+  getMaterialSettings: () => MaterialSettings;
   shouldSuppressClick: () => boolean;
   computeLutUv?: (stepIndex: number, pixelX: number, pixelY: number, canvasWidth: number, canvasHeight: number) => { u: number; v: number } | null;
   onAddStep: () => void;
@@ -71,6 +73,7 @@ function ensureOptions(value: unknown): asserts value is SetupMainPipelineListsO
 
   ensureFunction(options.getSteps, 'Main pipeline lists setup: getSteps');
   ensureFunction(options.getLuts, 'Main pipeline lists setup: getLuts');
+  ensureFunction(options.getMaterialSettings, 'Main pipeline lists setup: getMaterialSettings');
   ensureFunction(options.shouldSuppressClick, 'Main pipeline lists setup: shouldSuppressClick');
   ensureFunction(options.onAddStep, 'Main pipeline lists setup: onAddStep');
   ensureFunction(options.onDuplicateStep, 'Main pipeline lists setup: onDuplicateStep');
@@ -101,6 +104,7 @@ export function setupMainPipelineLists(options: SetupMainPipelineListsOptions): 
   ensureOptions(options);
 
   mountParamNodeList(options.paramNodeListEl, {
+    getMaterialSettings: options.getMaterialSettings,
     onStatus: options.onStatus,
   });
 

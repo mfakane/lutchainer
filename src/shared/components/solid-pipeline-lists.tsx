@@ -1,6 +1,6 @@
-import { For, Show, createSignal, type Accessor, type JSX } from 'solid-js';
+import { For, Show, createSignal, onCleanup, type Accessor, type JSX } from 'solid-js';
 import { DropdownMenu } from './solid-dropdown-menu.tsx';
-import { render } from 'solid-js/web';
+import { Portal, render } from 'solid-js/web';
 import * as pipelineModel from '../../features/pipeline/pipeline-model';
 import {
   BLEND_MODES,
@@ -9,8 +9,12 @@ import {
   type BlendOp,
   type ChannelName,
   type LutModel,
+  type ParamName,
   type StepModel,
 } from '../../features/step/step-model';
+import {
+  drawParamPreviewSphereCpu,
+} from '../../features/step/step-preview-cpu-render';
 import { getCustomChannelsForBlendMode } from '../../features/step/step-runtime';
 import { t, useLanguage } from '../i18n';
 
@@ -26,6 +30,7 @@ const PARAM_GROUP_DESCRIPTION_KEYS: Record<string, string> = {
 };
 
 interface ParamNodeListMountOptions {
+  getMaterialSettings: () => pipelineModel.MaterialSettings;
   onStatus: StatusReporter;
 }
 
@@ -56,7 +61,15 @@ interface LutStripListMountOptions {
   onStatus: StatusReporter;
 }
 
-interface ParamNodeListProps { }
+interface ParamNodeListProps {
+  getMaterialSettings: () => pipelineModel.MaterialSettings;
+}
+
+interface ParamPreviewState {
+  param: ParamName;
+  left: number;
+  top: number;
+}
 
 interface StepListProps {
   steps: Accessor<StepModel[]>;
@@ -92,8 +105,21 @@ let disposeLutStripList: (() => void) | null = null;
 let syncStepListInternal: ((steps: StepModel[], luts: LutModel[]) => void) | null = null;
 let syncLutStripListInternal: ((luts: LutModel[], steps: StepModel[]) => void) | null = null;
 
+let paramNodeListStatusReporter: StatusReporter = () => undefined;
 let stepListStatusReporter: StatusReporter = () => undefined;
 let lutStripStatusReporter: StatusReporter = () => undefined;
+const PARAM_PREVIEW_SIZE = 112;
+const PARAM_PREVIEW_TARGETS = new Set<ParamName>([
+  'lightness',
+  'specular',
+  'halfLambert',
+  'fresnel',
+  'facing',
+  'nDotH',
+  'linearDepth',
+  'texU',
+  'texV',
+]);
 
 function isNonEmptyString(value: unknown): value is string {
   return typeof value === 'string' && value.trim().length > 0;
@@ -198,6 +224,9 @@ function ensureParamNodeListMountOptions(value: unknown): asserts value is Param
   }
 
   const options = value as Partial<ParamNodeListMountOptions>;
+  if (typeof options.getMaterialSettings !== 'function') {
+    throw new Error('ParamノードリストのMaterial設定取得コールバックが不正です。');
+  }
   ensureStatusReporter(options.onStatus, 'Paramノードリスト');
 }
 
@@ -264,8 +293,10 @@ function ensureLutStripListMountOptions(value: unknown): asserts value is LutStr
   ensureStatusReporter(options.onStatus, 'LUTストリップ');
 }
 
-function ParamNodeList(_props: ParamNodeListProps): JSX.Element {
+function ParamNodeList(props: ParamNodeListProps): JSX.Element {
   const language = useLanguage();
+  const [previewState, setPreviewState] = createSignal<ParamPreviewState | null>(null);
+  const previewCanvases = new Map<ParamName, HTMLCanvasElement>();
 
   const tr = (key: string, values?: Record<string, string | number>): string => {
     language();
@@ -281,43 +312,158 @@ function ParamNodeList(_props: ParamNodeListProps): JSX.Element {
     return tr(key);
   };
 
+  const isPreviewTarget = (param: ParamName): boolean => PARAM_PREVIEW_TARGETS.has(param);
+
+  const drawPreview = (param: ParamName): void => {
+    const canvas = previewCanvases.get(param);
+    if (!(canvas instanceof HTMLCanvasElement)) {
+      return;
+    }
+
+    try {
+      drawParamPreviewSphereCpu({
+        canvas,
+        param,
+        pixelWidth: PARAM_PREVIEW_SIZE,
+        pixelHeight: PARAM_PREVIEW_SIZE,
+        materialSettings: props.getMaterialSettings(),
+        lightDirection: pipelineModel.STEP_PREVIEW_LIGHT_DIR,
+        viewDirection: pipelineModel.STEP_PREVIEW_VIEW_DIR,
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : tr('common.unknownError');
+      paramNodeListStatusReporter(tr('pipeline.status.paramPreviewDrawFailed', { message }), 'error');
+    }
+  };
+
+  const hidePreview = (): void => {
+    setPreviewState(null);
+  };
+
+  const updatePreviewPosition = (anchor: HTMLElement, param: ParamName): void => {
+    const rect = anchor.getBoundingClientRect();
+    const previewWidth = PARAM_PREVIEW_SIZE + 20;
+    const previewHeight = PARAM_PREVIEW_SIZE + 38;
+    let left = rect.right + 10;
+    let top = rect.top + rect.height * 0.5;
+
+    if (left + previewWidth > window.innerWidth - 12) {
+      left = Math.max(12, rect.left - previewWidth - 10);
+    }
+    if (top + previewHeight * 0.5 > window.innerHeight - 12) {
+      top = window.innerHeight - 12 - previewHeight * 0.5;
+    }
+    if (top - previewHeight * 0.5 < 12) {
+      top = 12 + previewHeight * 0.5;
+    }
+
+    setPreviewState({ param, left, top });
+  };
+
+  const showPreview = (param: ParamName, anchor: HTMLElement): void => {
+    if (!isPreviewTarget(param)) {
+      return;
+    }
+    updatePreviewPosition(anchor, param);
+    queueMicrotask(() => {
+      if (previewState()?.param === param) {
+        drawPreview(param);
+      }
+    });
+  };
+
+  const syncActivePreviewPosition = (): void => {
+    const current = previewState();
+    if (!current) {
+      return;
+    }
+    const anchor = document.querySelector<HTMLElement>(`.param-node[data-param="${current.param}"]`);
+    if (!(anchor instanceof HTMLElement)) {
+      hidePreview();
+      return;
+    }
+    updatePreviewPosition(anchor, current.param);
+  };
+
+  window.addEventListener('scroll', syncActivePreviewPosition, true);
+  window.addEventListener('resize', syncActivePreviewPosition);
+  onCleanup(() => {
+    window.removeEventListener('scroll', syncActivePreviewPosition, true);
+    window.removeEventListener('resize', syncActivePreviewPosition);
+  });
+
   return (
-    <For each={pipelineModel.PARAM_GROUPS}>
-      {group => (
-        <section class={`param-group param-group-${group.tone}`} data-group={group.key}>
-          <header class="param-group-head">
-            <div class="param-group-title-row">
-              <div class="param-group-title">{group.label}</div>
-              <Show when={group.tone === 'feedback'}>
-                <span class="param-group-badge">{tr('pipeline.paramGroup.prevColorBadge')}</span>
-              </Show>
+    <>
+      <For each={pipelineModel.PARAM_GROUPS}>
+        {group => (
+          <section class={`param-group param-group-${group.tone}`} data-group={group.key}>
+            <header class="param-group-head">
+              <div class="param-group-title-row">
+                <div class="param-group-title">{group.label}</div>
+                <Show when={group.tone === 'feedback'}>
+                  <span class="param-group-badge">{tr('pipeline.paramGroup.prevColorBadge')}</span>
+                </Show>
+              </div>
+              <div class="param-group-desc">{resolveGroupDescription(group)}</div>
+            </header>
+
+            <div class="param-group-nodes">
+              <For each={group.params}>
+                {paramName => {
+                  const param = pipelineModel.getParamDef(paramName);
+
+                  return (
+                    <button
+                      type="button"
+                      class="param-node param-socket"
+                      data-param={param.key}
+                      title={isPreviewTarget(param.key) ? undefined : tr('pipeline.param.connectTitle', { label: param.label })}
+                      aria-label={tr('pipeline.param.connectTitle', { label: param.label })}
+                      onMouseEnter={event => showPreview(param.key, event.currentTarget)}
+                      onMouseLeave={hidePreview}
+                      onFocus={event => showPreview(param.key, event.currentTarget)}
+                      onBlur={hidePreview}
+                      aria-describedby={isPreviewTarget(param.key) ? `param-preview-${param.key}` : undefined}
+                    >
+                      <span class="param-socket-dot" aria-hidden="true"></span>
+                      <span class="param-name">{param.label}</span>
+                      <span class="param-desc">{param.description}</span>
+                    </button>
+                  );
+                }}
+              </For>
             </div>
-            <div class="param-group-desc">{resolveGroupDescription(group)}</div>
-          </header>
-
-          <div class="param-group-nodes">
-            <For each={group.params}>
-              {paramName => {
-                const param = pipelineModel.getParamDef(paramName);
-
-                return (
-                  <button
-                    type="button"
-                    class="param-node param-socket"
-                    data-param={param.key}
-                    title={tr('pipeline.param.connectTitle', { label: param.label })}
-                  >
-                    <span class="param-socket-dot" aria-hidden="true"></span>
-                    <span class="param-name">{param.label}</span>
-                    <span class="param-desc">{param.description}</span>
-                  </button>
-                );
+          </section>
+        )}
+      </For>
+      <Show when={previewState()}>
+        {state => (
+          <Portal>
+            <span
+              class="param-preview-tooltip"
+              id={`param-preview-${state().param}`}
+              role="tooltip"
+              aria-label={tr('pipeline.param.previewTooltip', { label: pipelineModel.getParamDef(state().param).label })}
+              style={{
+                left: `${state().left}px`,
+                top: `${state().top}px`,
               }}
-            </For>
-          </div>
-        </section>
-      )}
-    </For>
+            >
+              <span class="param-preview-tooltip-label">{tr('pipeline.param.previewScale')}</span>
+              <canvas
+                class="param-preview-tooltip-canvas"
+                width={PARAM_PREVIEW_SIZE}
+                height={PARAM_PREVIEW_SIZE}
+                ref={element => {
+                  previewCanvases.set(state().param, element);
+                  drawPreview(state().param);
+                }}
+              ></canvas>
+            </span>
+          </Portal>
+        )}
+      </Show>
+    </>
   );
 }
 
@@ -842,6 +988,7 @@ export function mountParamNodeList(target: HTMLElement, options: ParamNodeListMo
   }
 
   ensureParamNodeListMountOptions(options);
+  paramNodeListStatusReporter = options.onStatus;
 
   if (disposeParamNodeList) {
     disposeParamNodeList();
@@ -849,7 +996,7 @@ export function mountParamNodeList(target: HTMLElement, options: ParamNodeListMo
   }
 
   target.textContent = '';
-  disposeParamNodeList = render(() => <ParamNodeList />, target);
+  disposeParamNodeList = render(() => <ParamNodeList getMaterialSettings={options.getMaterialSettings} />, target);
 }
 
 export function mountStepList(target: HTMLElement, options: StepListMountOptions): void {
