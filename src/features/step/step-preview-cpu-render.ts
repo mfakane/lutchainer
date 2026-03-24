@@ -11,12 +11,12 @@ import type {
   StepRuntimeModel,
 } from './step-model';
 import {
+  evaluateStepParam,
+} from './step-param-evaluators';
+import {
   composeColorFromSteps,
   resolveStepRuntimeModels,
 } from './step-runtime';
-import {
-  evaluateStepParam,
-} from './step-param-evaluators';
 
 export interface DrawStepPreviewSphereCpuInput {
   canvas: HTMLCanvasElement;
@@ -307,9 +307,8 @@ function buildStepParamContext(
   const fresnel = Math.pow(1.0 - facing, activeFresnelPower) * activeFresnelStrength;
   const linearDepth = clamp01((viewLength - nearDepth) / depthDenom);
 
-  let texU = Math.atan2(nz, nx) / (Math.PI * 2);
-  if (texU < 0) texU += 1;
-  const texV = Math.acos(Math.max(-1, Math.min(1, ny))) / Math.PI;
+  const texU = clamp01(nx * 0.5 + 0.5);
+  const texV = clamp01((-ny) * 0.5 + 0.5);
 
   return {
     lambert,

@@ -120,9 +120,8 @@ export function resolveLutUvAtPixel(input: ResolveLutUvAtPixelInput): LutUvCoord
   const depthDenom = Math.max(1e-4, farDepth - nearDepth);
   const linearDepth = clamp01((viewLength - nearDepth) / depthDenom);
 
-  let texU = Math.atan2(nz, nx) / (Math.PI * 2);
-  if (texU < 0) texU += 1;
-  const texV = Math.acos(Math.max(-1, Math.min(1, ny))) / Math.PI;
+  const texU = clamp01(nx * 0.5 + 0.5);
+  const texV = clamp01((-ny) * 0.5 + 0.5);
 
   const context = {
     lambert,

@@ -123,9 +123,8 @@ export const SHADER_LOCALS: Record<ShaderLocalKey, ShaderLocalDecl> = {
   texcoord: {
     requires: [],
     previewGlsl: [
-      'float texU = atan(nz, nx) / (PI * 2.0);',
-      'if (texU < 0.0) texU += 1.0;',
-      'float texV = acos(clamp(ny, -1.0, 1.0)) / PI;',
+      'float texU = clamp(nx * 0.5 + 0.5, 0.0, 1.0);',
+      'float texV = clamp((-ny) * 0.5 + 0.5, 0.0, 1.0);',
       'vec2 v_texcoord = vec2(texU, texV);',
     ],
     fragmentGlsl: () => [],
