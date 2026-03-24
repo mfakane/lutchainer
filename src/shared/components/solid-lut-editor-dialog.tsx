@@ -707,7 +707,7 @@ function LutEditorDialogContent(props: { options: LutEditorDialogContentOptions 
           }}
         />
         <div class="lut-editor-head-actions">
-          <button type="button" class="btn-primary" onClick={handleApply} disabled={!rampData()}>
+          <button type="button" class="btn-submit" onClick={handleApply} disabled={!rampData()}>
             {tr('lutEditor.apply')}
           </button>
           <button type="button" class="btn-secondary" onClick={props.options.onClose}>

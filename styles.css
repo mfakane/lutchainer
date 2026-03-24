@@ -8,7 +8,6 @@
   --text-strong: #e1e8f8;
   --muted: #9aa3b2;
   --accent: #7ab6ff;
-  --accent-strong: #5a97e6;
   --accent-ink: #0c1420;
   --control-border: #515151;
   --control-bg: #1a1a1a;
@@ -135,9 +134,9 @@ button:disabled:hover {
   font-weight: 700;
 }
 
-.btn-compile {
-  background: var(--accent-strong);
-  border-color: var(--accent-strong);
+.btn-submit {
+  background: var(--accent);
+  border-color: var(--accent);
   color: var(--accent-ink);
   font-weight: 700;
 }
@@ -166,7 +165,7 @@ button:disabled:hover {
 }
 
 .auto-label input[type="checkbox"] {
-  accent-color: var(--accent-strong);
+  accent-color: var(--accent);
 }
 
 .language-switcher {
