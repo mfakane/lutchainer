@@ -22,9 +22,10 @@ import {
   updateStopAlpha,
   updateStopColor,
 } from '../../features/lut-editor/lut-editor-runtime.ts';
-import { colorToHex, parseHexColor } from '../../features/pipeline/pipeline-model.ts';
+import { colorToHex, parseHexColor, uid } from '../../features/pipeline/pipeline-model.ts';
 import type { LutModel } from '../../features/step/step-model.ts';
 import { t, useLanguage } from '../i18n.ts';
+import { DropdownMenu } from './solid-dropdown-menu.tsx';
 
 type StatusKind = 'success' | 'error' | 'info';
 
@@ -397,6 +398,125 @@ function LutEditorDialogContent(props: { options: LutEditorDialogContentOptions 
     const delta = ev.deltaY < 0 ? 0.01 : -0.01;
     const newAlpha = Math.round(Math.max(0, Math.min(1, currentAlpha + delta)) * 100);
     handleStopAlphaChange(stopId, String(newAlpha));
+  };
+
+  const getDuplicatePosition = (positions: readonly number[], index: number): number | null => {
+    const current = positions[index];
+    if (current === undefined) return null;
+
+    const prevGap = index > 0 ? current - positions[index - 1]! : -1;
+    const nextGap = index < positions.length - 1 ? positions[index + 1]! - current : -1;
+
+    if (nextGap > 0 && (prevGap <= 0 || nextGap >= prevGap)) {
+      return current + nextGap / 2;
+    }
+
+    if (prevGap > 0) {
+      return current - prevGap / 2;
+    }
+
+    return null;
+  };
+
+  const handleDuplicateSelectedRamp = (): void => {
+    const data = rampData();
+    const ramp = selectedRamp();
+    if (!data || !ramp || data.ramps.length >= MAX_RAMPS) return;
+
+    const rampIndex = data.ramps.findIndex(candidate => candidate.id === ramp.id);
+    if (rampIndex < 0) return;
+
+    const duplicatePosition = getDuplicatePosition(data.ramps.map(candidate => candidate.position), rampIndex);
+    if (duplicatePosition === null) return;
+
+    const duplicatedRamp: ColorRamp = {
+      id: uid('ramp'),
+      position: duplicatePosition,
+      stops: ramp.stops.map(stop => ({
+        ...stop,
+        id: uid('stop'),
+      })),
+    };
+
+    const newData = {
+      ...data,
+      ramps: [...data.ramps, duplicatedRamp].sort((a, b) => a.position - b.position),
+    };
+
+    setRampData(newData);
+    setSelectedRampId(duplicatedRamp.id);
+    setFocusedStopId(duplicatedRamp.stops[0]?.id ?? null);
+  };
+
+  const handleInvertSelectedRamp = (): void => {
+    const data = rampData();
+    const ramp = selectedRamp();
+    if (!data || !ramp) return;
+
+    const currentSelectedRampId = ramp.id;
+    const currentFocusedStopId = focusedStopId();
+    const invertedRamps = [...data.ramps]
+      .reverse()
+      .map(candidate => ({
+        ...candidate,
+        position: 1 - candidate.position,
+      }))
+      .sort((a, b) => a.position - b.position);
+
+    setRampData({
+      ...data,
+      ramps: invertedRamps,
+    });
+    setSelectedRampId(currentSelectedRampId);
+    setFocusedStopId(currentFocusedStopId);
+  };
+
+  const handleDuplicateFocusedStop = (): void => {
+    const data = rampData();
+    const ramp = selectedRamp();
+    const stop = focusedStop();
+    if (!data || !ramp || !stop || ramp.stops.length >= MAX_STOPS_PER_RAMP) return;
+
+    const stopIndex = ramp.stops.findIndex(candidate => candidate.id === stop.id);
+    if (stopIndex < 0) return;
+
+    const duplicatePosition = getDuplicatePosition(ramp.stops.map(candidate => candidate.position), stopIndex);
+    if (duplicatePosition === null) return;
+
+    const duplicatedStop: ColorStop = {
+      ...stop,
+      id: uid('stop'),
+      position: duplicatePosition,
+    };
+
+    const updatedRamp: ColorRamp = {
+      ...ramp,
+      stops: [...ramp.stops, duplicatedStop].sort((a, b) => a.position - b.position),
+    };
+
+    setRampData(updateRamp(data, updatedRamp));
+    setFocusedStopId(duplicatedStop.id);
+  };
+
+  const handleInvertFocusedStop = (): void => {
+    const data = rampData();
+    const ramp = selectedRamp();
+    const stop = focusedStop();
+    if (!data || !ramp || !stop) return;
+
+    const updatedRamp: ColorRamp = {
+      ...ramp,
+      stops: [...ramp.stops]
+        .reverse()
+        .map(candidate => ({
+          ...candidate,
+          position: 1 - candidate.position,
+        }))
+        .sort((a, b) => a.position - b.position),
+    };
+
+    setRampData(updateRamp(data, updatedRamp));
+    setFocusedStopId(stop.id);
   };
 
   // --- Drag: ramp knobs (vertical rail on right edge of canvas) ---
@@ -820,14 +940,53 @@ function LutEditorDialogContent(props: { options: LutEditorDialogContentOptions 
           <div class="lut-editor-ramp-section">
             <div class="lut-editor-section-header">
               <div class="lut-editor-section-label">{tr('lutEditor.rampListLabel')}</div>
-              <button
-                type="button"
-                class="btn-secondary lut-editor-ramp-add"
-                onClick={handleAddRamp}
-                disabled={!rampData() || (rampData()?.ramps.length ?? 0) >= MAX_RAMPS}
-              >
-                {tr('lutEditor.addRamp')}
-              </button>
+              <div class="lut-editor-section-header-actions">
+                <button
+                  type="button"
+                  class="btn-secondary lut-editor-ramp-add"
+                  onClick={handleAddRamp}
+                  disabled={!rampData() || (rampData()?.ramps.length ?? 0) >= MAX_RAMPS}
+                >
+                  {tr('lutEditor.addRamp')}
+                </button>
+                <Show when={selectedRamp()}>
+                  <DropdownMenu
+                    wrapperClass="lut-editor-action-menu-wrap"
+                    triggerClass="lut-editor-kebab-btn"
+                    menuClass="lut-editor-kebab-menu"
+                    triggerAriaLabel={tr('lutEditor.rampMenuAria')}
+                    menuRole="menu"
+                  >
+                    {controls => (
+                      <>
+                        <button
+                          type="button"
+                          class="lut-editor-kebab-item"
+                          role="menuitem"
+                          disabled={(rampData()?.ramps.length ?? 0) >= MAX_RAMPS}
+                          onClick={() => {
+                            controls.closeMenu();
+                            handleDuplicateSelectedRamp();
+                          }}
+                        >
+                          {tr('lutEditor.duplicateRamp')}
+                        </button>
+                        <button
+                          type="button"
+                          class="lut-editor-kebab-item"
+                          role="menuitem"
+                          onClick={() => {
+                            controls.closeMenu();
+                            handleInvertSelectedRamp();
+                          }}
+                        >
+                          {tr('lutEditor.invertRamp')}
+                        </button>
+                      </>
+                    )}
+                  </DropdownMenu>
+                </Show>
+              </div>
             </div>
             <div class="lut-editor-ramp-list">
               <For each={rampData()?.ramps ?? []}>
@@ -904,9 +1063,46 @@ function LutEditorDialogContent(props: { options: LutEditorDialogContentOptions 
                     type="button"
                     class="btn-ghost lut-editor-stop-remove"
                     onClick={() => { const s = focusedStop(); if (s) handleRemoveStop(s.id); }}
+                    >
+                      {tr('lutEditor.removeStop')}
+                    </button>
+                  </Show>
+                <Show when={focusedStop()}>
+                  <DropdownMenu
+                    wrapperClass="lut-editor-action-menu-wrap"
+                    triggerClass="lut-editor-kebab-btn"
+                    menuClass="lut-editor-kebab-menu"
+                    triggerAriaLabel={tr('lutEditor.stopMenuAria')}
+                    menuRole="menu"
                   >
-                    {tr('lutEditor.removeStop')}
-                  </button>
+                    {controls => (
+                      <>
+                        <button
+                          type="button"
+                          class="lut-editor-kebab-item"
+                          role="menuitem"
+                          disabled={(selectedRamp()?.stops.length ?? 0) >= MAX_STOPS_PER_RAMP}
+                          onClick={() => {
+                            controls.closeMenu();
+                            handleDuplicateFocusedStop();
+                          }}
+                        >
+                          {tr('lutEditor.duplicateStop')}
+                        </button>
+                        <button
+                          type="button"
+                          class="lut-editor-kebab-item"
+                          role="menuitem"
+                          onClick={() => {
+                            controls.closeMenu();
+                            handleInvertFocusedStop();
+                          }}
+                        >
+                          {tr('lutEditor.invertStop')}
+                        </button>
+                      </>
+                    )}
+                  </DropdownMenu>
                 </Show>
               </div>
             </div>

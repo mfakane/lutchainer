@@ -994,7 +994,8 @@ button:disabled:hover {
 
 .preview-action-menu-wrap,
 .material-action-menu-wrap,
-.light-action-menu-wrap {
+.light-action-menu-wrap,
+.lut-editor-action-menu-wrap {
   position: relative;
   display: inline-flex;
   align-items: center;
@@ -1002,7 +1003,8 @@ button:disabled:hover {
 
 .preview-kebab-btn,
 .material-kebab-btn,
-.light-kebab-btn {
+.light-kebab-btn,
+.lut-editor-kebab-btn {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1015,14 +1017,16 @@ button:disabled:hover {
 
 .preview-kebab-btn[aria-expanded='true'],
 .material-kebab-btn[aria-expanded='true'],
-.light-kebab-btn[aria-expanded='true'] {
+.light-kebab-btn[aria-expanded='true'],
+.lut-editor-kebab-btn[aria-expanded='true'] {
   border-color: var(--accent);
   background: color-mix(in srgb, var(--panel), var(--accent) 12%);
 }
 
 .preview-kebab-menu,
 .material-kebab-menu,
-.light-kebab-menu {
+.light-kebab-menu,
+.lut-editor-kebab-menu {
   position: absolute;
   right: 0;
   top: calc(100% + 8px);
@@ -1037,7 +1041,8 @@ button:disabled:hover {
 
 .preview-kebab-item,
 .material-kebab-item,
-.light-kebab-item {
+.light-kebab-item,
+.lut-editor-kebab-item {
   width: 100%;
   display: flex;
   align-items: center;
@@ -1052,14 +1057,16 @@ button:disabled:hover {
 
 .preview-kebab-item:hover,
 .material-kebab-item:hover,
-.light-kebab-item:hover {
+.light-kebab-item:hover,
+.lut-editor-kebab-item:hover {
   transform: none;
   background: color-mix(in srgb, var(--panel-2), var(--accent) 16%);
 }
 
 .preview-kebab-item:focus-visible,
 .material-kebab-item:focus-visible,
-.light-kebab-item:focus-visible {
+.light-kebab-item:focus-visible,
+.lut-editor-kebab-item:focus-visible {
   outline: 1px solid var(--accent);
   outline-offset: 1px;
 }
@@ -1859,9 +1866,14 @@ button:disabled:hover {
 
 .lut-editor-section-header-actions {
   display: flex;
-  align-items: center;
-  gap: 4px;
+  align-items: stretch;
+  gap: 8px;
   flex-shrink: 0;
+}
+
+.lut-editor-kebab-menu {
+  min-width: 180px;
+  z-index: 220;
 }
 
 .lut-editor-section-label {
@@ -2071,7 +2083,7 @@ button:disabled:hover {
 .lut-editor-stop-editor-actions {
   display: flex;
   gap: 8px;
-  align-items: center;
+  align-items: stretch;
   flex-wrap: wrap;
 }
 
