@@ -710,6 +710,7 @@ button:disabled:hover {
   top: var(--ch-y, 50%);
   height: 1px;
   border-top: 1px dashed rgba(255, 255, 255, 0.5);
+  background: rgba(0, 0, 0, 0.5);
 }
 
 .lut-crosshair::after {
@@ -718,6 +719,7 @@ button:disabled:hover {
   left: var(--ch-x, 50%);
   width: 1px;
   border-left: 1px dashed rgba(255, 255, 255, 0.5);
+  background: rgba(0, 0, 0, 0.5);
 }
 
 .step-lut-select,
