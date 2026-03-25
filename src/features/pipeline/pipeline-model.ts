@@ -31,7 +31,7 @@ export interface ParamDef {
 export interface ParamGroupDef {
   key: string;
   label: string;
-  description: string;
+  descriptionKey: string;
   tone: 'default' | 'feedback';
   params: ParamName[];
 }
@@ -165,35 +165,35 @@ export const PARAM_GROUPS: ParamGroupDef[] = [
   {
     key: 'lighting-derived',
     label: 'Lighting / Derived',
-    description: 'ライティングや視線から計算される値',
+    descriptionKey: 'pipeline.paramGroup.lightingDerivedDesc',
     tone: 'default',
     params: ['lightness', 'specular', 'halfLambert', 'fresnel', 'facing', 'nDotH', 'linearDepth'],
   },
   {
     key: 'feedback-rgb',
     label: 'Previous RGB',
-    description: '前回stepの色をそのまま参照するフィードバック入力',
+    descriptionKey: 'pipeline.paramGroup.feedbackRgbDesc',
     tone: 'feedback',
     params: ['r', 'g', 'b'],
   },
   {
     key: 'feedback-hsv',
     label: 'Previous HSV',
-    description: '前回stepの色をHSV変換して参照するフィードバック入力',
+    descriptionKey: 'pipeline.paramGroup.feedbackHsvDesc',
     tone: 'feedback',
     params: ['h', 's', 'v'],
   },
   {
     key: 'uv',
     label: 'Texture UV',
-    description: 'メッシュのUV座標',
+    descriptionKey: 'pipeline.paramGroup.uvDesc',
     tone: 'default',
     params: ['texU', 'texV'],
   },
   {
     key: 'constant',
     label: 'Constant',
-    description: '定数値',
+    descriptionKey: 'pipeline.paramGroup.constantDesc',
     tone: 'default',
     params: ['zero', 'one'],
   },

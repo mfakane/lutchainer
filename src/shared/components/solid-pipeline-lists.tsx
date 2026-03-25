@@ -22,13 +22,6 @@ type StatusKind = 'success' | 'error' | 'info';
 type StatusReporter = (message: string, kind?: StatusKind) => void;
 
 const CHANNELS: ChannelName[] = ['r', 'g', 'b', 'h', 's', 'v'];
-const PARAM_GROUP_DESCRIPTION_KEYS: Record<string, string> = {
-  'lighting-derived': 'pipeline.paramGroup.lightingDerivedDesc',
-  'feedback-rgb': 'pipeline.paramGroup.feedbackRgbDesc',
-  'feedback-hsv': 'pipeline.paramGroup.feedbackHsvDesc',
-  'uv': 'pipeline.paramGroup.uvDesc',
-  'constant': 'pipeline.paramGroup.constantDesc',
-};
 
 interface ParamNodeListMountOptions {
   getMaterialSettings: () => pipelineModel.MaterialSettings;
@@ -313,15 +306,6 @@ function ParamNodeList(props: ParamNodeListProps): JSX.Element {
     return t(key, values);
   };
 
-  const resolveGroupDescription = (group: pipelineModel.ParamGroupDef): string => {
-    const key = PARAM_GROUP_DESCRIPTION_KEYS[group.key];
-    if (!key) {
-      return group.description;
-    }
-
-    return tr(key);
-  };
-
   const isPreviewTarget = (param: ParamName): boolean => PARAM_PREVIEW_TARGETS.has(param);
 
   const drawPreview = (param: ParamName): void => {
@@ -414,7 +398,7 @@ function ParamNodeList(props: ParamNodeListProps): JSX.Element {
                   <span class="param-group-badge">{tr('pipeline.paramGroup.prevColorBadge')}</span>
                 </Show>
               </div>
-              <div class="param-group-desc">{resolveGroupDescription(group)}</div>
+              <div class="param-group-desc">{tr(group.descriptionKey)}</div>
             </header>
 
             <div class="param-group-nodes">
