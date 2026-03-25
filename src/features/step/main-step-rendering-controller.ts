@@ -1,16 +1,16 @@
-import type {
-  LightSettings,
-  MaterialSettings,
-} from '../pipeline/pipeline-model.ts';
-import type {
-  LutModel,
-  StepModel,
-} from './step-model.ts';
-import * as pipelineModel from '../pipeline/pipeline-model.ts';
 import {
   syncLutStripListState,
   syncStepListState,
 } from '../../shared/components/solid-pipeline-lists.tsx';
+import type {
+  LightSettings,
+  MaterialSettings,
+} from '../pipeline/pipeline-model.ts';
+import * as pipelineModel from '../pipeline/pipeline-model.ts';
+import type {
+  LutModel,
+  StepModel,
+} from './step-model.ts';
 import type { StepPreviewRenderer } from './step-preview-renderer.ts';
 import { updateStepSwatches as updateStepSwatchesHelper } from './step-swatch-updater.ts';
 
@@ -75,6 +75,11 @@ export function createMainStepRenderingController(
 ): MainStepRenderingController {
   assertOptions(options);
 
+  const scheduleConnectionDrawAfterStepListSync = (): void => {
+    // 現状はこれでよいが、もしスクロール状態で step を編集した際に線が暴れるようなら queueMicrotask(f) や setTimeout(f, 0) を挟むことも検討する
+    options.onScheduleConnectionDraw();
+  };
+
   const normalizeSteps = (): void => {
     pipelineModel.normalizeSteps(options.getSteps(), options.getLuts());
   };
@@ -123,12 +128,12 @@ export function createMainStepRenderingController(
     options.onUpdateShaderCodePanel();
 
     if (steps.length === 0) {
-      options.onScheduleConnectionDraw();
+      scheduleConnectionDrawAfterStepListSync();
       return;
     }
 
     updateStepSwatches();
-    options.onScheduleConnectionDraw();
+    scheduleConnectionDrawAfterStepListSync();
   };
 
   return {

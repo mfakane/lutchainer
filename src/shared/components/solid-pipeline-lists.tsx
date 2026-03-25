@@ -1,5 +1,4 @@
 import { For, Show, createSignal, onCleanup, type Accessor, type JSX } from 'solid-js';
-import { DropdownMenu } from './solid-dropdown-menu.tsx';
 import { Portal, render } from 'solid-js/web';
 import * as pipelineModel from '../../features/pipeline/pipeline-model';
 import {
@@ -17,6 +16,7 @@ import {
 } from '../../features/step/step-preview-cpu-render';
 import { getCustomChannelsForBlendMode } from '../../features/step/step-runtime';
 import { t, useLanguage } from '../i18n';
+import { DropdownMenu } from './solid-dropdown-menu.tsx';
 
 type StatusKind = 'success' | 'error' | 'info';
 type StatusReporter = (message: string, kind?: StatusKind) => void;
@@ -210,6 +210,13 @@ function cloneStepArray(steps: StepModel[]): StepModel[] {
 
 function cloneLutArray(luts: LutModel[]): LutModel[] {
   return luts.map(lut => cloneLutModel(lut));
+}
+
+function restoreElementScrollPosition(element: HTMLElement, top: number, left: number): void {
+  requestAnimationFrame(() => {
+    element.scrollTop = top;
+    element.scrollLeft = left;
+  });
 }
 
 function ensureStatusReporter(value: unknown, context: string): asserts value is StatusReporter {
@@ -1030,8 +1037,11 @@ export function mountStepList(target: HTMLElement, options: StepListMountOptions
         return;
       }
 
+      const scrollTop = target.scrollTop;
+      const scrollLeft = target.scrollLeft;
       setSteps(cloneStepArray(nextSteps));
       setLuts(cloneLutArray(nextLuts));
+      restoreElementScrollPosition(target, scrollTop, scrollLeft);
     };
 
     return (
