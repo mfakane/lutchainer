@@ -31,6 +31,7 @@ type StatusKind = 'success' | 'error' | 'info';
 
 // Pixels the pointer must travel perpendicular to a rail to trigger delete
 const DRAG_DELETE_THRESHOLD = 36;
+const POSITION_PERCENT_STEP = 0.01;
 
 // --- Types ---
 
@@ -45,6 +46,10 @@ interface LutEditorDialogShellOptions {
   surfaceEl: Element;
   onApply: (lutId: string | null, updatedLut: LutModel) => void;
   onStatus: (message: string, kind?: StatusKind) => void;
+}
+
+function formatPositionPercent(position: number): string {
+  return (position * 100).toFixed(2);
 }
 
 // --- Module-level state ---
@@ -381,15 +386,15 @@ function LutEditorDialogContent(props: { options: LutEditorDialogContentOptions 
 
   const handleRampPositionWheel = (rampId: string, currentPosition: number, ev: WheelEvent): void => {
     ev.preventDefault();
-    const delta = ev.deltaY < 0 ? 0.01 : -0.01;
-    const newPercent = String(Math.round(Math.max(0, Math.min(1, currentPosition + delta)) * 100));
+    const delta = ev.deltaY < 0 ? POSITION_PERCENT_STEP / 100 : -POSITION_PERCENT_STEP / 100;
+    const newPercent = formatPositionPercent(Math.max(0, Math.min(1, currentPosition + delta)));
     handleRampPositionChange(rampId, newPercent);
   };
 
   const handleStopPositionWheel = (stopId: string, currentPosition: number, ev: WheelEvent): void => {
     ev.preventDefault();
-    const delta = ev.deltaY < 0 ? 0.01 : -0.01;
-    const newPercent = String(Math.round(Math.max(0, Math.min(1, currentPosition + delta)) * 100));
+    const delta = ev.deltaY < 0 ? POSITION_PERCENT_STEP / 100 : -POSITION_PERCENT_STEP / 100;
+    const newPercent = formatPositionPercent(Math.max(0, Math.min(1, currentPosition + delta)));
     handleStopPositionChange(stopId, newPercent);
   };
 
@@ -1003,7 +1008,7 @@ function LutEditorDialogContent(props: { options: LutEditorDialogContentOptions 
                     >
                       <div class="lut-editor-ramp-swatch" style={rampSwatchStyle(ramp)} />
                       <span class="lut-editor-ramp-y">
-                        {tr('lutEditor.rampPosition')}: {(ramp.position * 100).toFixed(0)}%
+                        {tr('lutEditor.rampPosition')}: {formatPositionPercent(ramp.position)}%
                       </span>
                       <Show when={canRemoveRamp(ramp.id)}>
                         <button
@@ -1034,8 +1039,8 @@ function LutEditorDialogContent(props: { options: LutEditorDialogContentOptions 
                     class="lut-editor-stop-pos-input"
                     min="0"
                     max="100"
-                    step="1"
-                    value={Math.round(getSelectedRamp().position * 100)}
+                    step={String(POSITION_PERCENT_STEP)}
+                    value={formatPositionPercent(getSelectedRamp().position)}
                     onInput={ev => handleRampPositionChange(getSelectedRamp().id, (ev.currentTarget as HTMLInputElement).value)}
                     onWheel={ev => handleRampPositionWheel(getSelectedRamp().id, getSelectedRamp().position, ev)}
                   />
@@ -1161,8 +1166,8 @@ function LutEditorDialogContent(props: { options: LutEditorDialogContentOptions 
                       class="lut-editor-stop-pos-input"
                       min="0"
                       max="100"
-                      step="1"
-                      value={Math.round(getStop().position * 100)}
+                      step={String(POSITION_PERCENT_STEP)}
+                      value={formatPositionPercent(getStop().position)}
                       onInput={ev => handleStopPositionChange(getStop().id, (ev.currentTarget as HTMLInputElement).value)}
                       onWheel={ev => handleStopPositionWheel(getStop().id, getStop().position, ev)}
                     />

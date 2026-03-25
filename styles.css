@@ -2066,7 +2066,8 @@ button:disabled:hover {
 }
 
 .lut-editor-stop-pos-input {
-  width: 56px;
+  width: calc(6ch + 16px);
+  box-sizing: content-box;
   font-size: 12px;
   padding: 3px 6px;
   border: 1px solid var(--control-border);
