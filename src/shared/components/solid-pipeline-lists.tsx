@@ -1,6 +1,7 @@
 import { For, Show, createSignal, onCleanup, type Accessor, type JSX } from 'solid-js';
 import { Portal, render } from 'solid-js/web';
 import * as pipelineModel from '../../features/pipeline/pipeline-model';
+import { getCustomChannelsForBlendMode } from '../../features/step/step-blend-strategies.ts';
 import {
   BLEND_MODES,
   BLEND_OPS,
@@ -14,7 +15,6 @@ import {
 import {
   drawParamPreviewSphereCpu,
 } from '../../features/step/step-preview-cpu-render';
-import { getCustomChannelsForBlendMode } from '../../features/step/step-runtime';
 import { t, useLanguage } from '../i18n';
 import { DropdownMenu } from './solid-dropdown-menu.tsx';
 

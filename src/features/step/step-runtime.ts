@@ -2,7 +2,13 @@ import {
   sampleLutColorLinear,
   type LutColorSample,
 } from './lut-sampling';
+import {
+  applyStepColor,
+  getCustomChannelsForBlendMode
+} from './step-blend-strategies';
 import type {
+  BlendOp,
+  ChannelName,
   Color,
   LutModel,
   StepModel,
@@ -10,28 +16,13 @@ import type {
   StepRuntimeModel,
 } from './step-model';
 import {
-  applyStepColor,
-} from './step-blend-strategies';
-import {
   evaluateStepParam,
 } from './step-param-evaluators';
 
 export {
   sampleLutColorLinear,
-  type LutColorSample,
+  type LutColorSample
 };
-
-export {
-  BLEND_MODE_STRATEGIES,
-  getBlendModeStrategy,
-  getCustomChannelsForBlendMode,
-  applyStepColor,
-} from './step-blend-strategies';
-
-export {
-  PARAM_EVALUATORS,
-  evaluateStepParam,
-} from './step-param-evaluators';
 
 function clamp01(v: number): number {
   return Math.max(0, Math.min(1, v));
@@ -65,7 +56,12 @@ export function resolveStepRuntimeModels(
   return activeSteps.map(step => {
     const lutIndex = Math.max(0, luts.findIndex(lut => lut.id === step.lutId));
     const lut = luts[lutIndex] ?? null;
-    return { step, lut, lutIndex };
+    const ops = getCustomChannelsForBlendMode(step.blendMode).reduce((acc, channel) => {
+      acc[channel] = step.ops?.[channel] ?? 'none';
+      return acc;
+    }, {} as Record<ChannelName, BlendOp>);
+    const stepModel = { ...step, ops };
+    return { step: stepModel, lut, lutIndex };
   });
 }
 

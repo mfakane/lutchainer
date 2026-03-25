@@ -1,7 +1,7 @@
-import type { StepRuntimeModel } from '../step/step-model';
 import {
   getBlendModeStrategy,
 } from '../step/step-blend-strategies';
+import type { StepRuntimeModel } from '../step/step-model';
 import {
   paramExprGlsl,
   paramExprHlsl,
@@ -106,8 +106,17 @@ export function buildShaderStepCode(stepModels: readonly StepRuntimeModel[], sta
       continue;
     }
 
+    
+    const opsDescription = Object.entries(step.ops)
+      .filter(([, op]) => op !== 'none')
+      .map(([channel, op]) => `${channel}: ${op}`)
+      .join(', ');
+    stepCode.push(`// Step ${index}${step.label ? `: ${step.label}` : ''}`);
+    stepCode.push(`// (${step.xParam}, ${step.yParam}) -> ${step.blendMode}${opsDescription ? `(${opsDescription})` : ''}`);
+
     stepCode.push(...headLines);
     stepCode.push(...blendLines);
+    stepCode.push('');
   }
 
   return stepCode;

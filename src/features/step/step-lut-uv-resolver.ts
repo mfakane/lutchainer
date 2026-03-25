@@ -9,9 +9,9 @@ import type {
   LutModel,
   StepModel,
 } from './step-model';
+import { evaluateStepParam } from './step-param-evaluators';
 import {
   composeColorFromSteps,
-  evaluateStepParam,
   resolveStepRuntimeModels,
 } from './step-runtime';
 
