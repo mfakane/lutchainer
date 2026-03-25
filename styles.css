@@ -475,7 +475,7 @@ button:disabled:hover {
 .step-item {
   display: grid;
   grid-template-rows: auto auto;
-  grid-template-columns: 78px minmax(0, 1fr) 120px;
+  grid-template-columns: 10ch minmax(0, 1fr) 120px;
   gap: 10px;
   border: 1px solid var(--line);
   border-radius: 12px;
@@ -2146,7 +2146,9 @@ button:disabled:hover {
   }
 
   .step-item {
-    grid-template-columns: 68px minmax(0, 1fr) 90px;
+    grid-template-columns: 7ch minmax(0, 1fr) 90px;
+    hyphens: auto;
+    word-wrap: auto;
   }
 
   .material-grid {
