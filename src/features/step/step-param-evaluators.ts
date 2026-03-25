@@ -90,6 +90,14 @@ export const PARAM_EVALUATORS: Record<ParamName, ParamEvaluator> = {
     shader: { glslExpr: 'v_texcoord.y', hlslExpr: 'input.texcoord.y', requires: ['texcoord'] },
     evaluate: (_current, context) => context.texV,
   },
+  zero: {
+    shader: { glslExpr: '0.0', hlslExpr: '0.0', requires: [] },
+    evaluate: () => 0,
+  },
+  one: {
+    shader: { glslExpr: '1.0', hlslExpr: '1.0', requires: [] },
+    evaluate: () => 1,
+  },
 };
 
 export function paramExprGlsl(param: ParamName): string {

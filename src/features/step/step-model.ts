@@ -28,7 +28,9 @@ export type ParamName =
   | 's'
   | 'v'
   | 'texU'
-  | 'texV';
+  | 'texV'
+  | 'zero'
+  | 'one';
 
 export type Color = [number, number, number];
 export type ColorWithAlpha = [number, number, number, number?];

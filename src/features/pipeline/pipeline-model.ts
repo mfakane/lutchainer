@@ -157,6 +157,8 @@ export const PARAMS: ParamDef[] = [
   { key: 'v', label: 'Value', description: 'Current color value' },
   { key: 'texU', label: 'U', description: 'Texture coordinate X' },
   { key: 'texV', label: 'V', description: 'Texture coordinate Y' },
+  { key: 'zero', label: 'Zero', description: 'Constant 0' },
+  { key: 'one', label: 'One', description: 'Constant 1' },
 ];
 
 export const PARAM_GROUPS: ParamGroupDef[] = [
@@ -187,6 +189,13 @@ export const PARAM_GROUPS: ParamGroupDef[] = [
     description: 'メッシュのUV座標',
     tone: 'default',
     params: ['texU', 'texV'],
+  },
+  {
+    key: 'constant',
+    label: 'Constant',
+    description: '定数値',
+    tone: 'default',
+    params: ['zero', 'one'],
   },
 ];
 

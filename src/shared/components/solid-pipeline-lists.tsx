@@ -27,6 +27,7 @@ const PARAM_GROUP_DESCRIPTION_KEYS: Record<string, string> = {
   'feedback-rgb': 'pipeline.paramGroup.feedbackRgbDesc',
   'feedback-hsv': 'pipeline.paramGroup.feedbackHsvDesc',
   'uv': 'pipeline.paramGroup.uvDesc',
+  'constant': 'pipeline.paramGroup.constantDesc',
 };
 
 interface ParamNodeListMountOptions {
@@ -119,6 +120,8 @@ const PARAM_PREVIEW_TARGETS = new Set<ParamName>([
   'linearDepth',
   'texU',
   'texV',
+  'zero',
+  'one',
 ]);
 
 function isNonEmptyString(value: unknown): value is string {
