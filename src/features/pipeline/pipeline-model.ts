@@ -1,5 +1,11 @@
 import { strToU8, unzipSync, zipSync } from 'fflate';
-import type { ColorRamp2dLutData } from '../lut-editor/lut-editor-model';
+import {
+  LUT_EDITOR_DEFAULT_HEIGHT,
+  LUT_EDITOR_DEFAULT_WIDTH,
+  type ColorRamp,
+  type ColorRamp2dLutData,
+  type ColorStop
+} from '../lut-editor/lut-editor-model';
 import {
   BLEND_MODES,
   BLEND_OPS,
@@ -741,15 +747,129 @@ function createLutFromCanvas(name: string, srcCanvas: HTMLCanvasElement): LutMod
   };
 }
 
+function interpolateBuiltinRampStops(stops: readonly ColorStop[], t: number): [number, number, number, number] {
+  if (stops.length === 0) return [0, 0, 0, 1];
+  if (stops.length === 1) {
+    const stop = stops[0]!;
+    return [stop.color[0], stop.color[1], stop.color[2], stop.alpha];
+  }
+
+  const clamped = clamp01(t);
+  const first = stops[0]!;
+  const last = stops[stops.length - 1]!;
+  if (clamped <= first.position) return [first.color[0], first.color[1], first.color[2], first.alpha];
+  if (clamped >= last.position) return [last.color[0], last.color[1], last.color[2], last.alpha];
+
+  for (let index = 0; index < stops.length - 1; index++) {
+    const a = stops[index]!;
+    const b = stops[index + 1]!;
+    if (clamped < a.position || clamped > b.position) {
+      continue;
+    }
+    const span = b.position - a.position;
+    const localT = span > 0 ? (clamped - a.position) / span : 0;
+    return [
+      a.color[0] + (b.color[0] - a.color[0]) * localT,
+      a.color[1] + (b.color[1] - a.color[1]) * localT,
+      a.color[2] + (b.color[2] - a.color[2]) * localT,
+      a.alpha + (b.alpha - a.alpha) * localT,
+    ];
+  }
+
+  return [last.color[0], last.color[1], last.color[2], last.alpha];
+}
+
+function sampleBuiltinRampData(data: ColorRamp2dLutData, u: number, v: number): [number, number, number, number] {
+  const ramps = data.ramps;
+  if (ramps.length === 0) return [0, 0, 0, 1];
+  if (ramps.length === 1) return interpolateBuiltinRampStops(ramps[0]!.stops, u);
+
+  const clamped = clamp01(v);
+  const first = ramps[0]!;
+  const last = ramps[ramps.length - 1]!;
+  if (clamped <= first.position) return interpolateBuiltinRampStops(first.stops, u);
+  if (clamped >= last.position) return interpolateBuiltinRampStops(last.stops, u);
+
+  for (let index = 0; index < ramps.length - 1; index++) {
+    const a = ramps[index]!;
+    const b = ramps[index + 1]!;
+    if (clamped < a.position || clamped > b.position) {
+      continue;
+    }
+    const lo = interpolateBuiltinRampStops(a.stops, u);
+    const hi = interpolateBuiltinRampStops(b.stops, u);
+    const span = b.position - a.position;
+    const localT = span > 0 ? (clamped - a.position) / span : 0;
+    return [
+      lo[0] + (hi[0] - lo[0]) * localT,
+      lo[1] + (hi[1] - lo[1]) * localT,
+      lo[2] + (hi[2] - lo[2]) * localT,
+      lo[3] + (hi[3] - lo[3]) * localT,
+    ];
+  }
+
+  return interpolateBuiltinRampStops(last.stops, u);
+}
+
+function createBuiltinRampData(name: string, rampStopResolution: number, painter: (u: number, v: number) => ColorWithAlpha): ColorRamp2dLutData {
+  const ramps: ColorRamp[] = [];
+
+  for (let rampIndex = 0; rampIndex < rampStopResolution; rampIndex++) {
+    const v = rampStopResolution > 1 ? rampIndex / (rampStopResolution - 1) : 0;
+    const stops: ColorStop[] = [];
+    for (let stopIndex = 0; stopIndex < rampStopResolution; stopIndex++) {
+      const u = rampStopResolution > 1 ? stopIndex / (rampStopResolution - 1) : 0;
+      const color = painter(u, v);
+      if (!hasFiniteColor(color)) {
+        throw new Error('Builtin LUT painter が不正な色を返しました。');
+      }
+      stops.push({
+        id: uid('stop'),
+        position: u,
+        color: [clamp01(color[0]), clamp01(color[1]), clamp01(color[2])],
+        alpha: clamp01(color[3] ?? 1),
+      });
+    }
+    ramps.push({
+      id: uid('ramp'),
+      position: v,
+      stops,
+    });
+  }
+
+  return {
+    name,
+    width: LUT_EDITOR_DEFAULT_WIDTH,
+    height: LUT_EDITOR_DEFAULT_HEIGHT,
+    ramps,
+  };
+}
+
+function createBuiltinEditableLut(name: string, rampStopResolution: number, painter: (u: number, v: number) => ColorWithAlpha): LutModel {
+  const ramp2dData = createBuiltinRampData(name, rampStopResolution, painter);
+  return createBuiltinEditableLutFromRampData(ramp2dData);
+}
+
+function createBuiltinEditableLutFromRampData(ramp2dData: ColorRamp2dLutData): LutModel {
+  const lut = createLutFromPainter(ramp2dData.name, (u, v) => {
+    const [r, g, b, a] = sampleBuiltinRampData(ramp2dData, u, v);
+    return [r, g, b, a];
+  });
+  return {
+    ...lut,
+    ramp2dData,
+  };
+}
+
 export function createBuiltinLuts(): LutModel[] {
-  const lutA = createLutFromPainter('Cyan-Amber Sweep', (u, v) => {
+  const lutA = createBuiltinEditableLut('Cyan-Amber Sweep', 4, (u, v) => {
     const h = clamp01(0.08 + u * 0.55 + (1 - v) * 0.1);
     const s = clamp01(0.4 + v * 0.6);
     const val = clamp01(0.25 + (1 - Math.abs(u - 0.5) * 1.4) * 0.75);
     return hsvToRgb([h, s, val]);
   });
 
-  const lutB = createLutFromPainter('Soft Filmic', (u, v) => {
+  const lutB = createBuiltinEditableLut('Soft Filmic', 2, (u, v) => {
     const warm = [0.93, 0.68, 0.49] as Color;
     const cool = [0.41, 0.66, 0.86] as Color;
     const t = clamp01(0.15 + u * 0.85);
@@ -762,7 +882,7 @@ export function createBuiltinLuts(): LutModel[] {
     return [mix[0] * lift, mix[1] * lift, mix[2] * lift];
   });
 
-  const lutC = createLutFromPainter('Split Tones', (u, v) => {
+  const lutC = createBuiltinEditableLut('Split Tones', 8, (u, v) => {
     const h = clamp01((u * 0.85 + v * 0.25) % 1);
     const s = clamp01(0.2 + Math.pow(v, 0.75) * 0.8);
     const val = clamp01(0.18 + (u * v) * 0.82);
