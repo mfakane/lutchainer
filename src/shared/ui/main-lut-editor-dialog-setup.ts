@@ -127,7 +127,6 @@ export function setupMainLutEditorDialog(
     dialogEl: options.dialogEl,
     surfaceEl: options.surfaceEl,
     onApply,
-    onStatus: options.onStatus,
   });
 
   return {

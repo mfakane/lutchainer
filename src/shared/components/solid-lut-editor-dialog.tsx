@@ -38,14 +38,17 @@ const POSITION_PERCENT_STEP = 0.01;
 interface LutEditorDialogContentOptions {
   onApply: (lutId: string | null, updatedLut: LutModel) => void;
   onClose: () => void;
-  onStatus: (message: string, kind?: StatusKind) => void;
+  onDirtyChange: (dirty: boolean) => void;
 }
 
 interface LutEditorDialogShellOptions {
   dialogEl: HTMLDialogElement;
   surfaceEl: Element;
   onApply: (lutId: string | null, updatedLut: LutModel) => void;
-  onStatus: (message: string, kind?: StatusKind) => void;
+}
+
+function serializeRampData(data: ColorRamp2dLutData | null): string {
+  return data ? JSON.stringify(data) : '';
 }
 
 function formatPositionPercent(position: number): string {
@@ -74,9 +77,6 @@ function ensureLutEditorDialogShellOptions(value: unknown): asserts value is Lut
   if (typeof options.onApply !== 'function') {
     throw new Error('mountLutEditorDialogShell: onApply must be a function');
   }
-  if (typeof options.onStatus !== 'function') {
-    throw new Error('mountLutEditorDialogShell: onStatus must be a function');
-  }
 }
 
 // --- Component ---
@@ -92,6 +92,7 @@ function LutEditorDialogContent(props: { options: LutEditorDialogContentOptions 
   const [editingLutId, setEditingLutId] = createSignal<string | null>(null);
   const [selectedRampId, setSelectedRampId] = createSignal<string | null>(null);
   const [focusedStopId, setFocusedStopId] = createSignal<string | null>(null);
+  const [initialSerializedRampData, setInitialSerializedRampData] = createSignal('');
 
   // Pending-delete state during drag (shows visual indicator on the knob)
   const [draggingRampDeleteId, setDraggingRampDeleteId] = createSignal<string | null>(null);
@@ -105,10 +106,17 @@ function LutEditorDialogContent(props: { options: LutEditorDialogContentOptions 
   syncLutEditorDialogInternal = (data, lutId) => {
     setRampData(data);
     setEditingLutId(lutId);
+    setInitialSerializedRampData(serializeRampData(data));
     const firstRamp = data?.ramps[0];
     setSelectedRampId(firstRamp?.id ?? null);
     setFocusedStopId(firstRamp?.stops[0]?.id ?? null);
   };
+
+  const isDirty = createMemo(() => serializeRampData(rampData()) !== initialSerializedRampData());
+
+  createEffect(() => {
+    props.options.onDirtyChange(isDirty());
+  });
 
   const selectedRamp = createMemo((): ColorRamp | null => {
     const data = rampData();
@@ -775,6 +783,7 @@ function LutEditorDialogContent(props: { options: LutEditorDialogContentOptions 
     if (!data) return;
     const lutId = editingLutId();
     const newLut = createLutFromColorRamp2d(data);
+    setInitialSerializedRampData(serializeRampData(data));
     props.options.onApply(lutId, newLut);
     props.options.onClose();
   };
@@ -1236,24 +1245,43 @@ export function mountLutEditorDialogShell(options: LutEditorDialogShellOptions):
   mountLutEditorDialogContent(options.surfaceEl, {
     onApply: options.onApply,
     onClose: closeLutEditorDialog,
-    onStatus: options.onStatus,
+    onDirtyChange: dirty => {
+      options.dialogEl.dataset.dirty = dirty ? 'true' : 'false';
+    },
   });
 
   const onCancel = (event: Event) => {
     event.preventDefault();
+    if (options.dialogEl.dataset.dirty === 'true') {
+      return;
+    }
     closeLutEditorDialog();
+  };
+
+  const onKeyDown = (event: KeyboardEvent) => {
+    if (event.key !== 'Escape') return;
+    if (!options.dialogEl.open) return;
+    if (options.dialogEl.dataset.dirty !== 'true') return;
+    event.preventDefault();
+    event.stopPropagation();
   };
 
   // Clicks on the <dialog> element itself (not any child) are backdrop clicks.
   const onDialogClick = (event: MouseEvent) => {
-    if (event.target === options.dialogEl) closeLutEditorDialog();
+    if (event.target !== options.dialogEl) return;
+    if (options.dialogEl.dataset.dirty === 'true') {
+      return;
+    }
+    closeLutEditorDialog();
   };
 
   options.dialogEl.addEventListener('cancel', onCancel);
+  options.dialogEl.addEventListener('keydown', onKeyDown, true);
   options.dialogEl.addEventListener('click', onDialogClick);
 
   disposeLutEditorDialogShell = () => {
     options.dialogEl.removeEventListener('cancel', onCancel);
+    options.dialogEl.removeEventListener('keydown', onKeyDown, true);
     options.dialogEl.removeEventListener('click', onDialogClick);
   };
 }
