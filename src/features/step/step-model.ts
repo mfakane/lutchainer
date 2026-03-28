@@ -8,6 +8,7 @@ export type BlendMode =
   | 'saturation'
   | 'color'
   | 'value'
+  | 'selfBlend'
   | 'customRgb'
   | 'customHsv';
 
@@ -33,6 +34,7 @@ export type ParamName =
   | 'one';
 
 export type Color = [number, number, number];
+export type ColorWithHasChroma = [number, number, number, boolean?];
 export type ColorWithAlpha = [number, number, number, number?];
 export interface StepModel {
   id: number;
@@ -98,6 +100,7 @@ export interface BlendModeEmitInput {
 
 export interface BlendModeStrategy {
   editableChannels: readonly ChannelName[];
+  selectableChannelBlendOps: readonly BlendOp[];
   applyCpu: (input: BlendModeApplyInput) => Color;
   emitGlsl: (input: BlendModeEmitInput) => string[];
   emitHlsl: (input: BlendModeEmitInput) => string[];
@@ -143,6 +146,7 @@ export const BLEND_MODES: BlendModeDef[] = [
   { key: 'saturation', label: 'Saturation' },
   { key: 'color', label: 'Color' },
   { key: 'value', label: 'Value' },
+  { key: 'selfBlend', label: 'Self Blend' },
   { key: 'customRgb', label: 'Custom RGB' },
   { key: 'customHsv', label: 'Custom HSV' },
 ];

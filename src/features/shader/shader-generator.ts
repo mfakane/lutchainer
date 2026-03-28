@@ -152,18 +152,56 @@ uniform float u_fresnelPower;
 uniform vec3 u_previewLightDir;
 ${samplerDecl}
 
-vec3 rgb2hsv(vec3 c) {
-  vec4 K = vec4(0.0, -1.0 / 3.0, 2.0 / 3.0, -1.0);
-  vec4 p = mix(vec4(c.bg, K.wz), vec4(c.gb, K.xy), step(c.b, c.g));
-  vec4 q = mix(vec4(p.xyw, c.r), vec4(c.r, p.yzx), step(p.x, c.r));
-  float d = q.x - min(q.w, q.y);
-  float e = 1.0e-10;
-  return vec3(abs(q.z + (q.w - q.y) / (6.0 * d + e)), d / (q.x + e), q.x);
+vec4 rgb2hsv(vec3 color) {
+  float r = color.r;
+  float g = color.g;
+  float b = color.b;
+  float maxValue = max(r, max(g, b));
+  float minValue = min(r, min(g, b));
+  float delta = maxValue - minValue;
+
+  float hue = 0.0;
+  if (delta > 1.0e-6) {
+    if (maxValue <= r) {
+      hue = ((g - b) / delta + (g < b ? 6.0 : 0.0)) / 6.0;
+    } else if (maxValue <= g) {
+      hue = ((b - r) / delta + 2.0) / 6.0;
+    } else if (maxValue <= b) {
+      hue = ((r - g) / delta + 4.0) / 6.0;
+    }
+  }
+
+  float saturation = maxValue <= 1.0e-6 ? 0.0 : delta / maxValue;
+  float value = maxValue;
+  float hasChroma = step(1.0e-6, delta);
+  return clamp(vec4(hue, saturation, value, hasChroma), 0.0, 1.0);
 }
 
-vec3 hsv2rgb(vec3 c) {
-  vec3 rgb = clamp(abs(mod(c.x * 6.0 + vec3(0.0, 4.0, 2.0), 6.0) - 3.0) - 1.0, 0.0, 1.0);
-  return c.z * mix(vec3(1.0), rgb, c.y);
+vec3 hsv2rgb(vec4 color) {
+  float saturation = clamp(color.y, 0.0, 1.0);
+  float value = clamp(color.z, 0.0, 1.0);
+  float hasChroma = clamp(color.w, 0.0, 1.0);
+
+  if (saturation <= 1.0e-6 || hasChroma <= 1.0e-6) {
+    return vec3(value);
+  }
+
+  float hue = color.x - floor(color.x);
+  float c = value * saturation;
+  float x = c * (1.0 - abs(mod(hue * 6.0, 2.0) - 1.0));
+  float m = value - c;
+  float cM = c + m;
+  float xM = x + m;
+
+  float sectorFloat = floor(hue * 6.0);
+  int sector = int(mod(sectorFloat, 6.0));
+
+  if (sector == 0) return vec3(cM, xM, m);
+  if (sector == 1) return vec3(xM, cM, m);
+  if (sector == 2) return vec3(m, cM, xM);
+  if (sector == 3) return vec3(m, xM, cM);
+  if (sector == 4) return vec3(xM, m, cM);
+  return vec3(cM, m, xM);
 }
 
 vec4 sampleLut(int lutIndex, vec2 uv) {
@@ -242,18 +280,56 @@ varying vec3 v_worldPos;
 varying vec3 v_normal;
 varying vec2 v_texcoord;
 
-vec3 rgb2hsv(vec3 c) {
-  vec4 K = vec4(0.0, -1.0 / 3.0, 2.0 / 3.0, -1.0);
-  vec4 p = mix(vec4(c.bg, K.wz), vec4(c.gb, K.xy), step(c.b, c.g));
-  vec4 q = mix(vec4(p.xyw, c.r), vec4(c.r, p.yzx), step(p.x, c.r));
-  float d = q.x - min(q.w, q.y);
-  float e = 1.0e-10;
-  return vec3(abs(q.z + (q.w - q.y) / (6.0 * d + e)), d / (q.x + e), q.x);
+vec4 rgb2hsv(vec3 color) {
+  float r = color.r;
+  float g = color.g;
+  float b = color.b;
+  float maxValue = max(r, max(g, b));
+  float minValue = min(r, min(g, b));
+  float delta = maxValue - minValue;
+
+  float hue = 0.0;
+  if (delta > 1.0e-6) {
+    if (maxValue <= r) {
+      hue = ((g - b) / delta + (g < b ? 6.0 : 0.0)) / 6.0;
+    } else if (maxValue <= g) {
+      hue = ((b - r) / delta + 2.0) / 6.0;
+    } else if (maxValue <= b) {
+      hue = ((r - g) / delta + 4.0) / 6.0;
+    }
+  }
+
+  float saturation = maxValue <= 1.0e-6 ? 0.0 : delta / maxValue;
+  float value = maxValue;
+  float hasChroma = step(1.0e-6, delta);
+  return clamp(vec4(hue, saturation, value, hasChroma), 0.0, 1.0);
 }
 
-vec3 hsv2rgb(vec3 c) {
-  vec3 rgb = clamp(abs(mod(c.x * 6.0 + vec3(0.0, 4.0, 2.0), 6.0) - 3.0) - 1.0, 0.0, 1.0);
-  return c.z * mix(vec3(1.0), rgb, c.y);
+vec3 hsv2rgb(vec4 color) {
+  float saturation = clamp(color.y, 0.0, 1.0);
+  float value = clamp(color.z, 0.0, 1.0);
+  float hasChroma = clamp(color.w, 0.0, 1.0);
+
+  if (saturation <= 1.0e-6 || hasChroma <= 1.0e-6) {
+    return vec3(value);
+  }
+
+  float hue = color.x - floor(color.x);
+  float c = value * saturation;
+  float x = c * (1.0 - abs(mod(hue * 6.0, 2.0) - 1.0));
+  float m = value - c;
+  float cM = c + m;
+  float xM = x + m;
+
+  float sectorFloat = floor(hue * 6.0);
+  int sector = int(mod(sectorFloat, 6.0));
+
+  if (sector == 0) return vec3(cM, xM, m);
+  if (sector == 1) return vec3(xM, cM, m);
+  if (sector == 2) return vec3(m, cM, xM);
+  if (sector == 3) return vec3(m, xM, cM);
+  if (sector == 4) return vec3(xM, m, cM);
+  return vec3(cM, m, xM);
 }
 
 vec4 sampleLut(int lutIndex, vec2 uv) {
@@ -328,7 +404,7 @@ struct PSInput {
   float2 texcoord : TEXCOORD2;
 };
 
-float3 RgbToHsv(float3 color) {
+float4 RgbToHsv(float3 color) {
   float r = color.r;
   float g = color.g;
   float b = color.b;
@@ -338,38 +414,46 @@ float3 RgbToHsv(float3 color) {
 
   float hue = 0.0;
   if (delta > 1.0e-6) {
-    if (maxValue == r) {
+    if (maxValue <= r) {
       hue = ((g - b) / delta + (g < b ? 6.0 : 0.0)) / 6.0;
-    } else if (maxValue == g) {
+    } else if (maxValue <= g) {
       hue = ((b - r) / delta + 2.0) / 6.0;
-    } else {
+    } else if (maxValue <= b) {
       hue = ((r - g) / delta + 4.0) / 6.0;
     }
   }
 
   float saturation = maxValue <= 1.0e-6 ? 0.0 : delta / maxValue;
   float value = maxValue;
-  return saturate(float3(hue, saturation, value));
+  float hasChroma = step(1.0e-6, delta);
+  return saturate(float4(hue, saturation, value, hasChroma));
 }
 
-float3 HsvToRgb(float3 color) {
-  float hue = color.x - floor(color.x);
+float3 HsvToRgb(float4 color) {
   float saturation = saturate(color.y);
   float value = saturate(color.z);
+  float hasChroma = clamp(color.w, 0.0, 1.0);
+
+  if (saturation <= 1.0e-6 || hasChroma <= 1.0e-6) {
+    return float3(value, value, value);
+  }
+
+  float hue = color.x - floor(color.x);
+  float c = value * saturation;
+  float x = c * (1.0 - abs(fmod(hue * 6.0, 2.0) - 1.0));
+  float m = value - c;
+  float cM = c + m;
+  float xM = x + m;
 
   float sectorFloat = floor(hue * 6.0);
-  float fraction = hue * 6.0 - sectorFloat;
-  float p = value * (1.0 - saturation);
-  float q = value * (1.0 - fraction * saturation);
-  float t = value * (1.0 - (1.0 - fraction) * saturation);
-  int sector = (int)sectorFloat % 6;
+  int sector = int(fmod(sectorFloat, 6.0));
 
-  if (sector == 0) return float3(value, t, p);
-  if (sector == 1) return float3(q, value, p);
-  if (sector == 2) return float3(p, value, t);
-  if (sector == 3) return float3(p, q, value);
-  if (sector == 4) return float3(t, p, value);
-  return float3(value, p, q);
+  if (sector == 0) return float3(cM, xM, m);
+  if (sector == 1) return float3(xM, cM, m);
+  if (sector == 2) return float3(m, cM, xM);
+  if (sector == 3) return float3(m, xM, cM);
+  if (sector == 4) return float3(xM, m, cM);
+  return float3(cM, m, xM);
 }
 
 float4 SampleLut(int lutIndex, float2 uv) {

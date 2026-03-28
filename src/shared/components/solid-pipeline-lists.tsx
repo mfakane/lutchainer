@@ -1,16 +1,15 @@
 import { For, Show, createSignal, onCleanup, type Accessor, type JSX } from 'solid-js';
 import { Portal, render } from 'solid-js/web';
 import * as pipelineModel from '../../features/pipeline/pipeline-model';
-import { getCustomChannelsForBlendMode } from '../../features/step/step-blend-strategies.ts';
+import { getCustomChannelsForBlendMode, getSelectableBlendOpsForChannel } from '../../features/step/step-blend-strategies.ts';
 import {
   BLEND_MODES,
-  BLEND_OPS,
   MAX_STEP_LABEL_LENGTH,
   type BlendOp,
   type ChannelName,
   type LutModel,
   type ParamName,
-  type StepModel,
+  type StepModel
 } from '../../features/step/step-model';
 import {
   drawParamPreviewSphereCpu,
@@ -544,6 +543,7 @@ function StepList(props: StepListProps): JSX.Element {
           {(step, index) => {
             const selectedLut = (): LutModel | null => resolveLut(step.lutId);
             const editableChannels = (): ChannelName[] => getCustomChannelsForBlendMode(step.blendMode);
+            const selectableOps = (): BlendOp[] => getSelectableBlendOpsForChannel(step.blendMode);
             const displayIndex = (): number => index() + 1;
             const [crosshairUv, setCrosshairUv] = createSignal<{ u: number; v: number } | null>(null);
 
@@ -767,7 +767,7 @@ function StepList(props: StepListProps): JSX.Element {
                                 props.onStepOpChange(step.id, channel, op);
                               }}
                             >
-                              <For each={BLEND_OPS}>
+                              <For each={selectableOps()}>
                                 {op => <option value={op}>{op}</option>}
                               </For>
                             </select>

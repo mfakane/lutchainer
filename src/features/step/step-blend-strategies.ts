@@ -117,18 +117,18 @@ function emitTargetColorWithLerpHlsl(
   ];
 }
 
-export function opExprGlsl(op: BlendOp, left: string, right: string): string {
+export function opExprGlsl(op: BlendOp, left: string, right: string): string | undefined {
   return opExpr(op, left, right);
 }
 
-export function opExprHlsl(op: BlendOp, left: string, right: string): string {
+export function opExprHlsl(op: BlendOp, left: string, right: string): string | undefined {
   return opExpr(op, left, right);
 }
 
-function opExpr(op: BlendOp, left: string, right: string): string {
+function opExpr(op: BlendOp, left: string, right: string): string | undefined {
   switch (op) {
     case 'none':
-      return left;
+      return undefined;
     case 'replace':
       return right;
     case 'add':
@@ -166,7 +166,7 @@ function emitHsvLayerGlsl(
   useSaturation: boolean,
   useValue: boolean,
 ): string[] {
-  const lines = [`vec3 ${hsvCurVar} = rgb2hsv(color);`, `vec3 ${hsvLutVar} = rgb2hsv(${lutColorVar});`];
+  const lines = [`vec4 ${hsvCurVar} = rgb2hsv(color);`, `vec4 ${hsvLutVar} = rgb2hsv(${lutColorVar});`];
   if (useHue) lines.push(`${hsvCurVar}.x = ${hsvLutVar}.x;`);
   if (useSaturation) lines.push(`${hsvCurVar}.y = ${hsvLutVar}.y;`);
   if (useValue) lines.push(`${hsvCurVar}.z = ${hsvLutVar}.z;`);
@@ -185,7 +185,7 @@ function emitHsvLayerHlsl(
   useSaturation: boolean,
   useValue: boolean,
 ): string[] {
-  const lines = [`float3 ${hsvCurVar} = RgbToHsv(color);`, `float3 ${hsvLutVar} = RgbToHsv(${lutColorVar});`];
+  const lines = [`float4 ${hsvCurVar} = RgbToHsv(color);`, `float4 ${hsvLutVar} = RgbToHsv(${lutColorVar});`];
   if (useHue) lines.push(`${hsvCurVar}.x = ${hsvLutVar}.x;`);
   if (useSaturation) lines.push(`${hsvCurVar}.y = ${hsvLutVar}.y;`);
   if (useValue) lines.push(`${hsvCurVar}.z = ${hsvLutVar}.z;`);
@@ -197,12 +197,14 @@ function emitHsvLayerHlsl(
 export const BLEND_MODE_STRATEGIES: Record<BlendMode, BlendModeStrategy> = {
   none: {
     editableChannels: [],
+    selectableChannelBlendOps: [],
     applyCpu: ({ current }) => [current[0], current[1], current[2]],
     emitGlsl: () => [],
     emitHlsl: () => [],
   },
   replace: {
     editableChannels: [],
+    selectableChannelBlendOps: [],
     applyCpu: ({ current, lutColor, lutAlpha }) =>
       blendWithLutAlpha(current, [clamp01(lutColor[0]), clamp01(lutColor[1]), clamp01(lutColor[2])], lutAlpha),
     emitGlsl: ({ lutColorVar, lutAlphaVar, targetColorVar }) =>
@@ -212,6 +214,7 @@ export const BLEND_MODE_STRATEGIES: Record<BlendMode, BlendModeStrategy> = {
   },
   add: {
     editableChannels: [],
+    selectableChannelBlendOps: [],
     applyCpu: ({ current, lutColor, lutAlpha }) => {
       const a = clamp01(Number.isFinite(lutAlpha) ? lutAlpha : 1);
       return [
@@ -221,12 +224,13 @@ export const BLEND_MODE_STRATEGIES: Record<BlendMode, BlendModeStrategy> = {
       ];
     },
     emitGlsl: ({ lutColorVar, lutAlphaVar }) =>
-      [`color += ${lutColorVar} * clamp(${lutAlphaVar}, 0.0, 1.0);`],
+      [`color += ${lutColorVar} * ${lutAlphaVar};`],
     emitHlsl: ({ lutColorVar, lutAlphaVar }) =>
-      [`color += ${lutColorVar} * saturate(${lutAlphaVar});`],
+      [`color += ${lutColorVar} * ${lutAlphaVar};`],
   },
   subtract: {
     editableChannels: [],
+    selectableChannelBlendOps: [],
     applyCpu: ({ current, lutColor, lutAlpha }) => {
       const a = clamp01(Number.isFinite(lutAlpha) ? lutAlpha : 1);
       return [
@@ -236,12 +240,13 @@ export const BLEND_MODE_STRATEGIES: Record<BlendMode, BlendModeStrategy> = {
       ];
     },
     emitGlsl: ({ lutColorVar, lutAlphaVar }) =>
-      [`color -= ${lutColorVar} * clamp(${lutAlphaVar}, 0.0, 1.0);`],
+      [`color -= ${lutColorVar} * ${lutAlphaVar};`],
     emitHlsl: ({ lutColorVar, lutAlphaVar }) =>
-      [`color -= ${lutColorVar} * saturate(${lutAlphaVar});`],
+      [`color -= ${lutColorVar} * ${lutAlphaVar};`],
   },
   multiply: {
     editableChannels: [],
+    selectableChannelBlendOps: [],
     applyCpu: ({ current, lutColor, lutAlpha }) => {
       const a = clamp01(Number.isFinite(lutAlpha) ? lutAlpha : 1);
       return [
@@ -251,12 +256,13 @@ export const BLEND_MODE_STRATEGIES: Record<BlendMode, BlendModeStrategy> = {
       ];
     },
     emitGlsl: ({ lutColorVar, lutAlphaVar }) =>
-      [`color *= mix(vec3(1.0), ${lutColorVar}, clamp(${lutAlphaVar}, 0.0, 1.0));`],
+      [`color *= mix(vec3(1.0), ${lutColorVar}, ${lutAlphaVar});`],
     emitHlsl: ({ lutColorVar, lutAlphaVar }) =>
-      [`color *= lerp(float3(1.0, 1.0, 1.0), ${lutColorVar}, saturate(${lutAlphaVar}));`],
+      [`color *= lerp(float3(1.0, 1.0, 1.0), ${lutColorVar}, ${lutAlphaVar});`],
   },
   hue: {
     editableChannels: [],
+    selectableChannelBlendOps: [],
     applyCpu: ({ current, lutColor, lutAlpha }) =>
       blendWithLutAlpha(current, applyHsvLayerColor(current, lutColor, true, false, false), lutAlpha),
     emitGlsl: ({ lutColorVar, lutAlphaVar, targetColorVar, hsvCurVar, hsvLutVar }) =>
@@ -266,6 +272,7 @@ export const BLEND_MODE_STRATEGIES: Record<BlendMode, BlendModeStrategy> = {
   },
   saturation: {
     editableChannels: [],
+    selectableChannelBlendOps: [],
     applyCpu: ({ current, lutColor, lutAlpha }) =>
       blendWithLutAlpha(current, applyHsvLayerColor(current, lutColor, false, true, false), lutAlpha),
     emitGlsl: ({ lutColorVar, lutAlphaVar, targetColorVar, hsvCurVar, hsvLutVar }) =>
@@ -275,6 +282,7 @@ export const BLEND_MODE_STRATEGIES: Record<BlendMode, BlendModeStrategy> = {
   },
   color: {
     editableChannels: [],
+    selectableChannelBlendOps: [],
     applyCpu: ({ current, lutColor, lutAlpha }) =>
       blendWithLutAlpha(current, applyHsvLayerColor(current, lutColor, true, true, false), lutAlpha),
     emitGlsl: ({ lutColorVar, lutAlphaVar, targetColorVar, hsvCurVar, hsvLutVar }) =>
@@ -284,6 +292,7 @@ export const BLEND_MODE_STRATEGIES: Record<BlendMode, BlendModeStrategy> = {
   },
   value: {
     editableChannels: [],
+    selectableChannelBlendOps: [],
     applyCpu: ({ current, lutColor, lutAlpha }) =>
       blendWithLutAlpha(current, applyHsvLayerColor(current, lutColor, false, false, true), lutAlpha),
     emitGlsl: ({ lutColorVar, lutAlphaVar, targetColorVar, hsvCurVar, hsvLutVar }) =>
@@ -291,8 +300,41 @@ export const BLEND_MODE_STRATEGIES: Record<BlendMode, BlendModeStrategy> = {
     emitHlsl: ({ lutColorVar, lutAlphaVar, targetColorVar, hsvCurVar, hsvLutVar }) =>
       emitHsvLayerHlsl(lutColorVar, hsvCurVar, hsvLutVar, targetColorVar, lutAlphaVar, false, false, true),
   },
+  selfBlend: {
+    editableChannels: CUSTOM_RGB_CHANNELS,
+    selectableChannelBlendOps: ['none', 'add', 'subtract', 'multiply'],
+    applyCpu: ({ current, lutColor, lutAlpha, ops }) =>
+      blendWithLutAlpha(current,
+        [
+          clamp01(lerpNumber(current[0], applyBlend(current[0], current[0], ops.r), lutColor[0])),
+          clamp01(lerpNumber(current[1], applyBlend(current[1], current[1], ops.g), lutColor[1])),
+          clamp01(lerpNumber(current[2], applyBlend(current[2], current[2], ops.b), lutColor[2])),
+        ],
+        lutAlpha),
+    emitGlsl: ({ lutColorVar, lutAlphaVar, targetColorVar, ops }) => {
+      const lines = [`vec3 ${targetColorVar} = color;`];
+      for (const channel of CUSTOM_RGB_CHANNELS) {
+        let opExpr = opExprGlsl(ops[channel], `${targetColorVar}.${channel}`, `${targetColorVar}.${channel}`);
+        if (opExpr === undefined) continue;
+        lines.push(`${targetColorVar}.${channel} = mix(${targetColorVar}.${channel}, ${opExpr}, ${lutColorVar}.${channel});`);
+      }
+      lines.push(...emitColorLerpGlsl(targetColorVar, lutAlphaVar));
+      return lines;
+    },
+    emitHlsl: ({ lutColorVar, lutAlphaVar, targetColorVar, ops }) => {
+      const lines = [`float3 ${targetColorVar} = color;`];
+      for (const channel of CUSTOM_RGB_CHANNELS) {
+        let opExpr = opExprHlsl(ops[channel], `${targetColorVar}.${channel}`, `${targetColorVar}.${channel}`);
+        if (opExpr === undefined) continue;
+        lines.push(`${targetColorVar}.${channel} = lerp(${targetColorVar}.${channel}, ${opExpr}, ${lutColorVar}.${channel});`);
+      }
+      lines.push(...emitColorLerpHlsl(targetColorVar, lutAlphaVar));
+      return lines;
+    }
+  },
   customRgb: {
     editableChannels: CUSTOM_RGB_CHANNELS,
+    selectableChannelBlendOps: ['none', 'replace', 'add', 'subtract', 'multiply'],
     applyCpu: ({ current, lutColor, lutAlpha, ops }) =>
       blendWithLutAlpha(
         current,
@@ -306,9 +348,9 @@ export const BLEND_MODE_STRATEGIES: Record<BlendMode, BlendModeStrategy> = {
     emitGlsl: ({ lutColorVar, lutAlphaVar, targetColorVar, ops }) => {
       const lines = [`vec3 ${targetColorVar} = color;`];
       for (const channel of CUSTOM_RGB_CHANNELS) {
-        lines.push(
-          `${targetColorVar}.${channel} = clamp(${opExprGlsl(ops[channel], `${targetColorVar}.${channel}`, `${lutColorVar}.${channel}`)}, 0.0, 1.0);`,
-        );
+        let opExpr = opExprGlsl(ops[channel], `${targetColorVar}.${channel}`, `${lutColorVar}.${channel}`);
+        if (opExpr === undefined) continue;
+        lines.push(`${targetColorVar}.${channel} = ${opExpr};`);
       }
       lines.push(...emitColorLerpGlsl(targetColorVar, lutAlphaVar));
       return lines;
@@ -316,9 +358,9 @@ export const BLEND_MODE_STRATEGIES: Record<BlendMode, BlendModeStrategy> = {
     emitHlsl: ({ lutColorVar, lutAlphaVar, targetColorVar, ops }) => {
       const lines = [`float3 ${targetColorVar} = color;`];
       for (const channel of CUSTOM_RGB_CHANNELS) {
-        lines.push(
-          `${targetColorVar}.${channel} = saturate(${opExprHlsl(ops[channel], `${targetColorVar}.${channel}`, `${lutColorVar}.${channel}`)});`,
-        );
+        let opExpr = opExprHlsl(ops[channel], `${targetColorVar}.${channel}`, `${lutColorVar}.${channel}`);
+        if (opExpr === undefined) continue;
+        lines.push(`${targetColorVar}.${channel} = ${opExpr};`);
       }
       lines.push(...emitColorLerpHlsl(targetColorVar, lutAlphaVar));
       return lines;
@@ -326,6 +368,7 @@ export const BLEND_MODE_STRATEGIES: Record<BlendMode, BlendModeStrategy> = {
   },
   customHsv: {
     editableChannels: CUSTOM_HSV_CHANNELS,
+    selectableChannelBlendOps: ['none', 'replace', 'add', 'subtract', 'multiply'],
     applyCpu: ({ current, lutColor, lutAlpha, ops }) => {
       const hsvCur = rgbToHsv(current);
       const hsvLut = rgbToHsv(lutColor);
@@ -337,26 +380,26 @@ export const BLEND_MODE_STRATEGIES: Record<BlendMode, BlendModeStrategy> = {
       return blendWithLutAlpha(current, hsvToRgb(hsvMixed), lutAlpha);
     },
     emitGlsl: ({ lutColorVar, lutAlphaVar, targetColorVar, hsvCurVar, hsvLutVar, ops }) => {
-      const lines = [`vec3 ${hsvCurVar} = rgb2hsv(color);`, `vec3 ${hsvLutVar} = rgb2hsv(${lutColorVar});`];
+      const lines = [`vec4 ${hsvCurVar} = rgb2hsv(color);`, `vec4 ${hsvLutVar} = rgb2hsv(${lutColorVar});`];
       for (const channel of CUSTOM_HSV_CHANNELS) {
         const component = channel === 'h' ? 'x' : channel === 's' ? 'y' : 'z';
-        lines.push(
-          `${hsvCurVar}.${component} = clamp(${opExprGlsl(ops[channel], `${hsvCurVar}.${component}`, `${hsvLutVar}.${component}`)}, 0.0, 1.0);`,
-        );
+        let opExpr = opExprGlsl(ops[channel], `${hsvCurVar}.${component}`, `${hsvLutVar}.${component}`);
+        if (opExpr === undefined) continue;
+        lines.push(`${hsvCurVar}.${component} = ${opExpr};`);
       }
-      lines.push(`vec3 ${targetColorVar} = clamp(hsv2rgb(${hsvCurVar}), 0.0, 1.0);`);
+      lines.push(`vec3 ${targetColorVar} = hsv2rgb(${hsvCurVar});`);
       lines.push(...emitColorLerpGlsl(targetColorVar, lutAlphaVar));
       return lines;
     },
     emitHlsl: ({ lutColorVar, lutAlphaVar, targetColorVar, hsvCurVar, hsvLutVar, ops }) => {
-      const lines = [`float3 ${hsvCurVar} = RgbToHsv(color);`, `float3 ${hsvLutVar} = RgbToHsv(${lutColorVar});`];
+      const lines = [`float4 ${hsvCurVar} = RgbToHsv(color);`, `float4 ${hsvLutVar} = RgbToHsv(${lutColorVar});`];
       for (const channel of CUSTOM_HSV_CHANNELS) {
         const component = channel === 'h' ? 'x' : channel === 's' ? 'y' : 'z';
-        lines.push(
-          `${hsvCurVar}.${component} = saturate(${opExprHlsl(ops[channel], `${hsvCurVar}.${component}`, `${hsvLutVar}.${component}`)});`,
-        );
+        let opExpr = opExprHlsl(ops[channel], `${hsvCurVar}.${component}`, `${hsvLutVar}.${component}`);
+        if (opExpr === undefined) continue;
+        lines.push(`${hsvCurVar}.${component} = ${opExpr};`);
       }
-      lines.push(`float3 ${targetColorVar} = saturate(HsvToRgb(${hsvCurVar}));`);
+      lines.push(`float3 ${targetColorVar} = HsvToRgb(${hsvCurVar});`);
       lines.push(...emitColorLerpHlsl(targetColorVar, lutAlphaVar));
       return lines;
     },
@@ -369,6 +412,10 @@ export function getBlendModeStrategy(blendMode: BlendMode): BlendModeStrategy {
 
 export function getCustomChannelsForBlendMode(blendMode: BlendMode): ChannelName[] {
   return [...getBlendModeStrategy(blendMode).editableChannels];
+}
+
+export function getSelectableBlendOpsForChannel(blendMode: BlendMode): BlendOp[] {
+  return [...getBlendModeStrategy(blendMode).selectableChannelBlendOps]; 
 }
 
 export function applyStepColor(

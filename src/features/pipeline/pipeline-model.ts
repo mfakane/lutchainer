@@ -10,6 +10,7 @@ import {
   BLEND_MODES,
   BLEND_OPS,
   CHANNELS,
+  ColorWithHasChroma,
   DEFAULT_OPS,
   MAX_STEP_LABEL_LENGTH,
   type BlendMode,
@@ -316,50 +317,63 @@ export function clamp01(v: number): number {
   return Math.max(0, Math.min(1, v));
 }
 
-export function rgbToHsv(c: Color): Color {
+export function rgbToHsv(c: Color): ColorWithHasChroma {
   const r = c[0];
   const g = c[1];
   const b = c[2];
-  const max = Math.max(r, g, b);
-  const min = Math.min(r, g, b);
-  const d = max - min;
+  const maxValue = Math.max(r, g, b);
+  const minValue = Math.min(r, g, b);
+  const delta = maxValue - minValue;
 
-  let h = 0;
-  if (d > 1e-6) {
-    if (max === r) h = ((g - b) / d + (g < b ? 6 : 0)) / 6;
-    else if (max === g) h = ((b - r) / d + 2) / 6;
-    else h = ((r - g) / d + 4) / 6;
+  let hue = 0.0;
+  if (delta > 1.0e-6) {
+    if (maxValue <= r) {
+      hue = ((g - b) / delta + (g < b ? 6.0 : 0.0)) / 6.0;
+    } else if (maxValue <= g) {
+      hue = ((b - r) / delta + 2.0) / 6.0;
+    } else if (maxValue <= b) {
+      hue = ((r - g) / delta + 4.0) / 6.0;
+    }
   }
 
-  const s = max <= 1e-6 ? 0 : d / max;
-  const v = max;
-  return [clamp01(h), clamp01(s), clamp01(v)];
+  const saturation = maxValue <= 1.0e-6 ? 0.0 : delta / maxValue;
+  const value = maxValue;
+  const hasChroma = delta > 1.0e-6;
+  return [clamp01(hue), clamp01(saturation), clamp01(value), hasChroma];
 }
 
-export function hsvToRgb(c: Color): Color {
-  const h = (c[0] % 1 + 1) % 1;
-  const s = clamp01(c[1]);
-  const v = clamp01(c[2]);
+export function hsvToRgb(c: ColorWithHasChroma): Color {
+  const saturation = clamp01(c[1]);
+  const value = clamp01(c[2]);
+  const hasChroma = c[3] ?? saturation > 1.0e-6;
 
-  const i = Math.floor(h * 6);
-  const f = h * 6 - i;
-  const p = v * (1 - s);
-  const q = v * (1 - f * s);
-  const t = v * (1 - (1 - f) * s);
+  if (saturation <= 1.0e-6 || !hasChroma) {
+    return [value, value, value];
+  }
 
-  switch (i % 6) {
+  const hue = c[0] - Math.floor(c[0]);
+  const cVal = value * saturation;
+  const x = cVal * (1.0 - Math.abs((hue * 6.0) % 2.0 - 1.0));
+  const m = value - cVal;
+  const cM = cVal + m;
+  const xM = x + m;
+
+  const sectorFloat = Math.floor(hue * 6.0);
+  const sector = sectorFloat % 6;
+
+  switch (sector) {
     case 0:
-      return [v, t, p];
+      return [cM, xM, m];
     case 1:
-      return [q, v, p];
+      return [xM, cM, m];
     case 2:
-      return [p, v, t];
+      return [m, cM, xM];
     case 3:
-      return [p, q, v];
+      return [m, xM, cM];
     case 4:
-      return [t, p, v];
+      return [xM, m, cM];
     default:
-      return [v, p, q];
+      return [cM, m, xM];
   }
 }
 
