@@ -93,6 +93,10 @@ function LutEditorDialogContent(props: { options: LutEditorDialogContentOptions 
   const [selectedRampId, setSelectedRampId] = createSignal<string | null>(null);
   const [focusedStopId, setFocusedStopId] = createSignal<string | null>(null);
   const [initialSerializedRampData, setInitialSerializedRampData] = createSignal('');
+  const [editingRampPositionId, setEditingRampPositionId] = createSignal<string | null>(null);
+  const [rampPositionDraft, setRampPositionDraft] = createSignal('');
+  const [editingStopPositionId, setEditingStopPositionId] = createSignal<string | null>(null);
+  const [stopPositionDraft, setStopPositionDraft] = createSignal('');
 
   // Pending-delete state during drag (shows visual indicator on the knob)
   const [draggingRampDeleteId, setDraggingRampDeleteId] = createSignal<string | null>(null);
@@ -116,6 +120,30 @@ function LutEditorDialogContent(props: { options: LutEditorDialogContentOptions 
 
   createEffect(() => {
     props.options.onDirtyChange(isDirty());
+  });
+
+  createEffect(() => {
+    const ramp = selectedRamp();
+    if (!ramp) {
+      setEditingRampPositionId(null);
+      setRampPositionDraft('');
+      return;
+    }
+    if (editingRampPositionId() !== ramp.id) {
+      setRampPositionDraft(formatPositionPercent(ramp.position));
+    }
+  });
+
+  createEffect(() => {
+    const stop = focusedStop();
+    if (!stop) {
+      setEditingStopPositionId(null);
+      setStopPositionDraft('');
+      return;
+    }
+    if (editingStopPositionId() !== stop.id) {
+      setStopPositionDraft(formatPositionPercent(stop.position));
+    }
   });
 
   const selectedRamp = createMemo((): ColorRamp | null => {
@@ -377,19 +405,47 @@ function LutEditorDialogContent(props: { options: LutEditorDialogContentOptions 
   const handleRampPositionChange = (rampId: string, percentValue: string): void => {
     const data = rampData();
     if (!data) return;
+    setRampPositionDraft(percentValue);
     const parsed = Number(percentValue);
     if (!Number.isFinite(parsed)) return;
     setRampData(moveRamp(data, rampId, parsed / 100));
+  };
+
+  const commitRampPositionDraft = (rampId: string): void => {
+    const ramp = rampData()?.ramps.find(item => item.id === rampId) ?? selectedRamp();
+    const parsed = Number(rampPositionDraft());
+    setEditingRampPositionId(null);
+    if (!ramp || !Number.isFinite(parsed)) {
+      setRampPositionDraft(ramp ? formatPositionPercent(ramp.position) : '');
+      return;
+    }
+    const normalized = formatPositionPercent(parsed / 100);
+    handleRampPositionChange(rampId, normalized);
+    setRampPositionDraft(normalized);
   };
 
   const handleStopPositionChange = (stopId: string, percentValue: string): void => {
     const data = rampData();
     const ramp = selectedRamp();
     if (!data || !ramp) return;
+    setStopPositionDraft(percentValue);
     const parsed = Number(percentValue);
     if (!Number.isFinite(parsed)) return;
     const newRamp = moveStop(ramp, stopId, parsed / 100);
     setRampData(updateRamp(data, newRamp));
+  };
+
+  const commitStopPositionDraft = (stopId: string): void => {
+    const stop = focusedStop();
+    const parsed = Number(stopPositionDraft());
+    setEditingStopPositionId(null);
+    if (!stop || stop.id !== stopId || !Number.isFinite(parsed)) {
+      setStopPositionDraft(stop ? formatPositionPercent(stop.position) : '');
+      return;
+    }
+    const normalized = formatPositionPercent(parsed / 100);
+    handleStopPositionChange(stopId, normalized);
+    setStopPositionDraft(normalized);
   };
 
   const handleRampPositionWheel = (rampId: string, currentPosition: number, ev: WheelEvent): void => {
@@ -1049,8 +1105,24 @@ function LutEditorDialogContent(props: { options: LutEditorDialogContentOptions 
                     min="0"
                     max="100"
                     step={String(POSITION_PERCENT_STEP)}
-                    value={formatPositionPercent(getSelectedRamp().position)}
+                    value={editingRampPositionId() === getSelectedRamp().id
+                      ? rampPositionDraft()
+                      : formatPositionPercent(getSelectedRamp().position)}
+                    onFocus={() => {
+                      setEditingRampPositionId(getSelectedRamp().id);
+                      setRampPositionDraft(formatPositionPercent(getSelectedRamp().position));
+                    }}
                     onInput={ev => handleRampPositionChange(getSelectedRamp().id, (ev.currentTarget as HTMLInputElement).value)}
+                    onBlur={() => commitRampPositionDraft(getSelectedRamp().id)}
+                    onKeyDown={ev => {
+                      if (ev.key === 'Enter') {
+                        (ev.currentTarget as HTMLInputElement).blur();
+                      } else if (ev.key === 'Escape') {
+                        setEditingRampPositionId(null);
+                        setRampPositionDraft(formatPositionPercent(getSelectedRamp().position));
+                        (ev.currentTarget as HTMLInputElement).blur();
+                      }
+                    }}
                     onWheel={ev => handleRampPositionWheel(getSelectedRamp().id, getSelectedRamp().position, ev)}
                   />
                   <span class="lut-editor-stop-editor-unit">%</span>
@@ -1176,8 +1248,24 @@ function LutEditorDialogContent(props: { options: LutEditorDialogContentOptions 
                       min="0"
                       max="100"
                       step={String(POSITION_PERCENT_STEP)}
-                      value={formatPositionPercent(getStop().position)}
+                      value={editingStopPositionId() === getStop().id
+                        ? stopPositionDraft()
+                        : formatPositionPercent(getStop().position)}
+                      onFocus={() => {
+                        setEditingStopPositionId(getStop().id);
+                        setStopPositionDraft(formatPositionPercent(getStop().position));
+                      }}
                       onInput={ev => handleStopPositionChange(getStop().id, (ev.currentTarget as HTMLInputElement).value)}
+                      onBlur={() => commitStopPositionDraft(getStop().id)}
+                      onKeyDown={ev => {
+                        if (ev.key === 'Enter') {
+                          (ev.currentTarget as HTMLInputElement).blur();
+                        } else if (ev.key === 'Escape') {
+                          setEditingStopPositionId(null);
+                          setStopPositionDraft(formatPositionPercent(getStop().position));
+                          (ev.currentTarget as HTMLInputElement).blur();
+                        }
+                      }}
                       onWheel={ev => handleStopPositionWheel(getStop().id, getStop().position, ev)}
                     />
                     <span class="lut-editor-stop-editor-unit">%</span>
