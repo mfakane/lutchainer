@@ -201,7 +201,7 @@ export const PARAM_GROUPS: ParamGroupDef[] = [
 ];
 
 export const DEFAULT_MATERIAL_SETTINGS: MaterialSettings = {
-  baseColor: [1, 1, 1],
+  baseColor: [0.9, 0.9, 0.9],
   specularStrength: 0.4,
   specularPower: 24,
   fresnelStrength: 0.18,
