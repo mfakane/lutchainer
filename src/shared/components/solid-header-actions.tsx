@@ -1,5 +1,6 @@
 import { createSignal, type Accessor, type JSX } from 'solid-js';
 import { render } from 'solid-js/web';
+import { DropdownMenu } from './solid-dropdown-menu.tsx';
 import {
   getLanguageLabel,
   setLanguage,
@@ -10,6 +11,9 @@ import {
 
 type StatusKind = 'success' | 'error' | 'info';
 type StatusReporter = (message: string, kind?: StatusKind) => void;
+type ResetPreset = 'Initial' | 'HueShiftToon' | 'HueSatShiftToon' | 'Metallic';
+
+const RESET_PRESETS: readonly ResetPreset[] = ['HueShiftToon', 'HueSatShiftToon', 'Metallic'];
 
 interface HeaderActionGroupMountOptions {
   initialAutoApplyEnabled: boolean;
@@ -17,7 +21,7 @@ interface HeaderActionGroupMountOptions {
   initialCanRedo: boolean;
   onUndoPipeline: () => void;
   onRedoPipeline: () => void;
-  onResetPipeline: () => void;
+  onResetPresetSelected: (preset: ResetPreset) => void | Promise<void>;
   onSavePipeline: () => void | Promise<void>;
   onApplyPipeline: () => void;
   onPipelineFileSelected: (file: File) => void | Promise<void>;
@@ -31,7 +35,7 @@ interface HeaderActionGroupProps {
   canRedo: Accessor<boolean>;
   onUndoPipeline: () => void;
   onRedoPipeline: () => void;
-  onResetPipeline: () => void;
+  onResetPresetSelected: (preset: ResetPreset) => void | Promise<void>;
   onSavePipeline: () => void | Promise<void>;
   onApplyPipeline: () => void;
   onPipelineFileSelected: (file: File) => void | Promise<void>;
@@ -73,7 +77,7 @@ function ensureMountOptions(value: unknown): asserts value is HeaderActionGroupM
   if (typeof options.onRedoPipeline !== 'function') {
     throw new Error('ヘッダーアクションのRedoコールバックが不正です。');
   }
-  if (typeof options.onResetPipeline !== 'function') {
+  if (typeof options.onResetPresetSelected !== 'function') {
     throw new Error('ヘッダーアクションの初期化コールバックが不正です。');
   }
   if (typeof options.onSavePipeline !== 'function') {
@@ -117,6 +121,15 @@ function HeaderActionGroup(props: HeaderActionGroupProps): JSX.Element {
     } catch (error) {
       const message = error instanceof Error ? error.message : t('common.unknownError');
       props.onStatus(t('header.status.pipelineSaveFailed', { message }), 'error');
+    }
+  };
+
+  const handleResetPresetSelect = async (preset: ResetPreset): Promise<void> => {
+    try {
+      await props.onResetPresetSelected(preset);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : t('common.unknownError');
+      props.onStatus(t('header.status.pipelineLoadFailed', { message }), 'error');
     }
   };
 
@@ -186,7 +199,44 @@ function HeaderActionGroup(props: HeaderActionGroupProps): JSX.Element {
         disabled={!props.canRedo()}
         onClick={props.onRedoPipeline}
       >{tr('header.redo')}</button>
-      <button class="btn-secondary" id="btn-reset-pipeline" onClick={props.onResetPipeline}>{tr('header.reset')}</button>
+      <DropdownMenu
+        wrapperClass="header-action-menu-wrap"
+        triggerClass="btn-secondary header-action-menu-btn"
+        menuClass="header-action-menu"
+        triggerAriaLabel={tr('header.reset')}
+        triggerContent={<span>{tr('header.reset')}</span>}
+        menuRole="menu"
+      >
+        {controls => (
+          <>
+            <button
+              type="button"
+              class="header-action-menu-item"
+              role="menuitem"
+              onClick={() => {
+                controls.closeMenu();
+                void handleResetPresetSelect('Initial');
+              }}
+            >
+              {tr('header.resetInitial')}
+            </button>
+            <div class="header-action-menu-header">{tr('header.resetExamples')}</div>
+            {RESET_PRESETS.map(preset => (
+              <button
+                type="button"
+                class="header-action-menu-item"
+                role="menuitem"
+                onClick={() => {
+                  controls.closeMenu();
+                  void handleResetPresetSelect(preset);
+                }}
+              >
+                {preset}
+              </button>
+            ))}
+          </>
+        )}
+      </DropdownMenu>
       <button class="btn-secondary" id="btn-load-pipeline" onClick={openPipelineFilePicker}>{tr('header.load')}</button>
       <button class="btn-secondary" id="btn-save-pipeline" onClick={() => void handleSavePipeline()}>{tr('header.save')}</button>
       <input
@@ -332,7 +382,7 @@ export function mountHeaderActionGroup(target: HTMLElement, options: HeaderActio
         canRedo={canRedo}
         onUndoPipeline={options.onUndoPipeline}
         onRedoPipeline={options.onRedoPipeline}
-        onResetPipeline={options.onResetPipeline}
+        onResetPresetSelected={options.onResetPresetSelected}
         onSavePipeline={options.onSavePipeline}
         onApplyPipeline={options.onApplyPipeline}
         onPipelineFileSelected={options.onPipelineFileSelected}

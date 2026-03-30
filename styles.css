@@ -995,6 +995,7 @@ button:disabled:hover {
 }
 
 .preview-action-menu-wrap,
+.header-action-menu-wrap,
 .material-action-menu-wrap,
 .light-action-menu-wrap,
 .lut-editor-action-menu-wrap {
@@ -1025,7 +1026,19 @@ button:disabled:hover {
   background: color-mix(in srgb, var(--panel), var(--accent) 12%);
 }
 
+.header-action-menu-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.header-action-menu-btn[aria-expanded='true'] {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--panel), var(--accent) 12%);
+}
+
 .preview-kebab-menu,
+.header-action-menu,
 .material-kebab-menu,
 .light-kebab-menu,
 .lut-editor-kebab-menu {
@@ -1042,6 +1055,7 @@ button:disabled:hover {
 }
 
 .preview-kebab-item,
+.header-action-menu-item,
 .material-kebab-item,
 .light-kebab-item,
 .lut-editor-kebab-item {
@@ -1058,6 +1072,7 @@ button:disabled:hover {
 }
 
 .preview-kebab-item:hover,
+.header-action-menu-item:hover,
 .material-kebab-item:hover,
 .light-kebab-item:hover,
 .lut-editor-kebab-item:hover {
@@ -1066,6 +1081,7 @@ button:disabled:hover {
 }
 
 .preview-kebab-item:focus-visible,
+.header-action-menu-item:focus-visible,
 .material-kebab-item:focus-visible,
 .light-kebab-item:focus-visible,
 .lut-editor-kebab-item:focus-visible {
@@ -1074,7 +1090,8 @@ button:disabled:hover {
 }
 
 .material-kebab-header,
-.light-kebab-header {
+.light-kebab-header,
+.header-action-menu-header {
   padding: 8px 10px;
   font-size: 11px;
   font-weight: 700;
@@ -1083,6 +1100,13 @@ button:disabled:hover {
   text-transform: uppercase;
   border-bottom: 1px solid var(--line);
   margin-bottom: 4px;
+  margin-top: 4px;
+}
+
+.material-kebab-header:first-child,
+.light-kebab-header:first-child,
+.header-action-menu-header:first-child {
+  margin-top: 0;
 }
 
 #gl-canvas {

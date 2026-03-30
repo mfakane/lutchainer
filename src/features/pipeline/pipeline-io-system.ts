@@ -37,6 +37,7 @@ interface PipelineIoSystemOptions {
 
 interface PipelineIoSystem {
   savePipelineAsFile: () => Promise<SavePipelineAsFileResult>;
+  loadPipelineFromArrayBuffer: (data: ArrayBuffer) => Promise<LoadPipelineFromFileResult>;
   loadPipelineFromFile: (file: File) => Promise<LoadPipelineFromFileResult>;
 }
 
@@ -200,6 +201,21 @@ export function createPipelineIoSystem(options: PipelineIoSystemOptions): Pipeli
     }
   };
 
+  const loadPipelineFromArrayBuffer = async (data: ArrayBuffer): Promise<LoadPipelineFromFileResult> => {
+    try {
+      const loaded = await options.loadPipelineFromZip(data);
+      return {
+        ok: true,
+        loaded,
+      };
+    } catch (error) {
+      return {
+        ok: false,
+        errorMessage: normalizeErrorMessage(options.toErrorMessage, error),
+      };
+    }
+  };
+
   const loadPipelineFromFile = async (file: File): Promise<LoadPipelineFromFileResult> => {
     try {
       const fileValidationError = validatePipelineFile(
@@ -215,11 +231,7 @@ export function createPipelineIoSystem(options: PipelineIoSystemOptions): Pipeli
       }
 
       const arrayBuffer = await file.arrayBuffer();
-      const loaded = await options.loadPipelineFromZip(arrayBuffer);
-      return {
-        ok: true,
-        loaded,
-      };
+      return await loadPipelineFromArrayBuffer(arrayBuffer);
     } catch (error) {
       return {
         ok: false,
@@ -230,6 +242,7 @@ export function createPipelineIoSystem(options: PipelineIoSystemOptions): Pipeli
 
   return {
     savePipelineAsFile,
+    loadPipelineFromArrayBuffer,
     loadPipelineFromFile,
   };
 }

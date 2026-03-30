@@ -10,8 +10,11 @@ type Translator = (key: unknown, values?: Record<string, string | number>) => st
 
 interface PipelineIoSystemLike {
   savePipelineAsFile: () => Promise<SavePipelineAsFileResult>;
+  loadPipelineFromArrayBuffer: (data: ArrayBuffer) => Promise<LoadPipelineFromFileResult>;
   loadPipelineFromFile: (file: File) => Promise<LoadPipelineFromFileResult>;
 }
+
+type ResetPreset = 'Initial' | 'HueShiftToon' | 'HueSatShiftToon' | 'Metallic';
 
 export interface PipelineHeaderActionMountOptions {
   initialAutoApplyEnabled: boolean;
@@ -19,7 +22,7 @@ export interface PipelineHeaderActionMountOptions {
   initialCanRedo: boolean;
   onUndoPipeline: () => void;
   onRedoPipeline: () => void;
-  onResetPipeline: () => void;
+  onResetPresetSelected: (preset: ResetPreset) => void | Promise<void>;
   onSavePipeline: () => void | Promise<void>;
   onApplyPipeline: () => void;
   onPipelineFileSelected: (file: File) => void | Promise<void>;
@@ -58,6 +61,13 @@ function ensureBoolean(value: unknown, label: string): asserts value is boolean 
   if (typeof value !== 'boolean') {
     throw new Error(`${label} が不正です。`);
   }
+}
+
+function isResetPreset(value: unknown): value is ResetPreset {
+  return value === 'Initial'
+    || value === 'HueShiftToon'
+    || value === 'HueSatShiftToon'
+    || value === 'Metallic';
 }
 
 function hasFileApi(): boolean {
@@ -103,9 +113,52 @@ export function createPipelineHeaderActionController(
     options.onRedoPipeline();
   };
 
-  const onResetPipeline = (): void => {
-    options.onResetPipelineState();
-    options.onStatus(options.t('main.status.resetStepChain'), 'info');
+  const onResetPresetSelected = async (preset: ResetPreset): Promise<void> => {
+    if (!isResetPreset(preset)) {
+      options.onStatus(
+        options.t('main.status.pipelineLoadFailed', {
+          message: `不正なプリセットです: ${String(preset)}`,
+        }),
+        'error',
+      );
+      return;
+    }
+
+    if (preset === 'Initial') {
+      options.onResetPipelineState();
+      options.onStatus(options.t('main.status.resetStepChain'), 'info');
+      return;
+    }
+
+    const pipelineIoSystem = options.getPipelineIoSystem();
+    if (!pipelineIoSystem) {
+      options.onStatus(options.t('main.status.pipelineIoNotInitialized'), 'error');
+      return;
+    }
+
+    const response = await fetch(new URL(`examples/${preset}.lutchain`, window.location.href));
+    if (!response.ok) {
+      options.onStatus(
+        options.t('main.status.pipelineLoadFailed', {
+          message: `examples/${preset}.lutchain の取得に失敗しました (${response.status})`,
+        }),
+        'error',
+      );
+      return;
+    }
+
+    const result = await pipelineIoSystem.loadPipelineFromArrayBuffer(await response.arrayBuffer());
+    if (!result.ok || !result.loaded) {
+      options.onStatus(
+        options.t('main.status.pipelineLoadFailed', {
+          message: result.errorMessage ?? options.t('common.unknownError'),
+        }),
+        'error',
+      );
+      return;
+    }
+
+    options.onApplyLoadedPipeline(result.loaded);
   };
 
   const onSavePipeline = async (): Promise<void> => {
@@ -196,7 +249,7 @@ export function createPipelineHeaderActionController(
       initialCanRedo,
       onUndoPipeline,
       onRedoPipeline,
-      onResetPipeline,
+      onResetPresetSelected,
       onSavePipeline,
       onApplyPipeline,
       onPipelineFileSelected,
