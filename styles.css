@@ -1080,6 +1080,15 @@ button:disabled:hover {
   background: color-mix(in srgb, var(--panel-2), var(--accent) 16%);
 }
 
+.preview-kebab-item:active,
+.header-action-menu-item:active,
+.material-kebab-item:active,
+.light-kebab-item:active,
+.lut-editor-kebab-item:active {
+  transform: none;
+  background: color-mix(in srgb, var(--panel-2), var(--accent) 24%);
+}
+
 .preview-kebab-item:focus-visible,
 .header-action-menu-item:focus-visible,
 .material-kebab-item:focus-visible,
@@ -1617,7 +1626,18 @@ button:disabled:hover {
 }
 
 .lut-strip-menu-item:hover {
-  background: var(--surface-inset);
+  transform: none;
+  background: color-mix(in srgb, var(--panel-2), var(--accent) 16%);
+}
+
+.lut-strip-menu-item:active {
+  transform: none;
+  background: color-mix(in srgb, var(--panel-2), var(--accent) 24%);
+}
+
+.lut-strip-menu-item:focus-visible {
+  outline: 1px solid var(--accent);
+  outline-offset: 1px;
 }
 
 .lut-strip-menu-item--danger {
