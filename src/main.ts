@@ -277,7 +277,7 @@ const pipelineHeaderActions = createPipelineHeaderActionController({
   },
   onResetPipelineState: () => {
     replacePipelineState({
-      luts: getPipelineLuts(),
+      luts: pipelineModel.createBuiltinLuts(),
       steps: [],
       nextStepId: 1,
     });
