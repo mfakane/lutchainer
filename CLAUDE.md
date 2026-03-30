@@ -19,7 +19,15 @@ npx tsc --noEmit
 
 There are no tests or linting configured. Use `npx tsc --noEmit` to validate TypeScript before committing.
 
-Open `index.html` directly in a browser (or via a local static file server) to run the app — no dev server required.
+Run the app via a local static server after building:
+
+```bash
+npm run build
+npm run serve
+# http://localhost:8000
+```
+
+Do not assume `file://` opening of `index.html` is sufficient. Example preset loading depends on HTTP serving.
 
 ---
 
@@ -365,4 +373,3 @@ lutchainer/
 このプロジェクトは **設計が厳密** です。TS strict mode、層の分離、型安全性が徹底されています。新規機能追加時も、この設計パターンに習うことが最優先。「楽な方法」より「正しい方法」を選択してください。
 
 質問や不明点は、このドキュメントと `.claude/rules/` の該当セクションを参照してからコード実装をお願いします。
-

@@ -57,15 +57,17 @@ npm run build
 
 ## 起動
 
-ビルド後、`index.html` をブラウザで直接開くだけで動作します（サーバ不要）。
+`examples/*.lutchain` の読み込みを含む全機能を使うには、ローカルサーバ経由で起動してください。
 
-### ローカルサーバで配信
+### ローカルサーバで配信（推奨）
 
 ```bash
 # 事前に npm run build を実行
 npm run serve
 # http://localhost:8000
 ```
+
+`index.html` を `file://` で直接開く方法では、ブラウザの制約により example の読み込みが失敗することがあります。
 
 ### Nixで起動（ビルド成果物を配信）
 
