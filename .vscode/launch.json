@@ -1,0 +1,26 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "editor-browser",
+      "request": "launch",
+      "name": "Browser",
+      "url": "http://localhost:8000",
+      "webRoot": "${workspaceFolder}"
+    },
+    {
+      "type": "node-terminal",
+      "request": "launch",
+      "name": "Server",
+      "command": "npm run serve",
+    }
+  ],
+  "compounds": [
+    {
+      "name": "Browser/Server",
+      "configurations": ["Browser", "Server"],
+      "preLaunchTask": "npm: build",
+      "stopAll": true,
+    }
+  ]
+}
