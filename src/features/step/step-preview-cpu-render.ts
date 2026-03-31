@@ -291,8 +291,9 @@ function buildStepParamContext(
   nearDepth: number,
   depthDenom: number,
 ): StepParamContext {
-  const lambert = Math.max(0, nx * activeLightDirection[0] + ny * activeLightDirection[1] + nz * activeLightDirection[2]);
-  const halfLambert = lambert * 0.5 + 0.5;
+  const nDotL = nx * activeLightDirection[0] + ny * activeLightDirection[1] + nz * activeLightDirection[2];
+  const lambert = Math.max(0, nDotL);
+  const halfLambert = Math.pow(nDotL * 0.5 + 0.5, 2.0);
   const hxRaw = activeLightDirection[0] + vx;
   const hyRaw = activeLightDirection[1] + vy;
   const hzRaw = activeLightDirection[2] + vz;

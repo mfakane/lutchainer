@@ -95,8 +95,9 @@ export function resolveLutUvAtPixel(input: ResolveLutUvAtPixelInput): LutUvCoord
     vz = viewDirectionFallback[2];
   }
 
-  const lambert = Math.max(0, nx * lightDirection[0] + ny * lightDirection[1] + nz * lightDirection[2]);
-  const halfLambert = lambert * 0.5 + 0.5;
+  const nDotL = nx * lightDirection[0] + ny * lightDirection[1] + nz * lightDirection[2];
+  const lambert = Math.max(0, nDotL);
+  const halfLambert = Math.pow(nDotL * 0.5 + 0.5, 2);
 
   const hxRaw = lightDirection[0] + vx;
   const hyRaw = lightDirection[1] + vy;

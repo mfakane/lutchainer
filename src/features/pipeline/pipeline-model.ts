@@ -141,7 +141,7 @@ export interface RemoveLutFromPipelineResult {
 export const PARAMS: ParamDef[] = [
   { key: 'lightness', label: 'Lightness (Lambert)', description: 'dot(N, L)' },
   { key: 'specular', label: 'Specular', description: 'pow(NdotH, specularPower) * specularStrength' },
-  { key: 'halfLambert', label: 'Half-Lambert', description: '0.5 * dot(N, L) + 0.5' },
+  { key: 'halfLambert', label: 'Half-Lambert', description: 'pow(0.5 * dot(N, L) + 0.5, 2.0)' },
   { key: 'fresnel', label: 'Fresnel', description: 'pow(1 - dot(N, V), fresnelPower) * fresnelStrength' },
   { key: 'facing', label: 'Facing', description: 'dot(N, V)' },
   { key: 'nDotH', label: 'NdotH', description: 'dot(N, H), H = normalize(L + V)' },

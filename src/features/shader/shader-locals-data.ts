@@ -21,6 +21,12 @@ export const SHADER_LOCALS: Record<ShaderLocalKey, ShaderLocalDecl> = {
     fragmentGlsl: () => ['vec3 L = normalize(u_lightDir);'],
     hlsl: () => ['float3 L = normalize(u_lightDir);'],
   },
+  NdotL: {
+    requires: ['N', 'L'],
+    previewGlsl: ['float NdotL = dot(N, L);'],
+    fragmentGlsl: () => ['float NdotL = dot(N, L);'],
+    hlsl: () => ['float NdotL = dot(N, L);'],
+  },
   cameraPos: {
     requires: [],
     previewGlsl: ['vec3 cameraPos = vec3(0.0, 0.0, 3.0);'],
@@ -40,16 +46,16 @@ export const SHADER_LOCALS: Record<ShaderLocalKey, ShaderLocalDecl> = {
     hlsl: () => ['float3 H = normalize(L + V);'],
   },
   lambert: {
-    requires: ['N', 'L'],
-    previewGlsl: ['float lambert = max(dot(N, L), 0.0);'],
-    fragmentGlsl: () => ['float lambert = max(dot(N, L), 0.0);'],
-    hlsl: () => ['float lambert = max(dot(N, L), 0.0);'],
+    requires: ['NdotL'],
+    previewGlsl: ['float lambert = max(NdotL, 0.0);'],
+    fragmentGlsl: () => ['float lambert = max(NdotL, 0.0);'],
+    hlsl: () => ['float lambert = max(NdotL, 0.0);'],
   },
   halfLambert: {
-    requires: ['lambert'],
-    previewGlsl: ['float halfLambert = lambert * 0.5 + 0.5;'],
-    fragmentGlsl: () => ['float halfLambert = lambert * 0.5 + 0.5;'],
-    hlsl: () => ['float halfLambert = lambert * 0.5 + 0.5;'],
+    requires: ['NdotL'],
+    previewGlsl: ['float halfLambert = pow(NdotL * 0.5 + 0.5, 2.0);'],
+    fragmentGlsl: () => ['float halfLambert = pow(NdotL * 0.5 + 0.5, 2.0);'],
+    hlsl: () => ['float halfLambert = pow(NdotL * 0.5 + 0.5, 2.0);'],
   },
   nDotH: {
     requires: ['N', 'H'],
@@ -135,6 +141,7 @@ export const SHADER_LOCALS: Record<ShaderLocalKey, ShaderLocalDecl> = {
 export const ALL_LOCAL_KEYS: readonly ShaderLocalKey[] = [
   'N',
   'L',
+  'NdotL',
   'cameraPos',
   'V',
   'H',

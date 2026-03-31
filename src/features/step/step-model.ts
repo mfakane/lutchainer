@@ -109,6 +109,7 @@ export interface BlendModeStrategy {
 export type ShaderLocalKey =
   | 'N'
   | 'L'
+  | 'NdotL'
   | 'cameraPos'
   | 'V'
   | 'H'
