@@ -1,130 +1,134 @@
-# LUT Chainer - LUT Chaining Shader Editor
+# LUT Chainer - Browser-based LUT Chaining Shader Editor
 
-ブラウザで動作する、LUTベースのステップチェーン型シェーダエディタです。
-複数のLUTとブレンドモードを段階的に組み合わせ、3Dプレビューを見ながら見た目を調整できます。
+[日本語版](README.ja.md) | [English](README.md)
 
-## 主な機能
+A browser-based shader editor for creating LUT (Look-Up Table) based step chains. Combine multiple LUTs and blend modes sequentially, then preview your changes in real-time with a 3D renderer.
 
-- LUT Step Chain の編集
-	- Step追加/削除/並び替え
-	- LUT追加/削除/並び替え
-	- 各Stepの Blend Mode、X/Y入力パラメータ、チャンネル演算（customRgb/customHsv）設定
-- リアルタイム3Dプレビュー
-	- Shape切り替え: Sphere / Cube / Torus
-	- マウスドラッグで回転、ホイールでズーム
-	- ライト方向ガイドと軸ギズモ表示
-- Material / Light パラメータ調整
+## Key Features
+
+- **LUT Step Chain Editing**
+	- Add/remove/reorder steps
+	- Add/remove/reorder LUT images
+	- Configure blend mode, X/Y input parameters, and channel operations (customRgb/customHsv) per step
+- **Real-time 3D Preview**
+	- Shape presets: Sphere / Cube / Torus
+	- Mouse drag to rotate, scroll wheel to zoom
+	- Light direction guide and axis gizmo overlay
+- **Material & Light Parameter Controls**
 	- Base Color, Ambient, Diffuse, Specular, Spec Power, Fresnel, Fresnel Power
-	- Light Azimuth / Elevation、ガイドON/OFF
-- 生成コード表示
-	- GLSL Fragment / GLSL Vertex / HLSL のタブ切り替え
-	- クリップボードコピー
-- パイプラインの保存・読み込み
-	- `.lutchain` 形式（ZIP）でエクスポート/インポート
-	- LUT画像を PNG ファイルとして ZIP 内に埋め込み
-- 操作履歴（Undo/Redo）
+	- Light Azimuth / Elevation, guide visibility toggle
+- **Generated Code Export**
+	- GLSL Fragment / GLSL Vertex / HLSL tabs with syntax highlighting
+	- Copy to clipboard
+- **Pipeline Save & Load**
+	- Export/import as `.lutchain` format (ZIP-based)
+	- LUT images embedded as PNG files within the archive
+- **Undo/Redo History**
 
-## UI構成
+## UI Layout
 
-- 左パネル
-	- Parameters: 接続元パラメータノード
-	- Step List: 各Step設定とプレビュー
-	- LUT Library: LUT画像管理
-- 右パネル
-	- 3D Preview
-	- Material / Light 設定
-	- Generated Shader ダイアログ
+- **Left Panel**
+	- Parameters: Connection source parameter nodes
+	- Step List: Per-step configuration and preview
+	- LUT Library: LUT image management
+- **Right Panel**
+	- 3D Preview canvas
+	- Material / Light settings
+	- Generated Shader modal dialog
 
-## セットアップ
+## Setup
 
-### Nix Flakes を使う場合（推奨）
+### With Nix Flakes (Recommended)
 
 ```bash
-# 開発シェルに入る
+# Enter development shell
 nix develop
 
-# 依存インストール + ビルド
+# Install dependencies and build
 npm install
 npm run build
 ```
 
-### Node.js がある環境
+### With Node.js
 
 ```bash
 npm install
 npm run build
 ```
 
-## 起動
+## Running
 
-`examples/*.lutchain` の読み込みを含む全機能を使うには、ローカルサーバ経由で起動してください。
+To use all features including example `.lutchain` file loading, serve the app via a local HTTP server.
 
-### ローカルサーバで配信（推奨）
+### Via Local Server (Recommended)
 
 ```bash
-# 事前に npm run build を実行
+# Build first
+npm run build
+
+# Start server
 npm run serve
-# http://localhost:8000
+# Open http://localhost:8000
 ```
 
-`index.html` を `file://` で直接開く方法では、ブラウザの制約により example の読み込みが失敗することがあります。
+**Note**: Direct `file://` opening does not support example loading due to browser CORS restrictions.
 
-### Nixで起動（ビルド成果物を配信）
+### Via Nix
 
 ```bash
 nix run
-# http://localhost:8000
+# Serves on http://localhost:8000
 ```
 
-### Nixで成果物だけ生成
+### Build Artifacts Only
 
 ```bash
 nix build
-# result/ に index.html と dist/ が出力される
+# Output: result/ with index.html and dist/
 ```
 
-## 使い方の流れ
+## Usage Workflow
 
-1. LUT Library で LUT 画像を追加
-2. Step を追加し、各Stepの LUT / Blend Mode / X,Y パラメータを設定
-3. 必要に応じて customRgb / customHsv の各チャンネル演算を設定
-4. 自動反映ONなら変更が自動で適用、OFFなら「適用」ボタンで手動適用
-5. 「コードを開く」で GLSL/HLSL を確認・コピー
-6. 「保存」で `.lutchain` ファイルとしてエクスポート
+1. Add LUT images in the LUT Library panel
+2. Add steps and configure each one: select LUT, blend mode, X & Y parameters
+3. Optionally configure customRgb / customHsv channel operations per step
+4. With Auto-Apply ON, changes apply instantly; with OFF, click "Apply" to update
+5. Click "Open Code" to view and copy GLSL/HLSL
+6. Click "Save" to export as a `.lutchain` file
 
-### キーボードショートカット
+### Keyboard Shortcuts
 
-| ショートカット | 動作 |
-|--------------|------|
+| Shortcut | Action |
+|----------|--------|
 | `Ctrl+Z` / `Cmd+Z` | Undo |
 | `Ctrl+Shift+Z` / `Cmd+Shift+Z` | Redo |
-| `Ctrl+Y` / `Cmd+Y` | Redo（代替） |
+| `Ctrl+Y` / `Cmd+Y` | Redo (Alternative) |
 
-## 制限値
+## Limits
 
-- 最大Step数: 32
-- 最大LUT数: 12
-- LUT画像ファイルサイズ上限: 12MB/枚
-- パイプラインJSON上限: 64MB
-- 読み込み可能なLUT画像最大辺: 4096px
+- Maximum steps: 32
+- Maximum LUTs: 12
+- LUT image file size limit: 12MB per image
+- Pipeline JSON limit: 64MB
+- Maximum loadable LUT image dimension: 4096px
 
-## 開発
+## Development
 
 ```bash
 npm run dev
 ```
 
-`src/main.ts` を変更すると `dist/bundle.js` が再生成されます。
+Changing `src/main.ts` triggers automatic rebuild of `dist/bundle.js`.
 
-型チェックのみ実行する場合:
+Type checking only:
 
 ```bash
 npx tsc --noEmit
 ```
 
-## Nixメモ
+## Nix Notes
 
-`package-lock.json` を更新した場合は `flake.nix` の `npmDepsHash` を再生成してください。
+When updating `package-lock.json`, regenerate `npmDepsHash` in `flake.nix`:
 
 ```bash
 nix run nixpkgs#prefetch-npm-deps -- package-lock.json

@@ -1,8 +1,8 @@
-# coding-style.md — TypeScript + SolidJS コーディング規約
+# coding-style.md — TypeScript + SolidJS Coding Standards
 
-このガイドは、LUT Chainer における TypeScript コード品質と SolidJS JSX の制約について記載します。
+This guide documents TypeScript code quality and SolidJS JSX constraints for the LUT Chainer project.
 
-## TypeScript 設定 & 型安全性
+## TypeScript Configuration & Type Safety
 
 ### Compiler Options (tsconfig.json)
 
@@ -24,55 +24,55 @@
 }
 ```
 
-### 重要な制約
+### Critical Constraints
 
-| 項目 | ルール | 理由 |
-|------|--------|------|
-| **target: ES2020** | `String.prototype.replaceAll()` 使用禁止 | ES2021 以上のみ対応 |
-| **strict: true** | 全 strict flags 有効 | implicit any、strict null、strict property init 必須 |
-| **jsx: preserve** | SolidJS pre-compilation required | esbuild plugin で別途処理 |
-| **moduleResolution: bundler** | ESM only、CommonJS 禁止 | esbuild 対応 |
+| Item | Rule | Reason |
+|------|------|--------|
+| **target: ES2020** | `String.prototype.replaceAll()` forbidden | Only ES2021+ support |
+| **strict: true** | All strict flags enabled | implicit any, strict null, strict property init required |
+| **jsx: preserve** | SolidJS pre-compilation required | Handled via esbuild plugin |
+| **moduleResolution: bundler** | ESM only, CommonJS forbidden | esbuild support |
 
 ---
 
-## 変数・関数命名
+## Variable & Function Naming
 
 ### Case Rules
 
-**全て `camelCase`**（予外なし）
+**All `camelCase`** (no exceptions)
 
 ```typescript
 // ✅ Good
 const stepCount = 5;
 const isEnabled = true;
 function calculateBlendColor(a: Color, b: Color): Color { }
-const MAX_TEXTURE_UNITS = 16;  // 定数も camelCase, uppercase
+const MAX_TEXTURE_UNITS = 16;  // Constants also camelCase, uppercase
 
 // ❌ Bad
 const StepCount = 5;          // PascalCase
 const step_count = 5;         // snake_case
-const BLEND_MODE = 'multiply'; // screaming snake
+const BLEND_MODE = 'multiply'; // Screaming snake
 ```
 
-### 接頭辞 / 接尾辞
+### Prefixes / Suffixes
 
-| 接頭辞 | 例 | 用途 |
-|--------|-----|------|
-| `is`, `has`, `can` | `isEnabled`, `hasSteps`, `canDelete` | boolean predicates |
-| `get`, `set` | `getSteps()`, `setSteps(s)` | accessors |
-| `create` | `createRenderer`, `createPipelineCommandController` | factory functions |
-| `resolve`, `validate` | `resolveDropTarget`, `validateSnapshot` | helper/utility |
-| `on*` | `onPointerDown`, `onStepChange` | event handlers (callback params) |
+| Prefix | Example | Purpose |
+|--------|---------|---------|
+| `is`, `has`, `can` | `isEnabled`, `hasSteps`, `canDelete` | Boolean predicates |
+| `get`, `set` | `getSteps()`, `setSteps(s)` | Accessors |
+| `create` | `createRenderer`, `createPipelineCommandController` | Factory functions |
+| `resolve`, `validate` | `resolveDropTarget`, `validateSnapshot` | Helper/utility |
+| `on*` | `onPointerDown`, `onStepChange` | Event handlers (callback params) |
 | `sync*` | `syncStepListUI(steps)` | SolidJS state syncer exported from component |
 
 ---
 
-## Import/Export パターン
+## Import/Export Patterns
 
-### モジュール構成
+### Module Organization
 
 ```typescript
-// ✅ Good: 明確な import 順序
+// ✅ Good: Clear import order
 
 // 1. External dependencies
 import { createSignal, For } from 'solid-js';
@@ -93,8 +93,8 @@ import * as pipelineView from './pipeline-view';
 import type { PipelineViewState } from './types';
 
 // ❌ Bad: Circular or reversed layer dependency
-import { setupUI } from '../ui/main-setup';  // ❌ Domain が UI をinport
-import { globalState } from './global';      // ❌ 直接mutablestateへのimport
+import { setupUI } from '../ui/main-setup';  // ❌ Domain importing UI
+import { globalState } from './global';      // ❌ Direct mutable state import
 ```
 
 ### Barrel Exports (Recommended Only for `types.ts`)
@@ -116,26 +116,26 @@ export * from './step-runtime';
 
 ```typescript
 // ❌ Never create *.d.ts
-// - TypeScript は .ts ファイルのみ走査
-// - .d.ts は declaration file のみ（external dep）
+// - TypeScript only scans .ts files
+// - .d.ts are for declaration files (external deps only)
 ```
 
 ---
 
-## Solid.js JSX Rules
+## SolidJS JSX Rules
 
-### JSX の制限
+### JSX Constraints
 
-| 制限 | 例 | 回避方法 |
-|------|-----|--------|
-| **No comma operator** | `<span>{(lang(), fn())}</span>` | Helper function を使用 |
-| **No async/await** | `<button onClick={async () => { await fn() }}/>` | イベント handler から async function をcall |
-| **Accessor props only** | `<Child count={count} />` | `createSignal` を component 内部で管理 |
-| **No createEffect in render** | render 中の side effect | Parent から `sync*` function を call |
+| Constraint | Example | Workaround |
+|------------|---------|-----------|
+| **No comma operator** | `<span>{(lang(), fn())}</span>` | Use helper function |
+| **No async/await** | `<button onClick={async () => { await fn() }}/>` | Call async function from handler |
+| **Accessor props only** | `<Child count={count} />` | Manage `createSignal` inside component |
+| **No createEffect in render** | Side effects during render | Call `sync*` function from parent |
 
-### JSX 記述パターン
+### JSX Patterns
 
-#### Bad: コンマ演算子 (SolidJS で評価エラー)
+#### Bad: Comma Operator (SolidJS Evaluation Error)
 
 ```typescript
 const [language] = createSignal('ja');
@@ -148,14 +148,14 @@ export function StepLabel(props: { paramName: ParamName }): JSX.Element {
 }
 ```
 
-#### Good: ヘルパー関数 (signal を購読＋計算結果返却)
+#### Good: Helper Function (Signal Subscription + Computed Return)
 
 ```typescript
 const [language, setLanguage] = createSignal('ja');
 
 function formatParamLabel(paramName: ParamName): string {
-  language();  // signal 購読（変更時に recompute）
-  return formatParamName(paramName);  // 計算結果 return
+  language();  // Signal subscription (marks for re-compute)
+  return formatParamName(paramName);  // Return computed result
 }
 
 export function StepLabel(props: { paramName: ParamName }): JSX.Element {
@@ -166,11 +166,11 @@ export function StepLabel(props: { paramName: ParamName }): JSX.Element {
 }
 ```
 
-#### Bad: Props として Signal を pass
+#### Bad: Props as Signal
 
 ```typescript
 interface StepProps {
-  steps: () => StepModel[];  // Accessor prop か...
+  steps: () => StepModel[];  // Accessor prop...
 }
 
 export function StepList(props: StepProps) {
@@ -179,13 +179,13 @@ export function StepList(props: StepProps) {
 }
 ```
 
-#### Good: Accessor Props with proper typing
+#### Good: Accessor Props with Proper Typing
 
 ```typescript
 import type { Accessor } from 'solid-js';
 
 interface StepProps {
-  steps: Accessor<StepModel[]>;  // 明示的
+  steps: Accessor<StepModel[]>;  // Explicit
 }
 
 export function StepList(props: StepProps) {
@@ -202,15 +202,15 @@ export function StepList(props: StepProps) {
 
 ## Type Annotations
 
-### 明示的な型指定が必須な場合
+### When Explicit Type Specification is Critical
 
 #### Callback Parameters
 
 ```typescript
-// ❌ Bad: EventListener のような generic type receiver でts7006 error
+// ❌ Bad: Generic type receiver (EventListener) gives TS7006 error
 export function bindPointerDown(handler: EventListener) {
   document.addEventListener('pointerdown', handler);
-  // handler は Event を受け取る generic EventListener → parameter type が implicit
+  // handler is generic EventListener → parameter type implicit
 }
 
 // Caller side:
@@ -219,7 +219,7 @@ bindPointerDown((event) => {
   const x = event.clientX;
 });
 
-// ✅ Good: Adapter を使用
+// ✅ Good: Use adapter
 export function bindPointerDown(handler: (event: PointerEvent) => void) {
   document.addEventListener('pointerdown', (event) => {
     handler(event as PointerEvent);  // Narrow type
@@ -228,7 +228,7 @@ export function bindPointerDown(handler: (event: PointerEvent) => void) {
 
 // Caller side: ✅
 bindPointerDown((event) => {
-  // event は PointerEvent に絞られた
+  // event is PointerEvent
   const x = event.clientX;  // ✅ OK
 });
 ```
@@ -236,14 +236,14 @@ bindPointerDown((event) => {
 #### Generic Function Calls
 
 ```typescript
-// ❌ Bad: Options object の callback が unknown に推論
+// ❌ Bad: Options object callback inferred as unknown
 function createController(options: {
   onStatusChange: (msg: unknown) => void;
 }) {
-  options.onStatusChange(123);  // 実際には string 期待
+  options.onStatusChange(123);  // Actually expects string
 }
 
-// ✅ Good: 型を明示
+// ✅ Good: Annotate explicitly
 interface CreateControllerOptions {
   onStatusChange: (message: string, kind: StatusKind) => void;
 }
@@ -276,7 +276,7 @@ type ApplyLutTexturesResult =
 
 ## File Structure Rules
 
-### ファイルレイアウト
+### File Layout
 
 ```typescript
 // ✅ Recommended order
@@ -310,7 +310,7 @@ export function syncStepList(steps: StepModel[]): void { }
 
 ### Line Length & Indentation
 
-- **Max line**: 100 characters (readability in small screens)
+- **Max line**: 100 characters (readability on smaller screens)
 - **Indentation**: 2 spaces (SolidJS convention)
 - **Trailing comma**: Always include (modern ESM)
 
@@ -328,7 +328,7 @@ const result = calculateComplexBlendModeWithManyParameters(colorA, colorB, blend
 
 ---
 
-## 文字列とフォーマット
+## Strings & Formatting
 
 ### Template Literals
 
@@ -344,7 +344,7 @@ const shader = `
   }
 `;
 
-// ❌ Bad: concat
+// ❌ Bad: Concatenation
 const message = 'Step ' + stepId + ': ' + label;
 ```
 
@@ -369,7 +369,7 @@ import { helper } from '../src/shared/utils/helpers';
 
 ## Comments & Documentation
 
-### JSDoc (Minimal, 複雑な関数のみ)
+### JSDoc (Minimal, Complex Functions Only)
 
 ```typescript
 // ✅ Good: Complex factory with side effects
@@ -397,7 +397,7 @@ export function createPipelineCommandController(
 function getStepCount(): number { return steps.length; }
 ```
 
-### Inline Comments (理由が non-obvious な時のみ)
+### Inline Comments (Only When Reason is Non-Obvious)
 
 ```typescript
 // ✅ Good: Explains *why*, not *what*
@@ -406,7 +406,7 @@ export function sampleLutColorLinear(lut: LutModel, u: number, v: number): Color
   // (u * width - 0.5, not u * (width - 1), which causes visible color mismatches)
   const uPixel = u * lut.width - 0.5;
   const vPixel = v * lut.height - 0.5;
-  // ... clamp と fetch logic
+  // ... clamp and fetch logic
 }
 
 // ❌ Bad: Self-explanatory code doesn't need comments
@@ -418,33 +418,34 @@ const color = [r, g, b];  // Create a color
 ## Error Messages
 
 ```typescript
-// ✅ Good: 日本語 + 構造化 + context
+// ✅ Good: Structured + context
 throw new Error(`StepModel validation failed: steps array is empty`);
 
 function assertValidSnapshot(value: unknown, label: string): asserts value is PipelineStateSnapshot {
   if (!isPipelineStateSnapshot(value)) {
-    throw new Error(`${label} が不正です: expected PipelineStateSnapshot, got ${typeof value}`);
+    throw new Error(`${label} is invalid: expected PipelineStateSnapshot, got ${typeof value}`);
   }
 }
 
-// ❌ Bad: Vague or English-only
+// ❌ Bad: Vague or unclear
 throw new Error('Invalid');
 throw new Error('Bad input');
 ```
 
 ---
 
-## 最後に：チェックリスト
+## Final Checklist
 
-新規ファイル・関数作成時：
+Before creating new files/functions:
 
-- [ ] Imports は external → domain → rendering → ui の順序
-- [ ] ファイル名は規約にマッチ (`*-model`, `*-state`, `*-controller` etc.)
-- [ ] SolidJS JSX でコンマ演算子 ×
-- [ ] Callback parameters に explicit type annotation
-- [ ] Domain 層が UI をinport していない
-- [ ] CPU ↔ GPU calculations が色を保持
-- [ ] `String.replaceAll()` ではなく regex `.replace(/x/g, ...)`
-- [ ] `../<src>` import パスなし
-- [ ] Type guard で runtime validation
+- [ ] Imports in order: external → domain → rendering → ui
+- [ ] File name matches convention (`*-model`, `*-state`, `*-controller`, etc.)
+- [ ] No comma operator in SolidJS JSX
+- [ ] Callback parameters have explicit type annotation
+- [ ] Domain layer doesn't import UI
+- [ ] CPU ↔ GPU color consistency
+- [ ] Use regex instead of `String.replaceAll()`
+- [ ] No `../<src>` import paths
+- [ ] Type guard validates runtime data
+
 
