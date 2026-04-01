@@ -7,7 +7,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const server = http.createServer((req, res) => {
-  const file = path.join(__dirname, '..', req.url === '/' ? 'index.html' : req.url);
+  const file = path.join(__dirname, '..', 'dist', req.url === '/' ? 'index.html' : req.url);
   fs.readFile(file, (err, data) => {
     if (err) {
       res.writeHead(404);

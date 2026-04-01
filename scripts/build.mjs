@@ -4,6 +4,36 @@ import fs from 'fs';
 import path from 'path';
 
 const watchMode = process.argv.includes('--watch');
+const distDir = path.resolve('dist');
+const copyTargets = [
+  {
+    source: path.resolve('examples'),
+    destination: path.join(distDir, 'examples'),
+  },
+  {
+    source: path.resolve('styles.css'),
+    destination: path.join(distDir, 'styles.css'),
+  },
+  {
+    source: path.resolve('index.html'),
+    destination: path.join(distDir, 'index.html'),
+  },
+];
+
+function copyBuildAssets() {
+  fs.mkdirSync(distDir, { recursive: true });
+
+  for (const target of copyTargets) {
+    if (path.basename(target.source) === 'index.html') {
+      const indexHtml = fs.readFileSync(target.source, 'utf8')
+        .replace(/src="dist\/bundle\.js"/g, 'src="bundle.js"');
+      fs.writeFileSync(target.destination, indexHtml);
+      continue;
+    }
+
+    fs.cpSync(target.source, target.destination, { recursive: true, force: true });
+  }
+}
 
 // Custom plugin to resolve TypeScript imports without explicit extensions
 
@@ -47,6 +77,19 @@ const typeScriptExtensionPlugin = {
   },
 };
 
+const copyBuildAssetsPlugin = {
+  name: 'copy-build-assets',
+  setup(build) {
+    build.onEnd((result) => {
+      if (result.errors.length > 0) {
+        return;
+      }
+
+      copyBuildAssets();
+    });
+  },
+};
+
 const buildOptions = {
   entryPoints: ['src/main.ts'],
   bundle: true,
@@ -59,7 +102,7 @@ const buildOptions = {
     '.ts': 'ts',
     '.tsx': 'tsx',
   },
-  plugins: [typeScriptExtensionPlugin, solidPlugin({ dev: watchMode })],
+  plugins: [typeScriptExtensionPlugin, copyBuildAssetsPlugin, solidPlugin({ dev: watchMode })],
 };
 
 if (watchMode) {
