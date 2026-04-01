@@ -26,6 +26,7 @@ export interface SetupMainPanelsOptions {
   getLightSettings: () => LightSettings;
   setLightSettings: (nextSettings: LightSettings) => void;
   getShaderBuildInput: () => ShaderBuildInput;
+  onExportShaderZip: () => void | Promise<void>;
   onUpdateStepSwatches: () => void;
   onUpdateShaderCodePanel: () => void;
   onScheduleApply: () => void;
@@ -68,6 +69,7 @@ function ensureOptions(value: unknown): asserts value is SetupMainPanelsOptions 
   ensureFunction(options.getLightSettings, 'Main panel setup: getLightSettings');
   ensureFunction(options.setLightSettings, 'Main panel setup: setLightSettings');
   ensureFunction(options.getShaderBuildInput, 'Main panel setup: getShaderBuildInput');
+  ensureFunction(options.onExportShaderZip, 'Main panel setup: onExportShaderZip');
   ensureFunction(options.onUpdateStepSwatches, 'Main panel setup: onUpdateStepSwatches');
   ensureFunction(options.onUpdateShaderCodePanel, 'Main panel setup: onUpdateShaderCodePanel');
   ensureFunction(options.onScheduleApply, 'Main panel setup: onScheduleApply');
@@ -113,6 +115,7 @@ export function setupMainPanels(options: SetupMainPanelsOptions): void {
     openButtonEl: options.shaderOpenButtonEl,
     surfaceEl: options.shaderSurfaceEl,
     onBeforeOpen: options.onUpdateShaderCodePanel,
+    onExport: options.onExportShaderZip,
     onStatus: options.onStatus,
   });
 

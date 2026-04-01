@@ -1307,7 +1307,7 @@ button:disabled:hover {
 
 .shader-toolbar {
   display: flex;
-  align-items: center;
+  align-items: stretch;
   gap: 8px;
   flex-wrap: wrap;
   justify-content: flex-end;

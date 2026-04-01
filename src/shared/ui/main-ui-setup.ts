@@ -32,6 +32,7 @@ interface SetupMainUiOptions {
   getLightSettings: () => LightSettings;
   setLightSettings: (next: LightSettings) => void;
   getShaderBuildInput: () => ShaderBuildInput;
+  onExportShaderZip: () => void | Promise<void>;
   onUpdateStepSwatches: () => void;
   onUpdateShaderCodePanel: () => void;
   onScheduleApply: () => void;
@@ -112,6 +113,7 @@ function assertSetupMainUiOptions(options: SetupMainUiOptions): void {
   ensureFunction(options.getLightSettings, 'Main UI setup getLightSettings');
   ensureFunction(options.setLightSettings, 'Main UI setup setLightSettings');
   ensureFunction(options.getShaderBuildInput, 'Main UI setup getShaderBuildInput');
+  ensureFunction(options.onExportShaderZip, 'Main UI setup onExportShaderZip');
   ensureFunction(options.onUpdateStepSwatches, 'Main UI setup onUpdateStepSwatches');
   ensureFunction(options.onUpdateShaderCodePanel, 'Main UI setup onUpdateShaderCodePanel');
   ensureFunction(options.onScheduleApply, 'Main UI setup onScheduleApply');
@@ -189,6 +191,7 @@ export function setupMainUi(options: SetupMainUiOptions): void {
     getLightSettings: options.getLightSettings,
     setLightSettings: options.setLightSettings,
     getShaderBuildInput: options.getShaderBuildInput,
+    onExportShaderZip: options.onExportShaderZip,
     onUpdateStepSwatches: options.onUpdateStepSwatches,
     onUpdateShaderCodePanel: options.onUpdateShaderCodePanel,
     onScheduleApply: options.onScheduleApply,

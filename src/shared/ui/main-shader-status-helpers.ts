@@ -1,4 +1,5 @@
 import * as pipelineModel from '../../features/pipeline/pipeline-model.ts';
+import type { ExportShaderZipResult } from '../../features/shader/shader-export-system.ts';
 import type { ShaderBuildInput } from '../../features/shader/shader-generator.ts';
 import {
   syncShaderDialogState,
@@ -22,6 +23,16 @@ interface CreateShaderCodePanelUpdaterOptions {
 
 interface CreateLightDirectionWorldGetterOptions {
   getLightSettings: () => pipelineModel.LightSettings;
+}
+
+interface ShaderExportSystemLike {
+  exportShaderZip: () => Promise<ExportShaderZipResult>;
+}
+
+interface CreateShaderExportHandlerOptions {
+  getShaderExportSystem: () => ShaderExportSystemLike | null;
+  onStatus: MainStatusReporter;
+  t: (key: unknown, values?: Record<string, string | number>) => string;
 }
 
 function ensureFunction(value: unknown, label: string): void {
@@ -59,6 +70,13 @@ function assertLightDirectionWorldGetterOptions(options: CreateLightDirectionWor
   ensureFunction(options.getLightSettings, 'Light direction world getter options.getLightSettings');
 }
 
+function assertShaderExportHandlerOptions(options: CreateShaderExportHandlerOptions): void {
+  ensureObject(options, 'Shader export handler options');
+  ensureFunction(options.getShaderExportSystem, 'Shader export handler options.getShaderExportSystem');
+  ensureFunction(options.onStatus, 'Shader export handler options.onStatus');
+  ensureFunction(options.t, 'Shader export handler options.t');
+}
+
 export function createShaderBuildInputGetter(
   options: CreateShaderBuildInputGetterOptions,
 ): () => ShaderBuildInput {
@@ -92,6 +110,33 @@ export function createStatusReporter(): MainStatusReporter {
       message,
       kind,
     });
+  };
+}
+
+export function createShaderExportHandler(
+  options: CreateShaderExportHandlerOptions,
+): () => Promise<void> {
+  assertShaderExportHandlerOptions(options);
+
+  return async (): Promise<void> => {
+    const shaderExportSystem = options.getShaderExportSystem();
+    if (!shaderExportSystem) {
+      options.onStatus(options.t('main.status.shaderExportNotInitialized'), 'error');
+      return;
+    }
+
+    const result = await shaderExportSystem.exportShaderZip();
+    if (result.ok) {
+      options.onStatus(options.t('shader.status.exportSuccess'), 'success');
+      return;
+    }
+
+    options.onStatus(
+      options.t('shader.status.exportFailed', {
+        message: result.errorMessage ?? options.t('common.unknownError'),
+      }),
+      'error',
+    );
   };
 }
 

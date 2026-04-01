@@ -11,6 +11,7 @@ type StatusKind = 'success' | 'error' | 'info';
 
 interface ShaderDialogContentOptions {
   onClose: () => void;
+  onExport: () => void | Promise<void>;
   onStatus: (message: string, kind?: StatusKind) => void;
 }
 
@@ -19,6 +20,7 @@ interface ShaderDialogShellOptions {
   openButtonEl: HTMLButtonElement;
   surfaceEl: Element;
   onBeforeOpen?: () => void;
+  onExport: () => void | Promise<void>;
   onStatus: (message: string, kind?: StatusKind) => void;
 }
 
@@ -53,6 +55,9 @@ function ensureShaderDialogShellOptions(value: unknown): asserts value is Shader
   }
   if (options.onBeforeOpen !== undefined && typeof options.onBeforeOpen !== 'function') {
     throw new Error('mountShaderDialogShell: onBeforeOpen must be a function when provided');
+  }
+  if (typeof options.onExport !== 'function') {
+    throw new Error('mountShaderDialogShell: onExport must be a function');
   }
   if (typeof options.onStatus !== 'function') {
     throw new Error('mountShaderDialogShell: onStatus must be a function');
@@ -110,6 +115,15 @@ function ShaderDialogContent(props: { options: ShaderDialogContentOptions }) {
     }
   };
 
+  const handleExport = async () => {
+    try {
+      await props.options.onExport();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : tr('common.unknownError');
+      props.options.onStatus(tr('shader.status.exportFailed', { message }), 'error');
+    }
+  };
+
   return (
     <>
       <div class="shader-panel-head shader-dialog-head">
@@ -139,6 +153,13 @@ function ShaderDialogContent(props: { options: ShaderDialogContentOptions }) {
             onClick={() => void handleCopy()}
           >
             {tr('shader.copy')}
+          </button>
+          <button
+            type="button"
+            class="btn-secondary shader-export-btn"
+            onClick={() => void handleExport()}
+          >
+            {tr('shader.export')}
           </button>
           <button
             type="button"
@@ -209,6 +230,7 @@ export function mountShaderDialogShell(options: ShaderDialogShellOptions): void 
 
   mountShaderDialogContent(options.surfaceEl, {
     onClose: closeShaderDialog,
+    onExport: options.onExport,
     onStatus: options.onStatus,
   });
 

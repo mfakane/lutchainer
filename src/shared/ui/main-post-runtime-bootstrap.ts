@@ -123,6 +123,7 @@ export interface BootstrapMainPostRuntimeOptions {
     luts: LutModel[];
     materialSettings: pipelineModel.MaterialSettings;
   };
+  onExportShaderZip: () => void | Promise<void>;
   onUpdateShaderCodePanel: () => void;
   getOrbitState: () => CameraOrbitState;
   setOrbitState: (nextState: CameraOrbitState) => void;
@@ -237,6 +238,7 @@ function assertOptions(options: BootstrapMainPostRuntimeOptions): void {
   ensureFunction(options.mainStepRendering.updateStepSwatches, 'Main post-runtime mainStepRendering.updateStepSwatches');
 
   ensureFunction(options.getShaderBuildInput, 'Main post-runtime getShaderBuildInput');
+  ensureFunction(options.onExportShaderZip, 'Main post-runtime onExportShaderZip');
   ensureFunction(options.onUpdateShaderCodePanel, 'Main post-runtime onUpdateShaderCodePanel');
   ensureFunction(options.getOrbitState, 'Main post-runtime getOrbitState');
   ensureFunction(options.setOrbitState, 'Main post-runtime setOrbitState');
@@ -324,6 +326,7 @@ export function bootstrapMainPostRuntime(options: BootstrapMainPostRuntimeOption
     getLightSettings,
     setLightSettings,
     getShaderBuildInput: options.getShaderBuildInput,
+    onExportShaderZip: options.onExportShaderZip,
     onUpdateStepSwatches: () => options.mainStepRendering.updateStepSwatches(),
     onUpdateShaderCodePanel: options.onUpdateShaderCodePanel,
     onScheduleApply: () => options.pipelineApply.scheduleApply(),

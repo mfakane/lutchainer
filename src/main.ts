@@ -26,6 +26,9 @@ import {
   setSteps as setPipelineSteps,
 } from './features/pipeline/pipeline-state.ts';
 import * as pipelineView from './features/pipeline/pipeline-view.ts';
+import {
+  createShaderExportSystem,
+} from './features/shader/shader-export-system.ts';
 import { MAX_STEP_LABEL_LENGTH } from './features/step/step-model.ts';
 import { createMainStepRenderingController } from './features/step/main-step-rendering-controller.ts';
 import { StepPreviewRenderer } from './features/step/step-preview-renderer.ts';
@@ -80,6 +83,7 @@ import { bootstrapMainRuntime } from './shared/ui/main-runtime-bootstrap.ts';
 import {
   createLightDirectionWorldGetter,
   createShaderBuildInputGetter,
+  createShaderExportHandler,
   createShaderCodePanelUpdater,
   createStatusReporter,
 } from './shared/ui/main-shader-status-helpers.ts';
@@ -117,6 +121,7 @@ let pipelineDropIndicators: PipelineDropIndicatorController;
 let pipelineSocketDnd: PipelineSocketDndController;
 let previewShapeController: PreviewShapeController;
 let stepPreviewRenderer: StepPreviewRenderer | null = null;
+let shaderExportSystem: ReturnType<typeof createShaderExportSystem> | null = null;
 
 const selectRequired = createRequiredDomSelector();
 const orbitStateController = createMainOrbitStateController({
@@ -197,6 +202,12 @@ const updateShaderCodePanel = createShaderCodePanelUpdater({
 });
 
 const showStatus = createStatusReporter();
+
+const exportShaderZip = createShaderExportHandler({
+  getShaderExportSystem: () => shaderExportSystem,
+  onStatus: showStatus,
+  t,
+});
 
 const pipelineHistoryActions = createPipelineHistoryActionsController({
   history: pipelineHistory,
@@ -404,6 +415,11 @@ window.addEventListener('DOMContentLoaded', () => {
     getLightDirectionWorld,
   }));
 
+  shaderExportSystem = createShaderExportSystem({
+    getShaderBuildInput,
+    toErrorMessage: pipelineModel.toErrorMessage,
+  });
+
   bootstrapMainPostRuntime({
     select: selectRequired,
     canvas,
@@ -423,6 +439,7 @@ window.addEventListener('DOMContentLoaded', () => {
     mainRenderPipeline,
     mainStepRendering,
     getShaderBuildInput,
+    onExportShaderZip: exportShaderZip,
     onUpdateShaderCodePanel: updateShaderCodePanel,
     getOrbitState: orbitStateController.getOrbitState,
     setOrbitState: orbitStateController.setOrbitState,
