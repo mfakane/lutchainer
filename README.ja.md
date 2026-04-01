@@ -3,6 +3,13 @@
 ブラウザで動作する、LUTベースのステップチェーン型シェーダエディタです。
 複数のLUTとブレンドモードを段階的に組み合わせ、3Dプレビューを見ながら見た目を調整できます。
 
+## スクリーンショット
+
+<p align="center">
+	<img src="docs/screenshot-main.png" alt="Main screen" width="48%" />
+	<img src="docs/screenshot-luteditor.png" alt="LUT editor" width="48%" />
+</p>
+
 ## 主な機能
 
 - LUT Step Chain の編集

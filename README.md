@@ -4,6 +4,13 @@
 
 A browser-based shader editor for creating LUT (Look-Up Table) based step chains. Combine multiple LUTs and blend modes sequentially, then preview your changes in real-time with a 3D renderer.
 
+## Screenshots
+
+<p align="center">
+	<img src="docs/screenshot-main.png" alt="Main screen" width="48%" />
+	<img src="docs/screenshot-luteditor.png" alt="LUT editor" width="48%" />
+</p>
+
 ## Key Features
 
 - **LUT Step Chain Editing**
