@@ -1,6 +1,5 @@
 import { createSignal, type Accessor, type JSX } from 'solid-js';
 import { render } from 'solid-js/web';
-import { DropdownMenu } from './solid-dropdown-menu.tsx';
 import {
   getLanguageLabel,
   setLanguage,
@@ -8,6 +7,7 @@ import {
   useLanguage,
   type Language,
 } from '../i18n';
+import { DropdownMenu } from './solid-dropdown-menu.tsx';
 
 type StatusKind = 'success' | 'error' | 'info';
 type StatusReporter = (message: string, kind?: StatusKind) => void;
@@ -245,7 +245,7 @@ function HeaderActionGroup(props: HeaderActionGroupProps): JSX.Element {
         }}
         type="file"
         id="pipeline-file-input"
-        accept=".lutchain,application/x-lutchain,application/json,.json"
+        accept=".lutchain,application/x-lutchain"
         hidden
         onChange={event => void handlePipelineFileInputChange(event)}
       />
