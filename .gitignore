@@ -2,3 +2,5 @@ dist/
 .direnv/
 node_modules/
 result
+.claude/worktrees/
+__pycache__/

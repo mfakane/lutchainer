@@ -347,6 +347,7 @@ Specialized guidance is available in `.claude/rules/`:
 
 - **TypeScript strictness, SolidJS JSX constraints, file structure** → `.claude/rules/coding-style.md`
 - **CPU↔GPU mismatch, type inference traps, edge cases** → `.claude/rules/common-mistakes.md`
+- **Blender add-on layout, reload safety, validation workflow** → `.claude/rules/blender-addon.md`
 
 ---
 
@@ -370,4 +371,3 @@ If any of the above are unclear, refer to detailed guides before implementing.
 This project has **strict design requirements**. TS strict mode, layer separation, and type safety are non-negotiable. When adding new features, follow these architectural patterns first. Always choose the "right way" over the "easy way".
 
 Questions? Consult this document and `.claude/rules/` before implementing.
-
