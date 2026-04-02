@@ -156,7 +156,7 @@ function ShaderDialogContent(props: { options: ShaderDialogContentOptions }) {
           </button>
           <button
             type="button"
-            class="btn-secondary shader-export-btn"
+            class="btn-submit shader-export-btn"
             onClick={() => void handleExport()}
           >
             {tr('shader.export')}

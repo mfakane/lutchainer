@@ -258,8 +258,8 @@ function HeaderActionGroup(props: HeaderActionGroupProps): JSX.Element {
         />
         {tr('header.autoApply')}
       </label>
-      <button class="btn-submit" id="btn-apply-pipeline" onClick={props.onApplyPipeline}>{tr('header.apply')}</button>
-      <button type="button" class="btn-secondary shader-open-btn" id="btn-open-shader-dialog">{tr('header.openCode')}</button>
+      <button class="btn-secondary" id="btn-apply-pipeline" onClick={props.onApplyPipeline}>{tr('header.apply')}</button>
+      <button type="button" class="btn-submit shader-open-btn" id="btn-open-shader-dialog">{tr('header.openCode')}</button>
     </>
   );
 }
