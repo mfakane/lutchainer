@@ -1013,7 +1013,7 @@ def _build_helper_nodes(
     links.new(specular_mul.outputs[0], pipeline_node.inputs["Specular"])
 
     half_lambert_pos = NodePosition((-880, -590))
-    half_lambert_frame = _new_frame(tree, "HalfLambert", half_lambert_pos.get())
+    half_lambert_frame = _new_frame(tree, "HalfLambert Approx", half_lambert_pos.get())
     half_mul = _new_math(tree, "MULTIPLY", use_clamp=False, location=half_lambert_pos.next())
     half_mul.parent = half_lambert_frame
     half_mul.inputs[1].default_value = 0.5
