@@ -38,6 +38,32 @@ After enabling:
 - Shader Editor sidebar: `LUT Chainer` tab
 - Add-on Preferences: `Last Fixture Path`, `Lightness Mode By Default`, `Reload Script`, `Reload And Reimport`
 
+## Release Build
+
+Use the release packaging script to generate an installable zip:
+
+```bash
+python3 scripts/build_blender_addon_release.py 0.2.1
+```
+
+Output:
+
+- `artifacts/lutchainer_blender_addon-0.2.1.zip`
+
+The script updates the packaged add-on's `bl_info["version"]` and builds a staged release zip without modifying the repo's tracked add-on source.
+
+Release builds keep only the import flow:
+
+- `File > Import > LUT Chainer (.lutchain)`
+- Add-on Preferences: `Lightness Mode By Default`
+
+Release builds do not register:
+
+- Shader Editor sidebar panel
+- `Last Fixture Path`
+- `Reload Script`
+- `Reload And Reimport`
+
 ## Development Reload
 
 For development, you do not need to rebuild a zip every time.
@@ -54,6 +80,7 @@ Important:
 
 - `Script Directories` must point to `.../lutchainer/blender_addon`
 - Blender scans `<script_dir>/addons`, and this repo now places the add-on there directly
+- The repo source is always the debug/development build; release packaging is done via `scripts/build_blender_addon_release.py`
 
 ## Helper wiring
 

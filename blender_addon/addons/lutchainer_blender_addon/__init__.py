@@ -8,6 +8,7 @@ from bpy.types import AddonPreferences, Operator, Panel
 from bpy_extras.io_utils import ImportHelper
 
 from . import manifest, node_builder
+from .release_config import IS_RELEASE_BUILD
 
 MODULE_NAME = __package__ or "lutchainer_blender_addon"
 
@@ -96,16 +97,18 @@ class LUTCHAINER_AP_preferences(AddonPreferences):
         default="",
     )
     lightness_mode_default: EnumProperty(
-        name="Lightness Mode By Default",
-        description="Default Lightness helper mode for import and reload-and-reimport",
+        name="Lightness Mode",
+        description="Lightness helper mode for import and reload-and-reimport",
         items=LIGHTNESS_MODE_ITEMS,
         default=LIGHTNESS_MODE_SHADER_TO_RGB,
     )
 
     def draw(self, _context: bpy.types.Context) -> None:
         layout = self.layout
-        layout.prop(self, "last_fixture_path")
         layout.prop(self, "lightness_mode_default")
+        if IS_RELEASE_BUILD:
+            return
+        layout.prop(self, "last_fixture_path")
         row = layout.row(align=True)
         row.operator("lutchainer.reload_script", icon="FILE_REFRESH")
         row.operator("lutchainer.reload_and_reimport", icon="IMPORT")
@@ -251,18 +254,27 @@ def _menu_import(self: bpy.types.Menu, _context: bpy.types.Context) -> None:
     self.layout.operator(LUTCHAINER_OT_import_lutchain.bl_idname, text="LUT Chainer (.lutchain)")
 
 
-CLASSES = (
+COMMON_CLASSES = (
     LUTCHAINER_AP_preferences,
     LUTCHAINER_OT_import_lutchain,
+)
+
+DEBUG_CLASSES = (
     LUTCHAINER_OT_reload_script,
     LUTCHAINER_OT_reload_and_reimport,
     LUTCHAINER_PT_import_panel,
 )
 
 
+def _get_registered_classes() -> tuple[type[object], ...]:
+    if IS_RELEASE_BUILD:
+        return COMMON_CLASSES
+    return COMMON_CLASSES + DEBUG_CLASSES
+
+
 def register() -> None:
     global __addon_enabled__
-    for cls in CLASSES:
+    for cls in _get_registered_classes():
         bpy.utils.register_class(cls)
     bpy.types.TOPBAR_MT_file_import.append(_menu_import)
     __addon_enabled__ = True
@@ -274,7 +286,7 @@ def unregister() -> None:
         bpy.types.TOPBAR_MT_file_import.remove(_menu_import)
     except (AttributeError, RuntimeError):
         pass
-    for cls in reversed(CLASSES):
+    for cls in reversed(_get_registered_classes()):
         try:
             bpy.utils.unregister_class(cls)
         except RuntimeError:

@@ -28,6 +28,16 @@ This is intentional.
 - Blender validation scripts: `tests/blender/validate_addon.py`
 - Blender visual-compare tools: `tools/blender/compare/`
 - Windows bridge scripts: `scripts/run_windows_blender.sh`, `scripts/invoke_windows_blender.ps1`
+- Release build script: `scripts/build_blender_addon_release.py`
+
+### Release Build Rule
+
+The repo source is the development build.
+
+- Do not hand-edit the repo into a release-only state
+- Use `scripts/build_blender_addon_release.py <version>` to create the installable release zip
+- Release packaging must happen in a staged copy, not by mutating tracked add-on files in place
+- Release packaging must update the packaged `bl_info["version"]`
 
 ---
 
@@ -68,6 +78,18 @@ If a change touches:
 - menu registration
 
 use Blender's global `Reload Scripts` instead of the add-on's `Reload Script`.
+
+### Rule: Release Builds Must Hide Debug UI
+
+Release builds should keep import UI and the non-debug preference needed to choose the default lightness mode.
+
+Release builds must not register:
+
+- `Reload Script`
+- `Reload And Reimport`
+- Shader Editor sidebar panel
+
+Release builds may still register add-on preferences, but only the non-debug controls such as `Lightness Mode By Default` should be visible there.
 
 ---
 
