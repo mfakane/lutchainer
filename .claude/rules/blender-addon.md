@@ -22,7 +22,8 @@ This is intentional.
 
 ### Allowed Companion Files
 
-- User-facing docs: `docs/blender-addon.md`
+- Add-on docs: `blender_addon/README.md`
+- Validation and compare docs: `tools/blender/README.md`
 - Fixture/archive validation: `tests/lutchain/validate-examples.mjs`
 - Blender validation scripts: `tests/blender/validate_addon.py`
 - Blender visual-compare tools: `tools/blender/compare/`
