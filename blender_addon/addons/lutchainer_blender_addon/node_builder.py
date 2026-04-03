@@ -31,10 +31,6 @@ MIXRGB_BLEND_TYPES = {
     "add": "ADD",
     "subtract": "SUBTRACT",
     "multiply": "MULTIPLY",
-    "hue": "HUE",
-    "saturation": "SATURATION",
-    "color": "COLOR",
-    "value": "VALUE",
 }
 PARAM_TO_GROUP_INPUT = {
     "lightness": "Lightness",
@@ -47,6 +43,7 @@ PARAM_TO_GROUP_INPUT = {
 }
 PARAMS_REQUIRING_TEXCOORD = {"texU", "texV"}
 STEP_NODE_SPACING_X = 190
+STEP_NODE_SPACING_Y = -190
 PIPELINE_GROUP_INPUT_X = -260
 PIPELINE_GROUP_FIRST_STEP_X = -20
 STEP_GROUP_INPUT_X = -620
@@ -67,6 +64,7 @@ BROWSER_DEFAULT_SPECULAR_SHARPNESS = 3.0
 BROWSER_DEFAULT_FRESNEL_STRENGTH = 0.18
 BROWSER_DEFAULT_FRESNEL_IOR = 1.1
 BROWSER_DEFAULT_FRESNEL_POWER = 2.2
+HSV_ACHROMATIC_EPSILON = 1.0e-6
 
 
 def _sanitize_name(value: str) -> str:
@@ -436,20 +434,31 @@ def _build_custom_hsv_target(
     step: LutchainStep,
     node_pos: NodePosition,
 ) -> bpy.types.NodeSocket:
+    target_pos = NodePosition(node_pos.next())
+
     current_hsv = tree.nodes.new("ShaderNodeSeparateColor")
     current_hsv.mode = "HSV"
-    current_hsv.location = node_pos.next()
+    current_hsv.location = target_pos.next(offset=(0, STEP_NODE_SPACING_Y))
     links.new(current_color_socket, current_hsv.inputs[0])
 
     lut_hsv = tree.nodes.new("ShaderNodeSeparateColor")
     lut_hsv.mode = "HSV"
-    lut_hsv.location = node_pos.next()
+    lut_hsv.location = target_pos.next(offset=(0, STEP_NODE_SPACING_Y))
     links.new(lut_color_socket, lut_hsv.inputs[0])
 
     combine = tree.nodes.new("ShaderNodeCombineColor")
     combine.mode = "HSV"
-    combine.location = node_pos.next()
+    combine.location = target_pos.next(offset=(0, STEP_NODE_SPACING_Y))
 
+    delta = _new_math(tree, "MULTIPLY", use_clamp=False, location=target_pos.next(offset=(0, STEP_NODE_SPACING_Y)))
+    links.new(current_hsv.outputs[1], delta.inputs[0])
+    links.new(current_hsv.outputs[2], delta.inputs[1])
+
+    has_chroma = _new_math(tree, "GREATER_THAN", use_clamp=False, location=target_pos.next(offset=(0, 0)))
+    has_chroma.inputs[1].default_value = HSV_ACHROMATIC_EPSILON
+    links.new(delta.outputs[0], has_chroma.inputs[0])
+
+    saturation_socket: bpy.types.NodeSocket | None = None
     for index, channel in enumerate(("h", "s", "v")):
         output_socket = _float_op(
             tree,
@@ -457,9 +466,63 @@ def _build_custom_hsv_target(
             current_hsv.outputs[index],
             lut_hsv.outputs[index],
             step.ops.get(channel, "none"),
-            node_pos.next(),
+            target_pos.next(),
         )
-        links.new(output_socket, combine.inputs[index])
+        if channel == "s":
+            saturation_mask = _new_math(tree, "MULTIPLY", use_clamp=True, location=target_pos.next())
+            links.new(output_socket, saturation_mask.inputs[0])
+            links.new(has_chroma.outputs[0], saturation_mask.inputs[1])
+            saturation_socket = saturation_mask.outputs[0]
+            links.new(saturation_socket, combine.inputs[index])
+        else:
+            links.new(output_socket, combine.inputs[index])
+    return combine.outputs[0]
+
+
+def _build_hsv_layer_target(
+    tree: bpy.types.NodeTree,
+    links: bpy.types.NodeLinks,
+    current_color_socket: bpy.types.NodeSocket,
+    lut_color_socket: bpy.types.NodeSocket,
+    *,
+    use_hue: bool,
+    use_saturation: bool,
+    use_value: bool,
+    node_pos: NodePosition,
+) -> bpy.types.NodeSocket:
+    target_pos = NodePosition(node_pos.next())
+  
+    current_hsv = tree.nodes.new("ShaderNodeSeparateColor")
+    current_hsv.mode = "HSV"
+    current_hsv.location = target_pos.next(offset=(0, STEP_NODE_SPACING_Y))
+    links.new(current_color_socket, current_hsv.inputs[0])
+
+    lut_hsv = tree.nodes.new("ShaderNodeSeparateColor")
+    lut_hsv.mode = "HSV"
+    lut_hsv.location = target_pos.next(offset=(0, STEP_NODE_SPACING_Y))
+    links.new(lut_color_socket, lut_hsv.inputs[0])
+
+    delta = _new_math(tree, "MULTIPLY", use_clamp=False, location=target_pos.next(offset=(0, STEP_NODE_SPACING_Y)))
+    links.new(current_hsv.outputs[1], delta.inputs[0])
+    links.new(current_hsv.outputs[2], delta.inputs[1])
+
+    has_chroma = _new_math(tree, "GREATER_THAN", use_clamp=False, location=target_pos.next(offset=(0, STEP_NODE_SPACING_Y)))
+    has_chroma.inputs[1].default_value = HSV_ACHROMATIC_EPSILON
+    links.new(delta.outputs[0], has_chroma.inputs[0])
+
+    combine = tree.nodes.new("ShaderNodeCombineColor")
+    combine.mode = "HSV"
+    combine.location = target_pos.next(offset=(0, STEP_NODE_SPACING_Y))
+
+    links.new(lut_hsv.outputs[0] if use_hue else current_hsv.outputs[0], combine.inputs[0])
+
+    saturation_source = lut_hsv.outputs[1] if use_saturation else current_hsv.outputs[1]
+    saturation_mask = _new_math(tree, "MULTIPLY", use_clamp=True, location=target_pos.next(offset=(0, STEP_NODE_SPACING_Y)))
+    links.new(saturation_source, saturation_mask.inputs[0])
+    links.new(has_chroma.outputs[0], saturation_mask.inputs[1])
+    links.new(saturation_mask.outputs[0], combine.inputs[1])
+
+    links.new(lut_hsv.outputs[2] if use_value else current_hsv.outputs[2], combine.inputs[2])
     return combine.outputs[0]
 
 
@@ -492,6 +555,74 @@ def _apply_step_mix(
 ) -> bpy.types.NodeSocket:
     if step.blend_mode == "none":
         return current_color_socket
+
+    if step.blend_mode == "hue":
+        target_color = _build_hsv_layer_target(
+            tree,
+            links,
+            current_color_socket,
+            lut_color_socket,
+            use_hue=True,
+            use_saturation=False,
+            use_value=False,
+            node_pos=node_pos,
+        )
+        node = _new_mixrgb(tree, "MIX", location=node_pos.next())
+        links.new(lut_alpha_socket, node.inputs[0])
+        links.new(current_color_socket, node.inputs[1])
+        links.new(target_color, node.inputs[2])
+        return node.outputs[0]
+
+    if step.blend_mode == "saturation":
+        target_color = _build_hsv_layer_target(
+            tree,
+            links,
+            current_color_socket,
+            lut_color_socket,
+            use_hue=False,
+            use_saturation=True,
+            use_value=False,
+            node_pos=node_pos,
+        )
+        node = _new_mixrgb(tree, "MIX", location=node_pos.next())
+        links.new(lut_alpha_socket, node.inputs[0])
+        links.new(current_color_socket, node.inputs[1])
+        links.new(target_color, node.inputs[2])
+        return node.outputs[0]
+
+    if step.blend_mode == "color":
+        target_color = _build_hsv_layer_target(
+            tree,
+            links,
+            current_color_socket,
+            lut_color_socket,
+            use_hue=True,
+            use_saturation=True,
+            use_value=False,
+            node_pos=node_pos,
+        )
+        node = _new_mixrgb(tree, "MIX", location=node_pos.next())
+        links.new(lut_alpha_socket, node.inputs[0])
+        links.new(current_color_socket, node.inputs[1])
+        links.new(target_color, node.inputs[2])
+        return node.outputs[0]
+
+    if step.blend_mode == "value":
+        target_color = _build_hsv_layer_target(
+            tree,
+            links,
+            current_color_socket,
+            lut_color_socket,
+            use_hue=False,
+            use_saturation=False,
+            use_value=True,
+            node_pos=node_pos,
+        )
+        node = _new_mixrgb(tree, "MIX", location=node_pos.next())
+        links.new(lut_alpha_socket, node.inputs[0])
+        links.new(current_color_socket, node.inputs[1])
+        links.new(target_color, node.inputs[2])
+        return node.outputs[0]
 
     if step.blend_mode in MIXRGB_BLEND_TYPES:
         node = _new_mixrgb(tree, MIXRGB_BLEND_TYPES[step.blend_mode], location=node_pos.next())
@@ -541,7 +672,7 @@ def _build_step_group(
     group_input.location = (STEP_GROUP_INPUT_X, 0)
     group_output = nodes.new("NodeGroupOutput")
     group_output.location = (STEP_GROUP_OUTPUT_X, 0)
-    node_pos = NodePosition(-220, 0)
+    node_pos = NodePosition((-220, 0))
     sample_frame = _new_frame(tree, "LUT Sample", node_pos.get())
 
     if step.muted:
@@ -678,7 +809,7 @@ def _build_helper_nodes(
     links.new(fresnel_pow.outputs[0], fresnel_mul.inputs[0])
     links.new(fresnel_mul.outputs[0], pipeline_node.inputs["Fresnel"])
 
-    facing_pos = NodePosition(-880, -20)
+    facing_pos = NodePosition((-880, -20))
     facing_frame = _new_frame(tree, "Facing", facing_pos.get())
     layer_weight = tree.nodes.new("ShaderNodeLayerWeight")
     layer_weight.location = facing_pos.next()
@@ -690,7 +821,7 @@ def _build_helper_nodes(
     links.new(layer_weight.outputs["Facing"], facing_invert.inputs[1])
     links.new(facing_invert.outputs[0], pipeline_node.inputs["Facing"])
 
-    lightness_pos = NodePosition(-880, -290)
+    lightness_pos = NodePosition((-880, -290))
     lightness_frame = _new_frame(tree, "Lightness", lightness_pos.get())
 
     geometry = tree.nodes.new("ShaderNodeNewGeometry")
@@ -803,7 +934,7 @@ def _build_helper_nodes(
 
     links.new(lightness_socket, pipeline_node.inputs["Lightness"])
 
-    specular_pos = NodePosition(-880, -780)
+    specular_pos = NodePosition((-880, -780))
     specular_frame = _new_frame(tree, "Specular", specular_pos.get())
     specular_bsdf = tree.nodes.new("ShaderNodeEeveeSpecular")
     specular_bsdf.location = specular_pos.next()
@@ -931,9 +1062,9 @@ def import_lutchain_material(
     return material
 
 class NodePosition:
-    def __init__(self, x: float, y: float) -> None:
-        self.x = x
-        self.y = y
+    def __init__(self, pos: tuple[float, float]) -> None:
+        self.x = pos[0]
+        self.y = pos[1]
 
     def get(self) -> (float, float):
         return (self.x, self.y)
