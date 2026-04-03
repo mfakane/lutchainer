@@ -3,12 +3,11 @@ from __future__ import annotations
 import os
 
 import bpy
-from bpy.props import BoolProperty, StringProperty
+from bpy.props import EnumProperty, StringProperty
 from bpy.types import AddonPreferences, Operator, Panel
 from bpy_extras.io_utils import ImportHelper
 
-from .manifest import load_lutchain_file
-from .node_builder import import_lutchain_material
+from . import manifest, node_builder
 
 MODULE_NAME = __package__ or "lutchainer_blender_addon"
 
@@ -22,6 +21,31 @@ bl_info = {
     "category": "Import-Export",
 }
 __addon_enabled__ = False
+LIGHTNESS_MODE_SHADER_TO_RGB = "shader_to_rgb"
+LIGHTNESS_MODE_DOT_NL = "dot_nl"
+LIGHTNESS_MODE_RAYCAST = "raycast"
+LIGHTNESS_MODE_ITEMS = [
+    (
+        LIGHTNESS_MODE_SHADER_TO_RGB,
+        "Shader to RGB",
+        "Approximate Lightness with Diffuse BSDF -> Shader to RGB",
+    ),
+    (
+        LIGHTNESS_MODE_DOT_NL,
+        "dot(N, L)",
+        "Approximate Lightness using the surface normal and a helper light position",
+    ),
+    (
+        LIGHTNESS_MODE_RAYCAST,
+        "Raycast",
+        "Approximate Lightness with shadowed dot(N, L) using the Shader Raycast node (Blender 5.1+)",
+    ),
+]
+
+
+def _validate_lightness_mode(lightness_mode: str) -> None:
+    if lightness_mode == LIGHTNESS_MODE_RAYCAST and bpy.app.version < (5, 1, 0):
+        raise ValueError("Lightness mode 'Raycast' requires Blender 5.1 or newer")
 
 
 def get_addon_preferences(context: bpy.types.Context | None = None) -> "LUTCHAINER_AP_preferences | None":
@@ -41,19 +65,20 @@ def get_addon_preferences(context: bpy.types.Context | None = None) -> "LUTCHAIN
 def run_import_from_path(
     context: bpy.types.Context,
     filepath: str,
-    use_helper_wiring: bool,
+    lightness_mode: str,
 ) -> bpy.types.Material:
-    import_data = load_lutchain_file(filepath)
-    material = import_lutchain_material(
+    _validate_lightness_mode(lightness_mode)
+    import_data = manifest.load_lutchain_file(filepath)
+    material = node_builder.import_lutchain_material(
         context=context,
         import_data=import_data,
         filepath=filepath,
-        use_helper_wiring=use_helper_wiring,
+        lightness_mode=lightness_mode,
     )
     preferences = get_addon_preferences(context)
     if preferences is not None:
         preferences.last_fixture_path = filepath
-        preferences.use_helper_wiring_default = use_helper_wiring
+        preferences.lightness_mode_default = lightness_mode
     return material
 
 
@@ -66,16 +91,17 @@ class LUTCHAINER_AP_preferences(AddonPreferences):
         subtype="FILE_PATH",
         default="",
     )
-    use_helper_wiring_default: BoolProperty(
-        name="Use Eevee Helper Wiring By Default",
-        description="Default helper wiring option for import and reload-and-reimport",
-        default=True,
+    lightness_mode_default: EnumProperty(
+        name="Lightness Mode By Default",
+        description="Default Lightness helper mode for import and reload-and-reimport",
+        items=LIGHTNESS_MODE_ITEMS,
+        default=LIGHTNESS_MODE_SHADER_TO_RGB,
     )
 
     def draw(self, _context: bpy.types.Context) -> None:
         layout = self.layout
         layout.prop(self, "last_fixture_path")
-        layout.prop(self, "use_helper_wiring_default")
+        layout.prop(self, "lightness_mode_default")
         row = layout.row(align=True)
         row.operator("lutchainer.reload_script", icon="FILE_REFRESH")
         row.operator("lutchainer.reload_and_reimport", icon="IMPORT")
@@ -92,19 +118,17 @@ class LUTCHAINER_OT_import_lutchain(Operator, ImportHelper):
         default="*.lutchain",
         options={"HIDDEN"},
     )
-    use_helper_wiring: BoolProperty(
-        name="Use Eevee Helper Wiring",
-        description=(
-            "Create helper nodes for Facing/Fresnel and approximate Lightness/Specular "
-            "using Eevee-friendly Shader to RGB wiring"
-        ),
-        default=True,
+    lightness_mode: EnumProperty(
+        name="Lightness Mode",
+        description="How the wrapper material should generate the Lightness helper input",
+        items=LIGHTNESS_MODE_ITEMS,
+        default=LIGHTNESS_MODE_SHADER_TO_RGB,
     )
 
     def invoke(self, context: bpy.types.Context, event: bpy.types.Event) -> set[str]:
         preferences = get_addon_preferences(context)
         if preferences is not None:
-            self.use_helper_wiring = preferences.use_helper_wiring_default
+            self.lightness_mode = preferences.lightness_mode_default
             if preferences.last_fixture_path:
                 self.filepath = preferences.last_fixture_path
         return ImportHelper.invoke(self, context, event)
@@ -114,7 +138,7 @@ class LUTCHAINER_OT_import_lutchain(Operator, ImportHelper):
             material = run_import_from_path(
                 context=context,
                 filepath=self.filepath,
-                use_helper_wiring=self.use_helper_wiring,
+                lightness_mode=self.lightness_mode,
             )
         except Exception as exc:  # pragma: no cover - Blender runtime path
             self.report({"ERROR"}, str(exc))
@@ -203,8 +227,8 @@ class LUTCHAINER_PT_import_panel(Panel):
 
         layout.label(text="Import .lutchain into shader nodes")
         operator = layout.operator(LUTCHAINER_OT_import_lutchain.bl_idname, icon="IMPORT")
-        operator.use_helper_wiring = (
-            preferences.use_helper_wiring_default if preferences is not None else True
+        operator.lightness_mode = (
+            preferences.lightness_mode_default if preferences is not None else LIGHTNESS_MODE_SHADER_TO_RGB
         )
 
         layout.separator()

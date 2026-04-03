@@ -14,7 +14,7 @@ def _capture_preferences(module_name: str) -> dict[str, object]:
     prefs = addon.preferences
     return {
         "last_fixture_path": getattr(prefs, "last_fixture_path", ""),
-        "use_helper_wiring_default": getattr(prefs, "use_helper_wiring_default", True),
+        "lightness_mode_default": getattr(prefs, "lightness_mode_default", "shader_to_rgb"),
     }
 
 
@@ -72,7 +72,7 @@ def reload_and_reimport_from_preferences(context: bpy.types.Context, module_name
 
     prefs = addon.preferences
     last_fixture_path = str(getattr(prefs, "last_fixture_path", ""))
-    use_helper_wiring = bool(getattr(prefs, "use_helper_wiring_default", True))
+    lightness_mode = str(getattr(prefs, "lightness_mode_default", "shader_to_rgb"))
     if not last_fixture_path:
         raise ValueError("Last Fixture Path is not set")
 
@@ -80,5 +80,5 @@ def reload_and_reimport_from_preferences(context: bpy.types.Context, module_name
     return new_module.run_import_from_path(
         context=context,
         filepath=last_fixture_path,
-        use_helper_wiring=use_helper_wiring,
+        lightness_mode=lightness_mode,
     )

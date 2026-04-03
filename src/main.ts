@@ -77,6 +77,7 @@ import { setupMainConnectionDrawController } from './shared/ui/main-connection-d
 import { resolveMainDomElements } from './shared/ui/main-dom-elements.ts';
 import { createRequiredDomSelector } from './shared/ui/main-dom-select.ts';
 import { createMainOrbitStateController } from './shared/ui/main-orbit-state.ts';
+import { createMainPreviewDebugController } from './shared/ui/main-preview-debug-controller.ts';
 import { bootstrapMainPostRuntime } from './shared/ui/main-post-runtime-bootstrap.ts';
 import { type MainRenderPipeline } from './shared/ui/main-render-pipeline-setup.ts';
 import { bootstrapMainRuntime } from './shared/ui/main-runtime-bootstrap.ts';
@@ -93,6 +94,8 @@ import {
 import {
   getLightSettings,
   getMaterialSettings,
+  setLightSettings,
+  setMaterialSettings,
 } from './shared/ui/scene-state.ts';
 import {
   isAutoApplyEnabled,
@@ -157,6 +160,7 @@ let mainRenderPipeline: MainRenderPipeline | null = null;
 let stepPreviewSystem: ReturnType<typeof createStepPreviewSystem> | null = null;
 let pipelineIoSystem: ReturnType<typeof setupMainPipelineIoSystem> | null = null;
 let mainPreviewCapture: MainPreviewCaptureController;
+let mainPreviewDebugController: ReturnType<typeof createMainPreviewDebugController> | null = null;
 
 const connectionDrawController = setupMainConnectionDrawController({
   getPipelineWorkspaceEl: () => pipelineWorkspaceEl,
@@ -414,6 +418,24 @@ window.addEventListener('DOMContentLoaded', () => {
     getCameraOrbit: orbitStateController.getOrbitState,
     getLightDirectionWorld,
   }));
+
+  mainPreviewDebugController = createMainPreviewDebugController({
+    canvas,
+    getOrbitState: orbitStateController.getOrbitState,
+    setOrbitState: orbitStateController.setOrbitState,
+    getMaterialSettings,
+    setMaterialSettings,
+    getLightSettings,
+    setLightSettings,
+    loadPreset: async (preset: string) => {
+      await pipelineHeaderActions.buildMountOptions().onResetPresetSelected(
+        preset as 'Initial' | 'HueShiftToon' | 'HueSatShiftToon' | 'Metallic',
+      );
+    },
+  });
+  mainPreviewDebugController.registerGlobalDebugApi({
+    globalObject: window as unknown as Record<string, unknown>,
+  });
 
   shaderExportSystem = createShaderExportSystem({
     getShaderBuildInput,

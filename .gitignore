@@ -4,3 +4,4 @@ node_modules/
 result
 .claude/worktrees/
 __pycache__/
+.env

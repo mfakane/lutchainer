@@ -51,6 +51,22 @@ PIPELINE_GROUP_INPUT_X = -260
 PIPELINE_GROUP_FIRST_STEP_X = -20
 STEP_GROUP_INPUT_X = -620
 STEP_GROUP_OUTPUT_X = 760
+LIGHTNESS_MODE_SHADER_TO_RGB = "shader_to_rgb"
+LIGHTNESS_MODE_DOT_NL = "dot_nl"
+LIGHTNESS_MODE_RAYCAST = "raycast"
+BROWSER_DEFAULT_BASE_COLOR = (0.9, 0.9, 0.9, 1.0)
+# Matches src/features/pipeline/pipeline-model.ts defaults:
+# browser Y-up light dir for azimuth=0, elevation=50 is (0, sin(50deg), cos(50deg)).
+# The compare camera/sample scripts convert browser (x, y, z) -> blender (x, -z, y),
+# so the helper light position must follow the same mapping.
+BROWSER_DEFAULT_LIGHT_POSITION = (0.0, -64.2787609, 76.6044443)
+BROWSER_DEFAULT_SPECULAR_STRENGTH = 0.4
+BROWSER_DEFAULT_SPECULAR_COLOR = (0.4, 0.4, 0.4, 1.0)
+BROWSER_DEFAULT_SPECULAR_ROUGHNESS = 0.08
+BROWSER_DEFAULT_SPECULAR_SHARPNESS = 3.0
+BROWSER_DEFAULT_FRESNEL_STRENGTH = 0.18
+BROWSER_DEFAULT_FRESNEL_IOR = 1.1
+BROWSER_DEFAULT_FRESNEL_POWER = 2.2
 
 
 def _sanitize_name(value: str) -> str:
@@ -140,6 +156,18 @@ def _new_mixrgb(
     node = tree.nodes.new("ShaderNodeMixRGB")
     node.blend_type = blend_type
     node.use_clamp = True
+    node.location = location
+    return node
+
+
+def _new_vector_math(
+    tree: bpy.types.NodeTree,
+    operation: str,
+    *,
+    location: tuple[float, float] = (0.0, 0.0),
+) -> bpy.types.ShaderNodeVectorMath:
+    node = tree.nodes.new("ShaderNodeVectorMath")
+    node.operation = operation
     node.location = location
     return node
 
@@ -270,7 +298,7 @@ def _resolve_param_socket(
         return node.outputs[index]
 
     if param_name in {"h", "s", "v"}:
-        node = _ensure_rgb_split(
+        hsv = _ensure_rgb_split(
             tree,
             links,
             current_color_socket,
@@ -280,7 +308,7 @@ def _resolve_param_socket(
             (-430, 20),
         )
         index = {"h": 0, "s": 1, "v": 2}[param_name]
-        return node.outputs[index]
+        return hsv.outputs[index]
 
     if param_name in {"texU", "texV"}:
         node = _ensure_xyz_split(
@@ -408,7 +436,7 @@ def _build_custom_hsv_target(
 
     lut_hsv = tree.nodes.new("ShaderNodeSeparateColor")
     lut_hsv.mode = "HSV"
-    lut_hsv.location = (-120, 20)
+    lut_hsv.location = (-120, -70)
     links.new(lut_color_socket, lut_hsv.inputs[0])
 
     combine = tree.nodes.new("ShaderNodeCombineColor")
@@ -609,75 +637,190 @@ def _build_helper_nodes(
     tree: bpy.types.NodeTree,
     links: bpy.types.NodeLinks,
     pipeline_node: bpy.types.ShaderNodeGroup,
+    lightness_mode: str,
 ) -> None:
     texcoord = tree.nodes.new("ShaderNodeTexCoord")
-    texcoord.location = (-220, -800)
+    texcoord.location = (-1080, -150)
     links.new(texcoord.outputs["UV"], pipeline_node.inputs["TexCoord"])
 
     rgb = tree.nodes.new("ShaderNodeRGB")
     rgb.location = (-880, 260)
-    rgb.outputs[0].default_value = (1.0, 1.0, 1.0, 1.0)
+    rgb.outputs[0].default_value = BROWSER_DEFAULT_BASE_COLOR
     links.new(rgb.outputs[0], pipeline_node.inputs["Base Color"])
 
     fresnel = tree.nodes.new("ShaderNodeFresnel")
-    fresnel.location = (-640, 130)
-    fresnel.inputs["IOR"].default_value = 1.1
-    links.new(fresnel.outputs[0], pipeline_node.inputs["Fresnel"])
+    fresnel.location = (-690, 130)
+    fresnel.inputs["IOR"].default_value = BROWSER_DEFAULT_FRESNEL_IOR
+    fresnel_pow = _new_math(tree, "POWER", use_clamp=True, location=(-470, 130))
+    fresnel_pow.inputs[1].default_value = BROWSER_DEFAULT_FRESNEL_POWER
+    fresnel_mul = _new_math(tree, "MULTIPLY", use_clamp=True, location=(-250, 130))
+    fresnel_mul.inputs[1].default_value = BROWSER_DEFAULT_FRESNEL_STRENGTH
+    links.new(fresnel.outputs[0], fresnel_pow.inputs[0])
+    links.new(fresnel_pow.outputs[0], fresnel_mul.inputs[0])
+    links.new(fresnel_mul.outputs[0], pipeline_node.inputs["Fresnel"])
 
-    facing_frame = _new_frame(tree, "Facing", (-900, -60))
+    facing_pos = NodePosition(-880, -20)
+    facing_frame = _new_frame(tree, "Facing", facing_pos.get())
     layer_weight = tree.nodes.new("ShaderNodeLayerWeight")
-    layer_weight.location = (-880, -20)
+    layer_weight.location = facing_pos.next()
     layer_weight.parent = facing_frame
     layer_weight.inputs["Blend"].default_value = 0.85
-    facing_invert = _new_math(tree, "SUBTRACT", use_clamp=True, location=(-640, -20))
+    facing_invert = _new_math(tree, "SUBTRACT", use_clamp=True, location=facing_pos.next())
     facing_invert.parent = facing_frame
     facing_invert.inputs[0].default_value = 1.0
     links.new(layer_weight.outputs["Facing"], facing_invert.inputs[1])
     links.new(facing_invert.outputs[0], pipeline_node.inputs["Facing"])
 
-    lightness_frame = _new_frame(tree, "Lightness", (-900, -330))
-    diffuse = tree.nodes.new("ShaderNodeBsdfDiffuse")
-    diffuse.location = (-880, -260)
-    diffuse.parent = lightness_frame
-    diffuse.inputs["Color"].default_value = (0.5, 0.5, 0.5, 1.0)
-    diffuse_to_rgb = tree.nodes.new("ShaderNodeShaderToRGB")
-    diffuse_to_rgb.location = (-640, -260)
-    diffuse_to_rgb.parent = lightness_frame
-    diffuse_ramp = tree.nodes.new("ShaderNodeValToRGB")
-    diffuse_ramp.location = (-400, -260)
-    diffuse_ramp.parent = lightness_frame
-    diffuse_ramp.label = "Lambert Approx"
-    diffuse_ramp.color_ramp.interpolation = "EASE"
-    diffuse_ramp.color_ramp.elements[0].position = 0.1
-    diffuse_ramp.color_ramp.elements[0].color = (0.0, 0.0, 0.0, 1.0)
-    diffuse_ramp.color_ramp.elements[1].position = 0.5
-    diffuse_ramp.color_ramp.elements[1].color = (1.0, 1.0, 1.0, 1.0)
-    links.new(diffuse.outputs[0], diffuse_to_rgb.inputs[0])
-    links.new(diffuse_to_rgb.outputs[0], diffuse_ramp.inputs[0])
-    links.new(diffuse_ramp.outputs[0], pipeline_node.inputs["Lightness"])
+    lightness_pos = NodePosition(-880, -290)
+    lightness_frame = _new_frame(tree, "Lightness", lightness_pos.get())
 
-    specular_frame = _new_frame(tree, "Specular", (-900, -780))
-    glossy = tree.nodes.new("ShaderNodeBsdfGlossy")
-    glossy.location = (-880, -800)
-    glossy.parent = specular_frame
-    glossy.inputs["Color"].default_value = (1.0, 1.0, 1.0, 1.0)
-    glossy_to_rgb = tree.nodes.new("ShaderNodeShaderToRGB")
-    glossy_to_rgb.location = (-640, -800)
-    glossy_to_rgb.parent = specular_frame
-    links.new(glossy.outputs[0], glossy_to_rgb.inputs[0])
-    links.new(glossy_to_rgb.outputs[0], pipeline_node.inputs["Specular"])
+    geometry = tree.nodes.new("ShaderNodeNewGeometry")
+    geometry.location = lightness_pos.next()
+    geometry.parent = lightness_frame
+    light_position = tree.nodes.new("ShaderNodeCombineXYZ")
+    light_position.location = lightness_pos.next(offset=(0, -100))
+    light_position.parent = lightness_frame
+    light_position.label = "Light Position"
+    light_position.inputs["X"].default_value = BROWSER_DEFAULT_LIGHT_POSITION[0]
+    light_position.inputs["Y"].default_value = BROWSER_DEFAULT_LIGHT_POSITION[1]
+    light_position.inputs["Z"].default_value = BROWSER_DEFAULT_LIGHT_POSITION[2]
+
+    if lightness_mode == LIGHTNESS_MODE_SHADER_TO_RGB:
+        diffuse = tree.nodes.new("ShaderNodeBsdfDiffuse")
+        diffuse.location = lightness_pos.next()
+        diffuse.parent = lightness_frame
+        diffuse.inputs["Color"].default_value = (0.5, 0.5, 0.5, 1.0)
+        diffuse_to_rgb = tree.nodes.new("ShaderNodeShaderToRGB")
+        diffuse_to_rgb.location = lightness_pos.next()
+        diffuse_to_rgb.parent = lightness_frame
+        diffuse_ramp = tree.nodes.new("ShaderNodeValToRGB")
+        diffuse_ramp.location = lightness_pos.next()
+        diffuse_ramp.parent = lightness_frame
+        diffuse_ramp.label = "Lambert Approx"
+        diffuse_ramp.color_ramp.interpolation = "EASE"
+        diffuse_ramp.color_ramp.elements[0].position = 0.1
+        diffuse_ramp.color_ramp.elements[0].color = (0.0, 0.0, 0.0, 1.0)
+        diffuse_ramp.color_ramp.elements[1].position = 0.5
+        diffuse_ramp.color_ramp.elements[1].color = (1.0, 1.0, 1.0, 1.0)
+        links.new(diffuse.outputs[0], diffuse_to_rgb.inputs[0])
+        links.new(diffuse_to_rgb.outputs[0], diffuse_ramp.inputs[0])
+        lightness_socket = diffuse_ramp.outputs[0]
+        half_lambert_source_socket = diffuse_to_rgb.outputs[0]
+    else:
+        origin_socket: bpy.types.NodeSocket = geometry.outputs["Position"]
+
+        if lightness_mode == LIGHTNESS_MODE_RAYCAST:
+            normal_offset = _new_vector_math(tree, "SCALE", location=lightness_pos.next())
+            normal_offset.parent = lightness_frame
+            normal_offset.inputs["Scale"].default_value = 0.001
+            links.new(geometry.outputs["Normal"], normal_offset.inputs[0])
+            origin_add = _new_vector_math(tree, "ADD", location=lightness_pos.next())
+            origin_add.parent = lightness_frame
+            links.new(geometry.outputs["Position"], origin_add.inputs[0])
+            links.new(normal_offset.outputs["Vector"], origin_add.inputs[1])
+            origin_socket = origin_add.outputs["Vector"]
+
+        to_light = _new_vector_math(tree, "SUBTRACT", location=lightness_pos.next())
+        to_light.parent = lightness_frame
+        links.new(light_position.outputs["Vector"], to_light.inputs[0])
+        links.new(origin_socket, to_light.inputs[1])
+
+        light_direction = _new_vector_math(tree, "NORMALIZE", location=lightness_pos.next())
+        light_direction.parent = lightness_frame
+        links.new(to_light.outputs["Vector"], light_direction.inputs[0])
+
+        dot_nl = _new_vector_math(tree, "DOT_PRODUCT", location=lightness_pos.next())
+        dot_nl.parent = lightness_frame
+        links.new(geometry.outputs["Normal"], dot_nl.inputs[0])
+        links.new(light_direction.outputs["Vector"], dot_nl.inputs[1])
+
+        dot_nl_clamp = _new_math(tree, "MAXIMUM", use_clamp=True, location=lightness_pos.next())
+        dot_nl_clamp.parent = lightness_frame
+        dot_nl_clamp.inputs[1].default_value = 0.0
+        links.new(dot_nl.outputs["Value"], dot_nl_clamp.inputs[0])
+
+        lightness_socket = dot_nl_clamp.outputs[0]
+        half_lambert_source_socket = dot_nl.outputs["Value"]
+
+        if lightness_mode == LIGHTNESS_MODE_RAYCAST:
+            light_distance = _new_vector_math(tree, "LENGTH", location=lightness_pos.next())
+            light_distance.parent = lightness_frame
+            links.new(to_light.outputs["Vector"], light_distance.inputs[0])
+
+            raycast = tree.nodes.new("ShaderNodeRaycast")
+            raycast.location = lightness_pos.next()
+            raycast.parent = lightness_frame
+            links.new(origin_socket, raycast.inputs["Position"])
+            links.new(light_direction.outputs["Vector"], raycast.inputs["Direction"])
+            links.new(light_distance.outputs["Value"], raycast.inputs["Length"])
+
+            hit_minus_self = _new_math(tree, "SUBTRACT", use_clamp=True, location=lightness_pos.next())
+            hit_minus_self.parent = lightness_frame
+            links.new(raycast.outputs["Is Hit"], hit_minus_self.inputs[0])
+            links.new(raycast.outputs["Self Hit"], hit_minus_self.inputs[1])
+
+            hit_clamp = _new_math(tree, "MAXIMUM", use_clamp=True, location=lightness_pos.next())
+            hit_clamp.parent = lightness_frame
+            hit_clamp.inputs[1].default_value = 0.0
+            links.new(hit_minus_self.outputs[0], hit_clamp.inputs[0])
+
+            visibility = _new_math(tree, "SUBTRACT", use_clamp=True, location=lightness_pos.next())
+            visibility.parent = lightness_frame
+            visibility.inputs[0].default_value = 1.0
+            links.new(hit_clamp.outputs[0], visibility.inputs[1])
+
+            shadowed_raw_dot = _new_math(tree, "MULTIPLY", use_clamp=False, location=lightness_pos.next())
+            shadowed_raw_dot.parent = lightness_frame
+            links.new(dot_nl.outputs["Value"], shadowed_raw_dot.inputs[0])
+            links.new(visibility.outputs[0], shadowed_raw_dot.inputs[1])
+
+            shadowed_dot_clamp = _new_math(tree, "MAXIMUM", use_clamp=True, location=lightness_pos.next())
+            shadowed_dot_clamp.parent = lightness_frame
+            shadowed_dot_clamp.inputs[1].default_value = 0.0
+            links.new(shadowed_raw_dot.outputs[0], shadowed_dot_clamp.inputs[0])
+
+            lightness_socket = shadowed_dot_clamp.outputs[0]
+            half_lambert_source_socket = shadowed_raw_dot.outputs[0]
+
+    links.new(lightness_socket, pipeline_node.inputs["Lightness"])
+
+    specular_pos = NodePosition(-880, -780)
+    specular_frame = _new_frame(tree, "Specular", specular_pos.get())
+    specular_bsdf = tree.nodes.new("ShaderNodeEeveeSpecular")
+    specular_bsdf.location = specular_pos.next()
+    specular_bsdf.parent = specular_frame
+    specular_bsdf.inputs["Base Color"].default_value = BROWSER_DEFAULT_BASE_COLOR
+    specular_bsdf.inputs["Specular"].default_value = BROWSER_DEFAULT_SPECULAR_COLOR
+    specular_bsdf.inputs["Roughness"].default_value = BROWSER_DEFAULT_SPECULAR_ROUGHNESS
+    specular_to_rgb = tree.nodes.new("ShaderNodeShaderToRGB")
+    specular_to_rgb.location = specular_pos.next()
+    specular_to_rgb.parent = specular_frame
+    specular_bw = tree.nodes.new("ShaderNodeRGBToBW")
+    specular_bw.location = specular_pos.next()
+    specular_bw.parent = specular_frame
+    specular_pow = _new_math(tree, "POWER", use_clamp=True, location=specular_pos.next())
+    specular_pow.parent = specular_frame
+    specular_pow.inputs[1].default_value = BROWSER_DEFAULT_SPECULAR_SHARPNESS
+    specular_mul = _new_math(tree, "MULTIPLY", use_clamp=True, location=specular_pos.next())
+    specular_mul.parent = specular_frame
+    specular_mul.inputs[1].default_value = BROWSER_DEFAULT_SPECULAR_STRENGTH
+    links.new(specular_bsdf.outputs[0], specular_to_rgb.inputs[0])
+    links.new(specular_to_rgb.outputs[0], specular_bw.inputs[0])
+    links.new(specular_bw.outputs[0], specular_pow.inputs[0])
+    links.new(specular_pow.outputs[0], specular_mul.inputs[0])
+    links.new(specular_mul.outputs[0], pipeline_node.inputs["Specular"])
 
     half_lambert_frame = _new_frame(tree, "HalfLambert", (-900, -550))
-    half_mul = _new_math(tree, "MULTIPLY", use_clamp=True, location=(-880, -560))
+    half_mul = _new_math(tree, "MULTIPLY", use_clamp=False, location=(-880, -560))
     half_mul.parent = half_lambert_frame
     half_mul.inputs[1].default_value = 0.5
-    half_add = _new_math(tree, "ADD", use_clamp=True, location=(-660, -560))
+    half_add = _new_math(tree, "ADD", use_clamp=False, location=(-660, -560))
     half_add.parent = half_lambert_frame
     half_add.inputs[1].default_value = 0.5
     half_pow = _new_math(tree, "POWER", use_clamp=True, location=(-440, -560))
     half_pow.parent = half_lambert_frame
     half_pow.inputs[1].default_value = 2.0
-    links.new(diffuse_ramp.outputs[0], half_mul.inputs[0])
+    links.new(half_lambert_source_socket, half_mul.inputs[0])
     links.new(half_mul.outputs[0], half_add.inputs[0])
     links.new(half_add.outputs[0], half_pow.inputs[0])
     links.new(half_pow.outputs[0], pipeline_node.inputs["HalfLambert"])
@@ -687,7 +830,7 @@ def _build_material_tree(
     material: bpy.types.Material,
     pipeline_group: bpy.types.ShaderNodeTree,
     *,
-    use_helper_wiring: bool,
+    lightness_mode: str,
     filepath: str,
 ) -> None:
     material.use_nodes = True
@@ -700,13 +843,13 @@ def _build_material_tree(
     emission.location = (620, 0)
     pipeline_node = node_tree.nodes.new("ShaderNodeGroup")
     pipeline_node.node_tree = pipeline_group
-    pipeline_node.location = (200, 0)
+    pipeline_node.location = (260, 20)
     pipeline_node.name = "Lutchainer Pipeline"
     pipeline_node.label = "Lutchainer Pipeline"
     pipeline_node["lutchainer_kind"] = "pipeline_node"
     pipeline_node["lutchainer_source_filepath"] = filepath
 
-    pipeline_node.inputs["Base Color"].default_value = (1.0, 1.0, 1.0, 1.0)
+    pipeline_node.inputs["Base Color"].default_value = BROWSER_DEFAULT_BASE_COLOR
     for input_name in FLOAT_INPUTS:
         pipeline_node.inputs[input_name].default_value = 0.0
     pipeline_node.inputs["TexCoord"].default_value = (0.0, 0.0, 0.0)
@@ -714,16 +857,7 @@ def _build_material_tree(
     node_tree.links.new(pipeline_node.outputs["Color"], emission.inputs["Color"])
     node_tree.links.new(emission.outputs["Emission"], output.inputs["Surface"])
 
-    if use_helper_wiring:
-        _build_helper_nodes(node_tree, node_tree.links, pipeline_node)
-    else:
-        texcoord = node_tree.nodes.new("ShaderNodeTexCoord")
-        texcoord.location = (-880, -200)
-        rgb = node_tree.nodes.new("ShaderNodeRGB")
-        rgb.location = (-880, 180)
-        rgb.outputs[0].default_value = (1.0, 1.0, 1.0, 1.0)
-        node_tree.links.new(texcoord.outputs["UV"], pipeline_node.inputs["TexCoord"])
-        node_tree.links.new(rgb.outputs[0], pipeline_node.inputs["Base Color"])
+    _build_helper_nodes(node_tree, node_tree.links, pipeline_node, lightness_mode)
 
 
 def _assign_material_to_active_object(
@@ -747,7 +881,7 @@ def import_lutchain_material(
     context: bpy.types.Context,
     import_data: LutchainImportData,
     filepath: str,
-    use_helper_wiring: bool,
+    lightness_mode: str,
 ) -> bpy.types.Material:
     import_name = _sanitize_name(import_data.display_name)
     images_by_lut_id = {
@@ -761,8 +895,21 @@ def import_lutchain_material(
     _build_material_tree(
         material,
         pipeline_group,
-        use_helper_wiring=use_helper_wiring,
+        lightness_mode=lightness_mode,
         filepath=filepath,
     )
     _assign_material_to_active_object(context, material)
     return material
+
+class NodePosition:
+    def __init__(self, x: float, y: float) -> None:
+        self.x = x
+        self.y = y
+
+    def get(self) -> (float, float):
+        return (self.x, self.y)
+
+    def next(self, offset: tuple[float, float] = (0, 0)) -> (float, float):
+        pos = (self.x + offset[0], self.y + offset[1])
+        self.x += STEP_NODE_SPACING_X
+        return pos

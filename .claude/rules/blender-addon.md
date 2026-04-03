@@ -24,6 +24,9 @@ This is intentional.
 
 - User-facing docs: `docs/blender-addon.md`
 - Blender validation scripts: `scripts/validate_blender_addon.py`
+- Blender visual-compare setup: `scripts/setup_blender_visual_compare.py`
+- Blender sphere sample report: `scripts/sample_blender_compare_points.py`
+- Sphere sample diff tool: `scripts/compare_sphere_sample_reports.mjs`
 - Windows bridge script: `scripts/run_windows_blender_validation.ps1`
 
 ---
@@ -164,6 +167,21 @@ The pipeline group still needs exposed inputs for shader context values:
 
 Helper wiring is a convenience layer, not the only valid source of these values.
 
+### Lightness Modes
+
+`Lightness` helper generation currently supports these modes:
+
+- `shader_to_rgb`
+- `dot_nl`
+- `raycast`
+
+Rules:
+
+- `HalfLambert` must use the selected mode's Lambert-family value before the normal Lightness clamp
+- `dot_nl` and `raycast` may introduce helper nodes such as `Geometry` and `Light Position`
+- `raycast` must be treated as Blender 5.1+ only
+- do not silently auto-fallback from `raycast` to another mode
+
 ---
 
 ## 6. Step Group Interface Rules
@@ -203,6 +221,16 @@ After Blender add-on changes, run:
 npm run validate:lutchain-examples
 npx tsc --noEmit
 ```
+
+For browser-vs-Blender appearance checks, prefer `scripts/setup_blender_visual_compare.py` over ad hoc MCP snippets.
+
+Rules:
+
+- comparison-only scene changes such as black world background belong in the compare script, not in the add-on import path
+- the compare script may reset the scene and set color management to `Standard`
+- the add-on itself must continue to avoid mutating world settings during normal import
+- browser-side compare automation may use `window.__debugMainPreview` for preset load, orbit control, material/light overrides, and sphere sample capture
+- if precise browser camera control is needed, add it to the browser debug API instead of relying on fragile pointer dragging in automation
 
 ### Blender Validation
 
@@ -273,4 +301,3 @@ Fix approach:
 
 - re-center around wrapper material readability
 - group by parameter, not by implementation accident
-

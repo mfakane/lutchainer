@@ -1,6 +1,5 @@
 param(
-  [Parameter(Mandatory = $true)]
-  [string]$BlenderExe,
+  [string]$BlenderExe = $env:BLENDER_EXECUTABLE,
 
   [Parameter(Mandatory = $true)]
   [string]$ValidationScript,
@@ -13,7 +12,6 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-Set-Location 'C:\'
 
 $arguments = @(
   '--background',
@@ -26,5 +24,6 @@ $arguments = @(
 $fixtures = $FixtureList.Split('|', [System.StringSplitOptions]::RemoveEmptyEntries)
 $arguments += $fixtures
 
-& $BlenderExe @arguments
+$invokeScript = Join-Path $PSScriptRoot 'invoke_windows_blender.ps1'
+& $invokeScript -BlenderExe $BlenderExe @arguments
 exit $LASTEXITCODE

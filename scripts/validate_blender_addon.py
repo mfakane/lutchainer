@@ -30,13 +30,13 @@ def _register_addon(addon_parent: str) -> None:
     addon_utils.enable("lutchainer_blender_addon", default_set=True)
 
 
-def _configure_preferences(bpy, addon_parent: str, fixture_path: str) -> None:
+def _configure_preferences(bpy, addon_parent: str, fixture_path: str, lightness_mode: str) -> None:
     addon = bpy.context.preferences.addons.get("lutchainer_blender_addon")
     if addon is None:
         raise AssertionError("add-on preferences are not available")
     prefs = addon.preferences
     prefs.last_fixture_path = fixture_path
-    prefs.use_helper_wiring_default = True
+    prefs.lightness_mode_default = lightness_mode
 
 
 def _create_validation_object(bpy) -> None:
@@ -104,27 +104,31 @@ def main(argv: list[str]) -> int:
 
     addon_parent = os.path.abspath(args[0])
     fixtures = [os.path.abspath(path) for path in args[1:]]
+    lightness_modes = ["shader_to_rgb", "dot_nl"]
     bpy = _require_bpy()
     _register_addon(addon_parent)
 
     bpy.context.scene.render.engine = "BLENDER_EEVEE"
+    if bpy.app.version >= (5, 1, 0):
+        lightness_modes.append("raycast")
     for fixture_path in fixtures:
-        bpy.ops.wm.read_factory_settings(use_empty=True)
-        _register_addon(addon_parent)
-        bpy.context.scene.render.engine = "BLENDER_EEVEE"
-        _configure_preferences(bpy, addon_parent, fixture_path)
-        result = bpy.ops.lutchainer.reload_script()
-        if "FINISHED" not in result:
-            raise AssertionError(f"{fixture_path}: reload_script did not finish successfully")
-        _create_validation_object(bpy)
-        result = bpy.ops.lutchainer.import_lutchain(filepath=fixture_path, use_helper_wiring=True)
-        if "FINISHED" not in result:
-            raise AssertionError(f"{fixture_path}: import operator did not finish successfully")
-        _assert_pipeline_structure(bpy, fixture_path)
-        result = bpy.ops.lutchainer.reload_and_reimport()
-        if "FINISHED" not in result:
-            raise AssertionError(f"{fixture_path}: reload_and_reimport did not finish successfully")
-        _assert_pipeline_structure(bpy, fixture_path)
+        for lightness_mode in lightness_modes:
+            bpy.ops.wm.read_factory_settings(use_empty=True)
+            _register_addon(addon_parent)
+            bpy.context.scene.render.engine = "BLENDER_EEVEE"
+            _configure_preferences(bpy, addon_parent, fixture_path, lightness_mode)
+            result = bpy.ops.lutchainer.reload_script()
+            if "FINISHED" not in result:
+                raise AssertionError(f"{fixture_path}: reload_script did not finish successfully")
+            _create_validation_object(bpy)
+            result = bpy.ops.lutchainer.import_lutchain(filepath=fixture_path, lightness_mode=lightness_mode)
+            if "FINISHED" not in result:
+                raise AssertionError(f"{fixture_path}: import operator did not finish successfully for {lightness_mode}")
+            _assert_pipeline_structure(bpy, fixture_path)
+            result = bpy.ops.lutchainer.reload_and_reimport()
+            if "FINISHED" not in result:
+                raise AssertionError(f"{fixture_path}: reload_and_reimport did not finish successfully for {lightness_mode}")
+            _assert_pipeline_structure(bpy, fixture_path)
 
     return 0
 
