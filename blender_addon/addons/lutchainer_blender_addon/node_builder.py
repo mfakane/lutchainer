@@ -873,17 +873,6 @@ def _build_helper_nodes(
     lightness_pos = NodePosition((-880, -290))
     lightness_frame = _new_frame(tree, "Lightness", lightness_pos.get())
 
-    geometry = tree.nodes.new("ShaderNodeNewGeometry")
-    geometry.location = lightness_pos.next()
-    geometry.parent = lightness_frame
-    light_position = tree.nodes.new("ShaderNodeCombineXYZ")
-    light_position.location = lightness_pos.next(offset_once=(0, -100))
-    light_position.parent = lightness_frame
-    light_position.label = "Light Position"
-    light_position.inputs["X"].default_value = BROWSER_DEFAULT_LIGHT_POSITION[0]
-    light_position.inputs["Y"].default_value = BROWSER_DEFAULT_LIGHT_POSITION[1]
-    light_position.inputs["Z"].default_value = BROWSER_DEFAULT_LIGHT_POSITION[2]
-
     if lightness_mode == LIGHTNESS_MODE_SHADER_TO_RGB:
         diffuse = tree.nodes.new("ShaderNodeBsdfDiffuse")
         diffuse.location = lightness_pos.next()
@@ -906,6 +895,18 @@ def _build_helper_nodes(
         lightness_socket = diffuse_ramp.outputs[0]
         half_lambert_source_socket = diffuse_to_rgb.outputs[0]
     else:
+        light_position = tree.nodes.new("ShaderNodeCombineXYZ")
+        light_position.location = lightness_pos.next(offset_once=(0, -100))
+        light_position.parent = lightness_frame
+        light_position.label = "Light Position"
+        light_position.inputs["X"].default_value = BROWSER_DEFAULT_LIGHT_POSITION[0]
+        light_position.inputs["Y"].default_value = BROWSER_DEFAULT_LIGHT_POSITION[1]
+        light_position.inputs["Z"].default_value = BROWSER_DEFAULT_LIGHT_POSITION[2]
+        
+        geometry = tree.nodes.new("ShaderNodeNewGeometry")
+        geometry.location = lightness_pos.next()
+        geometry.parent = lightness_frame
+
         origin_socket: bpy.types.NodeSocket = geometry.outputs["Position"]
 
         if lightness_mode == LIGHTNESS_MODE_RAYCAST:
@@ -983,7 +984,7 @@ def _build_helper_nodes(
 
     links.new(lightness_socket, pipeline_node.inputs["Lightness"])
 
-    specular_pos = NodePosition((-880, -780))
+    specular_pos = NodePosition((-880, -810))
     specular_frame = _new_frame(tree, "Specular", specular_pos.get())
     specular_bsdf = tree.nodes.new("ShaderNodeEeveeSpecular")
     specular_bsdf.location = specular_pos.next()
@@ -1011,14 +1012,15 @@ def _build_helper_nodes(
     links.new(specular_pow.outputs[0], specular_mul.inputs[0])
     links.new(specular_mul.outputs[0], pipeline_node.inputs["Specular"])
 
-    half_lambert_frame = _new_frame(tree, "HalfLambert", (-900, -550))
-    half_mul = _new_math(tree, "MULTIPLY", use_clamp=False, location=(-880, -560))
+    half_lambert_pos = NodePosition((-880, -590))
+    half_lambert_frame = _new_frame(tree, "HalfLambert", half_lambert_pos.get())
+    half_mul = _new_math(tree, "MULTIPLY", use_clamp=False, location=half_lambert_pos.next())
     half_mul.parent = half_lambert_frame
     half_mul.inputs[1].default_value = 0.5
-    half_add = _new_math(tree, "ADD", use_clamp=False, location=(-660, -560))
+    half_add = _new_math(tree, "ADD", use_clamp=False, location=half_lambert_pos.next())
     half_add.parent = half_lambert_frame
     half_add.inputs[1].default_value = 0.5
-    half_pow = _new_math(tree, "POWER", use_clamp=True, location=(-440, -560))
+    half_pow = _new_math(tree, "POWER", use_clamp=True, location=half_lambert_pos.next())
     half_pow.parent = half_lambert_frame
     half_pow.inputs[1].default_value = 2.0
     links.new(half_lambert_source_socket, half_mul.inputs[0])
