@@ -10,7 +10,7 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 if SCRIPT_DIR not in sys.path:
     sys.path.insert(0, SCRIPT_DIR)
 
-from setup_blender_visual_compare import setup_visual_compare
+from setup_visual_compare import setup_visual_compare
 
 DEFAULT_RENDER_SIZE = 512
 DEFAULT_GRID_DIVISIONS = 8
@@ -122,7 +122,7 @@ def main(argv: list[str]) -> int:
     args = argv[separator_index + 1 :] if separator_index >= 0 else []
     if len(args) < 2:
         print(
-            "usage: blender --background --factory-startup --python scripts/sample_blender_compare_points.py -- "
+            "usage: blender --background --factory-startup --python tools/blender/compare/sample_compare_points.py -- "
             "<addon_parent> <fixture_path> [lightness_mode] [size] [divisions] [base_color_r,base_color_g,base_color_b] [material_preset_key]"
         )
         return 2

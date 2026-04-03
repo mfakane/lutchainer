@@ -97,7 +97,7 @@ def main(argv: list[str]) -> int:
     args = argv[separator_index + 1 :] if separator_index >= 0 else []
     if len(args) < 2:
         print(
-            "usage: blender --background --factory-startup --python scripts/validate_blender_addon.py -- "
+            "usage: blender --background --factory-startup --python tests/blender/validate_addon.py -- "
             "<script_dir_root> <fixture1.lutchain> [fixture2.lutchain ...]"
         )
         return 2

@@ -8,7 +8,7 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 if SCRIPT_DIR not in sys.path:
     sys.path.insert(0, SCRIPT_DIR)
 
-from setup_blender_visual_compare import setup_visual_compare
+from setup_visual_compare import setup_visual_compare
 
 
 def _require_bpy():
@@ -70,7 +70,7 @@ def main(argv: list[str]) -> int:
     args = argv[separator_index + 1 :] if separator_index >= 0 else []
     if len(args) < 3:
         print(
-            "usage: blender --background --factory-startup --python scripts/render_blender_visual_compare.py -- "
+            "usage: blender --background --factory-startup --python tools/blender/compare/render_visual_compare.py -- "
             "<addon_parent> <fixture_path> <output_path> [lightness_mode] [width] [height] [base_color_r,base_color_g,base_color_b] [material_preset_key]"
         )
         return 2

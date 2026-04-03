@@ -1,5 +1,6 @@
 param(
   [string]$BlenderExe = $env:BLENDER_EXECUTABLE,
+  [string]$BlenderArgsEncoded = '',
 
   [Parameter(ValueFromRemainingArguments = $true)]
   [string[]]$BlenderArgs
@@ -12,5 +13,13 @@ if ([string]::IsNullOrWhiteSpace($BlenderExe)) {
 }
 
 Set-Location 'C:\'
-& $BlenderExe @BlenderArgs
+$resolvedBlenderArgs = @()
+if (-not [string]::IsNullOrEmpty($BlenderArgsEncoded)) {
+  $resolvedBlenderArgs = @($BlenderArgsEncoded -split "`n" | Where-Object { $_ -ne '' })
+}
+elseif ($BlenderArgs) {
+  $resolvedBlenderArgs = $BlenderArgs
+}
+
+& $BlenderExe @resolvedBlenderArgs
 exit $LASTEXITCODE

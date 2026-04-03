@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 
 function usage() {
-  console.error('usage: node scripts/compare_sphere_sample_reports.mjs <browser-report.json> <blender-report.json>');
+  console.error('usage: node tools/blender/compare/compare_reports.mjs <browser-report.json> <blender-report.json>');
 }
 
 function loadJson(filepath) {

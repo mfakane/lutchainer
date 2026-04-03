@@ -80,9 +80,17 @@ For `dot(N, L)` and `Raycast`, the wrapper also creates:
 `NdotH` and `LinearDepth` stay exposed as replaceable group inputs in the wrapper material.
 `Raycast` mode requires Blender 5.1 or newer.
 
+## Repo Layout
+
+- Add-on source: `blender_addon/addons/lutchainer_blender_addon`
+- Archive/fixture validation: `tests/lutchain/validate-examples.mjs`
+- Blender add-on headless validation: `tests/blender/validate_addon.py`
+- Blender compare tools: `tools/blender/compare/`
+- Windows Blender bridge: `scripts/run_windows_blender.sh` + `scripts/invoke_windows_blender.ps1`
+
 ## Visual Compare Script
 
-For browser-vs-Blender checks, use `scripts/setup_blender_visual_compare.py`.
+For browser-vs-Blender checks, use `tools/blender/compare/setup_visual_compare.py`.
 
 This script is intentionally separate from the add-on import path. It applies comparison-only scene settings:
 
@@ -98,7 +106,7 @@ Headless usage:
 
 ```bash
 blender --background --factory-startup \
-  --python scripts/setup_blender_visual_compare.py -- \
+  --python tools/blender/compare/setup_visual_compare.py -- \
   "$(pwd)/blender_addon" \
   "$(pwd)/examples/Metallic.lutchain" \
   dot_nl
@@ -109,7 +117,7 @@ Blender MCP usage:
 ```python
 import runpy
 
-script = r"/absolute/path/to/scripts/setup_blender_visual_compare.py"
+script = r"/absolute/path/to/tools/blender/compare/setup_visual_compare.py"
 setup = runpy.run_path(script)["setup_visual_compare"]
 result = setup(
     addon_parent=r"/absolute/path/to/blender_addon",
@@ -160,13 +168,13 @@ Blender-side sample report:
 
 ```bash
 blender --background --factory-startup \
-  --python-expr "import json,runpy; mod=runpy.run_path(r'$(pwd)/scripts/sample_blender_compare_points.py'); print(json.dumps(mod['sample_blender_compare_points'](addon_parent=r'$(pwd)/blender_addon', fixture_path=r'$(pwd)/examples/Metallic.lutchain', lightness_mode='dot_nl'), ensure_ascii=True))"
+  --python-expr "import json,runpy; mod=runpy.run_path(r'$(pwd)/tools/blender/compare/sample_compare_points.py'); print(json.dumps(mod['sample_blender_compare_points'](addon_parent=r'$(pwd)/blender_addon', fixture_path=r'$(pwd)/examples/Metallic.lutchain', lightness_mode='dot_nl'), ensure_ascii=True))"
 ```
 
 Report diff:
 
 ```bash
-node scripts/compare_sphere_sample_reports.mjs browser-report.json blender-report.json
+node tools/blender/compare/compare_reports.mjs browser-report.json blender-report.json
 ```
 
 The sample reports use the same normalized `8 x 8` image grid, and the browser debug API can also export a fixed-size square PNG for side-by-side inspection.
@@ -179,16 +187,19 @@ Static archive validation:
 npm run validate:lutchain-examples
 ```
 
-Blender headless validation, once Blender is installed:
+Preferred unified invocation:
 
 ```bash
-scripts/run_windows_blender.sh run_windows_blender_validation.ps1 \
-  -ValidationScript "$(wslpath -w "$(pwd)/scripts/validate_blender_addon.py")" \
-  -AddonParent "$(wslpath -w "$(pwd)/blender_addon")" \
-  -FixtureList "$(wslpath -w "$(pwd)/examples/Metallic.lutchain")|$(wslpath -w "$(pwd)/examples/HueShiftToon.lutchain")|$(wslpath -w "$(pwd)/examples/HueSatShiftToon.lutchain")"
+scripts/run_windows_blender.sh invoke_windows_blender.ps1 \
+  --background --factory-startup \
+  --python tests/blender/validate_addon.py -- \
+  blender_addon \
+  examples/Metallic.lutchain \
+  examples/HueShiftToon.lutchain \
+  examples/HueSatShiftToon.lutchain
 ```
 
-The shell wrapper reads `BLENDER_EXECUTABLE` from `.env` and invokes PowerShell for you.
+The shell wrapper reads `BLENDER_EXECUTABLE` from `.env`, converts WSL paths to Windows paths for you, and invokes PowerShell.
 
 For raw Blender invocations, use:
 

@@ -23,11 +23,10 @@ This is intentional.
 ### Allowed Companion Files
 
 - User-facing docs: `docs/blender-addon.md`
-- Blender validation scripts: `scripts/validate_blender_addon.py`
-- Blender visual-compare setup: `scripts/setup_blender_visual_compare.py`
-- Blender sphere sample report: `scripts/sample_blender_compare_points.py`
-- Sphere sample diff tool: `scripts/compare_sphere_sample_reports.mjs`
-- Windows bridge script: `scripts/run_windows_blender_validation.ps1`
+- Fixture/archive validation: `tests/lutchain/validate-examples.mjs`
+- Blender validation scripts: `tests/blender/validate_addon.py`
+- Blender visual-compare tools: `tools/blender/compare/`
+- Windows bridge scripts: `scripts/run_windows_blender.sh`, `scripts/invoke_windows_blender.ps1`
 
 ---
 
@@ -222,7 +221,7 @@ npm run validate:lutchain-examples
 npx tsc --noEmit
 ```
 
-For browser-vs-Blender appearance checks, prefer `scripts/setup_blender_visual_compare.py` over ad hoc MCP snippets.
+For browser-vs-Blender appearance checks, prefer `tools/blender/compare/setup_visual_compare.py` over ad hoc MCP snippets.
 
 Rules:
 
@@ -238,14 +237,26 @@ When Blender behavior changes, validate with the repo's headless script:
 
 ```bash
 blender --background --factory-startup \
-  --python scripts/validate_blender_addon.py -- \
+  --python tests/blender/validate_addon.py -- \
   "$(pwd)/blender_addon" \
   "$(pwd)/examples/Metallic.lutchain" \
   "$(pwd)/examples/HueShiftToon.lutchain" \
   "$(pwd)/examples/HueSatShiftToon.lutchain"
 ```
 
-On this project, Windows Blender validation through PowerShell is also a supported path and has been used as the main real-environment check.
+Preferred Windows invocation:
+
+```bash
+scripts/run_windows_blender.sh invoke_windows_blender.ps1 \
+  --background --factory-startup \
+  --python tests/blender/validate_addon.py -- \
+  blender_addon \
+  examples/Metallic.lutchain \
+  examples/HueShiftToon.lutchain \
+  examples/HueSatShiftToon.lutchain
+```
+
+`scripts/run_windows_blender.sh` should absorb WSL-to-Windows path conversion. `scripts/run_windows_blender_validation.ps1` may remain as a thin compatibility wrapper, but docs and automation should prefer the unified `invoke_windows_blender.ps1` path.
 
 ### Do Not Claim GUI Safety From Headless Only
 

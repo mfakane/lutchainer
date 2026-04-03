@@ -334,9 +334,16 @@ lutchainer/
 │     ├─ ui/                    ← UI setup orchestrators
 │     └─ i18n/                  ← Translations + locale system
 ├─ package.json
+├─ tests/
+│  ├─ lutchain/                ← Archive / fixture validation
+│  └─ blender/                 ← Blender add-on headless validation
+├─ tools/
+│  └─ blender/compare/         ← Browser-vs-Blender compare helpers
 ├─ tsconfig.json
 └─ scripts/
-   └─ build.mjs
+   ├─ build.mjs
+   ├─ invoke_windows_blender.ps1
+   └─ run_windows_blender.sh
 ```
 
 ---
