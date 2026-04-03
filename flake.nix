@@ -20,6 +20,8 @@
         packages = [
           nodejs
           pkgs.esbuild   # CLIとしても使えるように
+          pkgs.python3   # Agent の Skills 関連で必要
+          pkgs.python3Packages.pyyaml
         ];
 
         shellHook = ''

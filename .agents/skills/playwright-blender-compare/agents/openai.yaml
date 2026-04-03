@@ -1,0 +1,4 @@
+interface:
+  display_name: "Playwright Blender Compare"
+  short_description: "Reuse browser and Blender visual compare workflow"
+  default_prompt: "Use $playwright-blender-compare to run the browser and Blender comparison workflow for a .lutchain preset."
