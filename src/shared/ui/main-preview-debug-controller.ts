@@ -7,6 +7,7 @@ import type {
   LightSettings,
   MaterialSettings,
 } from '../../features/pipeline/pipeline-model.ts';
+import { getLightPresetByKey, getMaterialPresetByKey } from './preview-presets.ts';
 
 export interface CameraOrbitState {
   orbitPitchDeg: number;
@@ -78,9 +79,11 @@ export interface MainPreviewDebugApi {
   resetOrbit: () => CameraOrbitState;
   getMaterialSettings: () => MaterialSettings;
   setMaterialSettings: (patch: Partial<MaterialSettings>) => MaterialSettings;
+  applyMaterialPreset: (presetKey: string) => MaterialSettings;
   setBaseColor: (color: [number, number, number]) => MaterialSettings;
   getLightSettings: () => LightSettings;
   setLightSettings: (patch: Partial<LightSettings>) => LightSettings;
+  applyLightPreset: (presetKey: string) => LightSettings;
   loadPreset: (preset: string) => Promise<void>;
   sampleSpherePoints: (options?: SampleSpherePointsOptions) => Promise<MainPreviewSampleReport>;
   setOrbitAndSampleSphere: (nextState: Partial<CameraOrbitState>) => Promise<MainPreviewSampleReport>;
@@ -417,6 +420,20 @@ export function createMainPreviewDebugController(
       setMaterialSettings(next);
       return getMaterialSettings();
     },
+    applyMaterialPreset: (presetKey: string) => {
+      const preset = getMaterialPresetByKey(presetKey);
+      if (!preset) {
+        throw new Error(`Unknown material preset: ${presetKey}`);
+      }
+      setMaterialSettings({
+        baseColor: [...preset.settings.baseColor] as [number, number, number],
+        specularStrength: preset.settings.specularStrength,
+        specularPower: preset.settings.specularPower,
+        fresnelStrength: preset.settings.fresnelStrength,
+        fresnelPower: preset.settings.fresnelPower,
+      });
+      return getMaterialSettings();
+    },
     setBaseColor: (color: [number, number, number]) => {
       setMaterialSettings({
         ...getMaterialSettings(),
@@ -434,6 +451,21 @@ export function createMainPreviewDebugController(
         ambientColor: Array.isArray(patch.ambientColor) ? patch.ambientColor : current.ambientColor,
       };
       setLightSettings(next);
+      return getLightSettings();
+    },
+    applyLightPreset: (presetKey: string) => {
+      const preset = getLightPresetByKey(presetKey);
+      if (!preset) {
+        throw new Error(`Unknown light preset: ${presetKey}`);
+      }
+      setLightSettings({
+        azimuthDeg: preset.settings.azimuthDeg,
+        elevationDeg: preset.settings.elevationDeg,
+        lightIntensity: preset.settings.lightIntensity,
+        lightColor: [...preset.settings.lightColor] as [number, number, number],
+        ambientColor: [...preset.settings.ambientColor] as [number, number, number],
+        showGizmo: preset.settings.showGizmo,
+      });
       return getLightSettings();
     },
     loadPreset: async (preset: string) => {

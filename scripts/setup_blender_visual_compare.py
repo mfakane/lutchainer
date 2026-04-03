@@ -9,6 +9,36 @@ from typing import Any
 
 ADDON_MODULE_NAME = "lutchainer_blender_addon"
 DEFAULT_COMPARE_BASE_COLOR = (0.9, 0.9, 0.9)
+MATERIAL_PRESETS = {
+    "default": {
+        "baseColor": (0.9, 0.9, 0.9),
+        "specularStrength": 0.4,
+        "specularPower": 24.0,
+        "fresnelStrength": 0.18,
+        "fresnelPower": 2.2,
+    },
+    "matte-clay": {
+        "baseColor": (0.70, 0.62, 0.54),
+        "specularStrength": 0.12,
+        "specularPower": 7.0,
+        "fresnelStrength": 0.08,
+        "fresnelPower": 1.4,
+    },
+    "gloss-metal": {
+        "baseColor": (0.78, 0.80, 0.84),
+        "specularStrength": 1.05,
+        "specularPower": 72.0,
+        "fresnelStrength": 0.36,
+        "fresnelPower": 3.6,
+    },
+    "neon-lacquer": {
+        "baseColor": (0.18, 0.82, 0.95),
+        "specularStrength": 0.62,
+        "specularPower": 44.0,
+        "fresnelStrength": 0.46,
+        "fresnelPower": 2.8,
+    },
+}
 
 
 def _require_bpy():
@@ -158,12 +188,35 @@ def _normalize_base_color(base_color: tuple[float, float, float] | None) -> tupl
     )
 
 
+def _resolve_compare_material_settings(
+    base_color: tuple[float, float, float] | None,
+    material_preset_key: str | None,
+) -> dict[str, object]:
+    preset_key = material_preset_key or "default"
+    if preset_key not in MATERIAL_PRESETS:
+        raise ValueError(f"Unknown material preset: {preset_key}")
+    preset = MATERIAL_PRESETS[preset_key]
+    resolved_base = base_color if base_color is not None else preset["baseColor"]
+    normalized_base = _normalize_base_color(resolved_base)
+    if normalized_base is None:
+        raise RuntimeError("base color normalization failed")
+    return {
+        "baseColor": normalized_base,
+        "specularStrength": float(preset["specularStrength"]),
+        "specularPower": float(preset["specularPower"]),
+        "fresnelStrength": float(preset["fresnelStrength"]),
+        "fresnelPower": float(preset["fresnelPower"]),
+        "presetKey": preset_key,
+    }
+
+
 def setup_visual_compare(
     *,
     addon_parent: str,
     fixture_path: str,
     lightness_mode: str = "dot_nl",
-    base_color: tuple[float, float, float] | None = DEFAULT_COMPARE_BASE_COLOR,
+    base_color: tuple[float, float, float] | None = None,
+    material_preset_key: str | None = None,
     reset_scene: bool = True,
 ) -> dict[str, str]:
     bpy = _require_bpy()
@@ -199,7 +252,9 @@ def setup_visual_compare(
     if material is None:
         raise RuntimeError("import did not assign an active material")
 
-    if base_color is not None:
+    compare_material_settings = _resolve_compare_material_settings(base_color, material_preset_key)
+
+    if base_color is not None or material_preset_key is not None:
         import lutchainer_blender_addon as addon_module  # type: ignore
 
         bpy.data.materials.remove(material, do_unlink=True)
@@ -207,7 +262,8 @@ def setup_visual_compare(
             context=bpy.context,
             filepath=fixture_path,
             lightness_mode=lightness_mode,
-            base_color=_normalize_base_color(base_color),
+            base_color=compare_material_settings["baseColor"],
+            material_settings=compare_material_settings,
         )
 
     return {
@@ -217,6 +273,7 @@ def setup_visual_compare(
         "object_name": subject.name,
         "camera_name": bpy.context.scene.camera.name if bpy.context.scene.camera else "",
         "base_color": json.dumps(list(base_color)) if base_color is not None else "",
+        "material_preset_key": compare_material_settings["presetKey"],
     }
 
 
@@ -226,22 +283,24 @@ def main(argv: list[str]) -> int:
     if len(args) < 2:
         print(
             "usage: blender --background --factory-startup --python scripts/setup_blender_visual_compare.py -- "
-            "<addon_parent> <fixture_path> [lightness_mode] [base_color_r,base_color_g,base_color_b]"
+            "<addon_parent> <fixture_path> [lightness_mode] [base_color_r,base_color_g,base_color_b] [material_preset_key]"
         )
         return 2
 
     lightness_mode = args[2] if len(args) >= 3 else "dot_nl"
-    base_color = DEFAULT_COMPARE_BASE_COLOR
+    base_color: tuple[float, float, float] | None = None
     if len(args) >= 4:
         parts = [float(part.strip()) for part in args[3].split(",")]
         if len(parts) != 3:
             raise ValueError("base color must have 3 comma-separated components")
         base_color = (parts[0], parts[1], parts[2])
+    material_preset_key = args[4] if len(args) >= 5 else None
     result = setup_visual_compare(
         addon_parent=args[0],
         fixture_path=args[1],
         lightness_mode=lightness_mode,
         base_color=base_color,
+        material_preset_key=material_preset_key,
         reset_scene=True,
     )
     print(json.dumps(result, ensure_ascii=True))

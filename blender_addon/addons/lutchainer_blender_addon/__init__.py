@@ -67,6 +67,7 @@ def run_import_from_path(
     filepath: str,
     lightness_mode: str,
     base_color: tuple[float, float, float, float] | None = None,
+    material_settings: dict[str, object] | None = None,
 ) -> bpy.types.Material:
     _validate_lightness_mode(lightness_mode)
     import_data = manifest.load_lutchain_file(filepath)
@@ -76,6 +77,7 @@ def run_import_from_path(
         filepath=filepath,
         lightness_mode=lightness_mode,
         base_color=base_color,
+        material_settings=material_settings,
     )
     preferences = get_addon_preferences(context)
     if preferences is not None:

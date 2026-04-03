@@ -64,7 +64,8 @@ def sample_blender_compare_points(
     addon_parent: str,
     fixture_path: str,
     lightness_mode: str = "dot_nl",
-    base_color: tuple[float, float, float] | None = (0.9, 0.9, 0.9),
+    base_color: tuple[float, float, float] | None = None,
+    material_preset_key: str | None = None,
     width: int = DEFAULT_RENDER_SIZE,
     height: int = DEFAULT_RENDER_SIZE,
     divisions: int = DEFAULT_GRID_DIVISIONS,
@@ -75,6 +76,7 @@ def sample_blender_compare_points(
         fixture_path=fixture_path,
         lightness_mode=lightness_mode,
         base_color=base_color,
+        material_preset_key=material_preset_key,
         reset_scene=True,
     )
 
@@ -108,6 +110,7 @@ def sample_blender_compare_points(
         "divisions": divisions,
         "lightnessMode": lightness_mode,
         "baseColor": list(base_color) if base_color is not None else None,
+        "materialPresetKey": material_preset_key,
         "fixturePath": os.path.abspath(fixture_path),
         "materialName": compare_state["material_name"],
         "samples": samples,
@@ -120,24 +123,26 @@ def main(argv: list[str]) -> int:
     if len(args) < 2:
         print(
             "usage: blender --background --factory-startup --python scripts/sample_blender_compare_points.py -- "
-            "<addon_parent> <fixture_path> [lightness_mode] [size] [divisions] [base_color_r,base_color_g,base_color_b]"
+            "<addon_parent> <fixture_path> [lightness_mode] [size] [divisions] [base_color_r,base_color_g,base_color_b] [material_preset_key]"
         )
         return 2
 
     lightness_mode = args[2] if len(args) >= 3 else "dot_nl"
     size = int(args[3]) if len(args) >= 4 else DEFAULT_RENDER_SIZE
     divisions = int(args[4]) if len(args) >= 5 else DEFAULT_GRID_DIVISIONS
-    base_color = (0.9, 0.9, 0.9)
+    base_color: tuple[float, float, float] | None = None
     if len(args) >= 6:
         parts = [float(part.strip()) for part in args[5].split(",")]
         if len(parts) != 3:
             raise ValueError("base color must have 3 comma-separated components")
         base_color = (parts[0], parts[1], parts[2])
+    material_preset_key = args[6] if len(args) >= 7 else None
     result = sample_blender_compare_points(
         addon_parent=args[0],
         fixture_path=args[1],
         lightness_mode=lightness_mode,
         base_color=base_color,
+        material_preset_key=material_preset_key,
         width=size,
         height=size,
         divisions=divisions,

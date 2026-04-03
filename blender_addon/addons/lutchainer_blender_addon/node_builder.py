@@ -58,13 +58,56 @@ BROWSER_DEFAULT_BASE_COLOR = (0.9, 0.9, 0.9, 1.0)
 # so the helper light position must follow the same mapping.
 BROWSER_DEFAULT_LIGHT_POSITION = (0.0, -64.2787609, 76.6044443)
 BROWSER_DEFAULT_SPECULAR_STRENGTH = 0.4
-BROWSER_DEFAULT_SPECULAR_COLOR = (0.4, 0.4, 0.4, 1.0)
-BROWSER_DEFAULT_SPECULAR_ROUGHNESS = 0.08
-BROWSER_DEFAULT_SPECULAR_SHARPNESS = 3.0
+BROWSER_DEFAULT_SPECULAR_COLOR = (1.0, 1.0, 1.0, 1.0)
+BROWSER_DEFAULT_SPECULAR_BASE_COLOR = (1.0, 1.0, 1.0, 1.0)
+BROWSER_DEFAULT_SPECULAR_ROUGHNESS = 0.02
+BROWSER_DEFAULT_SPECULAR_SHARPNESS = 6.0
 BROWSER_DEFAULT_FRESNEL_STRENGTH = 0.18
 BROWSER_DEFAULT_FRESNEL_IOR = 1.1
 BROWSER_DEFAULT_FRESNEL_POWER = 2.2
 HSV_ACHROMATIC_EPSILON = 1.0e-6
+
+
+def _resolve_material_settings(
+    material_settings: dict[str, object] | None,
+    *,
+    base_color: tuple[float, float, float, float] | None = None,
+) -> dict[str, object]:
+    resolved_base_color = _resolve_base_color(base_color)
+    settings = {
+        "baseColor": resolved_base_color,
+        "specularStrength": BROWSER_DEFAULT_SPECULAR_STRENGTH,
+        "specularPower": 24.0,
+        "fresnelStrength": BROWSER_DEFAULT_FRESNEL_STRENGTH,
+        "fresnelPower": BROWSER_DEFAULT_FRESNEL_POWER,
+    }
+    if material_settings is None:
+        return settings
+
+    for key in ("specularStrength", "specularPower", "fresnelStrength", "fresnelPower"):
+        value = material_settings.get(key)
+        if isinstance(value, (int, float)):
+            settings[key] = float(value)
+
+    raw_base_color = material_settings.get("baseColor")
+    if isinstance(raw_base_color, (tuple, list)) and len(raw_base_color) >= 3:
+        settings["baseColor"] = (
+            float(raw_base_color[0]),
+            float(raw_base_color[1]),
+            float(raw_base_color[2]),
+            1.0,
+        )
+    return settings
+
+
+def _specular_roughness_from_power(specular_power: float) -> float:
+    safe_power = max(1.0, float(specular_power))
+    return max(0.0, min(1.0, 2.0 / safe_power))
+
+
+def _specular_sharpness_from_power(specular_power: float) -> float:
+    safe_power = max(1.0, float(specular_power))
+    return max(1.0, min(16.0, safe_power / 8.0))
 
 
 def _sanitize_name(value: str) -> str:
@@ -787,8 +830,14 @@ def _build_helper_nodes(
     lightness_mode: str,
     *,
     base_color: tuple[float, float, float, float] | None = None,
+    material_settings: dict[str, object] | None = None,
 ) -> None:
-    resolved_base_color = _resolve_base_color(base_color)
+    resolved_material = _resolve_material_settings(material_settings, base_color=base_color)
+    resolved_base_color = resolved_material["baseColor"]
+    specular_strength = float(resolved_material["specularStrength"])
+    specular_power = float(resolved_material["specularPower"])
+    fresnel_strength = float(resolved_material["fresnelStrength"])
+    fresnel_power = float(resolved_material["fresnelPower"])
     texcoord = tree.nodes.new("ShaderNodeTexCoord")
     texcoord.location = (-1080, -150)
     links.new(texcoord.outputs["UV"], pipeline_node.inputs["TexCoord"])
@@ -802,9 +851,9 @@ def _build_helper_nodes(
     fresnel.location = (-690, 130)
     fresnel.inputs["IOR"].default_value = BROWSER_DEFAULT_FRESNEL_IOR
     fresnel_pow = _new_math(tree, "POWER", use_clamp=True, location=(-470, 130))
-    fresnel_pow.inputs[1].default_value = BROWSER_DEFAULT_FRESNEL_POWER
+    fresnel_pow.inputs[1].default_value = fresnel_power
     fresnel_mul = _new_math(tree, "MULTIPLY", use_clamp=True, location=(-250, 130))
-    fresnel_mul.inputs[1].default_value = BROWSER_DEFAULT_FRESNEL_STRENGTH
+    fresnel_mul.inputs[1].default_value = fresnel_strength
     links.new(fresnel.outputs[0], fresnel_pow.inputs[0])
     links.new(fresnel_pow.outputs[0], fresnel_mul.inputs[0])
     links.new(fresnel_mul.outputs[0], pipeline_node.inputs["Fresnel"])
@@ -939,9 +988,11 @@ def _build_helper_nodes(
     specular_bsdf = tree.nodes.new("ShaderNodeEeveeSpecular")
     specular_bsdf.location = specular_pos.next()
     specular_bsdf.parent = specular_frame
-    specular_bsdf.inputs["Base Color"].default_value = resolved_base_color
+    # Browser-side specular is a scalar pow(NdotH, power) term, so the extracted
+    # highlight should stay white instead of inheriting the material base color.
+    specular_bsdf.inputs["Base Color"].default_value = BROWSER_DEFAULT_SPECULAR_BASE_COLOR
     specular_bsdf.inputs["Specular"].default_value = BROWSER_DEFAULT_SPECULAR_COLOR
-    specular_bsdf.inputs["Roughness"].default_value = BROWSER_DEFAULT_SPECULAR_ROUGHNESS
+    specular_bsdf.inputs["Roughness"].default_value = _specular_roughness_from_power(specular_power)
     specular_to_rgb = tree.nodes.new("ShaderNodeShaderToRGB")
     specular_to_rgb.location = specular_pos.next()
     specular_to_rgb.parent = specular_frame
@@ -950,10 +1001,10 @@ def _build_helper_nodes(
     specular_bw.parent = specular_frame
     specular_pow = _new_math(tree, "POWER", use_clamp=True, location=specular_pos.next())
     specular_pow.parent = specular_frame
-    specular_pow.inputs[1].default_value = BROWSER_DEFAULT_SPECULAR_SHARPNESS
+    specular_pow.inputs[1].default_value = _specular_sharpness_from_power(specular_power)
     specular_mul = _new_math(tree, "MULTIPLY", use_clamp=True, location=specular_pos.next())
     specular_mul.parent = specular_frame
-    specular_mul.inputs[1].default_value = BROWSER_DEFAULT_SPECULAR_STRENGTH
+    specular_mul.inputs[1].default_value = specular_strength
     links.new(specular_bsdf.outputs[0], specular_to_rgb.inputs[0])
     links.new(specular_to_rgb.outputs[0], specular_bw.inputs[0])
     links.new(specular_bw.outputs[0], specular_pow.inputs[0])
@@ -983,8 +1034,10 @@ def _build_material_tree(
     lightness_mode: str,
     filepath: str,
     base_color: tuple[float, float, float, float] | None = None,
+    material_settings: dict[str, object] | None = None,
 ) -> None:
-    resolved_base_color = _resolve_base_color(base_color)
+    resolved_material = _resolve_material_settings(material_settings, base_color=base_color)
+    resolved_base_color = resolved_material["baseColor"]
     material.use_nodes = True
     node_tree = material.node_tree
     _clear_nodes(node_tree)
@@ -1015,6 +1068,7 @@ def _build_material_tree(
         pipeline_node,
         lightness_mode,
         base_color=resolved_base_color,
+        material_settings=resolved_material,
     )
 
 
@@ -1041,6 +1095,7 @@ def import_lutchain_material(
     filepath: str,
     lightness_mode: str,
     base_color: tuple[float, float, float, float] | None = None,
+    material_settings: dict[str, object] | None = None,
 ) -> bpy.types.Material:
     import_name = _sanitize_name(import_data.display_name)
     images_by_lut_id = {
@@ -1057,6 +1112,7 @@ def import_lutchain_material(
         lightness_mode=lightness_mode,
         filepath=filepath,
         base_color=base_color,
+        material_settings=material_settings,
     )
     _assign_material_to_active_object(context, material)
     return material
