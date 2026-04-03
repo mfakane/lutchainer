@@ -73,6 +73,10 @@ def _sanitize_name(value: str) -> str:
     return re.sub(r"[^A-Za-z0-9_. -]+", "-", value).strip() or "LUTChain"
 
 
+def _resolve_base_color(base_color: tuple[float, float, float, float] | None) -> tuple[float, float, float, float]:
+    return base_color if base_color is not None else BROWSER_DEFAULT_BASE_COLOR
+
+
 def _clear_nodes(tree: bpy.types.NodeTree) -> None:
     for node in list(tree.nodes):
         tree.nodes.remove(node)
@@ -351,20 +355,21 @@ def _build_custom_rgb_target(
     current_color_socket: bpy.types.NodeSocket,
     lut_color_socket: bpy.types.NodeSocket,
     step: LutchainStep,
+    node_pos: NodePosition,
 ) -> bpy.types.NodeSocket:
     current_rgb = tree.nodes.new("ShaderNodeSeparateColor")
     current_rgb.mode = "RGB"
-    current_rgb.location = (-120, 170)
+    current_rgb.location = node_pos.next()
     links.new(current_color_socket, current_rgb.inputs[0])
 
     lut_rgb = tree.nodes.new("ShaderNodeSeparateColor")
     lut_rgb.mode = "RGB"
-    lut_rgb.location = (-120, 20)
+    lut_rgb.location = node_pos.next()
     links.new(lut_color_socket, lut_rgb.inputs[0])
 
     combine = tree.nodes.new("ShaderNodeCombineColor")
     combine.mode = "RGB"
-    combine.location = (290, 95)
+    combine.location = node_pos.next()
 
     for index, channel in enumerate(("r", "g", "b")):
         output_socket = _float_op(
@@ -373,7 +378,7 @@ def _build_custom_rgb_target(
             current_rgb.outputs[index],
             lut_rgb.outputs[index],
             step.ops.get(channel, "none"),
-            (50, 160 - index * 90),
+            node_pos.next(),
         )
         links.new(output_socket, combine.inputs[index])
     return combine.outputs[0]
@@ -385,20 +390,21 @@ def _build_self_blend_target(
     current_color_socket: bpy.types.NodeSocket,
     lut_color_socket: bpy.types.NodeSocket,
     step: LutchainStep,
+    node_pos: NodePosition,
 ) -> bpy.types.NodeSocket:
     current_rgb = tree.nodes.new("ShaderNodeSeparateColor")
     current_rgb.mode = "RGB"
-    current_rgb.location = (-120, 190)
+    current_rgb.location = node_pos.next()
     links.new(current_color_socket, current_rgb.inputs[0])
 
     lut_rgb = tree.nodes.new("ShaderNodeSeparateColor")
     lut_rgb.mode = "RGB"
-    lut_rgb.location = (-120, 20)
+    lut_rgb.location = node_pos.next()
     links.new(lut_color_socket, lut_rgb.inputs[0])
 
     combine = tree.nodes.new("ShaderNodeCombineColor")
     combine.mode = "RGB"
-    combine.location = (520, 110)
+    combine.location = node_pos.next()
 
     for index, channel in enumerate(("r", "g", "b")):
         current_socket = current_rgb.outputs[index]
@@ -408,7 +414,7 @@ def _build_self_blend_target(
             current_socket,
             current_socket,
             step.ops.get(channel, "none"),
-            (20, 180 - index * 120),
+            node_pos.next(),
         )
         target_socket = _float_lerp(
             tree,
@@ -416,7 +422,7 @@ def _build_self_blend_target(
             current_socket,
             op_socket,
             lut_rgb.outputs[index],
-            (210, 180 - index * 120),
+            node_pos.next(),
         )
         links.new(target_socket, combine.inputs[index])
     return combine.outputs[0]
@@ -428,20 +434,21 @@ def _build_custom_hsv_target(
     current_color_socket: bpy.types.NodeSocket,
     lut_color_socket: bpy.types.NodeSocket,
     step: LutchainStep,
+    node_pos: NodePosition,
 ) -> bpy.types.NodeSocket:
     current_hsv = tree.nodes.new("ShaderNodeSeparateColor")
     current_hsv.mode = "HSV"
-    current_hsv.location = (-120, 170)
+    current_hsv.location = node_pos.next()
     links.new(current_color_socket, current_hsv.inputs[0])
 
     lut_hsv = tree.nodes.new("ShaderNodeSeparateColor")
     lut_hsv.mode = "HSV"
-    lut_hsv.location = (-120, -70)
+    lut_hsv.location = node_pos.next()
     links.new(lut_color_socket, lut_hsv.inputs[0])
 
     combine = tree.nodes.new("ShaderNodeCombineColor")
     combine.mode = "HSV"
-    combine.location = (290, 95)
+    combine.location = node_pos.next()
 
     for index, channel in enumerate(("h", "s", "v")):
         output_socket = _float_op(
@@ -450,7 +457,7 @@ def _build_custom_hsv_target(
             current_hsv.outputs[index],
             lut_hsv.outputs[index],
             step.ops.get(channel, "none"),
-            (50, 160 - index * 90),
+            node_pos.next(),
         )
         links.new(output_socket, combine.inputs[index])
     return combine.outputs[0]
@@ -481,27 +488,28 @@ def _apply_step_mix(
     lut_color_socket: bpy.types.NodeSocket,
     lut_alpha_socket: bpy.types.NodeSocket,
     step: LutchainStep,
+    node_pos: NodePosition,
 ) -> bpy.types.NodeSocket:
     if step.blend_mode == "none":
         return current_color_socket
 
     if step.blend_mode in MIXRGB_BLEND_TYPES:
-        node = _new_mixrgb(tree, MIXRGB_BLEND_TYPES[step.blend_mode], location=(420, 40))
+        node = _new_mixrgb(tree, MIXRGB_BLEND_TYPES[step.blend_mode], location=node_pos.next())
         links.new(lut_alpha_socket, node.inputs[0])
         links.new(current_color_socket, node.inputs[1])
         links.new(lut_color_socket, node.inputs[2])
         return node.outputs[0]
 
     if step.blend_mode == "customRgb":
-        target_color = _build_custom_rgb_target(tree, links, current_color_socket, lut_color_socket, step)
+        target_color = _build_custom_rgb_target(tree, links, current_color_socket, lut_color_socket, step, node_pos)
     elif step.blend_mode == "selfBlend":
-        target_color = _build_self_blend_target(tree, links, current_color_socket, lut_color_socket, step)
+        target_color = _build_self_blend_target(tree, links, current_color_socket, lut_color_socket, step, node_pos)
     elif step.blend_mode == "customHsv":
-        target_color = _build_custom_hsv_target(tree, links, current_color_socket, lut_color_socket, step)
+        target_color = _build_custom_hsv_target(tree, links, current_color_socket, lut_color_socket, step, node_pos)
     else:
         raise ValueError(f"Unsupported blend mode '{step.blend_mode}'")
 
-    node = _new_mixrgb(tree, "MIX", location=(620, 40))
+    node = _new_mixrgb(tree, "MIX", location=node_pos.next())
     links.new(lut_alpha_socket, node.inputs[0])
     links.new(current_color_socket, node.inputs[1])
     links.new(target_color, node.inputs[2])
@@ -533,7 +541,8 @@ def _build_step_group(
     group_input.location = (STEP_GROUP_INPUT_X, 0)
     group_output = nodes.new("NodeGroupOutput")
     group_output.location = (STEP_GROUP_OUTPUT_X, 0)
-    sample_frame = _new_frame(tree, "LUT Sample", (-190, 90))
+    node_pos = NodePosition(-220, 0)
+    sample_frame = _new_frame(tree, "LUT Sample", node_pos.get())
 
     if step.muted:
         links.new(group_input.outputs["Current Color"], group_output.inputs["Color"])
@@ -558,14 +567,20 @@ def _build_step_group(
     )
 
     combine_uv = nodes.new("ShaderNodeCombineXYZ")
-    combine_uv.location = (-120, 35)
+    combine_uv.location = node_pos.next()
     combine_uv.parent = sample_frame
     links.new(x_socket, combine_uv.inputs[0])
-    links.new(y_socket, combine_uv.inputs[1])
+
+    invert_v = _new_math(tree, "SUBTRACT", use_clamp=True, location=node_pos.next())
+    invert_v.parent = sample_frame
+    invert_v.label = "Invert V"
+    invert_v.inputs[0].default_value = 1.0
+    links.new(y_socket, invert_v.inputs[1])
+    links.new(invert_v.outputs[0], combine_uv.inputs[1])
     combine_uv.inputs[2].default_value = 0.0
 
     image_node = nodes.new("ShaderNodeTexImage")
-    image_node.location = (90, 35)
+    image_node.location = node_pos.next(offset=(320, 0))
     image_node.parent = sample_frame
     image_node.image = image
     image_node.interpolation = "Linear"
@@ -579,6 +594,7 @@ def _build_step_group(
         image_node.outputs["Color"],
         image_node.outputs["Alpha"],
         step,
+        node_pos,
     )
     links.new(result_socket, group_output.inputs["Color"])
     return tree
@@ -638,14 +654,17 @@ def _build_helper_nodes(
     links: bpy.types.NodeLinks,
     pipeline_node: bpy.types.ShaderNodeGroup,
     lightness_mode: str,
+    *,
+    base_color: tuple[float, float, float, float] | None = None,
 ) -> None:
+    resolved_base_color = _resolve_base_color(base_color)
     texcoord = tree.nodes.new("ShaderNodeTexCoord")
     texcoord.location = (-1080, -150)
     links.new(texcoord.outputs["UV"], pipeline_node.inputs["TexCoord"])
 
     rgb = tree.nodes.new("ShaderNodeRGB")
     rgb.location = (-880, 260)
-    rgb.outputs[0].default_value = BROWSER_DEFAULT_BASE_COLOR
+    rgb.outputs[0].default_value = resolved_base_color
     links.new(rgb.outputs[0], pipeline_node.inputs["Base Color"])
 
     fresnel = tree.nodes.new("ShaderNodeFresnel")
@@ -678,7 +697,7 @@ def _build_helper_nodes(
     geometry.location = lightness_pos.next()
     geometry.parent = lightness_frame
     light_position = tree.nodes.new("ShaderNodeCombineXYZ")
-    light_position.location = lightness_pos.next(offset=(0, -100))
+    light_position.location = lightness_pos.next(offset_once=(0, -100))
     light_position.parent = lightness_frame
     light_position.label = "Light Position"
     light_position.inputs["X"].default_value = BROWSER_DEFAULT_LIGHT_POSITION[0]
@@ -789,7 +808,7 @@ def _build_helper_nodes(
     specular_bsdf = tree.nodes.new("ShaderNodeEeveeSpecular")
     specular_bsdf.location = specular_pos.next()
     specular_bsdf.parent = specular_frame
-    specular_bsdf.inputs["Base Color"].default_value = BROWSER_DEFAULT_BASE_COLOR
+    specular_bsdf.inputs["Base Color"].default_value = resolved_base_color
     specular_bsdf.inputs["Specular"].default_value = BROWSER_DEFAULT_SPECULAR_COLOR
     specular_bsdf.inputs["Roughness"].default_value = BROWSER_DEFAULT_SPECULAR_ROUGHNESS
     specular_to_rgb = tree.nodes.new("ShaderNodeShaderToRGB")
@@ -832,7 +851,9 @@ def _build_material_tree(
     *,
     lightness_mode: str,
     filepath: str,
+    base_color: tuple[float, float, float, float] | None = None,
 ) -> None:
+    resolved_base_color = _resolve_base_color(base_color)
     material.use_nodes = True
     node_tree = material.node_tree
     _clear_nodes(node_tree)
@@ -849,7 +870,7 @@ def _build_material_tree(
     pipeline_node["lutchainer_kind"] = "pipeline_node"
     pipeline_node["lutchainer_source_filepath"] = filepath
 
-    pipeline_node.inputs["Base Color"].default_value = BROWSER_DEFAULT_BASE_COLOR
+    pipeline_node.inputs["Base Color"].default_value = resolved_base_color
     for input_name in FLOAT_INPUTS:
         pipeline_node.inputs[input_name].default_value = 0.0
     pipeline_node.inputs["TexCoord"].default_value = (0.0, 0.0, 0.0)
@@ -857,7 +878,13 @@ def _build_material_tree(
     node_tree.links.new(pipeline_node.outputs["Color"], emission.inputs["Color"])
     node_tree.links.new(emission.outputs["Emission"], output.inputs["Surface"])
 
-    _build_helper_nodes(node_tree, node_tree.links, pipeline_node, lightness_mode)
+    _build_helper_nodes(
+        node_tree,
+        node_tree.links,
+        pipeline_node,
+        lightness_mode,
+        base_color=resolved_base_color,
+    )
 
 
 def _assign_material_to_active_object(
@@ -882,6 +909,7 @@ def import_lutchain_material(
     import_data: LutchainImportData,
     filepath: str,
     lightness_mode: str,
+    base_color: tuple[float, float, float, float] | None = None,
 ) -> bpy.types.Material:
     import_name = _sanitize_name(import_data.display_name)
     images_by_lut_id = {
@@ -897,6 +925,7 @@ def import_lutchain_material(
         pipeline_group,
         lightness_mode=lightness_mode,
         filepath=filepath,
+        base_color=base_color,
     )
     _assign_material_to_active_object(context, material)
     return material
@@ -909,7 +938,8 @@ class NodePosition:
     def get(self) -> (float, float):
         return (self.x, self.y)
 
-    def next(self, offset: tuple[float, float] = (0, 0)) -> (float, float):
-        pos = (self.x + offset[0], self.y + offset[1])
-        self.x += STEP_NODE_SPACING_X
+    def next(self, offset_once: tuple[float, float] = (0, 0), offset: tuple[float, float] = (STEP_NODE_SPACING_X, 0)) -> (float, float):
+        pos = (self.x + offset_once[0], self.y + offset_once[1])
+        self.x += offset[0]
+        self.y += offset[1]
         return pos

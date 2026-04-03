@@ -8,6 +8,7 @@ from typing import Any
 
 
 ADDON_MODULE_NAME = "lutchainer_blender_addon"
+DEFAULT_COMPARE_BASE_COLOR = (0.9, 0.9, 0.9)
 
 
 def _require_bpy():
@@ -142,11 +143,27 @@ def _set_active_object(bpy: Any, obj: Any) -> None:
     bpy.context.view_layer.objects.active = obj
 
 
+def _normalize_base_color(base_color: tuple[float, float, float] | None) -> tuple[float, float, float, float] | None:
+    if base_color is None:
+        return None
+    def srgb_to_linear(component: float) -> float:
+        if component <= 0.04045:
+            return component / 12.92
+        return ((component + 0.055) / 1.055) ** 2.4
+    return (
+        srgb_to_linear(float(base_color[0])),
+        srgb_to_linear(float(base_color[1])),
+        srgb_to_linear(float(base_color[2])),
+        1.0,
+    )
+
+
 def setup_visual_compare(
     *,
     addon_parent: str,
     fixture_path: str,
     lightness_mode: str = "dot_nl",
+    base_color: tuple[float, float, float] | None = DEFAULT_COMPARE_BASE_COLOR,
     reset_scene: bool = True,
 ) -> dict[str, str]:
     bpy = _require_bpy()
@@ -182,12 +199,24 @@ def setup_visual_compare(
     if material is None:
         raise RuntimeError("import did not assign an active material")
 
+    if base_color is not None:
+        import lutchainer_blender_addon as addon_module  # type: ignore
+
+        bpy.data.materials.remove(material, do_unlink=True)
+        material = addon_module.run_import_from_path(
+            context=bpy.context,
+            filepath=fixture_path,
+            lightness_mode=lightness_mode,
+            base_color=_normalize_base_color(base_color),
+        )
+
     return {
         "fixture_path": fixture_path,
         "lightness_mode": lightness_mode,
         "material_name": material.name,
         "object_name": subject.name,
         "camera_name": bpy.context.scene.camera.name if bpy.context.scene.camera else "",
+        "base_color": json.dumps(list(base_color)) if base_color is not None else "",
     }
 
 
@@ -197,15 +226,22 @@ def main(argv: list[str]) -> int:
     if len(args) < 2:
         print(
             "usage: blender --background --factory-startup --python scripts/setup_blender_visual_compare.py -- "
-            "<addon_parent> <fixture_path> [lightness_mode]"
+            "<addon_parent> <fixture_path> [lightness_mode] [base_color_r,base_color_g,base_color_b]"
         )
         return 2
 
     lightness_mode = args[2] if len(args) >= 3 else "dot_nl"
+    base_color = DEFAULT_COMPARE_BASE_COLOR
+    if len(args) >= 4:
+        parts = [float(part.strip()) for part in args[3].split(",")]
+        if len(parts) != 3:
+            raise ValueError("base color must have 3 comma-separated components")
+        base_color = (parts[0], parts[1], parts[2])
     result = setup_visual_compare(
         addon_parent=args[0],
         fixture_path=args[1],
         lightness_mode=lightness_mode,
+        base_color=base_color,
         reset_scene=True,
     )
     print(json.dumps(result, ensure_ascii=True))

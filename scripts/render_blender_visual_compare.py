@@ -23,6 +23,7 @@ def render_blender_visual_compare(
     fixture_path: str,
     output_path: str,
     lightness_mode: str = "dot_nl",
+    base_color: tuple[float, float, float] | None = (0.9, 0.9, 0.9),
     width: int = 512,
     height: int = 512,
 ) -> dict[str, object]:
@@ -32,6 +33,7 @@ def render_blender_visual_compare(
         addon_parent=addon_parent,
         fixture_path=fixture_path,
         lightness_mode=lightness_mode,
+        base_color=base_color,
         reset_scene=True,
     )
 
@@ -52,6 +54,7 @@ def render_blender_visual_compare(
     return {
         "fixturePath": os.path.abspath(fixture_path),
         "lightnessMode": lightness_mode,
+        "baseColor": list(base_color) if base_color is not None else None,
         "outputPath": output_path,
         "width": width,
         "height": height,
@@ -65,18 +68,25 @@ def main(argv: list[str]) -> int:
     if len(args) < 3:
         print(
             "usage: blender --background --factory-startup --python scripts/render_blender_visual_compare.py -- "
-            "<addon_parent> <fixture_path> <output_path> [lightness_mode] [width] [height]"
+            "<addon_parent> <fixture_path> <output_path> [lightness_mode] [width] [height] [base_color_r,base_color_g,base_color_b]"
         )
         return 2
 
     lightness_mode = args[3] if len(args) >= 4 else "dot_nl"
     width = int(args[4]) if len(args) >= 5 else 512
     height = int(args[5]) if len(args) >= 6 else 512
+    base_color = (0.9, 0.9, 0.9)
+    if len(args) >= 7:
+        parts = [float(part.strip()) for part in args[6].split(",")]
+        if len(parts) != 3:
+            raise ValueError("base color must have 3 comma-separated components")
+        base_color = (parts[0], parts[1], parts[2])
     result = render_blender_visual_compare(
         addon_parent=args[0],
         fixture_path=args[1],
         output_path=args[2],
         lightness_mode=lightness_mode,
+        base_color=base_color,
         width=width,
         height=height,
     )
