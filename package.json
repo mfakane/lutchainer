@@ -12,13 +12,13 @@
     "dev": "node scripts/build.mjs --watch",
     "serve": "node dist/cli/main.mjs serve",
     "validate:lutchain-examples": "node tests/lutchain/validate-examples.mjs",
-    "typecheck": "npx tsc -p tsconfig.browser.json --noEmit && npx tsc -p tsconfig.cli.json --noEmit"
+    "typecheck": "tsc --build tsconfig.json --noEmit"
   },
   "devDependencies": {
     "@types/node": "^25.5.2",
     "esbuild": "^0.20.0",
     "esbuild-plugin-solid": "^0.6.0",
-    "typescript": "^5.4.0"
+    "typescript": "^6.0.2"
   },
   "dependencies": {
     "fflate": "^0.8.2",

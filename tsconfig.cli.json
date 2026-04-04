@@ -1,7 +1,11 @@
 {
   "extends": "./tsconfig.base.json",
   "compilerOptions": {
-    "lib": ["ES2020", "DOM"]
+    "composite": true,
+    "emitDeclarationOnly": true,
+    "outDir": "dist/types/cli",
+    "lib": ["ES2020"],
+    "types": ["node"]
   },
   "include": [
     "src/app/cli/**/*.ts",
