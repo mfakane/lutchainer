@@ -1,4 +1,3 @@
-import { strToU8, unzipSync, zipSync } from 'fflate';
 import {
   LUT_EDITOR_DEFAULT_HEIGHT,
   LUT_EDITOR_DEFAULT_WIDTH,
@@ -22,6 +21,25 @@ import {
   type ParamName,
   type StepModel,
 } from '../step/step-model';
+import {
+  buildPipelineArchiveManifest,
+  isRecord,
+  isZipLikeFileDescriptor,
+  parseNonEmptyText,
+  parsePipelineArchive,
+  parsePositiveInteger,
+  PIPELINE_ZIP_FILE_VERSION,
+  serializePipelineArchive,
+  type PipelineZipLutEntry,
+} from '../../shared/lutchain/lutchain-archive.ts';
+export {
+  parseNonEmptyText,
+  toErrorMessage,
+  type PipelineStepEntry,
+  type PipelineStepOpsEntry,
+  type PipelineZipData,
+  type PipelineZipLutEntry,
+} from '../../shared/lutchain/lutchain-archive.ts';
 
 export interface ParamDef {
   key: ParamName;
@@ -80,36 +98,6 @@ export interface LightRangeBinding {
   max: number;
   fractionDigits: number;
   label: string;
-}
-
-export type PipelineStepOpsEntry = Partial<Record<ChannelName, BlendOp>>;
-
-export interface PipelineStepEntry {
-  id: number;
-  lutId: string;
-  label?: string;
-  muted?: boolean;
-  blendMode: BlendMode;
-  xParam: ParamName;
-  yParam: ParamName;
-  ops?: PipelineStepOpsEntry;
-}
-
-
-export interface PipelineZipLutEntry {
-  id: string;
-  name: string;
-  filename: string;
-  width: number;
-  height: number;
-  ramp2dData?: ColorRamp2dLutData;
-}
-
-export interface PipelineZipData {
-  version: number;
-  nextStepId: number;
-  luts: PipelineZipLutEntry[];
-  steps: PipelineStepEntry[];
 }
 
 export interface LoadedPipelineData {
@@ -302,7 +290,6 @@ export const MAX_LUTS = 12;
 export const MAX_LUT_FILE_BYTES = 12 * 1024 * 1024;
 export const MAX_PIPELINE_FILE_BYTES = 64 * 1024 * 1024;
 export const MAX_PIPELINE_IMAGE_SIDE = 4096;
-export const PIPELINE_ZIP_FILE_VERSION = 2;
 const PIPELINE_DOWNLOAD_BASENAME = 'lutchainer-pipeline';
 const PIPELINE_ARCHIVE_EXTENSION = '.lutchain';
 
@@ -461,44 +448,8 @@ export function parseLutId(value: string | undefined): string | null {
   return lutId;
 }
 
-export function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
-
-export function toErrorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : '不明なエラーです。';
-}
-
-export function parsePositiveInteger(value: unknown, fieldName: string, min = 1, max = Number.MAX_SAFE_INTEGER): number {
-  if (typeof value !== 'number' || !Number.isFinite(value) || !Number.isInteger(value)) {
-    throw new Error(`${fieldName} は整数である必要があります。`);
-  }
-
-  if (value < min || value > max) {
-    throw new Error(`${fieldName} は ${min} 以上 ${max} 以下である必要があります。`);
-  }
-
-  return value;
-}
-
-export function parseNonEmptyText(value: unknown, fieldName: string, maxLength = 200): string {
-  if (typeof value !== 'string') {
-    throw new Error(`${fieldName} は文字列である必要があります。`);
-  }
-
-  const text = value.trim();
-  if (text.length === 0 || text.length > maxLength) {
-    throw new Error(`${fieldName} は 1 文字以上 ${maxLength} 文字以下である必要があります。`);
-  }
-
-  return text;
-}
-
 export function isZipLikeFile(file: File): boolean {
-  const mimeType = file.type.trim().toLowerCase();
-  const fileName = file.name.trim().toLowerCase();
-  return mimeType === 'application/x-lutchain'
-    || fileName.endsWith(PIPELINE_ARCHIVE_EXTENSION);
+  return isZipLikeFileDescriptor(file);
 }
 
 function formatDatePart(value: number, digits: number): string {
@@ -1033,87 +984,6 @@ function parsePipelineStepEntry(value: unknown, index: number): StepModel {
   };
 }
 
-function compactPipelineStepOps(ops: Record<ChannelName, BlendOp>, fieldPrefix: string): PipelineStepOpsEntry | undefined {
-  if (!isRecord(ops)) {
-    throw new Error(`${fieldPrefix}.ops が不正です。`);
-  }
-
-  const compactOps: PipelineStepOpsEntry = {};
-  for (const channel of CHANNELS) {
-    const opRaw = ops[channel];
-    if (typeof opRaw !== 'string' || !isValidBlendOp(opRaw)) {
-      throw new Error(`${fieldPrefix}.ops.${channel} が不正です。`);
-    }
-    if (opRaw !== 'none') {
-      compactOps[channel] = opRaw;
-    }
-  }
-
-  return Object.keys(compactOps).length > 0 ? compactOps : undefined;
-}
-
-function serializePipelineStepEntry(step: StepModel, index: number): PipelineStepEntry {
-  const fieldPrefix = `steps[${index}]`;
-  if (!isRecord(step)) {
-    throw new Error(`${fieldPrefix} はオブジェクトである必要があります。`);
-  }
-
-  const id = parsePositiveInteger(step.id, `${fieldPrefix}.id`);
-
-  const lutId = parseLutId(typeof step.lutId === 'string' ? step.lutId : undefined);
-  if (!lutId) {
-    throw new Error(`${fieldPrefix}.lutId が不正です。`);
-  }
-
-  let label: string | undefined;
-  if (step.label !== undefined) {
-    label = parseNonEmptyText(step.label, `${fieldPrefix}.label`, MAX_STEP_LABEL_LENGTH);
-  }
-
-  if (typeof step.muted !== 'boolean') {
-    throw new Error(`${fieldPrefix}.muted が不正です。`);
-  }
-
-  const blendModeRaw = step.blendMode;
-  if (typeof blendModeRaw !== 'string' || !isValidBlendMode(blendModeRaw)) {
-    throw new Error(`${fieldPrefix}.blendMode が不正です。`);
-  }
-
-  const xParamRaw = step.xParam;
-  if (typeof xParamRaw !== 'string' || !isValidParamName(xParamRaw)) {
-    throw new Error(`${fieldPrefix}.xParam が不正です。`);
-  }
-
-  const yParamRaw = step.yParam;
-  if (typeof yParamRaw !== 'string' || !isValidParamName(yParamRaw)) {
-    throw new Error(`${fieldPrefix}.yParam が不正です。`);
-  }
-
-  const compactOps = compactPipelineStepOps(step.ops, fieldPrefix);
-
-  const entry: PipelineStepEntry = {
-    id,
-    lutId,
-    blendMode: blendModeRaw,
-    xParam: xParamRaw,
-    yParam: yParamRaw,
-  };
-
-  if (label) {
-    entry.label = label;
-  }
-
-  if (step.muted) {
-    entry.muted = true;
-  }
-
-  if (compactOps) {
-    entry.ops = compactOps;
-  }
-
-  return entry;
-}
-
 // ---------------------------------------------------------------------------
 // ZIP形式の保存・読み込み
 // ---------------------------------------------------------------------------
@@ -1162,19 +1032,18 @@ export async function serializePipelineAsZip(
     });
   }
 
-  const manifest: PipelineZipData = {
-    version: PIPELINE_ZIP_FILE_VERSION,
+  const manifest = buildPipelineArchiveManifest(
+    PIPELINE_ZIP_FILE_VERSION,
     nextStepId,
-    luts: lutEntries,
-    steps: steps.map((step, index) => serializePipelineStepEntry(step, index)),
-  };
+    steps,
+    lutEntries,
+  );
 
   if (previewPngBytes instanceof Uint8Array && previewPngBytes.length > 0) {
     zipFiles['preview.png'] = previewPngBytes;
   }
 
-  zipFiles['pipeline.json'] = strToU8(JSON.stringify(manifest, null, 2));
-  return zipSync(zipFiles);
+  return serializePipelineArchive(manifest, zipFiles);
 }
 
 function parseColorRamp2dLutData(value: unknown): ColorRamp2dLutData | undefined {
@@ -1307,40 +1176,11 @@ export async function loadPipelineFromZip(data: ArrayBuffer): Promise<LoadedPipe
     throw new Error('.lutchain データが不正です。');
   }
 
-  let files: Record<string, Uint8Array>;
-  try {
-    files = unzipSync(new Uint8Array(data));
-  } catch (err) {
-    throw new Error(`保存ファイル（.lutchain）を開けませんでした: ${toErrorMessage(err)}`);
-  }
+  const archive = parsePipelineArchive(data, PIPELINE_ZIP_FILE_VERSION);
+  const { manifest, files } = archive;
+  const parsedNextStepId = parsePositiveInteger(manifest.nextStepId, 'nextStepId');
 
-  const jsonBytes = files['pipeline.json'];
-  if (!jsonBytes) {
-    throw new Error('.lutchain に pipeline.json が見つかりません。');
-  }
-
-  let payload: unknown;
-  try {
-    payload = JSON.parse(new TextDecoder().decode(jsonBytes));
-  } catch {
-    throw new Error('pipeline.jsonのパースに失敗しました。');
-  }
-
-  if (!isRecord(payload)) {
-    throw new Error('pipeline.jsonのルートはオブジェクトである必要があります。');
-  }
-
-  const version = parsePositiveInteger(payload.version, 'version');
-  if (version !== PIPELINE_ZIP_FILE_VERSION) {
-    throw new Error(`未対応のパイプラインバージョンです: ${version}`);
-  }
-
-  const parsedNextStepId = parsePositiveInteger(payload.nextStepId, 'nextStepId');
-
-  const rawLuts = payload.luts;
-  if (!Array.isArray(rawLuts)) {
-    throw new Error('luts は配列である必要があります。');
-  }
+  const rawLuts = manifest.luts;
   if (rawLuts.length === 0) {
     throw new Error('luts が空です。1件以上必要です。');
   }
@@ -1348,10 +1188,7 @@ export async function loadPipelineFromZip(data: ArrayBuffer): Promise<LoadedPipe
     throw new Error(`luts は最大 ${MAX_LUTS} 件までです。`);
   }
 
-  const rawSteps = payload.steps;
-  if (!Array.isArray(rawSteps)) {
-    throw new Error('steps は配列である必要があります。');
-  }
+  const rawSteps = manifest.steps;
   if (rawSteps.length > MAX_STEPS) {
     throw new Error(`steps は最大 ${MAX_STEPS} 件までです。`);
   }

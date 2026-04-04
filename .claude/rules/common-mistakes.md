@@ -597,7 +597,7 @@ export function sampleLutColorLinear(lut: LutModel, u: number, v: number): Color
 ### References
 
 - [lut-sampling.ts L10-40](../../src/features/step/lut-sampling.ts#L10-L40)
-- [User Memory: CPU image sampling](../../CLAUDE.md#cpu-↔-gpu-rendering-fallback)
+- [User Memory: CPU image sampling](../../AGENTS.md#cpu-↔-gpu-rendering-fallback)
 
 ---
 
@@ -980,7 +980,7 @@ const element = Array.from(elements).find((el) =>
 );
 ```
 
-Reference: [CLAUDE.md: Anti-Pattern #2](../CLAUDE.md#2-dom-selector-brittleness)
+Reference: [AGENTS.md: Anti-Pattern #2](../../AGENTS.md#2-dom-selector-brittleness)
 
 ---
 

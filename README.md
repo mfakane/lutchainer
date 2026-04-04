@@ -83,15 +83,16 @@ npm run serve
 ### Via Nix
 
 ```bash
-nix run
-# Serves on http://localhost:8000
+nix run -- --help
+nix run -- serve
+# Open http://localhost:8000
 ```
 
 ### Build Artifacts Only
 
 ```bash
 nix build
-# Output: result/ with index.html and dist/
+# Output: result/ with dist/web/ and dist/cli/
 ```
 
 ## Usage Workflow
@@ -125,7 +126,17 @@ nix build
 npm run dev
 ```
 
-Changing `src/main.ts` triggers automatic rebuild of `dist/bundle.js`.
+Changing the browser entrypoint rebuilds `dist/web/bundle.js`, and CLI changes rebuild `dist/cli/main.mjs`.
+
+The browser build outputs to `dist/web/`, and the CLI is emitted to `dist/cli/`.
+
+CLI examples:
+
+```bash
+lutchainer serve
+lutchainer serve --port 8000
+lutchainer lut list examples/Metallic.lutchain
+```
 
 Type checking only:
 

@@ -1,7 +1,7 @@
 import {
   createGizmoOverlayController,
   type GizmoOverlayController,
-} from '../../gizmo-overlay.ts';
+} from '../../app/browser/gizmo-overlay.ts';
 import type { LightSettings, MaterialSettings } from '../../features/pipeline/pipeline-model.ts';
 import {
   createRenderSystem,

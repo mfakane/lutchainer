@@ -1,21 +1,30 @@
-import {
-  createPipelineCommandController,
-} from './features/pipeline/pipeline-command-controller.ts';
-import {
-  createPipelineHistoryController,
-} from './features/pipeline/pipeline-history.ts';
-import {
-  createPipelineHistoryActionsController,
-} from './features/pipeline/pipeline-history-actions.ts';
+import { setupMainPipelineIoSystem } from '../../features/pipeline/main-pipeline-io-setup.ts';
 import {
   applyLoadedPipelineState,
-} from './features/pipeline/main-pipeline-load-apply.ts';
-import { setupMainPipelineSocketDnd } from './features/pipeline/main-pipeline-socket-dnd-setup.ts';
+} from '../../features/pipeline/main-pipeline-load-apply.ts';
+import { setupMainPipelineSocketDnd } from '../../features/pipeline/main-pipeline-socket-dnd-setup.ts';
+import {
+  type PipelineApplyController,
+} from '../../features/pipeline/pipeline-apply.ts';
+import {
+  createPipelineCommandController,
+} from '../../features/pipeline/pipeline-command-controller.ts';
+import {
+  type PipelineDropIndicatorController,
+} from '../../features/pipeline/pipeline-drop-indicators.ts';
 import {
   createPipelineHeaderActionController,
-} from './features/pipeline/pipeline-header-actions-controller.ts';
-import { setupMainPipelineIoSystem } from './features/pipeline/main-pipeline-io-setup.ts';
-import * as pipelineModel from './features/pipeline/pipeline-model.ts';
+} from '../../features/pipeline/pipeline-header-actions-controller.ts';
+import {
+  createPipelineHistoryActionsController,
+} from '../../features/pipeline/pipeline-history-actions.ts';
+import {
+  createPipelineHistoryController,
+} from '../../features/pipeline/pipeline-history.ts';
+import * as pipelineModel from '../../features/pipeline/pipeline-model.ts';
+import {
+  type PipelineSocketDndController,
+} from '../../features/pipeline/pipeline-socket-dnd-controller.ts';
 import {
   getLuts as getPipelineLuts,
   getNextStepId as getPipelineNextStepId,
@@ -24,45 +33,36 @@ import {
   setLuts as setPipelineLuts,
   setNextStepId as setPipelineNextStepId,
   setSteps as setPipelineSteps,
-} from './features/pipeline/pipeline-state.ts';
-import * as pipelineView from './features/pipeline/pipeline-view.ts';
+} from '../../features/pipeline/pipeline-state.ts';
+import * as pipelineView from '../../features/pipeline/pipeline-view.ts';
 import {
   createShaderExportSystem,
-} from './features/shader/shader-export-system.ts';
-import { MAX_STEP_LABEL_LENGTH } from './features/step/step-model.ts';
-import { createMainStepRenderingController } from './features/step/main-step-rendering-controller.ts';
-import { StepPreviewRenderer } from './features/step/step-preview-renderer.ts';
+} from '../../features/shader/shader-export-system.ts';
+import { createMainStepRenderingController } from '../../features/step/main-step-rendering-controller.ts';
+import { MAX_STEP_LABEL_LENGTH } from '../../features/step/step-model.ts';
 import {
   createStepPreviewDebugController,
-} from './features/step/step-preview-debug-controller.ts';
-import { createStepPreviewSystem } from './features/step/step-preview-system.ts';
+} from '../../features/step/step-preview-debug-controller.ts';
+import { StepPreviewRenderer } from '../../features/step/step-preview-renderer.ts';
+import { createStepPreviewSystem } from '../../features/step/step-preview-system.ts';
 import {
   syncHeaderActionAutoApplyState,
   syncHeaderActionHistoryState,
-} from './shared/components/solid-header-actions.tsx';
+} from '../../shared/components/solid-header-actions.tsx';
 import {
   syncPreviewShapeBarState,
   syncPreviewWireframeState,
-} from './shared/components/solid-preview-shape-bar.tsx';
+} from '../../shared/components/solid-preview-shape-bar.tsx';
 import {
   getLanguage,
   subscribeLanguageChange,
   t,
-} from './shared/i18n.ts';
-import { syncMainStaticLocaleText } from './shared/i18n/main-static-locale-text.ts';
-import { setupStaticLocaleSync } from './shared/i18n/static-locale-sync.ts';
+} from '../../shared/i18n.ts';
+import { syncMainStaticLocaleText } from '../../shared/i18n/main-static-locale-text.ts';
+import { setupStaticLocaleSync } from '../../shared/i18n/static-locale-sync.ts';
 import {
   createSocketDropTargetResolver,
-} from './shared/interactions/socket-dnd.ts';
-import {
-  type PipelineApplyController,
-} from './features/pipeline/pipeline-apply.ts';
-import {
-  type PipelineDropIndicatorController,
-} from './features/pipeline/pipeline-drop-indicators.ts';
-import {
-  type PipelineSocketDndController,
-} from './features/pipeline/pipeline-socket-dnd-controller.ts';
+} from '../../shared/interactions/socket-dnd.ts';
 import {
   clearSocketDragState,
   getLutReorderDragState,
@@ -72,40 +72,40 @@ import {
   setSocketDragState,
   setSocketDropTargetState,
   setSuppressClickUntil,
-} from './shared/ui/interaction-state.ts';
-import { setupMainConnectionDrawController } from './shared/ui/main-connection-draw-controller.ts';
-import { resolveMainDomElements } from './shared/ui/main-dom-elements.ts';
-import { createRequiredDomSelector } from './shared/ui/main-dom-select.ts';
-import { createMainOrbitStateController } from './shared/ui/main-orbit-state.ts';
-import { createMainPreviewDebugController } from './shared/ui/main-preview-debug-controller.ts';
-import { bootstrapMainPostRuntime } from './shared/ui/main-post-runtime-bootstrap.ts';
-import { type MainRenderPipeline } from './shared/ui/main-render-pipeline-setup.ts';
-import { bootstrapMainRuntime } from './shared/ui/main-runtime-bootstrap.ts';
+} from '../../shared/ui/interaction-state.ts';
+import { setupMainConnectionDrawController } from '../../shared/ui/main-connection-draw-controller.ts';
+import { resolveMainDomElements } from '../../shared/ui/main-dom-elements.ts';
+import { createRequiredDomSelector } from '../../shared/ui/main-dom-select.ts';
+import { createMainOrbitStateController } from '../../shared/ui/main-orbit-state.ts';
+import { bootstrapMainPostRuntime } from '../../shared/ui/main-post-runtime-bootstrap.ts';
+import {
+  type MainPreviewCaptureController,
+} from '../../shared/ui/main-preview-capture-controller.ts';
+import { createMainPreviewDebugController } from '../../shared/ui/main-preview-debug-controller.ts';
+import { type MainRenderPipeline } from '../../shared/ui/main-render-pipeline-setup.ts';
+import { bootstrapMainRuntime } from '../../shared/ui/main-runtime-bootstrap.ts';
 import {
   createLightDirectionWorldGetter,
   createShaderBuildInputGetter,
-  createShaderExportHandler,
   createShaderCodePanelUpdater,
+  createShaderExportHandler,
   createStatusReporter,
-} from './shared/ui/main-shader-status-helpers.ts';
+} from '../../shared/ui/main-shader-status-helpers.ts';
 import {
   type PreviewShapeController,
-} from './shared/ui/preview-shape-controller.ts';
+} from '../../shared/ui/preview-shape-controller.ts';
 import {
   getLightSettings,
   getMaterialSettings,
   setLightSettings,
   setMaterialSettings,
-} from './shared/ui/scene-state.ts';
+} from '../../shared/ui/scene-state.ts';
 import {
   isAutoApplyEnabled,
   isPreviewWireframeOverlayEnabled,
   setAutoApplyEnabled,
   setPreviewWireframeOverlayEnabled,
-} from './shared/ui/ui-state.ts';
-import {
-  type MainPreviewCaptureController,
-} from './shared/ui/main-preview-capture-controller.ts';
+} from '../../shared/ui/ui-state.ts';
 
 const PIPELINE_HISTORY_LIMIT = 100;
 

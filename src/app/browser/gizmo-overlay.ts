@@ -1,4 +1,4 @@
-import { mat4Multiply } from './shared/utils/math';
+import { mat4Multiply } from '../../shared/utils/math';
 
 interface Point2D {
   x: number;

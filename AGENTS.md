@@ -7,7 +7,7 @@ This document provides guidance to AI agents (GitHub Copilot, custom agents, etc
 ## 🛠️ Development Commands
 
 ```bash
-# Build (outputs to dist/bundle.js)
+# Build (outputs to dist/web/bundle.js and dist/cli/main.mjs)
 npm run build
 
 # Watch mode (rebuild on file changes)

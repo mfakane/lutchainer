@@ -5,23 +5,43 @@ import path from 'path';
 
 const watchMode = process.argv.includes('--watch');
 const distDir = path.resolve('dist');
+const webDir = path.join(distDir, 'web');
+const cliDir = path.join(distDir, 'cli');
 const copyTargets = [
   {
     source: path.resolve('examples'),
-    destination: path.join(distDir, 'examples'),
+    destination: path.join(webDir, 'examples'),
   },
   {
     source: path.resolve('styles.css'),
-    destination: path.join(distDir, 'styles.css'),
+    destination: path.join(webDir, 'styles.css'),
   },
   {
     source: path.resolve('index.html'),
-    destination: path.join(distDir, 'index.html'),
+    destination: path.join(webDir, 'index.html'),
   },
 ];
 
-function copyBuildAssets() {
+const legacyDistTargets = [
+  path.join(distDir, 'bundle.js'),
+  path.join(distDir, 'bundle.js.map'),
+  path.join(distDir, 'index.html'),
+  path.join(distDir, 'styles.css'),
+  path.join(distDir, 'examples'),
+];
+
+function prepareOutputDirs() {
   fs.mkdirSync(distDir, { recursive: true });
+  fs.mkdirSync(webDir, { recursive: true });
+  fs.mkdirSync(cliDir, { recursive: true });
+
+  for (const target of legacyDistTargets) {
+    fs.rmSync(target, { recursive: true, force: true });
+  }
+}
+
+function copyBuildAssets() {
+  prepareOutputDirs();
 
   for (const target of copyTargets) {
     if (path.basename(target.source) === 'index.html') {
@@ -91,9 +111,9 @@ const copyBuildAssetsPlugin = {
 };
 
 const buildOptions = {
-  entryPoints: ['src/main.ts'],
+  entryPoints: ['src/app/browser/main.ts'],
   bundle: true,
-  outfile: 'dist/bundle.js',
+  outfile: path.join(webDir, 'bundle.js'),
   sourcemap: true,
   target: ['es2020'],
   format: 'iife',
@@ -105,10 +125,33 @@ const buildOptions = {
   plugins: [typeScriptExtensionPlugin, copyBuildAssetsPlugin, solidPlugin({ dev: watchMode })],
 };
 
+const cliBuildOptions = {
+  entryPoints: ['src/app/cli/main.ts'],
+  bundle: true,
+  outfile: path.join(cliDir, 'main.mjs'),
+  sourcemap: true,
+  target: ['node20'],
+  format: 'esm',
+  platform: 'node',
+  loader: {
+    '.ts': 'ts',
+    '.tsx': 'tsx',
+  },
+  banner: {
+    js: '#!/usr/bin/env node',
+  },
+  plugins: [typeScriptExtensionPlugin],
+};
+
 if (watchMode) {
+  prepareOutputDirs();
   const context = await esbuild.context(buildOptions);
+  const cliContext = await esbuild.context(cliBuildOptions);
   await context.watch();
+  await cliContext.watch();
   console.log('[build] watching for changes...');
 } else {
+  prepareOutputDirs();
   await esbuild.build(buildOptions);
+  await esbuild.build(cliBuildOptions);
 }

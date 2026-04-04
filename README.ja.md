@@ -79,7 +79,8 @@ npm run serve
 ### Nixで起動（ビルド成果物を配信）
 
 ```bash
-nix run
+nix run -- --help
+nix run -- serve
 # http://localhost:8000
 ```
 
@@ -87,7 +88,7 @@ nix run
 
 ```bash
 nix build
-# result/ に index.html と dist/ が出力される
+# result/ に dist/web/ と dist/cli/ が出力される
 ```
 
 ## 使い方の流れ
@@ -121,7 +122,15 @@ nix build
 npm run dev
 ```
 
-`src/main.ts` を変更すると `dist/bundle.js` が再生成されます。
+ブラウザ側の変更で `dist/web/bundle.js`、CLI 側の変更で `dist/cli/main.mjs` が再生成されます。
+
+CLI 例:
+
+```bash
+lutchainer serve
+lutchainer serve --port 8000
+lutchainer lut list examples/Metallic.lutchain
+```
 
 型チェックのみ実行する場合:
 

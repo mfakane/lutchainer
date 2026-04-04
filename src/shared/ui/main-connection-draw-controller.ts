@@ -1,7 +1,7 @@
 import {
   createConnectionDrawScheduler,
   renderConnectionLayer,
-} from '../../connection-renderer.ts';
+} from '../../app/browser/connection-renderer.ts';
 import type {
   SocketDragState,
   SocketDropTarget,

@@ -29,7 +29,7 @@
           echo "  🐾  lutchainer dev shell (Node $(node --version))"
           echo ""
           echo "  npm install      — 依存関係のインストール"
-          echo "  npm run build    — バンドル生成 (dist/bundle.js)"
+          echo "  npm run build    — バンドル生成 (dist/web + dist/cli)"
           echo "  npm run dev      — ウォッチモード"
           echo "  npm run serve    — ローカルサーバ起動"
           echo "  npx tsc --noEmit — 型チェックのみ"
@@ -37,8 +37,8 @@
         '';
       };
 
-      # ── Package (静的ファイルのビルド成果物) ─────────────────────────────
-      # 使い方: nix build  →  result/ に index.html + dist/ が入る
+      # ── Package (静的ファイル + CLI) ───────────────────────────────────
+      # 使い方: nix build  →  result/ に dist/web と dist/cli が入る
       packages.${system}.default = pkgs.buildNpmPackage {
         pname   = "lutchainer";
         version = "1.0.0";
@@ -48,7 +48,7 @@
         nodejs = nodejs;
 
         # nix run nixpkgs#prefetch-npm-deps -- package-lock.json で再生成可能
-        npmDepsHash = "sha256-cromly2A7uyOVCxcPZGRS97VUhEd4ittlhhSvB8G8Ss=";
+        npmDepsHash = "sha256-wRLz3e/QOoYn4vHpfToLURmLi7e74piMg2qnxtNOe/Y=";
 
         # postinstall に esbuild が走るのを防ぐ
         npmFlags = [ "--ignore-scripts" ];
@@ -62,8 +62,8 @@
         installPhase = ''
           runHook preInstall
           mkdir -p $out
-          cp index.html $out/
-          cp -r dist     $out/dist
+          cp package.json $out/
+          cp -r dist      $out/dist
           runHook postInstall
         '';
 
@@ -74,18 +74,14 @@
         };
       };
 
-      # ── App (nix run で簡易HTTPサーバを起動) ────────────────────────────
-      # 使い方: nix run
+      # ── App (nix run で CLI を起動) ────────────────────────────
+      # 使い方: nix run -- --help / nix run -- serve
       apps.${system}.default = {
         type    = "app";
-        program = toString (pkgs.writeShellScript "serve-lutchainer" ''
+        program = toString (pkgs.writeShellScript "lutchainer" ''
           set -e
           DIST="${self.packages.${system}.default}"
-          echo ""
-          echo "  🐾  lutchainer → http://localhost:8000"
-          echo "  Ctrl+C で停止"
-          echo ""
-          exec ${pkgs.nodejs}/bin/npm run serve --prefix "$DIST"
+          exec ${pkgs.nodejs}/bin/node "$DIST/dist/cli/main.mjs" "$@"
         '');
       };
 
