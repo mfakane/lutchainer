@@ -48,7 +48,7 @@
         nodejs = nodejs;
 
         # nix run nixpkgs#prefetch-npm-deps -- package-lock.json で再生成可能
-        npmDepsHash = "sha256-wRLz3e/QOoYn4vHpfToLURmLi7e74piMg2qnxtNOe/Y=";
+        npmDepsHash = "sha256-0V5AHXI+V3G1JuLZeEr3AtaSQVrDnASl8eGYxmGKMb4=";
 
         # postinstall に esbuild が走るのを防ぐ
         npmFlags = [ "--ignore-scripts" ];
