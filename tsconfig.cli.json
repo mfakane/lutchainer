@@ -11,8 +11,7 @@
     "src/app/cli/**/*.ts",
     "src/platforms/node/**/*.ts",
     "src/shared/lutchain/**/*.ts",
-    "src/features/lut-editor/lut-editor-model.ts",
-    "src/features/step/step-model.ts",
+    "src/features/**/*.ts",
     "src/types/node-shim.d.ts"
   ]
 }

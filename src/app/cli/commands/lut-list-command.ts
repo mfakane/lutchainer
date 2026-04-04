@@ -1,13 +1,9 @@
-import path from 'node:path';
 import process from 'node:process';
 import { parseArgs } from 'node:util';
 import {
-  isZipLikeFilename,
-  parsePipelineArchive,
-  PIPELINE_ZIP_FILE_VERSION,
   type PipelineZipLutEntry,
 } from '../../../shared/lutchain/lutchain-archive.ts';
-import { readFileBytes } from '../../../platforms/node/fs/file-load-runtime.ts';
+import { loadLutchainArchive } from '../cli-archive.ts';
 import { formatLutList, type LutListRow } from '../cli-output.ts';
 
 export function getLutListUsage(): string {
@@ -76,15 +72,7 @@ function toLutListJsonEntries(luts: readonly PipelineZipLutEntry[]): LutListJson
 export async function runLutListCommand(argv: string[]): Promise<number> {
   try {
     const options = resolveLutListTarget(argv);
-    const filePath = options.filePath;
-    const resolvedPath = path.resolve(process.cwd(), filePath);
-    if (!isZipLikeFilename(resolvedPath)) {
-      process.stderr.write(`Expected a .lutchain file path.\n${getLutListUsage()}\n`);
-      return 1;
-    }
-
-    const bytes = await readFileBytes(resolvedPath);
-    const archive = parsePipelineArchive(bytes, PIPELINE_ZIP_FILE_VERSION);
+    const { archive } = await loadLutchainArchive(options.filePath);
     if (options.json) {
       process.stdout.write(`${JSON.stringify(toLutListJsonEntries(archive.manifest.luts), null, 2)}\n`);
       return 0;

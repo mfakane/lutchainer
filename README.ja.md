@@ -129,6 +129,7 @@ CLI 例:
 ```bash
 lutchainer serve
 lutchainer serve --port 8000
+lutchainer info examples/Metallic.lutchain
 lutchainer lut list examples/Metallic.lutchain
 lutchainer lut list --json examples/Metallic.lutchain
 ```
