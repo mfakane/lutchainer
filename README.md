@@ -136,6 +136,7 @@ CLI examples:
 lutchainer serve
 lutchainer serve --port 8000
 lutchainer lut list examples/Metallic.lutchain
+lutchainer lut list --json examples/Metallic.lutchain
 ```
 
 Type checking only:

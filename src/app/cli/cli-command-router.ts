@@ -6,7 +6,7 @@ function usage(): string {
   return [
     'Usage:',
     '  lutchainer serve [--port <number>]',
-    '  lutchainer lut list <file.lutchain>',
+    '  lutchainer lut list [--json] <file.lutchain>',
   ].join('\n');
 }
 

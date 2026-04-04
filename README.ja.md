@@ -130,6 +130,7 @@ CLI 例:
 lutchainer serve
 lutchainer serve --port 8000
 lutchainer lut list examples/Metallic.lutchain
+lutchainer lut list --json examples/Metallic.lutchain
 ```
 
 型チェックのみ実行する場合:
