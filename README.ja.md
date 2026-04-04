@@ -131,6 +131,9 @@ lutchainer serve
 lutchainer serve --port 8000
 lutchainer info examples/Metallic.lutchain
 lutchainer lut list examples/Metallic.lutchain
+lutchainer lut show lut-mnbmnzez-ubmppr examples/Metallic.lutchain
+lutchainer lut extract lut-mnbmnzez-ubmppr examples/Metallic.lutchain -o /tmp/diffuse-add.png
+lutchainer step show 9 examples/Metallic.lutchain
 lutchainer lut list --json examples/Metallic.lutchain
 ```
 
