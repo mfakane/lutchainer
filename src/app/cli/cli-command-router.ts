@@ -15,7 +15,7 @@ function usage(): string {
     '  lutchainer info [--json] <file.lutchain>',
     '  lutchainer serve [--port <number>]',
     '  lutchainer validate [--json] <file.lutchain>',
-    '  lutchainer lut extract <lut-id> <file.lutchain> -o <png-path>',
+    '  lutchainer lut extract <lut-id> <file.lutchain> --out <png-path>',
     '  lutchainer lut list [--json] <file.lutchain>',
     '  lutchainer lut show [--json] <lut-id> <file.lutchain>',
     '  lutchainer step list [--json] <file.lutchain>',
