@@ -57,14 +57,48 @@ test('root help prints usage and exits successfully', async () => {
   const result = await runCli(['--help']);
   assert.equal(result.exitCode, 0);
   assert.match(result.stdout, /^Usage:/m);
-  assert.match(result.stdout, /lutchainer lut extract <lut-id> <file\.lutchain> --out <png-path>/);
+  assert.match(result.stdout, /lutchainer <command> \[<args>\]/);
+  assert.match(result.stdout, /Commands:/);
+  assert.match(result.stdout, /lut\s+Inspect or extract LUT entries/);
+  assert.match(result.stdout, /Run 'lutchainer <command> --help' for more information\./);
 });
 
 test('unknown command prints usage to stderr and fails', async () => {
   const result = await runCli(['nope']);
   assert.equal(result.exitCode, 1);
   assert.equal(result.stdout, '');
-  assert.match(result.stderr, /^Usage:/m);
+  assert.match(result.stderr, /lutchainer <command> \[<args>\]/);
+});
+
+test('group help prints subcommand summaries', async () => {
+  const lutHelp = await runCli(['lut', '--help']);
+  assert.equal(lutHelp.exitCode, 0);
+  assert.match(lutHelp.stdout, /lutchainer lut <subcommand> \[<args>\]/);
+  assert.match(lutHelp.stdout, /show\s+Show one LUT by id or -n <name>/);
+
+  const stepHelp = await runCli(['step', '--help']);
+  assert.equal(stepHelp.exitCode, 0);
+  assert.match(stepHelp.stdout, /lutchainer step <subcommand> \[<args>\]/);
+  assert.match(stepHelp.stdout, /show\s+Show one step by id/);
+
+  const pipelineHelp = await runCli(['pipeline', '--help']);
+  assert.equal(pipelineHelp.exitCode, 0);
+  assert.match(pipelineHelp.stdout, /lutchainer pipeline <subcommand> \[<args>\]/);
+  assert.match(pipelineHelp.stdout, /cat\s+Print pipeline\.json contents/);
+});
+
+test('unknown group subcommands print group usage to stderr and fail', async () => {
+  const lutResult = await runCli(['lut', 'nope']);
+  assert.equal(lutResult.exitCode, 1);
+  assert.match(lutResult.stderr, /lutchainer lut <subcommand> \[<args>\]/);
+
+  const stepResult = await runCli(['step', 'nope']);
+  assert.equal(stepResult.exitCode, 1);
+  assert.match(stepResult.stderr, /lutchainer step <subcommand> \[<args>\]/);
+
+  const pipelineResult = await runCli(['pipeline', 'nope']);
+  assert.equal(pipelineResult.exitCode, 1);
+  assert.match(pipelineResult.stderr, /lutchainer pipeline <subcommand> \[<args>\]/);
 });
 
 test('info prints summary and json', async () => {

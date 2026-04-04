@@ -9,65 +9,155 @@ import { runStepListCommand } from './commands/step-list-command.ts';
 import { runStepShowCommand } from './commands/step-show-command.ts';
 import { runValidateCommand } from './commands/validate-command.ts';
 
-function usage(): string {
+type TopLevelCommand = 'serve' | 'info' | 'validate';
+type Group = 'lut' | 'step' | 'pipeline';
+type LutSubcommand = 'list' | 'show' | 'extract';
+type StepSubcommand = 'list' | 'show';
+type PipelineSubcommand = 'cat';
+
+function rootUsage(): string {
   return [
     'Usage:',
-    '  lutchainer info [--json] <file.lutchain>',
-    '  lutchainer serve [--port <number>]',
-    '  lutchainer validate [--json] <file.lutchain>',
-    '  lutchainer lut extract <lut-id> <file.lutchain> --out <png-path>',
-    '  lutchainer lut list [--json] <file.lutchain>',
-    '  lutchainer lut show [--json] <lut-id> <file.lutchain>',
-    '  lutchainer step list [--json] <file.lutchain>',
-    '  lutchainer step show [--json] <step-id> <file.lutchain>',
-    '  lutchainer pipeline cat [--json] <file.lutchain>',
+    '  lutchainer <command> [<args>]',
+    '',
+    'Commands:',
+    '  serve       Start the local preview server',
+    '  info        Show archive summary information',
+    '  validate    Validate a .lutchain archive',
+    '  lut         Inspect or extract LUT entries',
+    '  step        Inspect step entries',
+    '  pipeline    Inspect raw pipeline data',
+    '',
+    `Run 'lutchainer <command> --help' for more information.`,
+    `Run 'lutchainer <group> <subcommand> --help' for nested commands.`,
   ].join('\n');
+}
+
+function lutUsage(): string {
+  return [
+    'Usage:',
+    '  lutchainer lut <subcommand> [<args>]',
+    '',
+    'Subcommands:',
+    '  list        List LUTs in an archive',
+    '  show        Show one LUT by id or -n <name>',
+    '  extract     Extract one or more LUT PNG files',
+    '',
+    `Run 'lutchainer lut <subcommand> --help' for details.`,
+  ].join('\n');
+}
+
+function stepUsage(): string {
+  return [
+    'Usage:',
+    '  lutchainer step <subcommand> [<args>]',
+    '',
+    'Subcommands:',
+    '  list        List step entries in an archive',
+    '  show        Show one step by id',
+    '',
+    `Run 'lutchainer step <subcommand> --help' for details.`,
+  ].join('\n');
+}
+
+function pipelineUsage(): string {
+  return [
+    'Usage:',
+    '  lutchainer pipeline <subcommand> [<args>]',
+    '',
+    'Subcommands:',
+    '  cat         Print pipeline.json contents',
+    '',
+    `Run 'lutchainer pipeline <subcommand> --help' for details.`,
+  ].join('\n');
+}
+
+function writeTopLevelUsage(exitCode: 0 | 1): number {
+  const output = `${rootUsage()}\n`;
+  if (exitCode === 0) {
+    process.stdout.write(output);
+  } else {
+    process.stderr.write(output);
+  }
+  return exitCode;
+}
+
+function writeGroupUsage(group: Group, exitCode: 0 | 1): number {
+  let usage: string;
+  switch (group) {
+    case 'lut':
+      usage = lutUsage();
+      break;
+    case 'step':
+      usage = stepUsage();
+      break;
+    case 'pipeline':
+      usage = pipelineUsage();
+      break;
+  }
+  const output = `${usage}\n`;
+  if (exitCode === 0) {
+    process.stdout.write(output);
+  } else {
+    process.stderr.write(output);
+  }
+  return exitCode;
 }
 
 export async function runCli(argv: string[]): Promise<number> {
   const [command, subcommand, ...rest] = argv;
 
   if (!command || command === '--help' || command === '-h') {
-    process.stdout.write(`${usage()}\n`);
-    return 0;
+    return writeTopLevelUsage(0);
   }
 
-  if (command === 'serve') {
-    return await runServeCommand([subcommand, ...rest].filter((value): value is string => value !== undefined));
-  }
+  const nestedArgv = [subcommand, ...rest].filter((value): value is string => value !== undefined);
+  const isGroupHelp = !subcommand || subcommand === '--help' || subcommand === '-h';
 
-  if (command === 'info') {
-    return await runInfoCommand([subcommand, ...rest].filter((value): value is string => value !== undefined));
+  switch (command as TopLevelCommand | Group) {
+    case 'serve':
+      return await runServeCommand(nestedArgv);
+    case 'info':
+      return await runInfoCommand(nestedArgv);
+    case 'validate':
+      return await runValidateCommand(nestedArgv);
+    case 'lut':
+      if (isGroupHelp) {
+        return writeGroupUsage('lut', 0);
+      }
+      switch (subcommand as LutSubcommand) {
+        case 'list':
+          return await runLutListCommand(rest);
+        case 'show':
+          return await runLutShowCommand(rest);
+        case 'extract':
+          return await runLutExtractCommand(rest);
+        default:
+          return writeGroupUsage('lut', 1);
+      }
+    case 'step':
+      if (isGroupHelp) {
+        return writeGroupUsage('step', 0);
+      }
+      switch (subcommand as StepSubcommand) {
+        case 'list':
+          return await runStepListCommand(rest);
+        case 'show':
+          return await runStepShowCommand(rest);
+        default:
+          return writeGroupUsage('step', 1);
+      }
+    case 'pipeline':
+      if (isGroupHelp) {
+        return writeGroupUsage('pipeline', 0);
+      }
+      switch (subcommand as PipelineSubcommand) {
+        case 'cat':
+          return await runPipelineCatCommand(rest);
+        default:
+          return writeGroupUsage('pipeline', 1);
+      }
+    default:
+      return writeTopLevelUsage(1);
   }
-
-  if (command === 'validate') {
-    return await runValidateCommand([subcommand, ...rest].filter((value): value is string => value !== undefined));
-  }
-
-  if (command === 'lut' && subcommand === 'list') {
-    return await runLutListCommand(rest);
-  }
-
-  if (command === 'lut' && subcommand === 'show') {
-    return await runLutShowCommand(rest);
-  }
-
-  if (command === 'lut' && subcommand === 'extract') {
-    return await runLutExtractCommand(rest);
-  }
-
-  if (command === 'step' && subcommand === 'list') {
-    return await runStepListCommand(rest);
-  }
-
-  if (command === 'step' && subcommand === 'show') {
-    return await runStepShowCommand(rest);
-  }
-
-  if (command === 'pipeline' && subcommand === 'cat') {
-    return await runPipelineCatCommand(rest);
-  }
-
-  process.stderr.write(`${usage()}\n`);
-  return 1;
 }
