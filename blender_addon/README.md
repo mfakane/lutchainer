@@ -64,6 +64,24 @@ Release builds do not register:
 - `Reload Script`
 - `Reload And Reimport`
 
+## GitHub Actions Release
+
+If you want to build and publish the Blender Addon zip on GitHub, use the manual workflow:
+
+1. Open `Actions` in the GitHub repository.
+2. Select `Release Blender Addon`.
+3. Click `Run workflow`.
+4. Enter the Blender Addon version in `X.Y.Z` format.
+
+The workflow:
+
+- runs only when started manually with `workflow_dispatch`
+- builds `artifacts/lutchainer_blender_addon-X.Y.Z.zip`
+- creates a new GitHub Release with tag `blender_addon-vX.Y.Z`
+- uploads the generated zip as the Release asset
+
+Use the local script when you want to generate a release zip without publishing to GitHub.
+
 ## Development Reload
 
 For development, you do not need to rebuild a zip every time.

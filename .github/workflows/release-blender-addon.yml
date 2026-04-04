@@ -1,0 +1,91 @@
+name: Release Blender Addon
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Blender Addon version in X.Y.Z format
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build and publish Blender Addon release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Validate version input
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="${{ inputs.version }}"
+
+          if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::version must be in X.Y.Z format, got: $version"
+            exit 1
+          fi
+
+      - name: Fail if tag or release already exists
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          tag_name="blender_addon-v${{ inputs.version }}"
+
+          if git ls-remote --exit-code --tags origin "refs/tags/$tag_name" >/dev/null 2>&1; then
+            echo "::error::Tag $tag_name already exists on origin. Choose a new Blender Addon version."
+            exit 1
+          fi
+
+          if gh release view "$tag_name" >/dev/null 2>&1; then
+            echo "::error::Release $tag_name already exists. Choose a new Blender Addon version."
+            exit 1
+          fi
+
+      - name: Build Blender Addon release zip
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/build_blender_addon_release.py "${{ inputs.version }}"
+
+      - name: Verify generated zip
+        shell: bash
+        run: |
+          set -euo pipefail
+          artifact_path="artifacts/lutchainer_blender_addon-${{ inputs.version }}.zip"
+
+          if [[ ! -f "$artifact_path" ]]; then
+            echo "::error::Expected release zip not found: $artifact_path"
+            exit 1
+          fi
+
+          ls -l "$artifact_path"
+
+      - name: Create GitHub Release and upload zip
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          tag_name="blender_addon-v${{ inputs.version }}"
+          release_name="Blender Addon v${{ inputs.version }}"
+          artifact_path="artifacts/lutchainer_blender_addon-${{ inputs.version }}.zip"
+
+          gh release create "$tag_name" "$artifact_path" \
+            --target "${{ github.sha }}" \
+            --title "$release_name" \
+            --notes "Release build for the LUT Chainer Blender Addon."
