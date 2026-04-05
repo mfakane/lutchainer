@@ -105,6 +105,8 @@ import {
   setPreviewWireframeOverlayEnabled,
 } from './ui/ui-state.ts';
 
+declare const __BUILD_COMMIT_ID__: string;
+
 const PIPELINE_HISTORY_LIMIT = 100;
 
 const parseStepId = pipelineModel.parseStepId;
@@ -209,6 +211,22 @@ const exportShaderZip = createShaderExportHandler({
   onStatus: showStatus,
   t,
 });
+
+function syncHeaderBuildCommit(): void {
+  const buildCommitEl = document.querySelector<HTMLElement>('#header-build-commit');
+  if (!buildCommitEl) {
+    return;
+  }
+
+  if (typeof __BUILD_COMMIT_ID__ !== 'string' || __BUILD_COMMIT_ID__.trim().length === 0) {
+    buildCommitEl.textContent = '';
+    buildCommitEl.hidden = true;
+    return;
+  }
+
+  buildCommitEl.textContent = __BUILD_COMMIT_ID__.trim();
+  buildCommitEl.hidden = false;
+}
 
 const pipelineHistoryActions = createPipelineHistoryActionsController({
   history: pipelineHistory,
@@ -317,6 +335,8 @@ const pipelineHeaderActions = createPipelineHeaderActionController({
 });
 
 window.addEventListener('DOMContentLoaded', () => {
+  syncHeaderBuildCommit();
+
   setupStaticLocaleSync({
     syncStaticLocaleText: () => {
       syncMainStaticLocaleText({

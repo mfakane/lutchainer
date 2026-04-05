@@ -86,8 +86,23 @@ body {
   text-transform: uppercase;
 }
 
+.header-title-wrap {
+  display: inline-flex;
+  align-items: baseline;
+  min-width: 0;
+}
+
 .header-title span {
   color: var(--accent);
+}
+
+.header-build-commit {
+  font-size: 0.6em;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  color: var(--muted);
+  white-space: nowrap;
+  opacity: 0.9;
 }
 
 .shape-group,

@@ -1,5 +1,6 @@
 import esbuild from 'esbuild';
 import { solidPlugin } from 'esbuild-plugin-solid';
+import childProcess from 'child_process';
 import fs from 'fs';
 import path from 'path';
 
@@ -29,6 +30,17 @@ const legacyDistTargets = [
   path.join(distDir, 'styles.css'),
   path.join(distDir, 'examples'),
 ];
+
+function resolveBuildCommitId() {
+  try {
+    return childProcess.execSync('git rev-parse --short HEAD', {
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+    }).trim();
+  } catch {
+    return '';
+  }
+}
 
 function prepareOutputDirs() {
   fs.mkdirSync(distDir, { recursive: true });
@@ -110,6 +122,8 @@ const copyBuildAssetsPlugin = {
   },
 };
 
+const buildCommitId = resolveBuildCommitId();
+
 const buildOptions = {
   entryPoints: ['src/app/browser/main.ts'],
   bundle: true,
@@ -121,6 +135,9 @@ const buildOptions = {
   loader: {
     '.ts': 'ts',
     '.tsx': 'tsx',
+  },
+  define: {
+    __BUILD_COMMIT_ID__: JSON.stringify(buildCommitId),
   },
   plugins: [typeScriptExtensionPlugin, copyBuildAssetsPlugin, solidPlugin({ dev: watchMode })],
 };
