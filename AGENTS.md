@@ -1,25 +1,21 @@
 # AGENTS.md
 
-This document provides guidance to AI agents (GitHub Copilot, custom agents, etc.) when working with code in this repository.
+This document provides repo-specific guidance for AI coding agents working on LUT Chainer.
 
----
-
-## 🛠️ Development Commands
+## Development Commands
 
 ```bash
-# Build (outputs to dist/web/bundle.js and dist/cli/main.mjs)
+# Build web + CLI bundles
 npm run build
 
-# Watch mode (rebuild on file changes)
+# Watch mode
 npm run dev
 
-# Type check only (no emit)
+# Type check only
 npm run typecheck
 ```
 
-There are no tests or linting configured. Use `npm run typecheck` to validate TypeScript before committing.
-
-Run the app via a local static server after building:
+Use a local HTTP server when validating the web app:
 
 ```bash
 npm run build
@@ -27,354 +23,227 @@ npm run serve
 # http://localhost:8000
 ```
 
-Do not assume `file://` opening of `index.html` is sufficient. Example preset loading depends on HTTP serving.
+Do not rely on `file://index.html`. Example preset loading expects HTTP.
 
----
+## Project Overview
 
-# LUT Chainer AI Agent Guide
+LUT Chainer is a browser-based shader editor for authoring LUT step chains.
 
-This document provides design guidance to AI Agents (GitHub Copilot, custom agents, etc.) working with the LUT Chainer project, enabling them to provide accurate assistance.
+Main capabilities:
 
-## 📋 Project Overview
+- edit LUT step chains and blend modes
+- preview the result in real time with WebGL and CPU fallback
+- tweak material and light settings
+- export generated GLSL / HLSL
+- save and load `.lutchain` archives
 
-**LUT Chainer** is a browser-based shader editor for creating LUT (Look-Up Table) based step chains.
+## Architecture
 
-### Key Features
+### Current Layering
 
-- **LUT Step Chain Editing** — Combine multiple LUTs and blend modes sequentially
-- **Real-time 3D Preview** — WebGL + CPU fallback for visual adjustment
-- **Material / Light Parameter Controls** — Light source and material settings
-- **Generated Code Display** — Auto-generate GLSL / HLSL code
-- **Pipeline Save & Load** — JSON + embedded LUT images (ZIP format)
-
-### Technology Stack
-
-| Layer | Technology | Purpose |
-|-------|-----------|---------|
-| **Language** | TypeScript (ES2020, strict) | Type-safe development |
-| **UI Framework** | SolidJS | Reactive components |
-| **Build** | esbuild + TypeScript | Fast bundling |
-| **Graphics** | WebGL 1.0 + CPU fallback | 3D rendering |
-| **Compression** | fflate | ZIP export |
-| **i18n** | Custom i18n system | ja/en support |
-
----
-
-## 🏗️ Architecture: 3-Layer Structure
-
-```
-┌──────────────────────────────────────────────────────┐
-│ UI Layer (shared/ui, shared/components)              │
-│ - SolidJS components (solid-*.tsx)                   │
-│ - Controllers (main-*-setup.ts, *-controller.ts)     │
-│ - Event delegation (DnD, keyboard, pointer)          │
-└─────────────────────┬──────────────────────────────┘
-                      │
-┌─────────────────────┴──────────────────────────────┐
-│ Rendering Layer (shared/rendering)                  │
-│ - WebGL Renderer + shader generation                │
-│ - LUT texture management                            │
-│ - CPU fallback rendering                            │
-└─────────────────────┬──────────────────────────────┘
-                      │
-┌─────────────────────┴──────────────────────────────┐
-│ Domain Layer (features/[pipeline|step|shader])      │
-│ - Data models & serialization                       │
-│ - Business logic (composition, blending)            │
-│ - State snapshots & validation                      │
-└──────────────────────────────────────────────────────┘
+```text
+app/browser/      Browser app orchestration, DOM wiring, SolidJS mounts
+platforms/webgl/  DOM-free WebGL runtime implementations
+platforms/browser/Browser API adapters (storage, download, file helpers)
+features/         Domain models and pure business logic
+shared/           Pure cross-cutting helpers and archive code
+app/cli/          Node CLI entrypoints and commands
+platforms/node/   Node runtime adapters
 ```
 
-### Layer Responsibilities
+### Dependency Direction
 
-| Layer | Role | Key Files |
-|-------|------|-----------|
-| **Domain (features/)** | Pure data + logic; IO serialization | `*-model.ts`, `*-state.ts`, `*-runtime.ts` |
-| **Rendering (shared/rendering/)** | WebGL context + shader generation + CPU fallback | `renderer.ts`, `shader-generator.ts`, `lut-texture-utils.ts` |
-| **UI (shared/ui, shared/components)** | DOM coordination + event handling + SolidJS mounts | `main-*.ts`, `solid-*.tsx`, `*-controller.ts` |
+Allowed direction:
 
-**Important**: Dependencies flow upward only (UI → Rendering → Domain). Domain layer has no external dependencies.
+```text
+app/browser  -> features, shared, platforms/browser, platforms/webgl
+app/cli      -> features, shared, platforms/node
+platforms/*  -> features, shared
+features     -> shared
+shared       -> (no app/platform imports)
+```
 
----
+Forbidden direction:
 
-## 📛 File Naming Conventions & Roles
+- `features/**` must not import from `app/**` or `platforms/**`
+- `shared/**` must not import from `app/**` or `platforms/**`
+- `platforms/webgl/**` must not use `document`, `window`, `navigator`, or SolidJS
+- `app/cli/**` must not import from `app/browser/**` or browser-only modules
 
-When creating new files, follow these naming patterns (strictly):
+### Practical Meaning
 
-| Pattern | Example | Role |
-|---------|---------|------|
-| `*-model.ts` | `pipeline-model.ts`, `step-model.ts` | **Data structures, enums, constants** — Immutable schema definitions |
-| `*-state.ts` | `pipeline-state.ts`, `interaction-state.ts` | **Mutable state with accessors** — getter/setter + validation |
-| `*-runtime.ts` | `step-runtime.ts` | **Pure computation logic** — Stateless algorithms |
-| `*-controller.ts` | `pipeline-command-controller.ts`, `gizmo-overlay-controller.ts` | **Stateful event handlers** — `create*` factory returns controller object |
-| `*-bindings.ts` | `pipeline-dnd-bindings.ts` | **Event wiring + DnD setup** — Pure configuration, no state |
-| `*-view.ts` | `pipeline-view.ts` | **UI state + helpers** — Drop indicators, drag state |
-| `*-system.ts` | `step-preview-system.ts`, `render-system.ts` | **Lifecycle manager** — Init, update, cleanup |
-| `solid-*.tsx` | `solid-pipeline-lists.tsx`, `solid-shader-dialog.tsx` | **SolidJS components** — Export `mount*` function |
-| `main-*.ts` | `main-pipeline-editor-setup.ts`, `main-orbit-state.ts` | **UI orchestrators** — Called from `main.ts`, coordinate setup |
-| `types.ts` | `features/pipeline/types.ts`, `features/step/types.ts` | **Barrel exports** — Re-export types from `*-model.ts`, `*-state.ts` |
+- Put DOM orchestration, event wiring, and SolidJS components in `src/app/browser/`
+- Put WebGL renderer classes and texture/program helpers in `src/platforms/webgl/`
+- Put browser storage/download/file adapters in `src/platforms/browser/`
+- Keep `src/features/` pure enough that it can be reused by browser, CLI, and Blender-related tooling
+- Keep `src/shared/` limited to pure helpers such as math, geometry, and archive parsing/serialization
 
----
+## File Roles
 
-## ⚡ Core Rules (AI Agent Critical)
+Use these naming patterns consistently:
 
-### Rule 1: No Layer Violations 🚫
+| Pattern | Role |
+|---------|------|
+| `*-model.ts` | immutable models, enums, constants |
+| `*-state.ts` | mutable state + getter/setter access |
+| `*-runtime.ts` | pure computation logic |
+| `*-controller.ts` | stateful controllers created via factory |
+| `*-bindings.ts` | event binding and interaction wiring |
+| `*-view.ts` | UI-facing derived state and helpers |
+| `*-system.ts` | lifecycle-managed runtime subsystem |
+| `solid-*.tsx` | SolidJS component modules with `mount*`/`sync*` exports |
+| `main-*.ts` | browser bootstrap/orchestration modules |
+| `types.ts` | type-only barrel exports |
 
-❌ **Bad**: Domain imports from `shared/rendering/` or `shared/ui/`
-❌ **Bad**: Rendering layer imports SolidJS components
+## Core Rules
 
-✅ **Good**:
+### 1. No Layer Violations
+
+Bad:
+
+- `features/**` importing DOM code, SolidJS, or `platforms/webgl`
+- `platforms/webgl/**` importing browser DOM helpers
+- `app/cli/**` importing browser-only modules
+
+Good:
+
 ```typescript
-// Domain: Pure logic only
+// features/step/step-runtime.ts
 export function composeColorFromSteps(steps: readonly StepRuntimeModel[]): Color { ... }
 
-// UI imports Domain:
-import { composeColorFromSteps } from '../features/step/step-runtime';
+// app/browser/ui/main-ui-setup.ts
+import { composeColorFromSteps } from '../../../features/step/step-runtime.ts';
 ```
 
-### Rule 2: State Access via Getter/Setter Only 🔒
+### 2. State Access Through APIs
 
-❌ **Bad**:
-```typescript
-// Direct mutable import
-import { globalPipelineState } from './pipeline-state';
-globalPipelineState.steps = newSteps;  // ❌ Direct mutation
+Do not mutate shared state objects directly. Use controller/state APIs or injected callbacks.
 
-// Domain knowing about UI callbacks
-import { updateUI } from '../ui/main-setup';
-updateUI();  // ❌ Circular dependency risk
-```
+Good:
 
-✅ **Good** — Dependency Injection via Options:
 ```typescript
 const controller = createPipelineCommandController({
   getSteps: () => getPipelineSteps(),
-  setSteps: (s) => setPipelineSteps(s),
-  status: (msg, kind) => statusDisplay.show(msg, kind),
-  t: (key) => translate(key),
+  setSteps: steps => setPipelineSteps(steps),
+  status: (message, kind) => showStatus(message, kind),
+  t,
 });
-// UI calls controller.addStep(), deleteStep(), etc.
 ```
 
-### Rule 3: SolidJS JSX Restrictions ⚠️
+### 3. SolidJS JSX Constraints
 
-❌ **Bad** — Comma operator not allowed:
-```typescript
-<span>{(language(), formatParam(param))}</span>  // ❌ SolidJS error
+Comma operator in JSX is invalid in this repo’s SolidJS setup.
+
+Bad:
+
+```tsx
+<span>{(language(), formatParam(param))}</span>
 ```
 
-✅ **Good** — Use helper function:
-```typescript
-function tr(param: ParamName): string {
-  _language();  // Signal subscription
+Good:
+
+```tsx
+function renderParamLabel(param: ParamName): string {
+  language();
   return formatParam(param);
 }
-<span>{tr(param)}</span>  // ✅
+
+<span>{renderParamLabel(param)}</span>
 ```
 
-### Rule 4: TypeScript Strict Mode + Type Inference 🎯
+### 4. TypeScript Strictness
 
-**Strict Flags** (`tsconfig.json`):
-- `strict: true` — All flags enabled
-- `jsx: preserve` + `jsxImportSource: "solid-js"` — SolidJS mode
-- `target: ES2020` — `String.replaceAll()` forbidden (use regex instead)
+Important defaults:
 
-❌ **Bad** — Generic inference too broad:
+- `strict: true`
+- `target: ES2020`
+- `jsxImportSource: "solid-js"`
+
+Implications:
+
+- avoid implicit `any`
+- avoid `String.prototype.replaceAll()`
+- prefer explicit callback parameter types when inference is weak
+
+### 5. CPU / GPU Consistency
+
+CPU fallback and WebGL preview must match. Preserve texel-center sampling.
+
+Good:
+
 ```typescript
-const controller = createController(options);  // unknown: TS7006 implicit-any
+const uPixel = u * width - 0.5;
+const vPixel = v * height - 0.5;
 ```
 
-✅ **Good** — Explicit type arguments:
+## Common Pitfalls
+
+### Import Paths
+
+Do not use `/src/...` or `../src/...`. Use correct relative paths from the current file.
+
+### Dynamic DOM Selectors
+
+Do not interpolate dynamic IDs directly into CSS selectors if they may contain special characters.
+
+Prefer:
+
 ```typescript
-const controller = createController<PipelineCommandControllerOptions>(options);
+const element = Array.from(document.querySelectorAll('[data-lut-id]'))
+  .find(node => node.getAttribute('data-lut-id') === lutId);
 ```
 
-### Rule 5: CPU ↔ GPU Rendering Consistency 🎨
+### Browser APIs in the Wrong Layer
 
-**LUT Sampling**: CPU fallback and WebGL must return identical colors.
+If code touches:
 
-✅ **Texel-center mapping** (unified in both):
-```typescript
-// CPU: lut-sampling.ts
-const u_pixel = u * width - 0.5;   // ✅ Texel center
-const v_pixel = v * height - 0.5;
+- `document`
+- `window`
+- `navigator`
+- `localStorage`
+- `File`, `Blob`, object URLs
 
-// WebGL: Linear filtering (hardware-handled automatically)
+it belongs in `app/browser` or `platforms/browser`, not `features` or `shared`.
+
+If code touches:
+
+- `WebGLRenderingContext`
+- texture/program/buffer management
+
+it belongs in `platforms/webgl`, unless it is pure shader/data logic with no runtime dependency.
+
+## Directory Reference
+
+```text
+src/
+├─ app/
+│  ├─ browser/
+│  └─ cli/
+├─ features/
+│  ├─ lut-editor/
+│  ├─ pipeline/
+│  ├─ shader/
+│  └─ step/
+├─ platforms/
+│  ├─ browser/
+│  ├─ node/
+│  └─ webgl/
+├─ shared/
+│  ├─ lutchain/
+│  └─ utils/
+└─ types/
 ```
 
-❌ **Bad** — `u * (width - 1)` causes visible color mismatches
+## Before Editing
 
----
+- confirm the target layer is correct before adding a file
+- prefer moving browser/runtime code out of `features` rather than importing upward
+- keep `shared` pure
+- keep `platforms/webgl` reusable without DOM globals
+- run `npm run typecheck` after TypeScript changes
 
-## 🚫 Anti-Patterns to Avoid (5 Critical)
+## Related Docs
 
-### 1. Relative Path Errors (`../src` Forbidden)
-
-**Context**: After folder restructuring, `src/` is the import base.
-**Bad**: `import { helper } from '../shared/utils'`
-**Good**: `import { helper } from './shared/utils'` or `import { helper } from '../features/step/...'`
-
-**Rule**: Assume modules live under `src/features` or `src/shared`. Start relative paths with `.` or `..`.
-
----
-
-### 2. DOM Selector Brittleness with Special Characters
-
-**Context**: Dynamic IDs like `data-lut-id` with special characters break CSS selectors
-
-**Bad**:
-```typescript
-const element = document.querySelector(`[data-lut-id="${lutId}"]`);
-// If lutId contains quotes or brackets → Selector breaks
-```
-
-**Good** — Direct comparison:
-```typescript
-const elements = document.querySelectorAll('[data-lut-id]');
-Array.from(elements).find(el => el.dataset.lutId === lutId);
-```
-
----
-
-### 3. Generic Call with Overly Broad Union Type
-
-**Context**: Options object callback type inference
-
-**Bad**:
-```typescript
-function createController(options: { onStatusChange: (msg: unknown) => void }) {
-  options.onStatusChange(123);  // ✅ Compiles, but (msg: string) expected
-}
-```
-
-**Good** — Explicit annotation:
-```typescript
-interface Options {
-  onStatusChange: (msg: string, kind: StatusKind) => void;
-}
-```
-
----
-
-### 4. No createEffect in Render Path (SolidJS Anti-Pattern)
-
-**Context**: SolidJS is signal-driven; createEffect is for side effects only
-
-**Bad**:
-```typescript
-const [steps, setSteps] = createSignal(initialSteps);
-createEffect(() => {
-  // Render every time steps change → Performance issue
-  renderPreview();
-});
-```
-
-**Good** — Parent orchestrator calls sync:
-```typescript
-// UI layer (main.ts):
-const steps = getPipelineSteps();
-syncStepListUI(steps);  // Exported from solid-pipeline-lists.tsx
-
-// solid-pipeline-lists.tsx:
-export function syncStepListUI(newSteps: StepModel[]): void {
-  setSteps(newSteps);  // Signal update → Auto re-render
-}
-```
-
----
-
-### 5. Type Guard vs Runtime Validation
-
-**Context**: Runtime validation requires both TS type guard AND runtime check
-
-**Bad**:
-```typescript
-import type { PipelineStateSnapshot } from './types';
-const snapshot: PipelineStateSnapshot = JSON.parse(data);  // ❌ No validation
-```
-
-**Good** — Type guard + asserting guard:
-```typescript
-function isPipelineStateSnapshot(value: unknown): value is PipelineStateSnapshot {
-  return typeof value === 'object' && value !== null
-    && 'steps' in value && Array.isArray((value as any).steps)
-    && 'material' in value && isValidMaterialSettings((value as any).material);
-}
-
-function assertPipelineStateSnapshot(value: unknown): asserts value is PipelineStateSnapshot {
-  if (!isPipelineStateSnapshot(value)) {
-    throw new Error(`Invalid snapshot: expected PipelineStateSnapshot`);
-  }
-}
-
-const snapshot = JSON.parse(data);
-assertPipelineStateSnapshot(snapshot);  // ✅ Now type-safe
-```
-
----
-
-## 📁 Directory Structure (Reference)
-
-```
-lutchainer/
-├─ AGENTS.md                    ← You are here
-├─ .claude/rules/
-│  ├─ coding-style.md           ← TypeScript + SolidJS conventions
-│  ├─ common-mistakes.md        ← Runtime edge cases & fixes
-├─ src/
-│  ├─ main.ts                   ← Entry point; UI orchestration
-│  ├─ features/
-│  │  ├─ pipeline/              ← LUT composition pipeline
-│  │  ├─ step/                  ← Step color processing
-│  │  └─ shader/                ← GLSL/HLSL generation
-│  └─ shared/
-│     ├─ components/            ← SolidJS component tree
-│     ├─ rendering/             ← WebGL renderer + utilities
-│     ├─ interactions/          ← DnD, keyboard, socket
-│     ├─ ui/                    ← UI setup orchestrators
-│     └─ i18n/                  ← Translations + locale system
-├─ package.json
-├─ tests/
-│  ├─ lutchain/                ← Archive / fixture validation
-│  └─ blender/                 ← Blender add-on headless validation
-├─ tools/
-│  └─ blender/compare/         ← Browser-vs-Blender compare helpers
-├─ tsconfig.json
-└─ scripts/
-   ├─ build.mjs
-   ├─ invoke_windows_blender.ps1
-   └─ run_windows_blender.sh
-```
-
----
-
-## 🔗 Quick Reference: Detailed Guides
-
-Specialized guidance is available in `.claude/rules/`:
-
-- **TypeScript strictness, SolidJS JSX constraints, file structure** → `.claude/rules/coding-style.md`
-- **CPU↔GPU mismatch, type inference traps, edge cases** → `.claude/rules/common-mistakes.md`
-- **Blender add-on layout, reload safety, validation workflow** → `.claude/rules/blender-addon.md`
-
----
-
-## ✅ Before You Code
-
-**Checklist for AI Agents**
-
-- [ ] Understand 3-layer architecture (Domain/Rendering/UI)
-- [ ] Review file naming conventions (`*-model`, `*-state`, `*-controller`, etc.)
-- [ ] Confirm relative import paths don't use `../src`
-- [ ] Understand SolidJS signal pattern (no createEffect needed)
-- [ ] Verify dependency direction: Domain → Rendering → UI
-- [ ] Ensure CPU ↔ GPU color consistency with texel-center mapping
-
-If any of the above are unclear, refer to detailed guides before implementing.
-
----
-
-## 🐱 Final Notes
-
-This project has **strict design requirements**. TS strict mode, layer separation, and type safety are non-negotiable. When adding new features, follow these architectural patterns first. Always choose the "right way" over the "easy way".
-
-Questions? Consult this document and `.claude/rules/` before implementing.
+- `.claude/rules/coding-style.md`
+- `.claude/rules/common-mistakes.md`
+- `.claude/rules/blender-addon.md`
