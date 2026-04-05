@@ -1,12 +1,12 @@
 import type {
   LightSettings,
   MaterialSettings,
-} from '../pipeline/pipeline-model';
+} from '../../../features/pipeline/pipeline-model';
 import {
   STEP_PREVIEW_LIGHT_DIR,
-} from '../pipeline/pipeline-model';
-import type { StepModel } from './step-model';
-import { StepPreviewRenderer } from './step-preview-renderer';
+} from '../../../features/pipeline/pipeline-model';
+import type { StepModel } from '../../../features/step/step-model';
+import type { StepPreviewRenderer } from '../../../platforms/webgl/step-preview-renderer.ts';
 
 export interface UpdateStepSwatchesInput {
   stepListEl: HTMLElement;
@@ -51,6 +51,9 @@ export function updateStepSwatches(input: UpdateStepSwatchesInput): void {
     onWebglDrawError,
   } = input;
 
+  const rawDpr = window.devicePixelRatio || 1;
+  const outputScale = Number.isFinite(rawDpr) && rawDpr > 0 ? rawDpr : 1;
+
   for (let index = 0; index < steps.length; index += 1) {
     const step = steps[index];
     if (!step || typeof step.id !== 'string' || step.id.trim().length === 0) {
@@ -77,7 +80,7 @@ export function updateStepSwatches(input: UpdateStepSwatchesInput): void {
         fresnelStrength: materialSettings.fresnelStrength,
         fresnelPower: materialSettings.fresnelPower,
         lightDirection: STEP_PREVIEW_LIGHT_DIR,
-      });
+      }, outputScale);
 
       if (!drawError) {
         continue;

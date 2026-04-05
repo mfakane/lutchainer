@@ -1,10 +1,10 @@
-import type { LightSettings, MaterialSettings } from '../../../features/pipeline/pipeline-model';
+import type { LightSettings, MaterialSettings } from '../../features/pipeline/pipeline-model';
 import {
   mat4Identity,
   mat4LookAt,
   mat4Perspective,
   normalMatrixFromMat4,
-} from '../../../shared/utils/math';
+} from '../../shared/utils/math';
 import { Renderer } from './renderer';
 
 export interface CameraOrbitState {

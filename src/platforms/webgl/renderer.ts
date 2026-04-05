@@ -1,5 +1,5 @@
-import type { Geometry } from '../../../shared/utils/geometry';
-import type { Mat3, Mat4 } from '../../../shared/utils/math';
+import type { Geometry } from '../../shared/utils/geometry';
+import type { Mat3, Mat4 } from '../../shared/utils/math';
 import { applyLutTextures } from './lut-texture-utils';
 
 export interface ShaderError {

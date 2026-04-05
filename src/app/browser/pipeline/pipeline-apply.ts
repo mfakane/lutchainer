@@ -1,4 +1,4 @@
-import type { Renderer } from '../rendering/renderer.ts';
+import type { Renderer } from '../../../platforms/webgl/renderer.ts';
 import type { ShaderBuildInput } from '../../../features/shader/shader-generator.ts';
 import { buildFragmentShader, DEFAULT_VERT } from '../../../features/shader/shader-generator.ts';
 

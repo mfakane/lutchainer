@@ -41,8 +41,8 @@ import { MAX_STEP_LABEL_LENGTH } from '../../features/step/step-model.ts';
 import {
   createStepPreviewDebugController,
 } from '../../features/step/step-preview-debug-controller.ts';
-import { StepPreviewRenderer } from '../../features/step/step-preview-renderer.ts';
-import { createStepPreviewSystem } from '../../features/step/step-preview-system.ts';
+import type { StepPreviewRenderer } from '../../platforms/webgl/step-preview-renderer.ts';
+import { createStepPreviewSystem } from './step/step-preview-system.ts';
 import {
   syncHeaderActionAutoApplyState,
   syncHeaderActionHistoryState,

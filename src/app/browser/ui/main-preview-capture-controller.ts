@@ -4,7 +4,7 @@ import {
   copyCanvasSnapshot,
   downloadBlobAsFile,
 } from '../../../platforms/browser/preview-export.ts';
-import { Renderer } from '../rendering/renderer.ts';
+import { Renderer } from '../../../platforms/webgl/renderer.ts';
 
 type StatusKind = 'success' | 'error' | 'info';
 type TranslationParam = string | number;

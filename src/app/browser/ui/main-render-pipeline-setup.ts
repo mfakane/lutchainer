@@ -6,8 +6,8 @@ import type { LightSettings, MaterialSettings } from '../../../features/pipeline
 import {
   createRenderSystem,
   type RenderSystemController,
-} from '../rendering/render-system.ts';
-import { Renderer } from '../rendering/renderer.ts';
+} from '../../../platforms/webgl/render-system.ts';
+import { Renderer } from '../../../platforms/webgl/renderer.ts';
 
 interface GizmoLightElements {
   layer: SVGSVGElement;

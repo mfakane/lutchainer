@@ -1,12 +1,12 @@
 import type {
   LightSettings,
   MaterialSettings,
-} from '../pipeline/pipeline-model';
-import * as shaderGenerator from '../shader/shader-generator';
+} from '../../features/pipeline/pipeline-model';
+import * as shaderGenerator from '../../features/shader/shader-generator';
 import type {
   LutModel,
   StepModel,
-} from './step-model';
+} from '../../features/step/step-model';
 import {
   StepPreviewRenderer,
   type StepPreviewDrawOptions,

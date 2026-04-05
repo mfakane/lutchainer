@@ -1,5 +1,5 @@
 import type { PreviewShapeType } from '../components/solid-preview-shape-bar.tsx';
-import type { Renderer } from '../rendering/renderer.ts';
+import type { Renderer } from '../../../platforms/webgl/renderer.ts';
 import { createCube, createSphere, createTorus } from '../../../shared/utils/geometry.ts';
 
 type StatusKind = 'success' | 'error' | 'info';

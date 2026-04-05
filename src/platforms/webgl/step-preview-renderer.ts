@@ -1,5 +1,5 @@
-import { applyLutTextures } from '../../app/browser/rendering/lut-texture-utils';
-import type { Color } from './step-model';
+import { applyLutTextures } from './lut-texture-utils';
+import type { Color } from '../../features/step/step-model';
 
 export interface StepPreviewShaderError {
   type: 'vertex' | 'fragment' | 'link' | 'input';
@@ -22,6 +22,11 @@ export interface StepPreviewDrawOptions {
   fresnelStrength: number;
   fresnelPower: number;
   lightDirection: readonly [number, number, number];
+}
+
+export interface CreateStepPreviewRendererOptions {
+  canvas: HTMLCanvasElement;
+  gl?: WebGLRenderingContext | null;
 }
 
 const STEP_PREVIEW_VERTEX_SHADER = `precision mediump float;
@@ -71,7 +76,7 @@ export class StepPreviewRenderer {
   private bindings: ProgramBindings | null = null;
   private lutTextures: WebGLTexture[] = [];
 
-  private constructor(canvas: HTMLCanvasElement, gl: WebGLRenderingContext) {
+  constructor(canvas: HTMLCanvasElement, gl: WebGLRenderingContext) {
     this.canvas = canvas;
     this.gl = gl;
     this.maxTextureUnits = gl.getParameter(gl.MAX_TEXTURE_IMAGE_UNITS) as number;
@@ -94,22 +99,6 @@ export class StepPreviewRenderer {
 
     gl.disable(gl.DEPTH_TEST);
     gl.disable(gl.CULL_FACE);
-  }
-
-  static create(): StepPreviewRenderer | null {
-    const canvas = document.createElement('canvas');
-    const gl = canvas.getContext('webgl', {
-      alpha: true,
-      antialias: false,
-      depth: false,
-      preserveDrawingBuffer: true,
-    });
-
-    if (!gl) {
-      return null;
-    }
-
-    return new StepPreviewRenderer(canvas, gl);
   }
 
   setLutTextures(sources: readonly TexImageSource[]): string | null {
@@ -334,7 +323,7 @@ export class StepPreviewRenderer {
     return null;
   }
 
-  drawToCanvas(targetCanvas: HTMLCanvasElement, options: StepPreviewDrawOptions): string | null {
+  drawToCanvas(targetCanvas: HTMLCanvasElement, options: StepPreviewDrawOptions, outputScale: number = 1): string | null {
     if (!(targetCanvas instanceof HTMLCanvasElement)) {
       return '描画先キャンバスが不正です。';
     }
@@ -349,8 +338,7 @@ export class StepPreviewRenderer {
       return null;
     }
 
-    const rawDpr = window.devicePixelRatio || 1;
-    const dpr = safePositiveNumber(rawDpr, 1);
+    const dpr = safePositiveNumber(outputScale, 1);
     const pixelWidth = Math.max(1, Math.round(cssWidth * dpr));
     const pixelHeight = Math.max(1, Math.round(cssHeight * dpr));
 
@@ -389,4 +377,27 @@ export class StepPreviewRenderer {
   getInternalCanvas(): HTMLCanvasElement {
     return this.canvas;
   }
+}
+
+export function createStepPreviewRenderer(
+  options: CreateStepPreviewRendererOptions,
+): StepPreviewRenderer | null {
+  if (!options || typeof options !== 'object') {
+    throw new Error('Step preview renderer options must be an object.');
+  }
+  if (!(options.canvas instanceof HTMLCanvasElement)) {
+    throw new Error('Step preview renderer canvas is invalid.');
+  }
+
+  const gl = options.gl ?? options.canvas.getContext('webgl', {
+    alpha: true,
+    antialias: false,
+    depth: false,
+    preserveDrawingBuffer: true,
+  });
+  if (!gl) {
+    return null;
+  }
+
+  return new StepPreviewRenderer(options.canvas, gl);
 }

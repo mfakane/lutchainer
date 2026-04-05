@@ -4,13 +4,16 @@ import type { LightSettings, MaterialSettings } from '../../../features/pipeline
 import type { LutModel, StepModel } from '../../../features/step/step-model.ts';
 import {
   createStepPreviewSystem,
-} from '../../../features/step/step-preview-system.ts';
-import { StepPreviewRenderer } from '../../../features/step/step-preview-renderer.ts';
+} from '../step/step-preview-system.ts';
+import {
+  createStepPreviewRenderer,
+  type StepPreviewRenderer,
+} from '../../../platforms/webgl/step-preview-renderer.ts';
 import type { ShaderBuildInput } from '../../../features/shader/shader-generator.ts';
 import type { PreviewShapeType } from '../components/solid-preview-shape-bar.tsx';
 import type { PreviewShapeController } from './preview-shape-controller.ts';
 import { createPreviewShapeController } from './preview-shape-controller.ts';
-import { Renderer } from '../rendering/renderer.ts';
+import { Renderer } from '../../../platforms/webgl/renderer.ts';
 
 type StatusKind = 'success' | 'error' | 'info';
 type StatusReporter = (message: string, kind?: StatusKind) => void;
@@ -120,7 +123,10 @@ export function setupMainPreviewRuntime(options: MainPreviewRuntimeSetupOptions)
   }
   renderer.setWireframeOverlayEnabled(wireframeEnabled);
 
-  const stepPreviewRenderer = StepPreviewRenderer.create();
+  const stepPreviewCanvas = document.createElement('canvas');
+  const stepPreviewRenderer = createStepPreviewRenderer({
+    canvas: stepPreviewCanvas,
+  });
   const stepPreviewSystem = createStepPreviewSystem({
     getSteps: options.getSteps,
     getLuts: options.getLuts,

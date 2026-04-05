@@ -11,8 +11,8 @@ import type {
   LutModel,
   StepModel,
 } from '../../../features/step/step-model.ts';
-import type { StepPreviewRenderer } from '../../../features/step/step-preview-renderer.ts';
-import { updateStepSwatches as updateStepSwatchesHelper } from '../../../features/step/step-swatch-updater.ts';
+import type { StepPreviewRenderer } from '../../../platforms/webgl/step-preview-renderer.ts';
+import { updateStepSwatches as updateStepSwatchesHelper } from './step-swatch-updater.ts';
 
 type TranslationParam = string | number;
 type Translator = (key: string, params?: Record<string, TranslationParam>) => string;
