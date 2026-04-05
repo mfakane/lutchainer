@@ -17,7 +17,7 @@ interface StepListCommandOptions {
 }
 
 interface StepListJsonEntry {
-  id: string;
+  id: string | number;
   label?: string;
   lutId: string;
   blendMode: string;
@@ -65,7 +65,7 @@ function toStepListRows(steps: readonly PipelineStepEntry[]): StepListRow[] {
 
 function toStepListJsonEntries(steps: readonly PipelineStepEntry[]): StepListJsonEntry[] {
   return steps.map(step => ({
-    id: String(step.id),
+    id: step.id,
     ...(step.label !== undefined ? { label: step.label } : {}),
     lutId: step.lutId,
     blendMode: step.blendMode,
@@ -94,7 +94,7 @@ export async function runStepListCommand(argv: string[]): Promise<number> {
       return 0;
     }
     if (error instanceof Error) {
-      process.stderr.write(`${error.message}\n${getStepListUsage()}\n`);
+      process.stderr.write(`${error.message}\n${error.stack}\n${getStepListUsage()}\n`);
       return 1;
     }
     throw error;

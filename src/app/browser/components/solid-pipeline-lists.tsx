@@ -547,14 +547,14 @@ function StepList(props: StepListProps): JSX.Element {
             const [crosshairUv, setCrosshairUv] = createSignal<{ u: number; v: number } | null>(null);
 
             return (
-              <article class={step.muted ? 'step-item step-item-muted' : 'step-item'} data-step-id={String(step.id)}>
+              <article class={step.muted ? 'step-item step-item-muted' : 'step-item'} data-step-id={step.id}>
                 <section class="step-head">
                   <div class="step-title-row">
                     <button
                       type="button"
                       class="step-drag-handle"
                       draggable={true}
-                      data-step-id={String(step.id)}
+                      data-step-id={step.id}
                       title={tr('pipeline.step.dragMove')}
                     >
                       drag
@@ -594,7 +594,7 @@ function StepList(props: StepListProps): JSX.Element {
                     <button
                       type="button"
                       class={step.muted ? 'step-mute active' : 'step-mute'}
-                      data-step-id={String(step.id)}
+                      data-step-id={step.id}
                       aria-pressed={step.muted ? 'true' : 'false'}
                       onClick={() => {
                         if (shouldIgnoreClick()) {
@@ -609,7 +609,7 @@ function StepList(props: StepListProps): JSX.Element {
                     <button
                       type="button"
                       class="step-duplicate"
-                      data-step-id={String(step.id)}
+                      data-step-id={step.id}
                       onClick={() => {
                         if (shouldIgnoreClick()) {
                           return;
@@ -623,7 +623,7 @@ function StepList(props: StepListProps): JSX.Element {
                     <button
                       type="button"
                       class="step-remove"
-                      data-step-id={String(step.id)}
+                      data-step-id={step.id}
                       onClick={() => {
                         if (shouldIgnoreClick()) {
                           return;
@@ -641,7 +641,7 @@ function StepList(props: StepListProps): JSX.Element {
                   <button
                     type="button"
                     class="step-socket"
-                    data-step-id={String(step.id)}
+                    data-step-id={step.id}
                     data-axis="x"
                     title={`X: ${pipelineModel.getParamLabel(step.xParam)}`}
                   >
@@ -652,7 +652,7 @@ function StepList(props: StepListProps): JSX.Element {
                   <button
                     type="button"
                     class="step-socket"
-                    data-step-id={String(step.id)}
+                    data-step-id={step.id}
                     data-axis="y"
                     title={`Y: ${pipelineModel.getParamLabel(step.yParam)}`}
                   >
@@ -668,7 +668,7 @@ function StepList(props: StepListProps): JSX.Element {
                       <span class="lut-select-label">{tr('pipeline.step.lut')}</span>
                       <select
                         class="step-lut-select"
-                        data-step-id={String(step.id)}
+                        data-step-id={step.id}
                         onChange={event => {
                           const input = event.currentTarget as HTMLSelectElement | null;
                           if (!input) {
@@ -714,7 +714,7 @@ function StepList(props: StepListProps): JSX.Element {
                       <span class="op-label">{tr('pipeline.step.blendMode')}</span>
                       <select
                         class="step-blend-mode-select"
-                        data-step-id={String(step.id)}
+                        data-step-id={step.id}
                         value={step.blendMode}
                         onChange={event => {
                           const input = event.currentTarget as HTMLSelectElement | null;
@@ -747,7 +747,7 @@ function StepList(props: StepListProps): JSX.Element {
                             <span class="op-label">{channel.toUpperCase()}</span>
                             <select
                               class="step-op-select"
-                              data-step-id={String(step.id)}
+                              data-step-id={step.id}
                               data-channel={channel}
                               value={step.ops[channel]}
                               onChange={event => {
@@ -780,7 +780,7 @@ function StepList(props: StepListProps): JSX.Element {
                 <aside class="step-preview">
                   <canvas
                     class="preview-swatch preview-sphere"
-                    data-step-id={String(step.id)}
+                    data-step-id={step.id}
                     data-preview="after"
                     aria-label={tr('pipeline.step.previewAria', { index: index() + 1 })}
                     onMouseMove={event => {

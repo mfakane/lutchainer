@@ -13,7 +13,7 @@ export interface PipelineStepOpsEntry {
 }
 
 export interface PipelineStepEntry {
-  id: string;
+  id: string | number;
   lutId: string;
   label?: string;
   muted?: boolean;

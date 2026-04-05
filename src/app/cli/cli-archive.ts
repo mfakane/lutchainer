@@ -1,14 +1,14 @@
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
+import { readFileBytes } from '../../platforms/node/fs/file-load-runtime.ts';
 import {
   isZipLikeFilename,
   parsePipelineArchive,
   PIPELINE_ZIP_FILE_VERSION,
+  type ParsedPipelineArchive,
   type PipelineStepEntry,
   type PipelineZipLutEntry,
-  type ParsedPipelineArchive,
 } from '../../shared/lutchain/lutchain-archive.ts';
-import { readFileBytes } from '../../platforms/node/fs/file-load-runtime.ts';
 
 export interface CliLoadedArchive {
   resolvedPath: string;
@@ -48,7 +48,7 @@ export function findStepById(steps: readonly PipelineStepEntry[], rawId: string)
     throw new Error(`Invalid step id: ${rawId}`);
   }
 
-  const step = steps.find(candidate => candidate.id === stepId);
+  const step = steps.find(candidate => String(candidate.id) === stepId);
   if (!step) {
     throw new Error(`Step not found: ${stepId}`);
   }
