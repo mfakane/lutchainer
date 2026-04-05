@@ -22,8 +22,6 @@ interface PipelineCommandControllerOptions {
   setSteps: (steps: StepModel[]) => void;
   getLuts: () => LutModel[];
   setLuts: (luts: LutModel[]) => void;
-  getNextStepId: () => number;
-  setNextStepId: (nextStepId: number) => void;
   parseLutId: (value: string | undefined) => string | null;
   isValidParamName: (value: string) => value is ParamName;
   isValidSocketAxis: (value: string) => value is SocketAxis;
@@ -38,26 +36,22 @@ interface PipelineCommandControllerOptions {
 
 interface PipelineCommandController {
   addStep: (options?: AddStepOptions) => void;
-  duplicateStep: (stepId: number) => void;
-  setStepMuted: (stepId: number, muted: unknown) => void;
-  setStepLabel: (stepId: number, label: unknown) => void;
-  setStepLut: (stepId: number, lutId: unknown) => void;
-  setStepBlendMode: (stepId: number, blendMode: unknown) => void;
-  setStepChannelOp: (stepId: number, channel: unknown, op: unknown) => void;
-  removeStep: (stepId: number) => void;
+  duplicateStep: (stepId: string) => void;
+  setStepMuted: (stepId: string, muted: unknown) => void;
+  setStepLabel: (stepId: string, label: unknown) => void;
+  setStepLut: (stepId: string, lutId: unknown) => void;
+  setStepBlendMode: (stepId: string, blendMode: unknown) => void;
+  setStepChannelOp: (stepId: string, channel: unknown, op: unknown) => void;
+  removeStep: (stepId: string) => void;
   removeLut: (lutId: string) => void;
   duplicateLut: (lutId: string) => void;
-  assignParamToSocket: (stepId: number, axis: SocketAxis, param: ParamName) => boolean;
-  moveStepToPosition: (stepId: number, targetStepId: number | null, after: boolean) => void;
+  assignParamToSocket: (stepId: string, axis: SocketAxis, param: ParamName) => boolean;
+  moveStepToPosition: (stepId: string, targetStepId: string | null, after: boolean) => void;
   moveLutToPosition: (lutId: string, targetLutId: string | null, after: boolean) => void;
 }
 
 function isObject(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === 'object' && !Array.isArray(value);
-}
-
-function isPositiveInteger(value: unknown): value is number {
-  return typeof value === 'number' && Number.isInteger(value) && value > 0;
 }
 
 function isNonEmptyString(value: unknown): value is string {
@@ -70,7 +64,7 @@ function assertValidOptions(value: unknown): asserts value is PipelineCommandCon
   }
 
   const options = value as Partial<PipelineCommandControllerOptions>;
-  if (!isPositiveInteger(options.maxStepLabelLength)) {
+  if (!(typeof options.maxStepLabelLength === 'number' && Number.isInteger(options.maxStepLabelLength) && options.maxStepLabelLength > 0)) {
     throw new Error(`maxStepLabelLength が不正です: ${String(options.maxStepLabelLength)}`);
   }
 
@@ -79,8 +73,6 @@ function assertValidOptions(value: unknown): asserts value is PipelineCommandCon
     options.setSteps,
     options.getLuts,
     options.setLuts,
-    options.getNextStepId,
-    options.setNextStepId,
     options.parseLutId,
     options.isValidParamName,
     options.isValidSocketAxis,
@@ -141,10 +133,10 @@ function normalizeStepLabelInput(
 
 function getStepById(
   steps: StepModel[],
-  stepId: number,
+  stepId: string,
   onNotFound: () => void,
 ): StepModel | null {
-  if (!isPositiveInteger(stepId)) {
+  if (!isNonEmptyString(stepId)) {
     onNotFound();
     return null;
   }
@@ -173,7 +165,7 @@ export function createPipelineCommandController(options: PipelineCommandControll
     const before = parsedOptions.recordHistory ? options.captureSnapshot() : null;
     const steps = options.getSteps();
     const luts = options.getLuts();
-    const result = pipelineModel.createPipelineStep(steps, luts, options.getNextStepId());
+    const result = pipelineModel.createPipelineStep(steps, luts);
     if (!result.step) {
       if (result.error) {
         options.status(result.error, 'error');
@@ -181,7 +173,6 @@ export function createPipelineCommandController(options: PipelineCommandControll
       return;
     }
 
-    options.setNextStepId(result.nextStepId);
     steps.push(result.step);
     if (before) {
       options.commitSnapshot(before);
@@ -190,28 +181,27 @@ export function createPipelineCommandController(options: PipelineCommandControll
     options.scheduleApply();
   };
 
-  const duplicateStep = (stepId: number): void => {
-    if (!isPositiveInteger(stepId)) {
+  const duplicateStep = (stepId: string): void => {
+    if (!isNonEmptyString(stepId)) {
       options.status(options.t('main.status.stepNotFound', { stepId }), 'error');
       return;
     }
 
     const before = options.captureSnapshot();
-    const result = pipelineModel.duplicatePipelineStep(options.getSteps(), stepId, options.getNextStepId());
+    const result = pipelineModel.duplicatePipelineStep(options.getSteps(), stepId);
     if (result.error || !result.duplicated) {
       options.status(result.error ?? options.t('common.unknownError'), 'error');
       return;
     }
 
     options.setSteps(result.steps);
-    options.setNextStepId(result.nextStepId);
     options.commitSnapshot(before);
     options.renderSteps();
     options.scheduleApply();
     options.status(options.t('main.status.stepDuplicated', { stepId: result.duplicated.id }), 'info');
   };
 
-  const setStepMuted = (stepId: number, muted: unknown): void => {
+  const setStepMuted = (stepId: string, muted: unknown): void => {
     if (typeof muted !== 'boolean') {
       options.status(options.t('main.status.stepMuteInvalidValue', { value: String(muted) }), 'error');
       return;
@@ -235,7 +225,7 @@ export function createPipelineCommandController(options: PipelineCommandControll
     options.scheduleApply();
   };
 
-  const setStepLabel = (stepId: number, label: unknown): void => {
+  const setStepLabel = (stepId: string, label: unknown): void => {
     const step = getStepById(options.getSteps(), stepId, () => {
       options.status(options.t('main.status.stepNotFound', { stepId }), 'error');
     });
@@ -262,7 +252,7 @@ export function createPipelineCommandController(options: PipelineCommandControll
     options.renderSteps();
   };
 
-  const setStepLut = (stepId: number, lutId: unknown): void => {
+  const setStepLut = (stepId: string, lutId: unknown): void => {
     if (typeof lutId !== 'string') {
       options.status(options.t('pipeline.status.selectedLutIdInvalid'), 'error');
       return;
@@ -298,7 +288,7 @@ export function createPipelineCommandController(options: PipelineCommandControll
     options.scheduleApply();
   };
 
-  const setStepBlendMode = (stepId: number, blendMode: unknown): void => {
+  const setStepBlendMode = (stepId: string, blendMode: unknown): void => {
     if (typeof blendMode !== 'string' || !pipelineModel.isValidBlendMode(blendMode)) {
       options.status(options.t('pipeline.status.invalidBlendMode', { blendMode: String(blendMode) }), 'error');
       return;
@@ -322,7 +312,7 @@ export function createPipelineCommandController(options: PipelineCommandControll
     options.scheduleApply();
   };
 
-  const setStepChannelOp = (stepId: number, channel: unknown, op: unknown): void => {
+  const setStepChannelOp = (stepId: string, channel: unknown, op: unknown): void => {
     if (typeof channel !== 'string' || !pipelineModel.isValidChannelName(channel)) {
       options.status(options.t('pipeline.status.invalidOp', { op: String(op) }), 'error');
       return;
@@ -351,8 +341,8 @@ export function createPipelineCommandController(options: PipelineCommandControll
     options.scheduleApply();
   };
 
-  const removeStep = (stepId: number): void => {
-    if (!isPositiveInteger(stepId)) {
+  const removeStep = (stepId: string): void => {
+    if (!isNonEmptyString(stepId)) {
       options.status(options.t('main.status.removeStepNotFound', { stepId }), 'error');
       return;
     }
@@ -422,7 +412,7 @@ export function createPipelineCommandController(options: PipelineCommandControll
     options.status(options.t('main.status.lutDuplicated', { name: newLut.name }), 'success');
   };
 
-  const assignParamToSocket = (stepId: number, axis: SocketAxis, param: ParamName): boolean => {
+  const assignParamToSocket = (stepId: string, axis: SocketAxis, param: ParamName): boolean => {
     if (typeof axis !== 'string' || !options.isValidSocketAxis(axis)) {
       return false;
     }
@@ -456,12 +446,12 @@ export function createPipelineCommandController(options: PipelineCommandControll
     return true;
   };
 
-  const moveStepToPosition = (stepId: number, targetStepId: number | null, after: boolean): void => {
-    if (!isPositiveInteger(stepId)) {
+  const moveStepToPosition = (stepId: string, targetStepId: string | null, after: boolean): void => {
+    if (!isNonEmptyString(stepId)) {
       options.status(options.t('main.status.moveStepNotFound', { stepId }), 'error');
       return;
     }
-    if (!(targetStepId === null || isPositiveInteger(targetStepId))) {
+    if (!(targetStepId === null || isNonEmptyString(targetStepId))) {
       options.status(options.t('main.status.moveStepNotFound', { stepId }), 'error');
       return;
     }

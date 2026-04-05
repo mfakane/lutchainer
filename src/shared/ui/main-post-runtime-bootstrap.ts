@@ -7,6 +7,7 @@ import type {
 import type {
   PipelineHistoryActionsController,
 } from '../../features/pipeline/pipeline-history-actions.ts';
+import { MAX_LUTS } from '../../features/pipeline/pipeline-constants.ts';
 import * as pipelineModel from '../../features/pipeline/pipeline-model.ts';
 import {
   getLuts as getPipelineLuts,
@@ -87,17 +88,17 @@ type DomSelector = <T extends Element>(selector: string) => T;
 
 interface PipelineCommandsLike {
   addStep: (options?: { recordHistory?: boolean }) => void;
-  duplicateStep: (stepId: number) => void;
-  removeStep: (stepId: number) => void;
-  setStepMuted: (stepId: number, muted: boolean) => void;
-  setStepLabel: (stepId: number, label: string | null) => void;
-  setStepLut: (stepId: number, lutId: string) => void;
-  setStepBlendMode: (stepId: number, blendMode: StepModel['blendMode']) => void;
-  setStepChannelOp: (stepId: number, channel: ChannelName, op: BlendOp) => void;
+  duplicateStep: (stepId: string) => void;
+  removeStep: (stepId: string) => void;
+  setStepMuted: (stepId: string, muted: boolean) => void;
+  setStepLabel: (stepId: string, label: string | null) => void;
+  setStepLut: (stepId: string, lutId: string) => void;
+  setStepBlendMode: (stepId: string, blendMode: StepModel['blendMode']) => void;
+  setStepChannelOp: (stepId: string, channel: ChannelName, op: BlendOp) => void;
   removeLut: (lutId: string) => void;
   duplicateLut: (lutId: string) => void;
   moveLutToPosition: (lutId: string, targetLutId: string | null, after: boolean) => void;
-  moveStepToPosition: (stepId: number, targetStepId: number | null, after: boolean) => void;
+  moveStepToPosition: (stepId: string, targetStepId: string | null, after: boolean) => void;
 }
 
 export interface BootstrapMainPostRuntimeOptions {
@@ -253,7 +254,6 @@ export function bootstrapMainPostRuntime(options: BootstrapMainPostRuntimeOption
   replacePipelineState({
     luts: pipelineModel.createBuiltinLuts(),
     steps: [],
-    nextStepId: 1,
   });
   options.pipelineHistoryActions.clearHistory();
 
@@ -269,7 +269,7 @@ export function bootstrapMainPostRuntime(options: BootstrapMainPostRuntimeOption
     surfaceEl: lutEditorSurfaceEl,
     getLuts: getPipelineLuts,
     setLuts: setPipelineLuts,
-    maxLuts: pipelineModel.MAX_LUTS,
+    maxLuts: MAX_LUTS,
     captureHistorySnapshot: () => options.pipelineHistoryActions.captureSnapshot(),
     commitHistorySnapshot: before => options.pipelineHistoryActions.commitSnapshot(before as ReturnType<typeof options.pipelineHistoryActions.captureSnapshot>),
     renderSteps: () => options.mainStepRendering.renderSteps(),
@@ -304,7 +304,7 @@ export function bootstrapMainPostRuntime(options: BootstrapMainPostRuntimeOption
     onDuplicateLut: lutId => options.pipelineCommands.duplicateLut(lutId),
     onNewLut: () => lutEditorController.createNewLut(),
     createLutFromFile: pipelineModel.createLutFromFile,
-    maxLuts: pipelineModel.MAX_LUTS,
+    maxLuts: MAX_LUTS,
     pipelineHistoryActions: options.pipelineHistoryActions,
     normalizeSteps: () => options.mainStepRendering.normalizeSteps(),
     renderSteps: () => options.mainStepRendering.renderSteps(),

@@ -13,7 +13,7 @@ export interface PipelineStepOpsEntry {
 }
 
 export interface PipelineStepEntry {
-  id: number;
+  id: string;
   lutId: string;
   label?: string;
   muted?: boolean;
@@ -34,9 +34,17 @@ export interface PipelineZipLutEntry {
 
 export interface PipelineZipData {
   version: number;
-  nextStepId: number;
   luts: PipelineZipLutEntry[];
   steps: PipelineStepEntry[];
+}
+
+export interface LegacyPipelineStepEntry extends Omit<PipelineStepEntry, 'id'> {
+  id: number | string;
+}
+
+export interface LegacyPipelineZipData extends Omit<PipelineZipData, 'steps'> {
+  nextStepId?: number;
+  steps: LegacyPipelineStepEntry[];
 }
 
 export interface ParsedPipelineArchive {
@@ -121,7 +129,7 @@ function compactPipelineStepOps(
 function serializePipelineStepEntry(step: StepModel, index: number): PipelineStepEntry {
   const fieldPrefix = `steps[${index}]`;
   const entry: PipelineStepEntry = {
-    id: parsePositiveInteger(step.id, `${fieldPrefix}.id`),
+    id: parseNonEmptyText(step.id, `${fieldPrefix}.id`, 128),
     lutId: parseNonEmptyText(step.lutId, `${fieldPrefix}.lutId`, 200),
     blendMode: parseNonEmptyText(step.blendMode, `${fieldPrefix}.blendMode`, 100),
     xParam: parseNonEmptyText(step.xParam, `${fieldPrefix}.xParam`, 100) as ParamName,
@@ -145,13 +153,11 @@ function serializePipelineStepEntry(step: StepModel, index: number): PipelineSte
 
 export function buildPipelineArchiveManifest(
   version: number,
-  nextStepId: number,
   steps: StepModel[],
   lutEntries: PipelineZipLutEntry[],
 ): PipelineZipData {
   return {
     version: parsePositiveInteger(version, 'version'),
-    nextStepId: parsePositiveInteger(nextStepId, 'nextStepId'),
     luts: lutEntries,
     steps: steps.map((step, index) => serializePipelineStepEntry(step, index)),
   };
@@ -196,13 +202,12 @@ export function parsePipelineArchive(
     throw new Error('pipeline.jsonのルートはオブジェクトである必要があります。');
   }
 
-  const manifest = payload as Partial<PipelineZipData>;
+  const manifest = payload as Partial<LegacyPipelineZipData>;
   const version = parsePositiveInteger(manifest.version, 'version');
   if (version !== expectedVersion) {
     throw new Error(`未対応のパイプラインバージョンです: ${version}`);
   }
 
-  parsePositiveInteger(manifest.nextStepId, 'nextStepId');
   if (!Array.isArray(manifest.luts)) {
     throw new Error('luts は配列である必要があります。');
   }
@@ -211,7 +216,7 @@ export function parsePipelineArchive(
   }
 
   return {
-    manifest: manifest as PipelineZipData,
+    manifest: manifest as unknown as PipelineZipData,
     files,
   };
 }

@@ -10,7 +10,6 @@ interface StepPreviewSystemLike {
 }
 
 interface SetupMainPipelineIoSystemOptions {
-  getNextStepId: () => number;
   getLuts: () => LutModel[];
   getSteps: () => StepModel[];
   getStepPreviewSystem: () => StepPreviewSystemLike | null;
@@ -29,7 +28,6 @@ function ensureOptions(value: unknown): asserts value is SetupMainPipelineIoSyst
   }
 
   const options = value as Partial<SetupMainPipelineIoSystemOptions>;
-  ensureFunction(options.getNextStepId, 'Main pipeline IO setup getNextStepId');
   ensureFunction(options.getLuts, 'Main pipeline IO setup getLuts');
   ensureFunction(options.getSteps, 'Main pipeline IO setup getSteps');
   ensureFunction(options.getStepPreviewSystem, 'Main pipeline IO setup getStepPreviewSystem');
@@ -40,7 +38,6 @@ export function setupMainPipelineIoSystem(options: SetupMainPipelineIoSystemOpti
   ensureOptions(options);
 
   return createPipelineIoSystem({
-    getNextStepId: options.getNextStepId,
     getLuts: options.getLuts,
     getSteps: options.getSteps,
     renderPreviewPngBytes: async () => {

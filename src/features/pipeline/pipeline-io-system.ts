@@ -18,13 +18,11 @@ export interface LoadPipelineFromFileResult {
 }
 
 interface PipelineIoSystemOptions {
-  getNextStepId: () => number;
   getLuts: () => LutModel[];
   getSteps: () => StepModel[];
   renderPreviewPngBytes: () => Promise<Uint8Array>;
   maxPipelineFileBytes: number;
   serializePipelineAsZip: (
-    nextStepId: number,
     luts: LutModel[],
     steps: StepModel[],
     previewPngBytes: Uint8Array,
@@ -41,10 +39,6 @@ interface PipelineIoSystem {
   loadPipelineFromFile: (file: File) => Promise<LoadPipelineFromFileResult>;
 }
 
-function isPositiveInteger(value: unknown): value is number {
-  return typeof value === 'number' && Number.isSafeInteger(value) && value > 0;
-}
-
 function hasFileApi(): boolean {
   return typeof File !== 'undefined';
 }
@@ -58,9 +52,6 @@ function assertValidOptions(options: PipelineIoSystemOptions): void {
     throw new Error('Pipeline I/O system options must be an object.');
   }
 
-  if (typeof options.getNextStepId !== 'function') {
-    throw new Error('Pipeline I/O option getNextStepId must be a function.');
-  }
   if (typeof options.getLuts !== 'function') {
     throw new Error('Pipeline I/O option getLuts must be a function.');
   }
@@ -107,10 +98,7 @@ function normalizeErrorMessage(toErrorMessage: (error: unknown) => string, error
   return '不明なエラーが発生しました。';
 }
 
-function validatePipelineSaveState(nextStepId: number, luts: LutModel[], steps: StepModel[]): string | null {
-  if (!isPositiveInteger(nextStepId)) {
-    return '次の Step ID が不正です。';
-  }
+function validatePipelineSaveState(luts: LutModel[], steps: StepModel[]): string | null {
   if (!Array.isArray(luts)) {
     return 'LUT の状態が不正です。';
   }
@@ -149,10 +137,9 @@ export function createPipelineIoSystem(options: PipelineIoSystemOptions): Pipeli
 
   const savePipelineAsFile = async (): Promise<SavePipelineAsFileResult> => {
     try {
-      const nextStepId = options.getNextStepId();
       const luts = options.getLuts();
       const steps = options.getSteps();
-      const stateError = validatePipelineSaveState(nextStepId, luts, steps);
+      const stateError = validatePipelineSaveState(luts, steps);
       if (stateError) {
         return {
           ok: false,
@@ -168,7 +155,7 @@ export function createPipelineIoSystem(options: PipelineIoSystemOptions): Pipeli
         };
       }
 
-      const zipData = await options.serializePipelineAsZip(nextStepId, luts, steps, previewBytes);
+      const zipData = await options.serializePipelineAsZip(luts, steps, previewBytes);
       if (!(zipData instanceof Uint8Array) || zipData.byteLength === 0) {
         return {
           ok: false,

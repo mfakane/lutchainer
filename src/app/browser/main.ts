@@ -27,11 +27,9 @@ import {
 } from '../../features/pipeline/pipeline-socket-dnd-controller.ts';
 import {
   getLuts as getPipelineLuts,
-  getNextStepId as getPipelineNextStepId,
   getSteps as getPipelineSteps,
   replacePipelineState,
   setLuts as setPipelineLuts,
-  setNextStepId as setPipelineNextStepId,
   setSteps as setPipelineSteps,
 } from '../../features/pipeline/pipeline-state.ts';
 import * as pipelineView from '../../features/pipeline/pipeline-view.ts';
@@ -179,7 +177,6 @@ const pipelineHistory = createPipelineHistoryController({
   captureSnapshot: () => ({
     steps: getPipelineSteps(),
     luts: getPipelineLuts(),
-    nextStepId: getPipelineNextStepId(),
   }),
   restoreSnapshot: snapshot => {
     replacePipelineState(snapshot);
@@ -247,8 +244,6 @@ const pipelineCommands = createPipelineCommandController({
   setSteps: setPipelineSteps,
   getLuts: getPipelineLuts,
   setLuts: setPipelineLuts,
-  getNextStepId: getPipelineNextStepId,
-  setNextStepId: setPipelineNextStepId,
   parseLutId,
   isValidParamName,
   isValidSocketAxis,
@@ -294,7 +289,6 @@ const pipelineHeaderActions = createPipelineHeaderActionController({
     replacePipelineState({
       luts: pipelineModel.createBuiltinLuts(),
       steps: [],
-      nextStepId: 1,
     });
     pipelineHistoryActions.clearHistory();
     pipelineCommands.addStep({ recordHistory: false });
@@ -393,7 +387,6 @@ window.addEventListener('DOMContentLoaded', () => {
     },
     stepPreviewDebugController,
     debugGlobalObject: window as unknown as Record<string, unknown>,
-    getNextStepId: getPipelineNextStepId,
     onStatus: showStatus,
     t,
     lightGizmoElements: {

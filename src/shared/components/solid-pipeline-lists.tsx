@@ -31,13 +31,13 @@ interface StepListMountOptions {
   steps: StepModel[];
   luts: LutModel[];
   onAddStep: () => void;
-  onDuplicateStep: (stepId: number) => void;
-  onRemoveStep: (stepId: number) => void;
-  onStepMuteChange: (stepId: number, muted: boolean) => void;
-  onStepLabelChange: (stepId: number, label: string | null) => void;
-  onStepLutChange: (stepId: number, lutId: string) => void;
-  onStepBlendModeChange: (stepId: number, blendMode: StepModel['blendMode']) => void;
-  onStepOpChange: (stepId: number, channel: ChannelName, op: BlendOp) => void;
+  onDuplicateStep: (stepId: string) => void;
+  onRemoveStep: (stepId: string) => void;
+  onStepMuteChange: (stepId: string, muted: boolean) => void;
+  onStepLabelChange: (stepId: string, label: string | null) => void;
+  onStepLutChange: (stepId: string, lutId: string) => void;
+  onStepBlendModeChange: (stepId: string, blendMode: StepModel['blendMode']) => void;
+  onStepOpChange: (stepId: string, channel: ChannelName, op: BlendOp) => void;
   shouldSuppressClick?: () => boolean;
   computeLutUv?: (stepIndex: number, pixelX: number, pixelY: number, canvasWidth: number, canvasHeight: number) => { u: number; v: number } | null;
   onStatus: StatusReporter;
@@ -68,13 +68,13 @@ interface StepListProps {
   steps: Accessor<StepModel[]>;
   luts: Accessor<LutModel[]>;
   onAddStep: () => void;
-  onDuplicateStep: (stepId: number) => void;
-  onRemoveStep: (stepId: number) => void;
-  onStepMuteChange: (stepId: number, muted: boolean) => void;
-  onStepLabelChange: (stepId: number, label: string | null) => void;
-  onStepLutChange: (stepId: number, lutId: string) => void;
-  onStepBlendModeChange: (stepId: number, blendMode: StepModel['blendMode']) => void;
-  onStepOpChange: (stepId: number, channel: ChannelName, op: BlendOp) => void;
+  onDuplicateStep: (stepId: string) => void;
+  onRemoveStep: (stepId: string) => void;
+  onStepMuteChange: (stepId: string, muted: boolean) => void;
+  onStepLabelChange: (stepId: string, label: string | null) => void;
+  onStepLutChange: (stepId: string, lutId: string) => void;
+  onStepBlendModeChange: (stepId: string, blendMode: StepModel['blendMode']) => void;
+  onStepOpChange: (stepId: string, channel: ChannelName, op: BlendOp) => void;
   shouldSuppressClick?: () => boolean;
   computeLutUv?: (stepIndex: number, pixelX: number, pixelY: number, canvasWidth: number, canvasHeight: number) => { u: number; v: number } | null;
   onStatus: StatusReporter;
@@ -142,8 +142,7 @@ function isValidStepModel(value: unknown): value is StepModel {
   }
 
   const step = value as Partial<StepModel>;
-  return Number.isInteger(step.id)
-    && (step.id ?? 0) > 0
+  return isNonEmptyString(step.id)
     && isNonEmptyString(step.lutId)
     && typeof step.muted === 'boolean'
     && (step.label === undefined || (isNonEmptyString(step.label) && step.label.trim().length <= MAX_STEP_LABEL_LENGTH))
@@ -503,7 +502,7 @@ function StepList(props: StepListProps): JSX.Element {
   };
 
   const commitStepLabel = (
-    stepId: number,
+    stepId: string,
     displayIndex: number,
     inputElement: HTMLInputElement | null,
   ): void => {

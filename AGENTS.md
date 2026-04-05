@@ -14,10 +14,10 @@ npm run build
 npm run dev
 
 # Type check only (no emit)
-npx tsc --noEmit
+npm run typecheck
 ```
 
-There are no tests or linting configured. Use `npx tsc --noEmit` to validate TypeScript before committing.
+There are no tests or linting configured. Use `npm run typecheck` to validate TypeScript before committing.
 
 Run the app via a local static server after building:
 

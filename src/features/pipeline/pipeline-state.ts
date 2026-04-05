@@ -3,13 +3,11 @@ import type { LutModel, StepModel } from '../step/step-model';
 export interface PipelineStateSnapshot {
   steps: StepModel[];
   luts: LutModel[];
-  nextStepId: number;
 }
 
 const pipelineState: PipelineStateSnapshot = {
   steps: [],
   luts: [],
-  nextStepId: 1,
 };
 
 function assertValidSteps(value: unknown): asserts value is StepModel[] {
@@ -24,12 +22,6 @@ function assertValidLuts(value: unknown): asserts value is LutModel[] {
   }
 }
 
-function assertValidNextStepId(value: unknown): asserts value is number {
-  if (typeof value !== 'number' || !Number.isInteger(value) || value <= 0) {
-    throw new Error(`Invalid nextStepId: ${String(value)}`);
-  }
-}
-
 function assertValidPipelineSnapshot(value: unknown): asserts value is PipelineStateSnapshot {
   if (!value || typeof value !== 'object') {
     throw new Error('Pipeline state must be an object.');
@@ -38,7 +30,6 @@ function assertValidPipelineSnapshot(value: unknown): asserts value is PipelineS
   const candidate = value as Partial<PipelineStateSnapshot>;
   assertValidSteps(candidate.steps);
   assertValidLuts(candidate.luts);
-  assertValidNextStepId(candidate.nextStepId);
 }
 
 export function getSteps(): StepModel[] {
@@ -59,18 +50,8 @@ export function setLuts(luts: LutModel[]): void {
   pipelineState.luts = luts;
 }
 
-export function getNextStepId(): number {
-  return pipelineState.nextStepId;
-}
-
-export function setNextStepId(nextStepId: number): void {
-  assertValidNextStepId(nextStepId);
-  pipelineState.nextStepId = nextStepId;
-}
-
 export function replacePipelineState(nextState: PipelineStateSnapshot): void {
   assertValidPipelineSnapshot(nextState);
   pipelineState.steps = nextState.steps;
   pipelineState.luts = nextState.luts;
-  pipelineState.nextStepId = nextState.nextStepId;
 }

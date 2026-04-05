@@ -9,7 +9,7 @@ import type {
 } from './pipeline-view.ts';
 
 export interface StepDropPlacement {
-  stepId: number | null;
+  stepId: string | null;
   after: boolean;
 }
 
@@ -30,7 +30,7 @@ export interface PipelineDropIndicatorController {
 export interface PipelineDropIndicatorControllerOptions {
   stepListEl: HTMLElement;
   lutStripListEl: HTMLElement;
-  parseStepId: (value: string | undefined) => number | null;
+  parseStepId: (value: string | undefined) => string | null;
   getStepReorderDragState: () => StepReorderDragState | null;
   getLutReorderDragState: () => LutReorderDragState | null;
 }
@@ -86,7 +86,7 @@ export function createPipelineDropIndicatorController(
     ensureFiniteNumber(clientY, 'Step ドロップ位置(clientY)');
 
     const stepReorderDragState = options.getStepReorderDragState();
-    const candidates: LinearDropCandidate<number>[] = [];
+    const candidates: LinearDropCandidate<string>[] = [];
 
     for (const item of Array.from(options.stepListEl.querySelectorAll<HTMLElement>('.step-item'))) {
       const itemStepId = options.parseStepId(item.dataset.stepId);

@@ -17,7 +17,7 @@ interface StepListCommandOptions {
 }
 
 interface StepListJsonEntry {
-  id: number;
+  id: string;
   label?: string;
   lutId: string;
   blendMode: string;
@@ -65,7 +65,7 @@ function toStepListRows(steps: readonly PipelineStepEntry[]): StepListRow[] {
 
 function toStepListJsonEntries(steps: readonly PipelineStepEntry[]): StepListJsonEntry[] {
   return steps.map(step => ({
-    id: step.id,
+    id: String(step.id),
     ...(step.label !== undefined ? { label: step.label } : {}),
     lutId: step.lutId,
     blendMode: step.blendMode,

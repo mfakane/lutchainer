@@ -17,12 +17,11 @@ interface InfoCommandOptions {
 
 interface InfoSummary {
   version: number;
-  nextStepId: number;
   lutCount: number;
   stepCount: number;
   blendModes: string[];
   lutIds: string[];
-  stepIds: number[];
+  stepIds: string[];
 }
 
 function resolveInfoOptions(argv: string[]): InfoCommandOptions {
@@ -51,25 +50,22 @@ function resolveInfoOptions(argv: string[]): InfoCommandOptions {
 
 function buildInfoSummary(manifest: {
   version: number;
-  nextStepId: number;
   luts: Array<{ id: string }>;
-  steps: Array<{ id: number; blendMode: string }>;
+  steps: Array<{ id: string | number; blendMode: string }>;
 }): InfoSummary {
   return {
     version: manifest.version,
-    nextStepId: manifest.nextStepId,
     lutCount: manifest.luts.length,
     stepCount: manifest.steps.length,
     blendModes: [...new Set(manifest.steps.map(step => step.blendMode))].sort(),
     lutIds: manifest.luts.map(lut => lut.id),
-    stepIds: manifest.steps.map(step => step.id),
+    stepIds: manifest.steps.map(step => String(step.id)),
   };
 }
 
 function toInfoSummaryRows(summary: InfoSummary): InfoSummaryRow[] {
   return [
     { key: 'Version', value: String(summary.version) },
-    { key: 'Next-Step-ID', value: String(summary.nextStepId) },
     { key: 'LUT-Count', value: String(summary.lutCount) },
     { key: 'Step-Count', value: String(summary.stepCount) },
     { key: 'Blend-Modes', value: summary.blendModes.length > 0 ? summary.blendModes.join(', ') : '-' },

@@ -53,7 +53,7 @@ export function updateStepSwatches(input: UpdateStepSwatchesInput): void {
 
   for (let index = 0; index < steps.length; index += 1) {
     const step = steps[index];
-    if (!step || !Number.isInteger(step.id) || step.id <= 0) {
+    if (!step || typeof step.id !== 'string' || step.id.trim().length === 0) {
       continue;
     }
 

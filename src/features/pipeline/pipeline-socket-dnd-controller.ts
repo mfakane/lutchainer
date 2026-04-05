@@ -24,7 +24,7 @@ export interface PipelineSocketDndControllerOptions {
   getSocketDropTargetState: () => SocketDropTarget | null;
   setSocketDropTargetState: (nextTarget: SocketDropTarget | null) => void;
   resolveDropTarget: (dragState: SocketDragState, clientX: number, clientY: number) => SocketDropTarget | null;
-  assignParamToSocket: (stepId: number, axis: SocketAxis, param: ParamName) => boolean;
+  assignParamToSocket: (stepId: string, axis: SocketAxis, param: ParamName) => boolean;
   scheduleConnectionDraw: () => void;
   setSuppressClickUntil: (until: number) => void;
   setUserSelect: (value: string) => void;

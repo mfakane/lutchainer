@@ -9,14 +9,14 @@ interface ResolveSocketDropTargetOptions {
   socketDragState: SocketDragState | null;
   clientX: number;
   clientY: number;
-  parseStepId: (value: string | undefined) => number | null;
+  parseStepId: (value: string | undefined) => string | null;
   isValidSocketAxis: (value: string) => value is SocketAxis;
   isValidParamName: (value: string) => value is ParamName;
   elementFromPoint?: (x: number, y: number) => Element | null;
 }
 
 interface SocketDropTargetResolverOptions {
-  parseStepId: (value: string | undefined) => number | null;
+  parseStepId: (value: string | undefined) => string | null;
   isValidSocketAxis: (value: string) => value is SocketAxis;
   isValidParamName: (value: string) => value is ParamName;
   elementFromPoint?: (x: number, y: number) => Element | null;
@@ -32,7 +32,7 @@ interface SyncSocketDropTargetStateOptions {
 interface ApplySocketDropConnectionOptions {
   dragState: SocketDragState;
   dropTarget: SocketDropTarget | null;
-  assignParamToSocket: (stepId: number, axis: SocketAxis, param: ParamName) => boolean;
+  assignParamToSocket: (stepId: string, axis: SocketAxis, param: ParamName) => boolean;
 }
 
 interface HandleSocketDragMoveOptions {
@@ -74,7 +74,7 @@ interface ResolveSocketDragPreviewColorOptions {
   socketDragState: SocketDragState | null;
   socketDropTarget: SocketDropTarget | null;
   fallbackColor: string;
-  getStepConnectionColor: (stepId: number) => string;
+  getStepConnectionColor: (stepId: string) => string;
 }
 
 interface ResolveSocketDragPreviewStartOptions {

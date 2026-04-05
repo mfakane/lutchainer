@@ -40,7 +40,7 @@ interface SetupMainUiOptions {
   stepListEl: HTMLElement;
   lutStripListEl: HTMLElement;
   paramColumnEl: HTMLElement;
-  parseStepId: (value: string | undefined) => number | null;
+  parseStepId: (value: string | undefined) => string | null;
   parseLutId: (value: string | undefined) => string | null;
   isValidParamName: (value: string) => value is ParamName;
   isValidSocketAxis: (value: string) => value is SocketAxis;
@@ -54,7 +54,7 @@ interface SetupMainUiOptions {
   setSocketDragState: (state: SocketDragState | null) => void;
   pipelineSocketDnd: PipelineSocketDndController;
   moveLutToPosition: (lutId: string, targetLutId: string | null, after: boolean) => void;
-  moveStepToPosition: (stepId: number, targetStepId: number | null, after: boolean) => void;
+  moveStepToPosition: (stepId: string, targetStepId: string | null, after: boolean) => void;
   onScheduleConnectionDraw: () => void;
   onUndoPipeline: () => void;
   onRedoPipeline: () => void;

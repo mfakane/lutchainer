@@ -58,13 +58,12 @@ interface GizmoAxisElements {
 export interface MainRuntimeBootstrapOptions {
   stepListEl: HTMLElement;
   lutStripListEl: HTMLElement;
-  parseStepId: (value: string | undefined) => number | null;
+  parseStepId: (value: string | undefined) => string | null;
   getStepReorderDragState: () => StepReorderDragState | null;
   getLutReorderDragState: () => LutReorderDragState | null;
   previewRuntime: MainPreviewRuntimeSetupOptions;
   stepPreviewDebugController: StepPreviewDebugController;
   debugGlobalObject: Record<string, unknown>;
-  getNextStepId: () => number;
   onStatus: StatusReporter;
   t: Translator;
   lightGizmoElements: GizmoLightElements;
@@ -152,7 +151,6 @@ function assertOptions(options: MainRuntimeBootstrapOptions): void {
   ensureFunction(options.stepPreviewDebugController.registerGlobalDebugApi, 'Main runtime bootstrap stepPreviewDebugController.registerGlobalDebugApi');
 
   ensureObject(options.debugGlobalObject, 'Main runtime bootstrap debugGlobalObject');
-  ensureFunction(options.getNextStepId, 'Main runtime bootstrap getNextStepId');
   ensureFunction(options.onStatus, 'Main runtime bootstrap onStatus');
   ensureFunction(options.t, 'Main runtime bootstrap t');
 
@@ -192,7 +190,6 @@ export function bootstrapMainRuntime(
   });
 
   const pipelineIoSystem = setupMainPipelineIoSystem({
-    getNextStepId: options.getNextStepId,
     getLuts: options.previewRuntime.getLuts,
     getSteps: options.previewRuntime.getSteps,
     getStepPreviewSystem: () => previewRuntime.stepPreviewSystem,

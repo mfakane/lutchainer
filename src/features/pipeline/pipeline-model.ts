@@ -1,4 +1,15 @@
 import {
+  buildPipelineArchiveManifest,
+  isRecord,
+  isZipLikeFileDescriptor,
+  parseNonEmptyText,
+  parsePipelineArchive,
+  parsePositiveInteger,
+  PIPELINE_ZIP_FILE_VERSION,
+  serializePipelineArchive,
+  type PipelineZipLutEntry,
+} from '../../shared/lutchain/lutchain-archive.ts';
+import {
   LUT_EDITOR_DEFAULT_HEIGHT,
   LUT_EDITOR_DEFAULT_WIDTH,
   type ColorRamp,
@@ -21,24 +32,14 @@ import {
   type ParamName,
   type StepModel,
 } from '../step/step-model';
-import {
-  buildPipelineArchiveManifest,
-  isRecord,
-  isZipLikeFileDescriptor,
-  parseNonEmptyText,
-  parsePipelineArchive,
-  parsePositiveInteger,
-  PIPELINE_ZIP_FILE_VERSION,
-  serializePipelineArchive,
-  type PipelineZipLutEntry,
-} from '../../shared/lutchain/lutchain-archive.ts';
+import { MAX_LUTS, MAX_STEPS } from './pipeline-constants.ts';
 export {
   parseNonEmptyText,
   toErrorMessage,
   type PipelineStepEntry,
   type PipelineStepOpsEntry,
   type PipelineZipData,
-  type PipelineZipLutEntry,
+  type PipelineZipLutEntry
 } from '../../shared/lutchain/lutchain-archive.ts';
 
 export interface ParamDef {
@@ -101,21 +102,18 @@ export interface LightRangeBinding {
 }
 
 export interface LoadedPipelineData {
-  nextStepId: number;
   luts: LutModel[];
   steps: StepModel[];
 }
 
 export interface CreatePipelineStepResult {
   step: StepModel | null;
-  nextStepId: number;
   error: string | null;
 }
 
 export interface DuplicatePipelineStepResult {
   steps: StepModel[];
   duplicated: StepModel | null;
-  nextStepId: number;
   error: string | null;
 }
 
@@ -285,8 +283,6 @@ export const MATERIAL_RANGE_BINDINGS: MaterialRangeBinding[] = [
   },
 ];
 
-export const MAX_STEPS = 32;
-export const MAX_LUTS = 12;
 export const MAX_LUT_FILE_BYTES = 12 * 1024 * 1024;
 export const MAX_PIPELINE_FILE_BYTES = 64 * 1024 * 1024;
 export const MAX_PIPELINE_IMAGE_SIDE = 4096;
@@ -428,10 +424,14 @@ export function isValidBlendMode(value: string): value is BlendMode {
   return BLEND_MODES.some(mode => mode.key === value);
 }
 
-export function parseStepId(value: string | undefined): number | null {
-  if (!value) return null;
-  const id = Number(value);
-  if (!Number.isInteger(id) || id <= 0) return null;
+export function parseStepId(value: string | undefined): string | null {
+  if (typeof value !== 'string') {
+    return null;
+  }
+  const id = value.trim();
+  if (id.length === 0 || id.length > 128) {
+    return null;
+  }
   return id;
 }
 
@@ -486,11 +486,12 @@ export function getParamDef(param: ParamName): ParamDef {
   return found;
 }
 
-export function getStepById(steps: StepModel[], stepId: number): StepModel | null {
-  if (!Array.isArray(steps) || !Number.isInteger(stepId) || stepId <= 0) {
+export function getStepById(steps: StepModel[], stepId: string): StepModel | null {
+  const parsedStepId = parseStepId(stepId);
+  if (!Array.isArray(steps) || !parsedStepId) {
     return null;
   }
-  return steps.find(step => step.id === stepId) ?? null;
+  return steps.find(step => step.id === parsedStepId) ?? null;
 }
 
 export function getLutById(luts: LutModel[], lutId: string): LutModel | null {
@@ -517,24 +518,19 @@ export function normalizeSteps(steps: StepModel[], luts: LutModel[]): void {
 export function createPipelineStep(
   steps: StepModel[],
   luts: LutModel[],
-  nextStepId: number,
 ): CreatePipelineStepResult {
   if (!Array.isArray(steps) || !Array.isArray(luts)) {
-    return { step: null, nextStepId, error: 'Step または LUT の状態が不正です。' };
-  }
-
-  if (!Number.isSafeInteger(nextStepId) || nextStepId <= 0) {
-    return { step: null, nextStepId, error: '次の Step ID が不正です。' };
+    return { step: null, error: 'Step または LUT の状態が不正です。' };
   }
 
   if (steps.length >= MAX_STEPS) {
-    return { step: null, nextStepId, error: `Step は最大 ${MAX_STEPS} 個までです。` };
+    return { step: null, error: `Step は最大 ${MAX_STEPS} 個までです。` };
   }
 
   const defaultLutId = luts[0]?.id ?? '';
   return {
     step: {
-      id: nextStepId,
+      id: uid('step'),
       lutId: defaultLutId,
       muted: false,
       blendMode: 'multiply',
@@ -542,7 +538,6 @@ export function createPipelineStep(
       yParam: 'facing',
       ops: { ...DEFAULT_OPS },
     },
-    nextStepId: nextStepId + 1,
     error: null,
   };
 }
@@ -561,34 +556,30 @@ function buildDuplicatedStepLabel(source: StepModel, sourceIndex: number): strin
 
 export function duplicatePipelineStep(
   steps: StepModel[],
-  stepId: number,
-  nextStepId: number,
+  stepId: string,
 ): DuplicatePipelineStepResult {
   if (!Array.isArray(steps)) {
-    return { steps: [], duplicated: null, nextStepId, error: 'Step の状態が不正です。' };
+    return { steps: [], duplicated: null, error: 'Step の状態が不正です。' };
   }
 
-  if (!Number.isSafeInteger(stepId) || stepId <= 0) {
-    return { steps: [...steps], duplicated: null, nextStepId, error: '複製対象の Step ID が不正です。' };
-  }
-
-  if (!Number.isSafeInteger(nextStepId) || nextStepId <= 0) {
-    return { steps: [...steps], duplicated: null, nextStepId, error: '次の Step ID が不正です。' };
+  const parsedStepId = parseStepId(stepId);
+  if (!parsedStepId) {
+    return { steps: [...steps], duplicated: null, error: '複製対象の Step ID が不正です。' };
   }
 
   if (steps.length >= MAX_STEPS) {
-    return { steps: [...steps], duplicated: null, nextStepId, error: `Step は最大 ${MAX_STEPS} 個までです。` };
+    return { steps: [...steps], duplicated: null, error: `Step は最大 ${MAX_STEPS} 個までです。` };
   }
 
-  const sourceIndex = steps.findIndex(step => step.id === stepId);
+  const sourceIndex = steps.findIndex(step => step.id === parsedStepId);
   if (sourceIndex < 0) {
-    return { steps: [...steps], duplicated: null, nextStepId, error: `Step ${stepId} が見つかりません。` };
+    return { steps: [...steps], duplicated: null, error: `Step ${parsedStepId} が見つかりません。` };
   }
 
   const source = steps[sourceIndex];
   const duplicated: StepModel = {
     ...source,
-    id: nextStepId,
+    id: uid('step'),
     label: buildDuplicatedStepLabel(source, sourceIndex),
     ops: { ...source.ops },
   };
@@ -602,17 +593,17 @@ export function duplicatePipelineStep(
   return {
     steps: nextSteps,
     duplicated,
-    nextStepId: nextStepId + 1,
     error: null,
   };
 }
 
-export function removeStepFromPipeline(steps: StepModel[], stepId: number): { steps: StepModel[]; removed: boolean } {
-  if (!Array.isArray(steps) || !Number.isInteger(stepId) || stepId <= 0) {
+export function removeStepFromPipeline(steps: StepModel[], stepId: string): { steps: StepModel[]; removed: boolean } {
+  const parsedStepId = parseStepId(stepId);
+  if (!Array.isArray(steps) || !parsedStepId) {
     return { steps: Array.isArray(steps) ? [...steps] : [], removed: false };
   }
 
-  const nextSteps = steps.filter(step => step.id !== stepId);
+  const nextSteps = steps.filter(step => step.id !== parsedStepId);
   return { steps: nextSteps, removed: nextSteps.length !== steps.length };
 }
 
@@ -919,7 +910,10 @@ function parsePipelineStepEntry(value: unknown, index: number): StepModel {
     throw new Error(`${fieldPrefix} はオブジェクトである必要があります。`);
   }
 
-  const id = parsePositiveInteger(value.id, `${fieldPrefix}.id`);
+  // id can be either number or string for backward compatibility, but it will be normalized to string in the model.
+  const id = typeof value.id === 'number'
+    ? String(parsePositiveInteger(value.id, `${fieldPrefix}.id`))
+    : parseNonEmptyText(value.id, `${fieldPrefix}.id`, 128);
 
   const lutId = parseLutId(typeof value.lutId === 'string' ? value.lutId : undefined);
   if (!lutId) {
@@ -1003,14 +997,10 @@ function canvasToPngBytes(canvas: HTMLCanvasElement): Promise<Uint8Array> {
 }
 
 export async function serializePipelineAsZip(
-  nextStepId: number,
   luts: LutModel[],
   steps: StepModel[],
   previewPngBytes?: Uint8Array,
 ): Promise<Uint8Array> {
-  if (!Number.isSafeInteger(nextStepId) || nextStepId <= 0) {
-    throw new Error('nextStepId が不正です。');
-  }
   if (!Array.isArray(luts) || !Array.isArray(steps)) {
     throw new Error('パイプライン状態が不正です。');
   }
@@ -1034,7 +1024,6 @@ export async function serializePipelineAsZip(
 
   const manifest = buildPipelineArchiveManifest(
     PIPELINE_ZIP_FILE_VERSION,
-    nextStepId,
     steps,
     lutEntries,
   );
@@ -1178,7 +1167,6 @@ export async function loadPipelineFromZip(data: ArrayBuffer): Promise<LoadedPipe
 
   const archive = parsePipelineArchive(data, PIPELINE_ZIP_FILE_VERSION);
   const { manifest, files } = archive;
-  const parsedNextStepId = parsePositiveInteger(manifest.nextStepId, 'nextStepId');
 
   const rawLuts = manifest.luts;
   if (rawLuts.length === 0) {
@@ -1213,7 +1201,7 @@ export async function loadPipelineFromZip(data: ArrayBuffer): Promise<LoadedPipe
   }
 
   const loadedSteps = rawSteps.map((entry, index) => parsePipelineStepEntry(entry, index));
-  const stepIdSet = new Set<number>();
+  const stepIdSet = new Set<string>();
   const fallbackLutId = loadedLuts[0].id;
   for (const step of loadedSteps) {
     if (stepIdSet.has(step.id)) {
@@ -1226,10 +1214,8 @@ export async function loadPipelineFromZip(data: ArrayBuffer): Promise<LoadedPipe
     }
   }
 
-  const maxStepId = loadedSteps.reduce((maxId, step) => Math.max(maxId, step.id), 0);
   return {
     luts: loadedLuts,
     steps: loadedSteps,
-    nextStepId: Math.max(parsedNextStepId, maxStepId + 1),
   };
 }

@@ -49,8 +49,8 @@ function isValidConnectionStep(step: unknown): step is StepModel {
   }
 
   const candidate = step as Partial<StepModel>;
-  return Number.isInteger(candidate.id)
-    && (candidate.id ?? 0) > 0
+  return typeof candidate.id === 'string'
+    && candidate.id.trim().length > 0
     && typeof candidate.muted === 'boolean'
     && typeof candidate.xParam === 'string'
     && pipelineModel.isValidParamName(candidate.xParam)

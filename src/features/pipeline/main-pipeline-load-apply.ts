@@ -35,10 +35,7 @@ function isLoadedPipelineData(value: unknown): value is LoadedPipelineData {
 
   const loaded = value as Partial<LoadedPipelineData>;
   return Array.isArray(loaded.luts)
-    && Array.isArray(loaded.steps)
-    && typeof loaded.nextStepId === 'number'
-    && Number.isInteger(loaded.nextStepId)
-    && loaded.nextStepId > 0;
+    && Array.isArray(loaded.steps);
 }
 
 function assertOptions(options: ApplyLoadedPipelineOptions): void {
@@ -63,7 +60,6 @@ export function applyLoadedPipelineState(options: ApplyLoadedPipelineOptions): v
   options.replacePipelineState({
     luts: options.loaded.luts,
     steps: options.loaded.steps,
-    nextStepId: options.loaded.nextStepId,
   });
   options.clearHistory();
   options.renderSteps();

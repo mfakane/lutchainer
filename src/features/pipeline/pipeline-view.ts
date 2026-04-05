@@ -17,7 +17,7 @@ export type SocketDragState =
   | {
       mode: 'step';
       sourceEl: HTMLButtonElement;
-      stepId: number;
+      stepId: string;
       axis: SocketAxis;
       pointerId: number;
       startX: number;
@@ -36,13 +36,13 @@ export type SocketDropTarget =
   | {
       kind: 'step';
       element: HTMLButtonElement;
-      stepId: number;
+      stepId: string;
       axis: SocketAxis;
     };
 
 export interface StepReorderDragState {
-  stepId: number;
-  overStepId: number | null;
+  stepId: string;
+  overStepId: string | null;
   dropAfter: boolean;
 }
 
@@ -240,12 +240,15 @@ function applyConnectionPathAttributes(
   }
 }
 
-export function getStepConnectionColor(stepId: number): string {
-  if (!Number.isSafeInteger(stepId) || stepId <= 0) {
+export function getStepConnectionColor(stepId: string): string {
+  if (!isNonEmptyString(stepId)) {
     return CONNECTION_FALLBACK_COLOR;
   }
 
-  const normalizedSeed = stepId % 360;
+  let normalizedSeed = 0;
+  for (let index = 0; index < stepId.length; index += 1) {
+    normalizedSeed = (normalizedSeed * 31 + stepId.charCodeAt(index)) % 360;
+  }
   const hue = (normalizedSeed * 137.50776405003785 + 24) % 360;
   return `hsl(${hue.toFixed(1)}, 78%, 68%)`;
 }
@@ -355,7 +358,7 @@ export function updateReorderDropIndicators<TId extends string | number>(
   targetEl.classList.add(state.dropAfter ? binding.dropAfterClass : binding.dropBeforeClass);
 }
 
-function createStepReorderBinding(stepListEl: HTMLElement): ReorderIndicatorBinding<number> {
+function createStepReorderBinding(stepListEl: HTMLElement): ReorderIndicatorBinding<string> {
   if (!isHtmlElement(stepListEl)) {
     throw new Error('Step reorder indicator container must be an HTMLElement.');
   }
@@ -365,16 +368,7 @@ function createStepReorderBinding(stepListEl: HTMLElement): ReorderIndicatorBind
     itemSelector: '.step-item',
     getItemId: item => {
       const rawStepId = item.dataset.stepId;
-      if (!isNonEmptyString(rawStepId)) {
-        return null;
-      }
-
-      const stepId = Number(rawStepId);
-      if (!Number.isInteger(stepId) || stepId <= 0) {
-        return null;
-      }
-
-      return stepId;
+      return isNonEmptyString(rawStepId) ? rawStepId : null;
     },
     draggingClass: 'dragging-step',
     dropBeforeClass: 'step-drop-before',
@@ -401,11 +395,11 @@ function createLutReorderBinding(lutStripListEl: HTMLElement): ReorderIndicatorB
 }
 
 export function clearStepDropIndicators(stepListEl: HTMLElement): void {
-  clearReorderDropIndicators<number>(createStepReorderBinding(stepListEl));
+  clearReorderDropIndicators<string>(createStepReorderBinding(stepListEl));
 }
 
 export function updateStepDropIndicators(stepListEl: HTMLElement, stepReorderDragState: StepReorderDragState | null): void {
-  updateReorderDropIndicators<number>(
+  updateReorderDropIndicators<string>(
     createStepReorderBinding(stepListEl),
     stepReorderDragState
       ? {

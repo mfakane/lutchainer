@@ -10,8 +10,8 @@ function isValidPointerId(value: unknown): value is number {
   return typeof value === 'number' && Number.isInteger(value) && value >= 0;
 }
 
-function isValidPositiveInteger(value: unknown): value is number {
-  return typeof value === 'number' && Number.isInteger(value) && value > 0;
+function isNonEmptyString(value: unknown): value is string {
+  return typeof value === 'string' && value.trim().length > 0;
 }
 
 function isHtmlButtonElement(value: unknown): value is HTMLButtonElement {
@@ -66,7 +66,7 @@ export function isValidSocketDragState(value: unknown): value is SocketDragState
   }
 
   if (candidate.mode === 'step') {
-    return isValidPositiveInteger(candidate.stepId) && isSocketAxis(candidate.axis);
+    return isNonEmptyString(candidate.stepId) && isSocketAxis(candidate.axis);
   }
 
   return false;
@@ -94,7 +94,7 @@ export function isValidSocketDropTarget(value: unknown): value is SocketDropTarg
   }
 
   if (candidate.kind === 'step') {
-    return isValidPositiveInteger(candidate.stepId) && isSocketAxis(candidate.axis);
+    return isNonEmptyString(candidate.stepId) && isSocketAxis(candidate.axis);
   }
 
   return false;

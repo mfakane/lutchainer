@@ -20,7 +20,7 @@ interface LutDropPlacement {
 }
 
 interface StepDropPlacement {
-  stepId: number | null;
+  stepId: string | null;
   after: boolean;
 }
 
@@ -39,21 +39,21 @@ interface SetupLutReorderBindingsOptions {
 
 interface SetupStepReorderBindingsOptions {
   stepListEl: HTMLElement;
-  parseStepId: (value: string | undefined) => number | null;
+  parseStepId: (value: string | undefined) => string | null;
   getStepDropPlacement: (clientY: number) => StepDropPlacement;
   getStepReorderDragState: () => StepReorderDragState | null;
   setStepReorderDragState: (state: StepReorderDragState | null) => void;
   clearStepReorderDragState: () => void;
   updateStepDropIndicators: () => void;
   clearStepDropIndicators: () => void;
-  moveStepToPosition: (stepId: number, targetStepId: number | null, after: boolean) => void;
+  moveStepToPosition: (stepId: string, targetStepId: string | null, after: boolean) => void;
   onStatus: StatusReporter;
 }
 
 interface SetupSocketPointerBindingsOptions {
   paramNodeListEl: HTMLElement;
   stepListEl: HTMLElement;
-  parseStepId: (value: string | undefined) => number | null;
+  parseStepId: (value: string | undefined) => string | null;
   isValidParamName: (value: string) => value is ParamName;
   isValidSocketAxis: (value: string) => value is SocketAxis;
   setSocketDragState: (state: SocketDragState | null) => void;
@@ -77,7 +77,7 @@ type SocketDragStartSeed =
   | {
       mode: 'step';
       sourceEl: HTMLButtonElement;
-      stepId: number;
+      stepId: string;
       axis: SocketAxis;
     };
 
@@ -101,7 +101,7 @@ function isStepDropPlacement(value: unknown): value is StepDropPlacement {
   }
 
   const placement = value as Partial<StepDropPlacement>;
-  const validTarget = placement.stepId === null || (typeof placement.stepId === 'number' && Number.isInteger(placement.stepId));
+  const validTarget = placement.stepId === null || typeof placement.stepId === 'string';
   return validTarget && typeof placement.after === 'boolean';
 }
 

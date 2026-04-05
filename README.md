@@ -146,7 +146,7 @@ lutchainer lut list --json examples/Metallic.lutchain
 Type checking only:
 
 ```bash
-npx tsc --noEmit
+npm run typecheck
 ```
 
 ## Nix Notes

@@ -43,11 +43,11 @@ export async function loadLutchainArchive(filePath: string): Promise<CliLoadedAr
 }
 
 export function findStepById(steps: readonly PipelineStepEntry[], rawId: string): PipelineStepEntry {
-  if (!/^\d+$/.test(rawId)) {
+  const stepId = rawId.trim();
+  if (stepId.length === 0) {
     throw new Error(`Invalid step id: ${rawId}`);
   }
 
-  const stepId = Number(rawId);
   const step = steps.find(candidate => candidate.id === stepId);
   if (!step) {
     throw new Error(`Step not found: ${stepId}`);

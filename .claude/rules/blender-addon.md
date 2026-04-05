@@ -241,7 +241,7 @@ After Blender add-on changes, run:
 
 ```bash
 npm run validate:lutchain-examples
-npx tsc --noEmit
+npm run typecheck
 ```
 
 For browser-vs-Blender appearance checks, prefer `tools/blender/compare/setup_visual_compare.py` over ad hoc MCP snippets.

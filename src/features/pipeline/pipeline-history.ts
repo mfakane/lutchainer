@@ -22,12 +22,8 @@ interface PipelineHistoryController {
   canRedo: () => boolean;
 }
 
-function isFiniteInteger(value: unknown): value is number {
-  return typeof value === 'number' && Number.isInteger(value) && Number.isFinite(value);
-}
-
 function isPositiveInteger(value: unknown): value is number {
-  return isFiniteInteger(value) && value > 0;
+  return typeof value === 'number' && Number.isSafeInteger(value) && value > 0;
 }
 
 function isObject(value: unknown): value is Record<string, unknown> {
@@ -40,7 +36,7 @@ function isStepModel(value: unknown): value is StepModel {
   }
 
   const candidate = value as Partial<StepModel>;
-  return isPositiveInteger(candidate.id)
+  return typeof candidate.id === 'string' && candidate.id.trim().length > 0
     && typeof candidate.lutId === 'string'
     && typeof candidate.muted === 'boolean'
     && typeof candidate.blendMode === 'string'
@@ -57,8 +53,8 @@ function isLutModel(value: unknown): value is LutModel {
   const candidate = value as Partial<LutModel>;
   return typeof candidate.id === 'string'
     && typeof candidate.name === 'string'
-    && isPositiveInteger(candidate.width)
-    && isPositiveInteger(candidate.height)
+    && typeof candidate.width === 'number' && Number.isInteger(candidate.width) && candidate.width > 0
+    && typeof candidate.height === 'number' && Number.isInteger(candidate.height) && candidate.height > 0
     && typeof candidate.thumbUrl === 'string';
 }
 
@@ -71,8 +67,7 @@ function isPipelineStateSnapshot(value: unknown): value is PipelineStateSnapshot
   return Array.isArray(candidate.steps)
     && candidate.steps.every(step => isStepModel(step))
     && Array.isArray(candidate.luts)
-    && candidate.luts.every(lut => isLutModel(lut))
-    && isPositiveInteger(candidate.nextStepId);
+    && candidate.luts.every(lut => isLutModel(lut));
 }
 
 function assertValidPipelineSnapshot(value: unknown, label: string): asserts value is PipelineStateSnapshot {
@@ -99,7 +94,6 @@ function clonePipelineSnapshot(snapshot: PipelineStateSnapshot): PipelineStateSn
   return {
     steps: snapshot.steps.map(step => cloneStepForHistory(step)),
     luts: snapshot.luts.map(lut => cloneLutForHistory(lut)),
-    nextStepId: snapshot.nextStepId,
   };
 }
 
@@ -130,10 +124,6 @@ function areLutModelsEqual(left: LutModel, right: LutModel): boolean {
 }
 
 function arePipelineSnapshotsEqual(left: PipelineStateSnapshot, right: PipelineStateSnapshot): boolean {
-  if (left.nextStepId !== right.nextStepId) {
-    return false;
-  }
-
   if (left.steps.length !== right.steps.length || left.luts.length !== right.luts.length) {
     return false;
   }

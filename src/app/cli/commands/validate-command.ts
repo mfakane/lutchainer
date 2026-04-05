@@ -7,14 +7,48 @@ import {
   type PipelineZipLutEntry,
 } from '../../../shared/lutchain/lutchain-archive.ts';
 import {
-  isValidBlendMode,
-  isValidBlendOp,
-  isValidChannelName,
-  isValidParamName,
-  MAX_LUTS,
-  MAX_STEPS,
-} from '../../../features/pipeline/pipeline-model.ts';
+  BLEND_MODES,
+  BLEND_OPS,
+  CHANNELS,
+} from '../../../features/step/step-model.ts';
+import { MAX_LUTS, MAX_STEPS } from '../../../features/pipeline/pipeline-constants.ts';
 import { readLutchainBytes } from '../cli-archive.ts';
+
+const PARAM_NAMES = new Set([
+  'lightness',
+  'specular',
+  'halfLambert',
+  'fresnel',
+  'facing',
+  'nDotH',
+  'linearDepth',
+  'r',
+  'g',
+  'b',
+  'h',
+  's',
+  'v',
+  'texU',
+  'texV',
+  'zero',
+  'one',
+]);
+
+function isValidBlendMode(value: string): boolean {
+  return BLEND_MODES.some(mode => mode.key === value);
+}
+
+function isValidBlendOp(value: string): boolean {
+  return (BLEND_OPS as readonly string[]).includes(value);
+}
+
+function isValidChannelName(value: string): boolean {
+  return CHANNELS.includes(value as typeof CHANNELS[number]);
+}
+
+function isValidParamName(value: string): boolean {
+  return PARAM_NAMES.has(value);
+}
 
 export function getValidateUsage(): string {
   return [
@@ -122,7 +156,7 @@ function validateStepOps(step: PipelineStepEntry, fieldPrefix: string): string[]
 
 function validateStepEntries(steps: readonly PipelineStepEntry[], lutIds: ReadonlySet<string>): string[] {
   const errors: string[] = [];
-  const stepIds = new Set<number>();
+  const stepIds = new Set<string>();
 
   if (steps.length > MAX_STEPS) {
     errors.push(`steps exceeds the maximum of ${MAX_STEPS}.`);
@@ -130,12 +164,13 @@ function validateStepEntries(steps: readonly PipelineStepEntry[], lutIds: Readon
 
   for (const [index, step] of steps.entries()) {
     const fieldPrefix = `steps[${index}]`;
-    if (!Number.isInteger(step.id) || step.id <= 0) {
+    const normalizedStepId = typeof step.id === 'number' ? String(step.id) : step.id;
+    if (typeof normalizedStepId !== 'string' || normalizedStepId.trim().length === 0) {
       errors.push(`${fieldPrefix}.id is invalid.`);
-    } else if (stepIds.has(step.id)) {
-      errors.push(`steps contains duplicate id: ${step.id}.`);
+    } else if (stepIds.has(normalizedStepId)) {
+      errors.push(`steps contains duplicate id: ${normalizedStepId}.`);
     } else {
-      stepIds.add(step.id);
+      stepIds.add(normalizedStepId);
     }
 
     if (typeof step.lutId !== 'string' || step.lutId.trim().length === 0) {

@@ -697,7 +697,7 @@ def _build_step_group(
 ) -> bpy.types.ShaderNodeTree:
     step_name = step.label or f"Step {step.id}"
     tree = bpy.data.node_groups.new(
-        f"{_sanitize_name(import_name)} LC Step {step.id:02d}",
+        f"{_sanitize_name(import_name)} LC Step {_sanitize_name(step.id)}",
         "ShaderNodeTree",
     )
     _configure_shader_group_interface(tree, is_step_group=True, step=step)
@@ -787,7 +787,6 @@ def _build_pipeline_group(
     tree["lutchainer_kind"] = "pipeline"
     tree["lutchainer_source_filepath"] = filepath
     tree["lutchainer_version"] = import_data.version
-    tree["lutchainer_next_step_id"] = import_data.next_step_id
 
     nodes = tree.nodes
     links = tree.links
@@ -803,7 +802,7 @@ def _build_pipeline_group(
         step_node = nodes.new("ShaderNodeGroup")
         step_node.node_tree = step_tree
         step_node.name = f"LC Step {index + 1:02d}"
-        step_node.label = step.label or step_node.name
+        step_node.label = step.label or f"Step {index + 1}"
         step_node.location = (current_x, 0)
         step_node["lutchainer_kind"] = "step_node"
         step_node["lutchainer_step_index"] = index

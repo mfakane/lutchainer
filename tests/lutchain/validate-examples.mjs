@@ -39,9 +39,10 @@ function validateFile(fileName) {
 
   const stepIds = new Set();
   for (const step of manifest.steps) {
-    assert(Number.isInteger(step.id) && step.id > 0, `${fileName} step id is invalid`);
-    assert(!stepIds.has(step.id), `${fileName} has duplicate step id ${step.id}`);
-    stepIds.add(step.id);
+    const stepId = typeof step.id === 'number' ? String(step.id) : step.id;
+    assert(typeof stepId === 'string' && stepId.length > 0, `${fileName} step id is invalid`);
+    assert(!stepIds.has(stepId), `${fileName} has duplicate step id ${stepId}`);
+    stepIds.add(stepId);
     assert(lutIds.has(step.lutId), `${fileName} step ${step.id} references missing LUT ${step.lutId}`);
     assert(typeof step.blendMode === 'string', `${fileName} step ${step.id} is missing blendMode`);
     assert(typeof step.xParam === 'string', `${fileName} step ${step.id} is missing xParam`);
@@ -62,4 +63,3 @@ for (const summary of summaries) {
     `${summary.fileName}: ${summary.lutCount} LUTs, ${summary.stepCount} steps, blend modes = ${summary.blendModes.join(', ')}`,
   );
 }
-

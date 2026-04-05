@@ -32,7 +32,7 @@
           echo "  npm run build    — バンドル生成 (dist/web + dist/cli)"
           echo "  npm run dev      — ウォッチモード"
           echo "  npm run serve    — ローカルサーバ起動"
-          echo "  npx tsc --noEmit — 型チェックのみ"
+          echo "  npm run typecheck — 型チェックのみ"
           echo ""
         '';
       };

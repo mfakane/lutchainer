@@ -14,13 +14,13 @@ type Translator = (key: unknown, values?: Record<string, string | number>) => st
 
 interface PipelineCommandsLike {
   addStep: (options?: { recordHistory?: boolean }) => void;
-  duplicateStep: (stepId: number) => void;
-  removeStep: (stepId: number) => void;
-  setStepMuted: (stepId: number, muted: boolean) => void;
-  setStepLabel: (stepId: number, label: string | null) => void;
-  setStepLut: (stepId: number, lutId: string) => void;
-  setStepBlendMode: (stepId: number, blendMode: StepModel['blendMode']) => void;
-  setStepChannelOp: (stepId: number, channel: ChannelName, op: BlendOp) => void;
+  duplicateStep: (stepId: string) => void;
+  removeStep: (stepId: string) => void;
+  setStepMuted: (stepId: string, muted: boolean) => void;
+  setStepLabel: (stepId: string, label: string | null) => void;
+  setStepLut: (stepId: string, lutId: string) => void;
+  setStepBlendMode: (stepId: string, blendMode: StepModel['blendMode']) => void;
+  setStepChannelOp: (stepId: string, channel: ChannelName, op: BlendOp) => void;
   removeLut: (lutId: string) => void;
 }
 

@@ -29,8 +29,8 @@ function isFiniteNumber(value: unknown): value is number {
   return typeof value === 'number' && Number.isFinite(value);
 }
 
-function isValidPositiveInteger(value: unknown): value is number {
-  return typeof value === 'number' && Number.isInteger(value) && value > 0;
+function isNonEmptyString(value: unknown): value is string {
+  return typeof value === 'string' && value.trim().length > 0;
 }
 
 function assertValidSocketDragState(value: unknown): asserts value is SocketDragState {
@@ -51,10 +51,10 @@ function assertValidStepReorderDragState(value: unknown): asserts value is StepR
   }
 
   const candidate = value as Partial<StepReorderDragState>;
-  if (!isValidPositiveInteger(candidate.stepId)) {
+  if (!isNonEmptyString(candidate.stepId)) {
     throw new Error(`Invalid step reorder stepId: ${String(candidate.stepId)}`);
   }
-  if (!(candidate.overStepId === null || isValidPositiveInteger(candidate.overStepId))) {
+  if (!(candidate.overStepId === null || isNonEmptyString(candidate.overStepId))) {
     throw new Error(`Invalid step reorder overStepId: ${String(candidate.overStepId)}`);
   }
   if (typeof candidate.dropAfter !== 'boolean') {

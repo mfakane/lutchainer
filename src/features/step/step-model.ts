@@ -37,7 +37,7 @@ export type Color = [number, number, number];
 export type ColorWithHasChroma = [number, number, number, boolean?];
 export type ColorWithAlpha = [number, number, number, number?];
 export interface StepModel {
-  id: number;
+  id: string;
   lutId: string;
   label?: string;
   muted: boolean;

@@ -73,7 +73,7 @@ def _assert_pipeline_structure(bpy, fixture_path: str) -> None:
 
     ordered_nodes = sorted(step_nodes, key=lambda node: int(node["lutchainer_step_index"]))
     for index, (node, step) in enumerate(zip(ordered_nodes, expected_steps)):
-        if int(node["lutchainer_step_id"]) != step["id"]:
+        if str(node["lutchainer_step_id"]) != str(step["id"]):
             raise AssertionError(f"{fixture_path}: step {index} id mismatch")
         if str(node["lutchainer_blend_mode"]) != step["blendMode"]:
             raise AssertionError(f"{fixture_path}: step {index} blend mode mismatch")

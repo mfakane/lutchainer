@@ -57,7 +57,7 @@ class LutchainLut:
 
 @dataclass(frozen=True)
 class LutchainStep:
-    id: int
+    id: str
     lut_id: str
     blend_mode: str
     x_param: str
@@ -70,7 +70,6 @@ class LutchainStep:
 @dataclass(frozen=True)
 class LutchainImportData:
     version: int
-    next_step_id: int
     display_name: str
     luts: list[LutchainLut]
     steps: list[LutchainStep]
@@ -141,7 +140,11 @@ def _parse_lut(index: int, raw_lut: object, archive: zipfile.ZipFile) -> Lutchai
 
 def _parse_step(index: int, raw_step: object) -> LutchainStep:
     record = _require_record(raw_step, f"steps[{index}]")
-    step_id = _require_int(record.get("id"), f"steps[{index}].id", min_value=1)
+    raw_step_id = record.get("id")
+    if isinstance(raw_step_id, int) and not isinstance(raw_step_id, bool):
+        step_id = str(_require_int(raw_step_id, f"steps[{index}].id", min_value=1))
+    else:
+        step_id = _require_text(raw_step_id, f"steps[{index}].id", max_length=128)
     lut_id = _require_text(record.get("lutId"), f"steps[{index}].lutId", max_length=128)
     blend_mode = _require_text(record.get("blendMode"), f"steps[{index}].blendMode", max_length=32)
     if blend_mode not in BLEND_MODES:
@@ -191,7 +194,6 @@ def load_lutchain_file(filepath: str) -> LutchainImportData:
         version = _require_int(root.get("version"), "version", min_value=1)
         if version != 2:
             raise ValueError(f"Unsupported .lutchain version: {version}")
-        next_step_id = _require_int(root.get("nextStepId"), "nextStepId", min_value=1)
 
         raw_luts = root.get("luts")
         raw_steps = root.get("steps")
@@ -217,9 +219,7 @@ def load_lutchain_file(filepath: str) -> LutchainImportData:
     display_name = os.path.splitext(os.path.basename(filepath))[0]
     return LutchainImportData(
         version=version,
-        next_step_id=next_step_id,
         display_name=display_name,
         luts=luts,
         steps=steps,
     )
-
