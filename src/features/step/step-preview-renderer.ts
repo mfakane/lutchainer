@@ -1,4 +1,4 @@
-import { applyLutTextures } from '../../shared/rendering/lut-texture-utils';
+import { applyLutTextures } from '../../app/browser/rendering/lut-texture-utils';
 import type { Color } from './step-model';
 
 export interface StepPreviewShaderError {

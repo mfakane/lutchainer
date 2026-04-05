@@ -6,11 +6,11 @@ import {
   resolveSocketDragPreviewColor,
   resolveSocketDragPreviewEnd,
   resolveSocketDragPreviewStart,
-} from '../../shared/interactions/socket-dnd';
+} from './interactions/socket-dnd';
 import {
   isValidSocketDragState,
   isValidSocketDropTarget,
-} from '../../shared/interactions/socket-validation';
+} from './interactions/socket-validation';
 
 export interface ConnectionLayerRenderOptions {
   pipelineWorkspaceEl: HTMLElement;

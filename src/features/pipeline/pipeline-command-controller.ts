@@ -1,4 +1,4 @@
-import { reorderItemsById } from '../../shared/interactions/dnd';
+import { reorderItemsById } from '../../shared/utils/reorder';
 import type {
   LutModel,
   ParamName,
