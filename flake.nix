@@ -12,15 +12,14 @@
       nodejs = pkgs.nodejs_22;
     in {
 
-      # ── Dev shell ────────────────────────────────────────────────────────
-      # 使い方: nix develop
+      # nix develop
       devShells.${system}.default = pkgs.mkShell {
         name = "lutchainer";
 
         packages = [
           nodejs
-          pkgs.esbuild   # CLIとしても使えるように
-          pkgs.python3   # Agent の Skills 関連で必要
+          pkgs.esbuild   # CLI for bundling
+          pkgs.python3   # Required for Agent's Skills
           pkgs.python3Packages.pyyaml
         ];
 
@@ -28,17 +27,16 @@
           echo ""
           echo "  🐾  lutchainer dev shell (Node $(node --version))"
           echo ""
-          echo "  npm install      — 依存関係のインストール"
-          echo "  npm run build    — バンドル生成 (dist/web + dist/cli)"
-          echo "  npm run dev      — ウォッチモード"
-          echo "  npm run serve    — ローカルサーバ起動"
-          echo "  npm run typecheck — 型チェックのみ"
+          echo "  npm install      - Install deps"
+          echo "  npm run build    - Bundle (dist/web + dist/cli)"
+          echo "  npm run dev      - Watch mode"
+          echo "  npm run serve    - Start local server"
           echo ""
         '';
       };
 
-      # ── Package (静的ファイル + CLI) ───────────────────────────────────
-      # 使い方: nix build  →  result/ に dist/web と dist/cli が入る
+      # Package (static files + cli)
+      # Usage: nix build -> dist/web and dist/cli placed in result/ 
       packages.${system}.default = pkgs.buildNpmPackage {
         pname   = "lutchainer";
         version = "1.0.0";
@@ -47,10 +45,10 @@
 
         nodejs = nodejs;
 
-        # nix run nixpkgs#prefetch-npm-deps -- package-lock.json で再生成可能
+        # Regenerate with: nix run nixpkgs#prefetch-npm-deps -- package-lock.json
         npmDepsHash = "sha256-0V5AHXI+V3G1JuLZeEr3AtaSQVrDnASl8eGYxmGKMb4=";
 
-        # postinstall に esbuild が走るのを防ぐ
+        # Prevent esbuild from running during postinstall
         npmFlags = [ "--ignore-scripts" ];
 
         buildPhase = ''
@@ -74,8 +72,7 @@
         };
       };
 
-      # ── App (nix run で CLI を起動) ────────────────────────────
-      # 使い方: nix run -- --help / nix run -- serve
+      # nix run -- --help / nix run -- serve
       apps.${system}.default = {
         type    = "app";
         program = toString (pkgs.writeShellScript "lutchainer" ''
