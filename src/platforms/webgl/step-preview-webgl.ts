@@ -2,7 +2,7 @@ import type {
   LightSettings,
   MaterialSettings,
 } from '../../features/pipeline/pipeline-model';
-import * as shaderGenerator from '../../features/shader/shader-generator';
+import { getShaderGenerator } from '../../features/shader/shader-generator';
 import type {
   LutModel,
   StepModel,
@@ -147,10 +147,16 @@ export function ensureStepPreviewRendererProgram(
   }
 
   const compileResult = renderer.compileProgram(
-    shaderGenerator.buildStepPreviewFragmentShader({
+    (() => {
+      const glslGenerator = getShaderGenerator('glsl');
+      if (typeof glslGenerator.buildPreviewFragment !== 'function') {
+        throw new Error('GLSL generator does not support preview fragment generation.');
+      }
+      return glslGenerator.buildPreviewFragment({
       steps: [...steps],
       luts: [...luts],
-    }),
+      });
+    })(),
   );
   if (!compileResult.success) {
     return {

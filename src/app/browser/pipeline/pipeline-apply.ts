@@ -1,6 +1,6 @@
 import type { Renderer } from '../../../platforms/webgl/renderer.ts';
 import type { ShaderBuildInput } from '../../../features/shader/shader-generator.ts';
-import { buildFragmentShader, DEFAULT_VERT } from '../../../features/shader/shader-generator.ts';
+import { getShaderGenerator } from '../../../features/shader/shader-generator.ts';
 
 export interface PipelineApplyControllerOptions {
   getShaderBuildInput: () => ShaderBuildInput;
@@ -51,6 +51,7 @@ export function createPipelineApplyController(
   let timer: ReturnType<typeof setTimeout> | null = null;
 
   function applyNow(): void {
+    const glslGenerator = getShaderGenerator('glsl');
     const input = options.getShaderBuildInput();
     const lutError = options.renderer.setLutTextures(input.luts.map(l => l.image));
     if (lutError) {
@@ -58,9 +59,13 @@ export function createPipelineApplyController(
       return;
     }
 
-    const frag = buildFragmentShader(input);
+    const frag = glslGenerator.buildFragment(input);
+    const vertex = glslGenerator.buildVertex;
+    if (typeof vertex !== 'function') {
+      throw new Error('GLSL generator does not provide a vertex shader.');
+    }
     options.onUpdateShaderCodePanel(frag);
-    const result = options.renderer.compileProgram(DEFAULT_VERT, frag);
+    const result = options.renderer.compileProgram(vertex(), frag);
 
     if (result.success) {
       options.onStatus(

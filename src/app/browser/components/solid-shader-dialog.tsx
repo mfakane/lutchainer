@@ -1,10 +1,13 @@
 import { For, createSignal } from 'solid-js';
 import { render } from 'solid-js/web';
-import * as shaderGenerator from '../../../features/shader/shader-generator';
+import {
+  getShaderGenerator,
+  type ShaderBuildInput,
+  type ShaderGenerator,
+  type ShaderLanguage,
+} from '../../../features/shader/shader-generator';
 import { t, useLanguage } from '../i18n';
 
-type ShaderStage = shaderGenerator.ShaderStage;
-type ShaderBuildInput = shaderGenerator.ShaderBuildInput;
 type StatusKind = 'success' | 'error' | 'info';
 
 // --- Types ---
@@ -26,10 +29,43 @@ interface ShaderDialogShellOptions {
 
 // --- Constants ---
 
-const SHADER_STAGES: { stage: ShaderStage; label: string }[] = [
-  { stage: 'fragment', label: 'GLSL Fragment' },
-  { stage: 'vertex', label: 'GLSL Vertex' },
-  { stage: 'hlsl', label: 'HLSL' },
+type ShaderCodeEntryId = 'glsl-fragment' | 'glsl-vertex' | 'hlsl-fragment';
+
+interface ShaderCodeEntry {
+  id: ShaderCodeEntryId;
+  label: string;
+  stageLabel: string;
+  language: ShaderLanguage;
+  getSource: (generator: ShaderGenerator, input: ShaderBuildInput, cachedFragShader?: string) => string;
+}
+
+const SHADER_CODE_ENTRIES: readonly ShaderCodeEntry[] = [
+  {
+    id: 'glsl-fragment',
+    label: 'GLSL Fragment',
+    stageLabel: 'Fragment',
+    language: 'glsl',
+    getSource: (generator, input, cachedFragShader) => cachedFragShader ?? generator.buildFragment(input),
+  },
+  {
+    id: 'glsl-vertex',
+    label: 'GLSL Vertex',
+    stageLabel: 'Vertex',
+    language: 'glsl',
+    getSource: generator => {
+      if (typeof generator.buildVertex !== 'function') {
+        throw new Error('GLSL generator does not provide a vertex shader.');
+      }
+      return generator.buildVertex();
+    },
+  },
+  {
+    id: 'hlsl-fragment',
+    label: 'HLSL',
+    stageLabel: 'HLSL',
+    language: 'hlsl',
+    getSource: (generator, input) => generator.buildFragment(input),
+  },
 ];
 
 // --- Module-level state (populated when component renders) ---
@@ -73,7 +109,7 @@ function ShaderDialogContent(props: { options: ShaderDialogContentOptions }) {
     return t(key, values);
   };
 
-  const [activeStage, setActiveStage] = createSignal<ShaderStage>('fragment');
+  const [activeEntryId, setActiveEntryId] = createSignal<ShaderCodeEntryId>('glsl-fragment');
   const [buildInput, setBuildInput] = createSignal<ShaderBuildInput | null>(null);
   const [cachedFragShader, setCachedFragShader] = createSignal<string | undefined>(undefined);
 
@@ -82,16 +118,19 @@ function ShaderDialogContent(props: { options: ShaderDialogContentOptions }) {
     setCachedFragShader(fragmentShader);
   };
 
+  const activeEntry = () => SHADER_CODE_ENTRIES.find(entry => entry.id === activeEntryId()) ?? SHADER_CODE_ENTRIES[0];
+
   const shaderSource = () => {
     const input = buildInput();
     if (!input) return '';
-    return shaderGenerator.getShaderSource(activeStage(), input, cachedFragShader());
+    const entry = activeEntry();
+    return entry.getSource(getShaderGenerator(entry.language), input, cachedFragShader());
   };
 
   const metaText = () => {
     const source = shaderSource();
     return tr('shader.meta', {
-      stage: shaderGenerator.getShaderStageLabel(activeStage()),
+      stage: activeEntry().stageLabel,
       lines: source.split('\n').length,
     });
   };
@@ -106,7 +145,7 @@ function ShaderDialogContent(props: { options: ShaderDialogContentOptions }) {
       await navigator.clipboard.writeText(shaderSource());
       props.options.onStatus(
         tr('shader.status.copySuccess', {
-          stage: shaderGenerator.getShaderStageLabel(activeStage()),
+          stage: activeEntry().stageLabel,
         }),
         'success',
       );
@@ -133,16 +172,16 @@ function ShaderDialogContent(props: { options: ShaderDialogContentOptions }) {
         </div>
         <div class="shader-toolbar">
           <div class="shader-tabs" aria-label={tr('shader.tabsAria')}>
-            <For each={SHADER_STAGES}>
-              {({ stage, label }) => (
+            <For each={SHADER_CODE_ENTRIES}>
+              {entry => (
                 <button
                   type="button"
-                  class={`shader-tab${activeStage() === stage ? ' active' : ''}`}
-                  data-shader-stage={stage}
-                  aria-pressed={activeStage() === stage ? 'true' : 'false'}
-                  onClick={() => setActiveStage(stage)}
+                  class={`shader-tab${activeEntryId() === entry.id ? ' active' : ''}`}
+                  data-shader-stage={entry.id}
+                  aria-pressed={activeEntryId() === entry.id ? 'true' : 'false'}
+                  onClick={() => setActiveEntryId(entry.id)}
                 >
-                  {label}
+                  {entry.label}
                 </button>
               )}
             </For>
@@ -268,7 +307,7 @@ export function mountShaderDialogShell(options: ShaderDialogShellOptions): void 
 }
 
 export function syncShaderDialogState(
-  input: shaderGenerator.ShaderBuildInput,
+  input: ShaderBuildInput,
   fragmentShader?: string,
 ): void {
   syncShaderDialogInternal?.(input, fragmentShader);

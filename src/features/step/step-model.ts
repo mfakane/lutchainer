@@ -102,8 +102,6 @@ export interface BlendModeStrategy {
   editableChannels: readonly ChannelName[];
   selectableChannelBlendOps: readonly BlendOp[];
   applyCpu: (input: BlendModeApplyInput) => Color;
-  emitGlsl: (input: BlendModeEmitInput) => string[];
-  emitHlsl: (input: BlendModeEmitInput) => string[];
 }
 
 export type ShaderLocalKey =
@@ -122,14 +120,12 @@ export type ShaderLocalKey =
   | 'linearDepth'
   | 'texcoord';
 
-export interface ParamShaderInfo {
-  glslExpr: string;
-  hlslExpr: string;
+export interface ParamRequirementInfo {
   requires: readonly ShaderLocalKey[];
 }
 
 export interface ParamEvaluator {
-  shader: ParamShaderInfo;
+  requires: readonly ShaderLocalKey[];
   evaluate: (current: Color, context: StepParamContext) => number;
 }
 

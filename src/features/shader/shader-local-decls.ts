@@ -5,9 +5,41 @@ import type {
   StepRuntimeModel,
 } from '../step/step-model';
 import { PARAM_EVALUATORS } from '../step/step-param-evaluators';
-import { ALL_LOCAL_KEYS, SHADER_LOCALS } from './shader-locals-data';
+import type { ShaderLanguageBackend, ShaderOutputKind } from './shader-language-backend';
 
-export type ShaderLocalDeclarationStage = 'previewGlsl' | 'fragmentGlsl' | 'hlsl';
+const ALL_LOCAL_KEYS: readonly ShaderLocalKey[] = [
+  'N',
+  'L',
+  'NdotL',
+  'cameraPos',
+  'V',
+  'H',
+  'lambert',
+  'halfLambert',
+  'nDotH',
+  'specular',
+  'facing',
+  'fresnel',
+  'linearDepth',
+  'texcoord',
+];
+
+const LOCAL_DEPENDENCIES: Record<ShaderLocalKey, readonly ShaderLocalKey[]> = {
+  N: [],
+  L: [],
+  NdotL: ['N', 'L'],
+  cameraPos: [],
+  V: ['N', 'cameraPos'],
+  H: ['L', 'V'],
+  lambert: ['NdotL'],
+  halfLambert: ['NdotL'],
+  nDotH: ['N', 'H'],
+  specular: ['nDotH'],
+  facing: ['N', 'V'],
+  fresnel: ['facing'],
+  linearDepth: ['N', 'cameraPos'],
+  texcoord: [],
+};
 
 function isObject(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === 'object' && !Array.isArray(value);
@@ -52,12 +84,6 @@ function assertValidStepRuntimeModels(stepModels: readonly StepRuntimeModel[]): 
   }
 }
 
-function assertValidStage(stage: unknown): asserts stage is ShaderLocalDeclarationStage {
-  if (stage !== 'previewGlsl' && stage !== 'fragmentGlsl' && stage !== 'hlsl') {
-    throw new Error(`stage が不正です: ${String(stage)}`);
-  }
-}
-
 function collectUsedParams(stepModels: readonly StepRuntimeModel[]): Set<ParamName> {
   const usedParams = new Set<ParamName>();
   for (const stepModel of stepModels) {
@@ -70,7 +96,7 @@ function collectUsedParams(stepModels: readonly StepRuntimeModel[]): Set<ParamNa
 function collectRequiredLocals(usedParams: ReadonlySet<ParamName>): Set<ShaderLocalKey> {
   const required = new Set<ShaderLocalKey>();
   for (const param of usedParams) {
-    for (const key of PARAM_EVALUATORS[param].shader.requires) {
+    for (const key of PARAM_EVALUATORS[param].requires) {
       required.add(key);
     }
   }
@@ -82,10 +108,9 @@ function collectRequiredLocals(usedParams: ReadonlySet<ParamName>): Set<ShaderLo
       if (!required.has(key)) {
         continue;
       }
-
-      for (const dep of SHADER_LOCALS[key].requires) {
-        if (!required.has(dep)) {
-          required.add(dep);
+      for (const dependency of LOCAL_DEPENDENCIES[key]) {
+        if (!required.has(dependency)) {
+          required.add(dependency);
           changed = true;
         }
       }
@@ -109,12 +134,11 @@ function topoSort(required: ReadonlySet<ShaderLocalKey>): ShaderLocalKey[] {
     }
 
     visiting.add(key);
-    for (const dep of SHADER_LOCALS[key].requires) {
-      if (required.has(dep)) {
-        visit(dep);
+    for (const dependency of LOCAL_DEPENDENCIES[key]) {
+      if (required.has(dependency)) {
+        visit(dependency);
       }
     }
-
     visiting.delete(key);
     visited.add(key);
     sorted.push(key);
@@ -129,53 +153,28 @@ function topoSort(required: ReadonlySet<ShaderLocalKey>): ShaderLocalKey[] {
   return sorted;
 }
 
-function emitLocalDecls(required: ReadonlySet<ShaderLocalKey>, stage: 'previewGlsl'): string[];
-function emitLocalDecls(required: ReadonlySet<ShaderLocalKey>, stage: 'fragmentGlsl' | 'hlsl', material: MaterialSettings): string[];
-function emitLocalDecls(
-  required: ReadonlySet<ShaderLocalKey>,
-  stage: ShaderLocalDeclarationStage,
-  material?: MaterialSettings,
-): string[] {
-  if ((stage === 'fragmentGlsl' || stage === 'hlsl') && !isValidMaterialSettings(material)) {
-    throw new Error('materialSettings が不正です。');
-  }
-
-  const sorted = topoSort(required);
-  return sorted.flatMap(key => {
-    const decl = SHADER_LOCALS[key];
-    if (stage === 'previewGlsl') {
-      return [...decl.previewGlsl];
-    }
-    if (stage === 'fragmentGlsl') {
-      return [...decl.fragmentGlsl(material!)];
-    }
-    return [...decl.hlsl(material!)];
-  });
+export interface BuildShaderLocalDeclarationOptions {
+  backend: ShaderLanguageBackend;
+  outputKind: ShaderOutputKind;
+  material?: MaterialSettings;
 }
 
-export function buildShaderLocalDeclarations(stepModels: readonly StepRuntimeModel[], stage: 'previewGlsl'): string[];
 export function buildShaderLocalDeclarations(
   stepModels: readonly StepRuntimeModel[],
-  stage: 'fragmentGlsl' | 'hlsl',
-  material: MaterialSettings,
-): string[];
-export function buildShaderLocalDeclarations(
-  stepModels: readonly StepRuntimeModel[],
-  stage: ShaderLocalDeclarationStage,
-  material?: MaterialSettings,
+  options: BuildShaderLocalDeclarationOptions,
 ): string[] {
   assertValidStepRuntimeModels(stepModels);
-  assertValidStage(stage);
+  if (!options || typeof options !== 'object' || !options.backend) {
+    throw new Error('shader local declaration options が不正です。');
+  }
+  if (options.outputKind === 'fragment' && !isValidMaterialSettings(options.material)) {
+    throw new Error('materialSettings が不正です。');
+  }
 
   const usedParams = collectUsedParams(stepModels);
   const requiredLocals = collectRequiredLocals(usedParams);
-  if (stage === 'previewGlsl') {
-    return emitLocalDecls(requiredLocals, stage);
-  }
-
-  if (!isValidMaterialSettings(material)) {
-    throw new Error('materialSettings が不正です。');
-  }
-
-  return emitLocalDecls(requiredLocals, stage, material);
+  const sorted = topoSort(requiredLocals);
+  return sorted.flatMap(key => [
+    ...options.backend.emitLocalDeclaration(key, options.outputKind, options.material),
+  ]);
 }

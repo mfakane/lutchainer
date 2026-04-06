@@ -1,4 +1,7 @@
 export type {
-    ShaderBuildInput, ShaderStage, StepPreviewShaderBuildInput
+  ShaderBuildInput,
+  ShaderGenerator,
+  ShaderGeneratorCapabilities,
+  StepPreviewShaderBuildInput,
 } from './shader-generator';
-
+export type { ShaderLanguage } from './shader-language-backend';

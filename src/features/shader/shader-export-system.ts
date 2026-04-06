@@ -1,5 +1,5 @@
 import { strToU8, zipSync } from 'fflate';
-import { buildFragmentShader, buildHlslShader, DEFAULT_VERT, type ShaderBuildInput } from './shader-generator.ts';
+import { listShaderGenerators, type ShaderBuildInput } from './shader-generator.ts';
 
 export interface ExportShaderZipResult {
   ok: boolean;
@@ -80,11 +80,13 @@ function canvasToPngBytes(canvas: HTMLCanvasElement): Promise<Uint8Array> {
 }
 
 export async function serializeShaderExportAsZip(input: ShaderBuildInput): Promise<Uint8Array> {
-  const zipFiles: Record<string, Uint8Array> = {
-    'fragment.glsl': strToU8(buildFragmentShader(input)),
-    'vertex.glsl': strToU8(DEFAULT_VERT),
-    'shader.hlsl': strToU8(buildHlslShader(input)),
-  };
+  const zipFiles: Record<string, Uint8Array> = {};
+  for (const generator of listShaderGenerators()) {
+    const files = generator.getExportFiles(input);
+    for (const [path, source] of Object.entries(files)) {
+      zipFiles[path] = strToU8(source);
+    }
+  }
 
   for (const lut of input.luts) {
     zipFiles[`luts/${lut.id}.png`] = await canvasToPngBytes(lut.image);
