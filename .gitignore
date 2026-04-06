@@ -2,7 +2,7 @@ dist/
 .direnv/
 node_modules/
 result
-.claude/worktrees/
+worktrees/
 __pycache__/
 .env
 artifacts/

@@ -244,6 +244,6 @@ src/
 
 ## Related Docs
 
-- `.claude/rules/coding-style.md`
-- `.claude/rules/common-mistakes.md`
-- `.claude/rules/blender-addon.md`
+- `.agents/rules/coding-style.md`
+- `.agents/rules/common-mistakes.md`
+- `.agents/rules/blender-addon.md`
