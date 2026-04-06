@@ -89,7 +89,7 @@ export async function serializeShaderExportAsZip(input: ShaderBuildInput): Promi
   }
 
   for (const lut of input.luts) {
-    zipFiles[`luts/${lut.id}.png`] = await canvasToPngBytes(lut.image);
+    zipFiles[`${lut.id}.png`] = await canvasToPngBytes(lut.image);
   }
 
   return zipSync(zipFiles);
