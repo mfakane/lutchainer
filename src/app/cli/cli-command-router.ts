@@ -1,4 +1,5 @@
 import process from 'node:process';
+import { getCliBuildLabel } from './cli-build-info.ts';
 import { runInfoCommand } from './commands/info-command.ts';
 import { runLutExtractCommand } from './commands/lut-extract-command.ts';
 import { runLutListCommand } from './commands/lut-list-command.ts';
@@ -8,15 +9,18 @@ import { runServeCommand } from './commands/serve-command.ts';
 import { runStepListCommand } from './commands/step-list-command.ts';
 import { runStepShowCommand } from './commands/step-show-command.ts';
 import { runValidateCommand } from './commands/validate-command.ts';
+import { runVersionCommand } from './commands/version-command.ts';
 
-type TopLevelCommand = 'serve' | 'info' | 'validate';
+type TopLevelCommand = 'serve' | 'info' | 'validate' | 'version';
 type Group = 'lut' | 'step' | 'pipeline';
 type LutSubcommand = 'list' | 'show' | 'extract';
 type StepSubcommand = 'list' | 'show';
 type PipelineSubcommand = 'cat';
 
 function rootUsage(): string {
-  return [
+  const buildLabel = getCliBuildLabel();
+  const lines = [
+    ...(buildLabel ? [buildLabel, ''] : []),
     'Usage:',
     '  lutchainer <command> [<args>]',
     '',
@@ -24,13 +28,16 @@ function rootUsage(): string {
     '  serve       Start the local preview server',
     '  info        Show archive summary information',
     '  validate    Validate a .lutchain archive',
+    '  version     Show CLI version information',
     '  lut         Inspect or extract LUT entries',
     '  step        Inspect step entries',
     '  pipeline    Inspect raw pipeline data',
     '',
     `Run 'lutchainer <command> --help' for more information.`,
     `Run 'lutchainer <group> <subcommand> --help' for nested commands.`,
-  ].join('\n');
+  ];
+
+  return lines.join('\n');
 }
 
 function lutUsage(): string {
@@ -121,6 +128,8 @@ export async function runCli(argv: string[]): Promise<number> {
       return await runInfoCommand(nestedArgv);
     case 'validate':
       return await runValidateCommand(nestedArgv);
+    case 'version':
+      return await runVersionCommand(nestedArgv);
     case 'lut':
       if (isGroupHelp) {
         return writeGroupUsage('lut', 0);

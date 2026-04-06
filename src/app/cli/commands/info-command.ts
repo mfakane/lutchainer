@@ -1,6 +1,7 @@
 import process from 'node:process';
 import { parseArgs } from 'node:util';
 import { loadLutchainArchive } from '../cli-archive.ts';
+import { getBuildCommitId } from '../cli-build-info.ts';
 import { formatInfoSummary, type InfoSummaryRow } from '../cli-output.ts';
 
 export function getInfoUsage(): string {
@@ -16,6 +17,7 @@ interface InfoCommandOptions {
 }
 
 interface InfoSummary {
+  buildCommitId: string | null;
   version: number;
   lutCount: number;
   stepCount: number;
@@ -54,6 +56,7 @@ function buildInfoSummary(manifest: {
   steps: Array<{ id: string | number; blendMode: string }>;
 }): InfoSummary {
   return {
+    buildCommitId: getBuildCommitId(),
     version: manifest.version,
     lutCount: manifest.luts.length,
     stepCount: manifest.steps.length,
@@ -65,6 +68,7 @@ function buildInfoSummary(manifest: {
 
 function toInfoSummaryRows(summary: InfoSummary): InfoSummaryRow[] {
   return [
+    { key: 'Build-Commit', value: summary.buildCommitId ?? '-' },
     { key: 'Version', value: String(summary.version) },
     { key: 'LUT-Count', value: String(summary.lutCount) },
     { key: 'Step-Count', value: String(summary.stepCount) },

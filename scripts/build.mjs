@@ -154,6 +154,9 @@ const cliBuildOptions = {
     '.ts': 'ts',
     '.tsx': 'tsx',
   },
+  define: {
+    __BUILD_COMMIT_ID__: JSON.stringify(buildCommitId),
+  },
   banner: {
     js: '#!/usr/bin/env node',
   },
