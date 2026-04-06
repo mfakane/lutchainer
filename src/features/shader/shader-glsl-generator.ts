@@ -5,6 +5,7 @@ import type { LutModel, StepModel } from '../step/step-model';
 import {
   resolveStepRuntimeModels,
 } from '../step/step-runtime';
+import { buildGeneratedShaderHeader } from '../../shared/build-info.ts';
 import { GLSL_SHADER_BACKEND } from './shader-glsl-backend';
 import { buildSampleBody } from './shader-generator-utils';
 import { buildShaderLocalDeclarations } from './shader-local-decls';
@@ -16,7 +17,7 @@ import type {
   StepPreviewShaderBuildInput,
 } from './shader-generator';
 
-export const DEFAULT_GLSL_VERTEX_SHADER = `// SPDX-License-Identifier: CC0-1.0
+export const DEFAULT_GLSL_VERTEX_SHADER = `${buildGeneratedShaderHeader('//')}
 precision mediump float;
 
 attribute vec3 a_position;
@@ -121,7 +122,7 @@ function buildPreviewFragmentShader(input: StepPreviewShaderBuildInput): string 
     outputKind: 'previewFragment',
   });
 
-  return `// SPDX-License-Identifier: CC0-1.0
+  return `${buildGeneratedShaderHeader('//')}
 precision mediump float;
 
 uniform vec2 u_resolution;
@@ -198,7 +199,7 @@ function buildFragmentShader(input: ShaderBuildInput): string {
     material: input.materialSettings,
   });
 
-  return `// SPDX-License-Identifier: CC0-1.0
+  return `${buildGeneratedShaderHeader('//')}
 precision mediump float;
 
 uniform float u_time;

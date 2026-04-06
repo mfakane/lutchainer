@@ -1,6 +1,7 @@
 import {
   resolveStepRuntimeModels,
 } from '../step/step-runtime';
+import { buildGeneratedShaderHeader } from '../../shared/build-info.ts';
 import { HLSL_SHADER_BACKEND } from './shader-hlsl-backend';
 import { buildSampleBody } from './shader-generator-utils';
 import { buildShaderLocalDeclarations } from './shader-local-decls';
@@ -93,7 +94,7 @@ function buildFragmentShader(input: ShaderBuildInput): string {
     material: input.materialSettings,
   });
 
-  return `// SPDX-License-Identifier: CC0-1.0
+  return `${buildGeneratedShaderHeader('//')}
 cbuffer SceneUniforms : register(b0)
 {
   float4x4 u_modelMatrix;

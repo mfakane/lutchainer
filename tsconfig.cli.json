@@ -10,6 +10,7 @@
   "include": [
     "src/app/cli/**/*.ts",
     "src/platforms/node/**/*.ts",
+    "src/shared/build-info.ts",
     "src/shared/lutchain/**/*.ts",
     "src/features/lut-editor/lut-editor-model.ts",
     "src/features/pipeline/pipeline-constants.ts",
