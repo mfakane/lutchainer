@@ -3,8 +3,8 @@ import { execFile } from 'node:child_process';
 import { mkdtemp, readFile, rm, stat, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { promisify } from 'node:util';
 import test from 'node:test';
+import { promisify } from 'node:util';
 
 const execFileAsync = promisify(execFile);
 const repoRoot = path.resolve(import.meta.dirname, '..', '..');
@@ -125,6 +125,13 @@ test('validate reports valid archives in text and json modes', async () => {
   assert.equal(jsonResult.exitCode, 0);
   const payload = JSON.parse(jsonResult.stdout);
   assert.deepEqual(payload, { valid: true, errors: [] });
+});
+
+test('version prints the CLI commit id and exits successfully', async () => {
+  const result = await runCli(['version']);
+  assert.equal(result.exitCode, 0);
+  const versionPattern = /^[a-z0-9]+$/;
+  assert.match(result.stdout.trim(), versionPattern);
 });
 
 test('lut list prints a table and json array', async () => {
