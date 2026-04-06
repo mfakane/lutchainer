@@ -1271,8 +1271,9 @@ button:disabled:hover {
 }
 
 .shader-panel-head {
-  display: flex;
-  align-items: flex-start;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  align-items: center;
   justify-content: space-between;
   gap: 12px;
   padding: 10px 12px;
@@ -1324,14 +1325,17 @@ button:disabled:hover {
   display: flex;
   align-items: stretch;
   gap: 8px;
+  margin-left: auto;
   flex-wrap: wrap;
   justify-content: flex-end;
 }
 
 .shader-tabs {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   gap: 4px;
+  margin-left: auto;
+  margin-right: auto;
   padding: 3px;
   border: 1px solid var(--panel-border-strong);
   border-radius: 999px;
@@ -2325,7 +2329,7 @@ button:disabled:hover {
   }
 
   .shader-panel-head {
-    flex-direction: column;
+    grid-template-columns: 1fr;
   }
 
   .shader-toolbar {

@@ -170,22 +170,22 @@ function ShaderDialogContent(props: { options: ShaderDialogContentOptions }) {
           <div class="section-label" id="shader-dialog-title">Generated Shader</div>
           <div class="shader-help">{tr('shader.help')}</div>
         </div>
+        <div class="shader-tabs" aria-label={tr('shader.tabsAria')}>
+          <For each={SHADER_CODE_ENTRIES}>
+            {entry => (
+              <button
+                type="button"
+                class={`shader-tab${activeEntryId() === entry.id ? ' active' : ''}`}
+                data-shader-stage={entry.id}
+                aria-pressed={activeEntryId() === entry.id ? 'true' : 'false'}
+                onClick={() => setActiveEntryId(entry.id)}
+              >
+                {entry.label}
+              </button>
+            )}
+          </For>
+        </div>
         <div class="shader-toolbar">
-          <div class="shader-tabs" aria-label={tr('shader.tabsAria')}>
-            <For each={SHADER_CODE_ENTRIES}>
-              {entry => (
-                <button
-                  type="button"
-                  class={`shader-tab${activeEntryId() === entry.id ? ' active' : ''}`}
-                  data-shader-stage={entry.id}
-                  aria-pressed={activeEntryId() === entry.id ? 'true' : 'false'}
-                  onClick={() => setActiveEntryId(entry.id)}
-                >
-                  {entry.label}
-                </button>
-              )}
-            </For>
-          </div>
           <button
             type="button"
             class="btn-secondary shader-copy-btn"
