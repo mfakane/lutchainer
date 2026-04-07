@@ -9,7 +9,7 @@ import bpy
 from .manifest import LutchainCustomParam, LutchainImportData, LutchainLut, LutchainStep
 
 COLOR_INPUTS = [
-    ("Base Color", "NodeSocketColor"),
+    ("Base Color", "NodeSocketColor", "", False),
 ]
 FLOAT_INPUTS = [
     "Lightness",
@@ -21,10 +21,10 @@ FLOAT_INPUTS = [
     "LinearDepth",
 ]
 VECTOR_INPUTS = [
-    ("TexCoord", "NodeSocketVector"),
+    ("TexCoord", "NodeSocketVector", "", False),
 ]
 STEP_INPUTS = [
-    ("Current Color", "NodeSocketColor"),
+    ("Current Color", "NodeSocketColor", "", False),
 ]
 MIXRGB_BLEND_TYPES = {
     "replace": "MIX",
@@ -133,22 +133,22 @@ def _new_interface_socket(
     return socket
 
 
-def _step_group_context_inputs(step: LutchainStep) -> list[tuple[str, str]]:
-    ordered_inputs: list[tuple[str, str]] = []
+def _step_group_context_inputs(step: LutchainStep) -> list[tuple[str, str, str, bool]]:
+    ordered_inputs: list[tuple[str, str, str, bool]] = []
     seen: set[str] = set()
     for param_name in (step.x_param, step.y_param):
         if param_name in PARAM_TO_GROUP_INPUT:
             input_name = PARAM_TO_GROUP_INPUT[param_name]
             if input_name not in seen:
-                ordered_inputs.append((input_name, "NodeSocketFloat"))
+                ordered_inputs.append((input_name, "NodeSocketFloat", "", False))
                 seen.add(input_name)
         elif param_name in PARAMS_REQUIRING_TEXCOORD and "TexCoord" not in seen:
-            ordered_inputs.append(("TexCoord", "NodeSocketVector"))
+            ordered_inputs.append(("TexCoord", "NodeSocketVector", "", False))
             seen.add("TexCoord")
         elif param_name.startswith("custom:"):
             input_name = _custom_param_socket_name(param_name.split(":", 1)[1])
             if input_name not in seen:
-                ordered_inputs.append((input_name, "NodeSocketFloat"))
+                ordered_inputs.append((input_name, "NodeSocketFloat", "", False))
                 seen.add(input_name)
     return ordered_inputs
 
@@ -176,12 +176,14 @@ def _configure_shader_group_interface(
             raise ValueError("step group interface requires a step")
         inputs = STEP_INPUTS + _step_group_context_inputs(step)
     else:
-        inputs = COLOR_INPUTS + [(name, "NodeSocketFloat") for name in FLOAT_INPUTS] + VECTOR_INPUTS
+        inputs = COLOR_INPUTS + [(name, "NodeSocketFloat", "", False) for name in FLOAT_INPUTS] + VECTOR_INPUTS
         if custom_params:
-            inputs += [(_custom_param_socket_name(custom_param.id), "NodeSocketFloat") for custom_param in custom_params]
+            inputs += [(_custom_param_socket_name(custom_param.id), "NodeSocketFloat", custom_param.label, True) for custom_param in custom_params]
 
-    for name, socket_type in inputs:
+    for name, socket_type, description, optional_label in inputs:
         socket = _new_interface_socket(tree, name, "INPUT", socket_type)
+        socket.description = description
+        socket.optional_label = optional_label
         if socket_type == "NodeSocketColor":
             socket.default_value = (1.0, 1.0, 1.0, 1.0)
         elif socket_type == "NodeSocketFloat":
@@ -832,7 +834,7 @@ def _build_pipeline_group(
         step_node["lutchainer_muted"] = step.muted
 
         links.new(current_socket, step_node.inputs["Current Color"])
-        for input_name, _socket_type in _step_group_context_inputs(step):
+        for input_name, _socket_type, _description, _optional_label in _step_group_context_inputs(step):
             links.new(group_input.outputs[input_name], step_node.inputs[input_name])
         current_socket = step_node.outputs["Color"]
         current_x += STEP_NODE_SPACING_X

@@ -124,6 +124,18 @@ def _parse_ops(raw_ops: object, label: str) -> dict[str, str]:
     return ops
 
 
+def _parse_param_ref(value: object, label: str) -> str:
+    param_name = _require_text(value, label, max_length=100)
+    if param_name in PARAM_NAMES:
+        return param_name
+    if not param_name.startswith("custom:"):
+        raise ValueError(f"{label} is not supported")
+    custom_param_id = param_name.split(":", 1)[1]
+    if not CUSTOM_PARAM_ID_RE.match(custom_param_id):
+        raise ValueError(f"{label} is not supported")
+    return param_name
+
+
 def _parse_lut(index: int, raw_lut: object, archive: zipfile.ZipFile) -> LutchainLut:
     record = _require_record(raw_lut, f"luts[{index}]")
     lut_id = _require_text(record.get("id"), f"luts[{index}].id", max_length=128)
@@ -158,12 +170,8 @@ def _parse_step(index: int, raw_step: object) -> LutchainStep:
     blend_mode = _require_text(record.get("blendMode"), f"steps[{index}].blendMode", max_length=32)
     if blend_mode not in BLEND_MODES:
         raise ValueError(f"steps[{index}].blendMode is not supported")
-    x_param = _require_text(record.get("xParam"), f"steps[{index}].xParam", max_length=32)
-    y_param = _require_text(record.get("yParam"), f"steps[{index}].yParam", max_length=32)
-    if x_param not in PARAM_NAMES:
-        raise ValueError(f"steps[{index}].xParam is not supported")
-    if y_param not in PARAM_NAMES:
-        raise ValueError(f"steps[{index}].yParam is not supported")
+    x_param = _parse_param_ref(record.get("xParam"), f"steps[{index}].xParam")
+    y_param = _parse_param_ref(record.get("yParam"), f"steps[{index}].yParam")
 
     raw_label = record.get("label")
     label = None
