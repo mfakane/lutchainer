@@ -27,6 +27,7 @@ interface PipelineCommandsLike {
   renameCustomParam: (paramId: string, label: string) => void;
   setCustomParamValue: (paramId: string, value: number) => void;
   removeCustomParam: (paramId: string) => void;
+  moveCustomParamToPosition: (paramId: string, targetParamId: string | null, after: boolean) => void;
 }
 
 interface PipelineHistoryActionsLike {
@@ -88,6 +89,7 @@ function assertPipelineCommandsLike(value: unknown): asserts value is PipelineCo
   ensureFunction(commands.renameCustomParam, 'Main pipeline editor pipelineCommands.renameCustomParam');
   ensureFunction(commands.setCustomParamValue, 'Main pipeline editor pipelineCommands.setCustomParamValue');
   ensureFunction(commands.removeCustomParam, 'Main pipeline editor pipelineCommands.removeCustomParam');
+  ensureFunction(commands.moveCustomParamToPosition, 'Main pipeline editor pipelineCommands.moveCustomParamToPosition');
 }
 
 function assertPipelineHistoryActionsLike(value: unknown): asserts value is PipelineHistoryActionsLike {
@@ -183,6 +185,9 @@ export function setupMainPipelineEditor(options: SetupMainPipelineEditorOptions)
     },
     onRemoveCustomParam: paramId => {
       options.pipelineCommands.removeCustomParam(paramId);
+    },
+    onMoveCustomParam: (paramId, targetParamId, after) => {
+      options.pipelineCommands.moveCustomParamToPosition(paramId, targetParamId, after);
     },
     onEditLut: options.onEditLut,
     onDuplicateLut: options.onDuplicateLut,

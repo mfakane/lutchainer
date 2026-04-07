@@ -394,16 +394,58 @@ button:disabled:hover {
 .param-node-custom-slider-row {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   width: 100%;
   min-width: 0;
+}
+
+.param-node-custom.dragging-custom-param {
+  opacity: 0.42;
+}
+
+.param-node-custom.custom-param-drop-before {
+  box-shadow: inset 0 3px 0 var(--accent);
+}
+
+.param-node-custom.custom-param-drop-after {
+  box-shadow: inset 0 -3px 0 var(--accent);
 }
 
 .param-node-custom-header {
   min-width: 0;
 }
 
+.custom-param-drag-handle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  align-self: stretch;
+  padding: 0;
+  min-width: 8px;
+  border: none;
+  color: var(--muted);
+  cursor: grab;
+  flex: 0 0 auto;
+}
+
+.custom-param-drag-handle:active {
+  cursor: grabbing;
+}
+
+.custom-param-drag-grip {
+  width: 8px;
+  height: 18px;
+  opacity: 0.9;
+  background-image:
+    radial-gradient(circle, currentColor 1.1px, transparent 1.2px),
+    radial-gradient(circle, currentColor 1.1px, transparent 1.2px);
+  background-position: 0 0, 4px 0;
+  background-size: 4px 6px;
+  background-repeat: repeat-y;
+}
+
 .param-node-custom-meta {
+  display: flex;
   min-width: 0;
 }
 

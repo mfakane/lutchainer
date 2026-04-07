@@ -102,6 +102,7 @@ interface PipelineCommandsLike {
   renameCustomParam: (paramId: string, label: string) => void;
   setCustomParamValue: (paramId: string, value: number) => void;
   removeCustomParam: (paramId: string) => void;
+  moveCustomParamToPosition: (paramId: string, targetParamId: string | null, after: boolean) => void;
   moveLutToPosition: (lutId: string, targetLutId: string | null, after: boolean) => void;
   moveStepToPosition: (stepId: string, targetStepId: string | null, after: boolean) => void;
 }

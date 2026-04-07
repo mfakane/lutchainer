@@ -8,6 +8,13 @@ import type {
   StepModel,
 } from '../../../features/step/step-model.ts';
 import {
+  bindReorderDragHandlers,
+  getLinearDropPlacement,
+  type LinearDropCandidate,
+  type LinearDropPlacement,
+  type ReorderDragBinding,
+} from '../interactions/dnd.ts';
+import {
   mountLutStripList,
   mountParamNodeList,
   mountStepList,
@@ -16,6 +23,12 @@ import {
 type StatusKind = 'success' | 'error' | 'info';
 type StatusReporter = (message: string, kind?: StatusKind) => void;
 type Translator = (key: unknown, values?: Record<string, string | number>) => string;
+
+interface CustomParamReorderDragState {
+  paramId: string;
+  overParamId: string | null;
+  dropAfter: boolean;
+}
 
 export interface SetupMainPipelineListsOptions {
   paramNodeListEl: HTMLElement;
@@ -39,6 +52,7 @@ export interface SetupMainPipelineListsOptions {
   onRenameCustomParam: (paramId: string, label: string) => void;
   onSetCustomParamValue: (paramId: string, value: number) => void;
   onRemoveCustomParam: (paramId: string) => void;
+  onMoveCustomParam: (paramId: string, targetParamId: string | null, after: boolean) => void;
   onRemoveLut: (lutId: string) => void;
   onEditLut?: (lutId: string) => void;
   onDuplicateLut?: (lutId: string) => void;
@@ -94,6 +108,7 @@ function ensureOptions(value: unknown): asserts value is SetupMainPipelineListsO
   ensureFunction(options.onRenameCustomParam, 'Main pipeline lists setup: onRenameCustomParam');
   ensureFunction(options.onSetCustomParamValue, 'Main pipeline lists setup: onSetCustomParamValue');
   ensureFunction(options.onRemoveCustomParam, 'Main pipeline lists setup: onRemoveCustomParam');
+  ensureFunction(options.onMoveCustomParam, 'Main pipeline lists setup: onMoveCustomParam');
   ensureFunction(options.onRemoveLut, 'Main pipeline lists setup: onRemoveLut');
   ensureFunction(options.createLutFromFile, 'Main pipeline lists setup: createLutFromFile');
 
@@ -111,6 +126,108 @@ function ensureOptions(value: unknown): asserts value is SetupMainPipelineListsO
   ensureFunction(options.t, 'Main pipeline lists setup: t');
 }
 
+function updateCustomParamDropIndicators(
+  paramNodeListEl: HTMLElement,
+  dragState: CustomParamReorderDragState | null,
+): void {
+  const items = Array.from(paramNodeListEl.querySelectorAll<HTMLElement>('.param-node-custom'));
+  for (const item of items) {
+    item.classList.remove('dragging-custom-param', 'custom-param-drop-before', 'custom-param-drop-after');
+  }
+
+  if (!dragState) {
+    return;
+  }
+
+  for (const item of items) {
+    const itemParamId = item.dataset.paramId;
+    if (!itemParamId) {
+      continue;
+    }
+    if (itemParamId === dragState.paramId) {
+      item.classList.add('dragging-custom-param');
+    }
+    if (itemParamId === dragState.overParamId) {
+      item.classList.add(dragState.dropAfter ? 'custom-param-drop-after' : 'custom-param-drop-before');
+    }
+  }
+}
+
+function clearCustomParamDropIndicators(paramNodeListEl: HTMLElement): void {
+  updateCustomParamDropIndicators(paramNodeListEl, null);
+}
+
+function setupCustomParamReorderBindings(options: {
+  paramNodeListEl: HTMLElement;
+  onMoveCustomParam: (paramId: string, targetParamId: string | null, after: boolean) => void;
+  onStatus: StatusReporter;
+}): void {
+  let customParamReorderDragState: CustomParamReorderDragState | null = null;
+
+  const binding: ReorderDragBinding<string, CustomParamReorderDragState> = {
+    containerEl: options.paramNodeListEl,
+    resolveDragStart: eventTarget => {
+      const handle = eventTarget.closest<HTMLButtonElement>('.custom-param-drag-handle');
+      if (!handle) {
+        return { kind: 'ignore' };
+      }
+
+      const item = handle.closest<HTMLElement>('.param-node-custom');
+      const paramId = item?.dataset.paramId;
+      if (!paramId) {
+        return { kind: 'invalid', message: 'Custom param ID is invalid.' };
+      }
+
+      return { kind: 'ready', id: paramId };
+    },
+    createDragState: paramId => ({ paramId, overParamId: paramId, dropAfter: true }),
+    getDragState: () => customParamReorderDragState,
+    setDragState: state => {
+      customParamReorderDragState = state;
+    },
+    clearDragState: () => {
+      customParamReorderDragState = null;
+    },
+    getPlacement: event => {
+      const dragState = customParamReorderDragState;
+      const candidates: LinearDropCandidate<string>[] = [];
+
+      for (const item of Array.from(options.paramNodeListEl.querySelectorAll<HTMLElement>('.param-node-custom'))) {
+        const paramId = item.dataset.paramId;
+        if (!paramId || paramId === dragState?.paramId) {
+          continue;
+        }
+
+        const rect = item.getBoundingClientRect();
+        candidates.push({
+          id: paramId,
+          midpoint: rect.top + rect.height * 0.5,
+        });
+      }
+
+      const placement: LinearDropPlacement<string> = getLinearDropPlacement(candidates, event.clientY);
+      return { targetId: placement.targetId, after: placement.after };
+    },
+    applyPlacement: (dragState, placement) => ({
+      ...dragState,
+      overParamId: placement.targetId,
+      dropAfter: placement.after,
+    }),
+    getDraggedId: dragState => dragState.paramId,
+    getTargetId: dragState => dragState.overParamId,
+    updateIndicators: () => {
+      updateCustomParamDropIndicators(options.paramNodeListEl, customParamReorderDragState);
+    },
+    clearIndicators: () => {
+      clearCustomParamDropIndicators(options.paramNodeListEl);
+    },
+    commitMove: options.onMoveCustomParam,
+    onInvalid: message => options.onStatus(message, 'error'),
+  };
+
+  bindReorderDragHandlers(binding);
+}
+
 export function setupMainPipelineLists(options: SetupMainPipelineListsOptions): void {
   ensureOptions(options);
 
@@ -121,6 +238,12 @@ export function setupMainPipelineLists(options: SetupMainPipelineListsOptions): 
     onRenameCustomParam: options.onRenameCustomParam,
     onSetCustomParamValue: options.onSetCustomParamValue,
     onRemoveCustomParam: options.onRemoveCustomParam,
+    onStatus: options.onStatus,
+  });
+
+  setupCustomParamReorderBindings({
+    paramNodeListEl: options.paramNodeListEl,
+    onMoveCustomParam: options.onMoveCustomParam,
     onStatus: options.onStatus,
   });
 

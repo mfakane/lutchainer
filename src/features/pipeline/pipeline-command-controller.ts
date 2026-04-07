@@ -53,6 +53,7 @@ interface PipelineCommandController {
   setCustomParamValue: (paramId: string, value: unknown) => void;
   removeCustomParam: (paramId: string) => void;
   assignParamToSocket: (stepId: string, axis: SocketAxis, param: ParamRef) => boolean;
+  moveCustomParamToPosition: (paramId: string, targetParamId: string | null, after: boolean) => void;
   moveStepToPosition: (stepId: string, targetStepId: string | null, after: boolean) => void;
   moveLutToPosition: (lutId: string, targetLutId: string | null, after: boolean) => void;
 }
@@ -577,6 +578,40 @@ export function createPipelineCommandController(options: PipelineCommandControll
     options.status(options.t('main.status.stepOrderUpdated'), 'info');
   };
 
+  const moveCustomParamToPosition = (paramId: string, targetParamId: string | null, after: boolean): void => {
+    if (!isNonEmptyString(paramId)) {
+      options.status('Custom param reorder source is invalid.', 'error');
+      return;
+    }
+    if (!(targetParamId === null || isNonEmptyString(targetParamId))) {
+      options.status('Custom param reorder target is invalid.', 'error');
+      return;
+    }
+    if (typeof after !== 'boolean') {
+      options.status('Custom param reorder position is invalid.', 'error');
+      return;
+    }
+
+    const before = options.captureSnapshot();
+    const customParams = options.getCustomParams();
+    const draggedExists = customParams.some(param => param.id === paramId);
+    if (!draggedExists) {
+      options.status(`Custom param '${paramId}' was not found.`, 'error');
+      return;
+    }
+
+    const nextCustomParams = reorderItemsById(customParams, paramId, targetParamId, after, param => param.id);
+    if (!nextCustomParams) {
+      return;
+    }
+
+    options.setCustomParams(nextCustomParams);
+    options.commitSnapshot(before);
+    options.renderSteps();
+    options.scheduleApply();
+    options.status('Custom param order updated.', 'info');
+  };
+
   const moveLutToPosition = (lutId: string, targetLutId: string | null, after: boolean): void => {
     if (!isNonEmptyString(lutId)) {
       options.status(options.t('main.status.moveLutNotFound'), 'error');
@@ -627,6 +662,7 @@ export function createPipelineCommandController(options: PipelineCommandControll
     setCustomParamValue,
     removeCustomParam,
     assignParamToSocket,
+    moveCustomParamToPosition,
     moveStepToPosition,
     moveLutToPosition,
   };

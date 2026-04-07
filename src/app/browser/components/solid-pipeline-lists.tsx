@@ -265,6 +265,10 @@ function ensureStatusReporter(value: unknown, context: string): asserts value is
   }
 }
 
+function stopPointerPropagation(event: PointerEvent): void {
+  event.stopPropagation();
+}
+
 function CustomParamNode(props: CustomParamNodeProps): JSX.Element {
   const language = useLanguage();
 
@@ -287,12 +291,23 @@ function CustomParamNode(props: CustomParamNodeProps): JSX.Element {
   return (
     <div
       class="param-node param-socket param-node-custom"
+      data-param-id={props.customParam().id}
       data-param={pipelineModel.buildCustomParamRef(props.customParam().id)}
       aria-label={`Connect ${props.customParam().label}`}
       title={`Connect ${props.customParam().label}`}
     >
       <span class="param-socket-dot" aria-hidden="true"></span>
       <div class="param-node-custom-header" data-socket-drag-ignore="true">
+        <button
+          type="button"
+          class="custom-param-drag-handle"
+          data-socket-drag-ignore="true"
+          draggable={true}
+          aria-label={`Reorder ${props.customParam().label}`}
+          onPointerDown={stopPointerPropagation}
+        >
+          <span class="custom-param-drag-grip" aria-hidden="true"></span>
+        </button>
         <input
           type="text"
           class="step-title-input param-node-custom-input"
