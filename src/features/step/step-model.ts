@@ -32,18 +32,24 @@ export type ParamName =
   | 'texV'
   | 'zero'
   | 'one';
+export type ParamRef = ParamName | `custom:${string}`;
 
 export type Color = [number, number, number];
 export type ColorWithHasChroma = [number, number, number, boolean?];
 export type ColorWithAlpha = [number, number, number, number?];
+export interface CustomParamModel {
+  id: string;
+  label: string;
+  defaultValue: number;
+}
 export interface StepModel {
   id: string;
   lutId: string;
   label?: string;
   muted: boolean;
   blendMode: BlendMode;
-  xParam: ParamName;
-  yParam: ParamName;
+  xParam: ParamRef;
+  yParam: ParamRef;
   ops: Record<ChannelName, BlendOp>;
 }
 
@@ -80,6 +86,7 @@ export interface StepParamContext {
   linearDepth: number;
   texU: number;
   texV: number;
+  customParamValues: Readonly<Record<string, number>>;
 }
 
 export interface BlendModeApplyInput {
@@ -132,6 +139,42 @@ export interface ParamEvaluator {
 export const CHANNELS: ChannelName[] = ['r', 'g', 'b', 'h', 's', 'v'];
 export const BLEND_OPS: BlendOp[] = ['none', 'replace', 'add', 'subtract', 'multiply'];
 export const MAX_STEP_LABEL_LENGTH = 40;
+export const CUSTOM_PARAM_PREFIX = 'custom:';
+export const BUILTIN_PARAM_NAMES: ParamName[] = [
+  'lightness',
+  'specular',
+  'halfLambert',
+  'fresnel',
+  'facing',
+  'nDotH',
+  'linearDepth',
+  'r',
+  'g',
+  'b',
+  'h',
+  's',
+  'v',
+  'texU',
+  'texV',
+  'zero',
+  'one',
+];
+
+export function isBuiltinParamName(value: string): value is ParamName {
+  return BUILTIN_PARAM_NAMES.includes(value as ParamName);
+}
+
+export function isCustomParamRef(value: string): value is `custom:${string}` {
+  return typeof value === 'string' && value.startsWith(CUSTOM_PARAM_PREFIX);
+}
+
+export function parseCustomParamRef(value: string): string | null {
+  if (!isCustomParamRef(value)) {
+    return null;
+  }
+  const customParamId = value.slice(CUSTOM_PARAM_PREFIX.length).trim();
+  return customParamId.length > 0 ? customParamId : null;
+}
 
 export const BLEND_MODES: BlendModeDef[] = [
   { key: 'none', label: 'None' },

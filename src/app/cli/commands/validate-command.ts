@@ -3,6 +3,7 @@ import { parseArgs } from 'node:util';
 import {
   isRecord,
   parsePipelineArchive,
+  type PipelineCustomParamEntry,
   type PipelineStepEntry,
   type PipelineZipLutEntry,
 } from '../../../shared/lutchain/lutchain-archive.ts';
@@ -48,6 +49,18 @@ function isValidChannelName(value: string): boolean {
 
 function isValidParamName(value: string): boolean {
   return PARAM_NAMES.has(value);
+}
+
+function isValidCustomParamId(value: string): boolean {
+  return /^[A-Za-z][A-Za-z0-9_]{0,31}$/.test(value);
+}
+
+function parseCustomParamRef(value: string): string | null {
+  if (!value.startsWith('custom:')) {
+    return null;
+  }
+  const customParamId = value.slice('custom:'.length);
+  return isValidCustomParamId(customParamId) ? customParamId : null;
 }
 
 export function getValidateUsage(): string {
@@ -154,7 +167,38 @@ function validateStepOps(step: PipelineStepEntry, fieldPrefix: string): string[]
   return errors;
 }
 
-function validateStepEntries(steps: readonly PipelineStepEntry[], lutIds: ReadonlySet<string>): string[] {
+function validateCustomParamEntries(customParams: readonly PipelineCustomParamEntry[] | undefined): string[] {
+  if (customParams === undefined) {
+    return [];
+  }
+
+  const errors: string[] = [];
+  const customParamIds = new Set<string>();
+  for (const [index, customParam] of customParams.entries()) {
+    const fieldPrefix = `customParams[${index}]`;
+    if (typeof customParam.id !== 'string' || !isValidCustomParamId(customParam.id)) {
+      errors.push(`${fieldPrefix}.id is invalid.`);
+    } else if (customParamIds.has(customParam.id)) {
+      errors.push(`customParams contains duplicate id: ${customParam.id}.`);
+    } else {
+      customParamIds.add(customParam.id);
+    }
+    if (typeof customParam.label !== 'string' || customParam.label.trim().length === 0) {
+      errors.push(`${fieldPrefix}.label is invalid.`);
+    }
+    if (typeof customParam.defaultValue !== 'number' || !Number.isFinite(customParam.defaultValue)) {
+      errors.push(`${fieldPrefix}.defaultValue is invalid.`);
+    }
+  }
+
+  return errors;
+}
+
+function validateStepEntries(
+  steps: readonly PipelineStepEntry[],
+  lutIds: ReadonlySet<string>,
+  customParamIds: ReadonlySet<string>,
+): string[] {
   const errors: string[] = [];
   const stepIds = new Set<string>();
 
@@ -188,11 +232,18 @@ function validateStepEntries(steps: readonly PipelineStepEntry[], lutIds: Readon
     if (typeof step.blendMode !== 'string' || !isValidBlendMode(step.blendMode)) {
       errors.push(`${fieldPrefix}.blendMode is invalid.`);
     }
-    if (typeof step.xParam !== 'string' || !isValidParamName(step.xParam)) {
+    const xCustomParamId = typeof step.xParam === 'string' ? parseCustomParamRef(step.xParam) : null;
+    const yCustomParamId = typeof step.yParam === 'string' ? parseCustomParamRef(step.yParam) : null;
+
+    if (typeof step.xParam !== 'string' || (!isValidParamName(step.xParam) && xCustomParamId === null)) {
       errors.push(`${fieldPrefix}.xParam is invalid.`);
+    } else if (xCustomParamId !== null && !customParamIds.has(xCustomParamId)) {
+      errors.push(`${fieldPrefix}.xParam references a missing custom param: ${xCustomParamId}.`);
     }
-    if (typeof step.yParam !== 'string' || !isValidParamName(step.yParam)) {
+    if (typeof step.yParam !== 'string' || (!isValidParamName(step.yParam) && yCustomParamId === null)) {
       errors.push(`${fieldPrefix}.yParam is invalid.`);
+    } else if (yCustomParamId !== null && !customParamIds.has(yCustomParamId)) {
+      errors.push(`${fieldPrefix}.yParam references a missing custom param: ${yCustomParamId}.`);
     }
 
     errors.push(...validateStepOps(step, fieldPrefix));
@@ -220,15 +271,21 @@ export async function runValidateCommand(argv: string[]): Promise<number> {
     try {
       const archive = parsePipelineArchive(bytes, 2);
       const lutErrors = validateLutEntries(archive.manifest.luts, archive.files);
+      const customParamErrors = validateCustomParamEntries(archive.manifest.customParams);
       const lutIds = new Set(
         archive.manifest.luts
           .filter(lut => typeof lut.id === 'string' && lut.id.trim().length > 0)
           .map(lut => lut.id),
       );
-      const stepErrors = validateStepEntries(archive.manifest.steps, lutIds);
+      const customParamIds = new Set(
+        (archive.manifest.customParams ?? [])
+          .filter(param => typeof param.id === 'string' && param.id.trim().length > 0)
+          .map(param => param.id),
+      );
+      const stepErrors = validateStepEntries(archive.manifest.steps, lutIds, customParamIds);
       result = {
-        valid: lutErrors.length === 0 && stepErrors.length === 0,
-        errors: [...lutErrors, ...stepErrors],
+        valid: lutErrors.length === 0 && customParamErrors.length === 0 && stepErrors.length === 0,
+        errors: [...lutErrors, ...customParamErrors, ...stepErrors],
       };
     } catch (error) {
       result = {

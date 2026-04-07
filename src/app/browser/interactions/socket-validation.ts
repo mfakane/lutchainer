@@ -14,8 +14,8 @@ function isNonEmptyString(value: unknown): value is string {
   return typeof value === 'string' && value.trim().length > 0;
 }
 
-function isHtmlButtonElement(value: unknown): value is HTMLButtonElement {
-  return value instanceof HTMLButtonElement;
+function isHtmlElement(value: unknown): value is HTMLElement {
+  return value instanceof HTMLElement;
 }
 
 function isSocketAxis(value: unknown): value is pipelineView.SocketAxis {
@@ -45,7 +45,7 @@ export function isValidSocketDragState(value: unknown): value is SocketDragState
     axis?: unknown;
   };
 
-  if (!isHtmlButtonElement(candidate.sourceEl)) {
+  if (!isHtmlElement(candidate.sourceEl)) {
     return false;
   }
   if (!isValidPointerId(candidate.pointerId)) {
@@ -85,7 +85,7 @@ export function isValidSocketDropTarget(value: unknown): value is SocketDropTarg
     axis?: unknown;
   };
 
-  if (!isHtmlButtonElement(candidate.element)) {
+  if (!isHtmlElement(candidate.element)) {
     return false;
   }
 

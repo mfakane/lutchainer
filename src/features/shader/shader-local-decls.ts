@@ -5,6 +5,7 @@ import type {
   StepRuntimeModel,
 } from '../step/step-model';
 import { PARAM_EVALUATORS } from '../step/step-param-evaluators';
+import { parseCustomParamRef } from '../step/step-model';
 import type { ShaderLanguageBackend, ShaderOutputKind } from './shader-language-backend';
 
 const ALL_LOCAL_KEYS: readonly ShaderLocalKey[] = [
@@ -75,10 +76,10 @@ function assertValidStepRuntimeModels(stepModels: readonly StepRuntimeModel[]): 
 
     const xParam = stepModel.step.xParam;
     const yParam = stepModel.step.yParam;
-    if (!(typeof xParam === 'string' && xParam in PARAM_EVALUATORS)) {
+    if (!(typeof xParam === 'string' && (parseCustomParamRef(xParam) !== null || xParam in PARAM_EVALUATORS))) {
       throw new Error(`stepModels[${index}].step.xParam が不正です。`);
     }
-    if (!(typeof yParam === 'string' && yParam in PARAM_EVALUATORS)) {
+    if (!(typeof yParam === 'string' && (parseCustomParamRef(yParam) !== null || yParam in PARAM_EVALUATORS))) {
       throw new Error(`stepModels[${index}].step.yParam が不正です。`);
     }
   }
@@ -87,8 +88,12 @@ function assertValidStepRuntimeModels(stepModels: readonly StepRuntimeModel[]): 
 function collectUsedParams(stepModels: readonly StepRuntimeModel[]): Set<ParamName> {
   const usedParams = new Set<ParamName>();
   for (const stepModel of stepModels) {
-    usedParams.add(stepModel.step.xParam);
-    usedParams.add(stepModel.step.yParam);
+    if (!parseCustomParamRef(stepModel.step.xParam)) {
+      usedParams.add(stepModel.step.xParam as ParamName);
+    }
+    if (!parseCustomParamRef(stepModel.step.yParam)) {
+      usedParams.add(stepModel.step.yParam as ParamName);
+    }
   }
   return usedParams;
 }

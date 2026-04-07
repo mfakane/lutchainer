@@ -2,12 +2,12 @@ export type {
   BlendMode, BlendModeApplyInput, BlendModeDef, BlendModeEmitInput,
   BlendModeStrategy, BlendOp,
   ChannelName,
-  Color, LutModel, ParamEvaluator, ParamName,
+  Color, CustomParamModel, LutModel, ParamEvaluator, ParamName, ParamRef,
   StepModel, StepParamContext, StepRuntimeModel
 } from '../step/step-model';
 
 export type {
-  CreatePipelineStepResult, LightAngleKey, LightRangeBinding, LightSettings, LoadedPipelineData, MaterialNumericKey, MaterialRangeBinding, MaterialSettings, ParamDef,
+  CreateCustomParamResult, CreatePipelineStepResult, LightAngleKey, LightRangeBinding, LightSettings, LoadedPipelineData, MaterialNumericKey, MaterialRangeBinding, MaterialSettings, ParamDef,
   ParamGroupDef, PipelineStepEntry, PipelineStepOpsEntry, PipelineZipData, PipelineZipLutEntry, RemoveLutFromPipelineResult
 } from './pipeline-model';
 
@@ -20,4 +20,3 @@ export type {
   SocketDropTarget,
   StepReorderDragState
 } from './pipeline-view';
-

@@ -26,9 +26,11 @@ import {
   type PipelineSocketDndController,
 } from './pipeline/pipeline-socket-dnd-controller.ts';
 import {
+  getCustomParams as getPipelineCustomParams,
   getLuts as getPipelineLuts,
   getSteps as getPipelineSteps,
   replacePipelineState,
+  setCustomParams as setPipelineCustomParams,
   setLuts as setPipelineLuts,
   setSteps as setPipelineSteps,
 } from '../../features/pipeline/pipeline-state.ts';
@@ -179,6 +181,7 @@ const pipelineHistory = createPipelineHistoryController({
   captureSnapshot: () => ({
     steps: getPipelineSteps(),
     luts: getPipelineLuts(),
+    customParams: getPipelineCustomParams(),
   }),
   restoreSnapshot: snapshot => {
     replacePipelineState(snapshot);
@@ -197,6 +200,7 @@ const getLightDirectionWorld = createLightDirectionWorldGetter({
 const getShaderBuildInput = createShaderBuildInputGetter({
   getSteps: getPipelineSteps,
   getLuts: getPipelineLuts,
+  getCustomParams: getPipelineCustomParams,
   getMaterialSettings,
 });
 
@@ -238,6 +242,7 @@ const mainStepRendering = createMainStepRenderingController({
   getStepListElement: () => stepListEl,
   getSteps: getPipelineSteps,
   getLuts: getPipelineLuts,
+  getCustomParams: getPipelineCustomParams,
   getMaterialSettings,
   getLightSettings,
   getStepPreviewRenderer: () => stepPreviewRenderer,
@@ -262,6 +267,8 @@ const pipelineCommands = createPipelineCommandController({
   setSteps: setPipelineSteps,
   getLuts: getPipelineLuts,
   setLuts: setPipelineLuts,
+  getCustomParams: getPipelineCustomParams,
+  setCustomParams: setPipelineCustomParams,
   parseLutId,
   isValidParamName,
   isValidSocketAxis,
@@ -307,6 +314,7 @@ const pipelineHeaderActions = createPipelineHeaderActionController({
     replacePipelineState({
       luts: pipelineModel.createBuiltinLuts(),
       steps: [],
+      customParams: [],
     });
     pipelineHistoryActions.clearHistory();
     pipelineCommands.addStep({ recordHistory: false });
@@ -400,6 +408,7 @@ window.addEventListener('DOMContentLoaded', () => {
       syncPreviewWireframeState,
       getSteps: getPipelineSteps,
       getLuts: getPipelineLuts,
+      getCustomParams: getPipelineCustomParams,
       getMaterialSettings,
       getLightSettings,
       stepPreviewLightDirection: pipelineModel.STEP_PREVIEW_LIGHT_DIR,

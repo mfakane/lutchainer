@@ -1,4 +1,4 @@
-import { For, Show, createSignal, onCleanup, type Accessor, type JSX } from 'solid-js';
+import { For, Index, Show, createSignal, onCleanup, type Accessor, type JSX } from 'solid-js';
 import { Portal, render } from 'solid-js/web';
 import * as pipelineModel from '../../../features/pipeline/pipeline-model';
 import { getCustomChannelsForBlendMode, getSelectableBlendOpsForChannel } from '../../../features/step/step-blend-strategies.ts';
@@ -7,8 +7,10 @@ import {
   MAX_STEP_LABEL_LENGTH,
   type BlendOp,
   type ChannelName,
+  type CustomParamModel,
   type LutModel,
   type ParamName,
+  type ParamRef,
   type StepModel
 } from '../../../features/step/step-model';
 import {
@@ -24,12 +26,18 @@ const CHANNELS: ChannelName[] = ['r', 'g', 'b', 'h', 's', 'v'];
 
 interface ParamNodeListMountOptions {
   getMaterialSettings: () => pipelineModel.MaterialSettings;
+  customParams: CustomParamModel[];
+  onAddCustomParam: () => void;
+  onRenameCustomParam: (paramId: string, label: string) => void;
+  onSetCustomParamValue: (paramId: string, value: number) => void;
+  onRemoveCustomParam: (paramId: string) => void;
   onStatus: StatusReporter;
 }
 
 interface StepListMountOptions {
   steps: StepModel[];
   luts: LutModel[];
+  customParams: CustomParamModel[];
   onAddStep: () => void;
   onDuplicateStep: (stepId: string) => void;
   onRemoveStep: (stepId: string) => void;
@@ -56,17 +64,30 @@ interface LutStripListMountOptions {
 
 interface ParamNodeListProps {
   getMaterialSettings: () => pipelineModel.MaterialSettings;
+  customParams: Accessor<CustomParamModel[]>;
+  onAddCustomParam: () => void;
+  onRenameCustomParam: (paramId: string, label: string) => void;
+  onSetCustomParamValue: (paramId: string, value: number) => void;
+  onRemoveCustomParam: (paramId: string) => void;
 }
 
 interface ParamPreviewState {
-  param: ParamName;
+  param: ParamRef;
   left: number;
   top: number;
+}
+
+interface CustomParamNodeProps {
+  customParam: Accessor<CustomParamModel>;
+  onRenameCustomParam: (paramId: string, label: string) => void;
+  onSetCustomParamValue: (paramId: string, value: number) => void;
+  onRemoveCustomParam: (paramId: string) => void;
 }
 
 interface StepListProps {
   steps: Accessor<StepModel[]>;
   luts: Accessor<LutModel[]>;
+  customParams: Accessor<CustomParamModel[]>;
   onAddStep: () => void;
   onDuplicateStep: (stepId: string) => void;
   onRemoveStep: (stepId: string) => void;
@@ -95,7 +116,8 @@ let disposeParamNodeList: (() => void) | null = null;
 let disposeStepList: (() => void) | null = null;
 let disposeLutStripList: (() => void) | null = null;
 
-let syncStepListInternal: ((steps: StepModel[], luts: LutModel[]) => void) | null = null;
+let syncParamNodeListInternal: ((customParams: CustomParamModel[]) => void) | null = null;
+let syncStepListInternal: ((steps: StepModel[], luts: LutModel[], customParams: CustomParamModel[]) => void) | null = null;
 let syncLutStripListInternal: ((luts: LutModel[], steps: StepModel[]) => void) | null = null;
 
 let paramNodeListStatusReporter: StatusReporter = () => undefined;
@@ -172,6 +194,18 @@ function isValidLutModel(value: unknown): value is LutModel {
     && typeof lut.thumbUrl === 'string';
 }
 
+function isValidCustomParamModel(value: unknown): value is CustomParamModel {
+  if (!value || typeof value !== 'object') {
+    return false;
+  }
+
+  const customParam = value as Partial<CustomParamModel>;
+  return isNonEmptyString(customParam.id)
+    && isNonEmptyString(customParam.label)
+    && typeof customParam.defaultValue === 'number'
+    && Number.isFinite(customParam.defaultValue);
+}
+
 function cloneStepModel(step: StepModel): StepModel {
   return {
     id: step.id,
@@ -198,12 +232,24 @@ function cloneLutModel(lut: LutModel): LutModel {
   };
 }
 
+function cloneCustomParamModel(customParam: CustomParamModel): CustomParamModel {
+  return {
+    id: customParam.id,
+    label: customParam.label,
+    defaultValue: customParam.defaultValue,
+  };
+}
+
 function cloneStepArray(steps: StepModel[]): StepModel[] {
   return steps.map(step => cloneStepModel(step));
 }
 
 function cloneLutArray(luts: LutModel[]): LutModel[] {
   return luts.map(lut => cloneLutModel(lut));
+}
+
+function cloneCustomParamArray(customParams: CustomParamModel[]): CustomParamModel[] {
+  return customParams.map(customParam => cloneCustomParamModel(customParam));
 }
 
 function restoreElementScrollPosition(element: HTMLElement, top: number, left: number): void {
@@ -219,6 +265,73 @@ function ensureStatusReporter(value: unknown, context: string): asserts value is
   }
 }
 
+function CustomParamNode(props: CustomParamNodeProps): JSX.Element {
+  const language = useLanguage();
+
+  const tr = (key: string, values?: Record<string, string | number>): string => {
+    language();
+    return t(key, values);
+  };
+  const handleValueSliderInput = (event: InputEvent): void => {
+    const target = event.currentTarget as HTMLInputElement;
+    const nextValue = Number(target.value);
+    props.onSetCustomParamValue(props.customParam().id, nextValue);
+  };
+  const handleValueSliderWheel = (event: WheelEvent): void => {
+    const delta = event.deltaY < 0 ? 0.01 : -0.01;
+    const nextValue = Math.max(0, Math.min(1, props.customParam().defaultValue + delta));
+    props.onSetCustomParamValue(props.customParam().id, nextValue);
+    event.preventDefault();
+  };
+
+  return (
+    <div
+      class="param-node param-socket param-node-custom"
+      data-param={pipelineModel.buildCustomParamRef(props.customParam().id)}
+      aria-label={`Connect ${props.customParam().label}`}
+      title={`Connect ${props.customParam().label}`}
+    >
+      <span class="param-socket-dot" aria-hidden="true"></span>
+      <div class="param-node-custom-header" data-socket-drag-ignore="true">
+        <input
+          type="text"
+          class="step-title-input param-node-custom-input"
+          data-socket-drag-ignore="true"
+          value={props.customParam().label}
+          maxLength={pipelineModel.MAX_CUSTOM_PARAM_LABEL_LENGTH}
+          aria-label={`Custom param label ${props.customParam().id}`}
+          onBlur={event => props.onRenameCustomParam(props.customParam().id, event.currentTarget.value)}
+        />
+        <button
+          type="button"
+          class="step-remove param-node-custom-remove"
+          data-socket-drag-ignore="true"
+          onClick={() => props.onRemoveCustomParam(props.customParam().id)}
+        >
+          {tr('pipeline.param.remove')}
+        </button>
+      </div>
+      <div class="param-node-custom-meta">
+        <span class="param-desc">{`u_param_${props.customParam().id}`}</span>
+      </div>
+      <div class="param-node-custom-slider-row" data-socket-drag-ignore="true">
+        <input
+          type="range"
+          class="material-range-input param-node-custom-slider"
+          data-socket-drag-ignore="true"
+          min="0"
+          max="1"
+          step="0.01"
+          value={String(props.customParam().defaultValue)}
+          onInput={handleValueSliderInput}
+          onWheel={handleValueSliderWheel}
+        />
+        <span class="param-node-custom-value">{props.customParam().defaultValue.toFixed(2)}</span>
+      </div>
+    </div>
+  );
+}
+
 function ensureParamNodeListMountOptions(value: unknown): asserts value is ParamNodeListMountOptions {
   if (!value || typeof value !== 'object') {
     throw new Error('Paramノードリストの初期化オプションが不正です。');
@@ -227,6 +340,21 @@ function ensureParamNodeListMountOptions(value: unknown): asserts value is Param
   const options = value as Partial<ParamNodeListMountOptions>;
   if (typeof options.getMaterialSettings !== 'function') {
     throw new Error('ParamノードリストのMaterial設定取得コールバックが不正です。');
+  }
+  if (!Array.isArray(options.customParams) || options.customParams.some(customParam => !isValidCustomParamModel(customParam))) {
+    throw new Error('ParamノードリストのCustom Param配列が不正です。');
+  }
+  if (typeof options.onAddCustomParam !== 'function') {
+    throw new Error('ParamノードリストのCustom Param追加コールバックが不正です。');
+  }
+  if (typeof options.onRenameCustomParam !== 'function') {
+    throw new Error('ParamノードリストのCustom Param名称変更コールバックが不正です。');
+  }
+  if (typeof options.onSetCustomParamValue !== 'function') {
+    throw new Error('ParamノードリストのCustom Param値変更コールバックが不正です。');
+  }
+  if (typeof options.onRemoveCustomParam !== 'function') {
+    throw new Error('ParamノードリストのCustom Param削除コールバックが不正です。');
   }
   ensureStatusReporter(options.onStatus, 'Paramノードリスト');
 }
@@ -242,6 +370,9 @@ function ensureStepListMountOptions(value: unknown): asserts value is StepListMo
   }
   if (!Array.isArray(options.luts) || options.luts.some(lut => !isValidLutModel(lut))) {
     throw new Error('Stepリストの初期LUT配列が不正です。');
+  }
+  if (!Array.isArray(options.customParams) || options.customParams.some(customParam => !isValidCustomParamModel(customParam))) {
+    throw new Error('Stepリストの初期Custom Param配列が不正です。');
   }
   if (typeof options.onAddStep !== 'function') {
     throw new Error('Stepリストの追加コールバックが不正です。');
@@ -297,16 +428,19 @@ function ensureLutStripListMountOptions(value: unknown): asserts value is LutStr
 function ParamNodeList(props: ParamNodeListProps): JSX.Element {
   const language = useLanguage();
   const [previewState, setPreviewState] = createSignal<ParamPreviewState | null>(null);
-  const previewCanvases = new Map<ParamName, HTMLCanvasElement>();
+  const previewCanvases = new Map<ParamRef, HTMLCanvasElement>();
 
   const tr = (key: string, values?: Record<string, string | number>): string => {
     language();
     return t(key, values);
   };
 
-  const isPreviewTarget = (param: ParamName): boolean => PARAM_PREVIEW_TARGETS.has(param);
+  const isPreviewTarget = (param: ParamRef): boolean => PARAM_PREVIEW_TARGETS.has(param as ParamName);
 
-  const drawPreview = (param: ParamName): void => {
+  const drawPreview = (param: ParamRef): void => {
+    if (!PARAM_PREVIEW_TARGETS.has(param as ParamName)) {
+      return;
+    }
     const canvas = previewCanvases.get(param);
     if (!(canvas instanceof HTMLCanvasElement)) {
       return;
@@ -315,7 +449,7 @@ function ParamNodeList(props: ParamNodeListProps): JSX.Element {
     try {
       drawParamPreviewSphereCpu({
         canvas,
-        param,
+        param: param as ParamName,
         pixelWidth: PARAM_PREVIEW_SIZE,
         pixelHeight: PARAM_PREVIEW_SIZE,
         materialSettings: props.getMaterialSettings(),
@@ -332,7 +466,7 @@ function ParamNodeList(props: ParamNodeListProps): JSX.Element {
     setPreviewState(null);
   };
 
-  const updatePreviewPosition = (anchor: HTMLElement, param: ParamName): void => {
+  const updatePreviewPosition = (anchor: HTMLElement, param: ParamRef): void => {
     const rect = anchor.getBoundingClientRect();
     const previewWidth = PARAM_PREVIEW_SIZE + 20;
     const previewHeight = PARAM_PREVIEW_SIZE + 38;
@@ -352,7 +486,7 @@ function ParamNodeList(props: ParamNodeListProps): JSX.Element {
     setPreviewState({ param, left, top });
   };
 
-  const showPreview = (param: ParamName, anchor: HTMLElement): void => {
+  const showPreview = (param: ParamRef, anchor: HTMLElement): void => {
     if (!isPreviewTarget(param)) {
       return;
     }
@@ -428,6 +562,29 @@ function ParamNodeList(props: ParamNodeListProps): JSX.Element {
           </section>
         )}
       </For>
+      <section class="param-group param-group-default" data-group="custom-params">
+        <header class="param-group-head">
+          <div class="param-group-title-row">
+            <div class="param-group-title">Custom Params</div>
+          </div>
+          <div class="param-group-desc">Global float inputs exposed as external uniforms / Blender sockets.</div>
+        </header>
+
+        <div class="param-group-nodes">
+          <Index each={props.customParams()}>
+            {customParam => (
+              <CustomParamNode
+                customParam={customParam}
+                onRenameCustomParam={props.onRenameCustomParam}
+                onSetCustomParamValue={props.onSetCustomParamValue}
+                onRemoveCustomParam={props.onRemoveCustomParam}
+              />
+            )}
+          </Index>
+          
+          <button type="button" class="btn-secondary step-add-inline-btn" onClick={props.onAddCustomParam}>Add Param</button>
+        </div>
+      </section>
       <Show when={previewState()}>
         {state => (
           <Portal>
@@ -643,22 +800,22 @@ function StepList(props: StepListProps): JSX.Element {
                     class="step-socket"
                     data-step-id={step.id}
                     data-axis="x"
-                    title={`X: ${pipelineModel.getParamLabel(step.xParam)}`}
+                    title={`X: ${pipelineModel.getParamLabel(step.xParam, props.customParams())}`}
                   >
                     <span class="step-socket-dot" aria-hidden="true"></span>
                     <span class="step-socket-axis-label">X</span>
-                    <span class="step-socket-param">{pipelineModel.getParamLabel(step.xParam)}</span>
+                    <span class="step-socket-param">{pipelineModel.getParamLabel(step.xParam, props.customParams())}</span>
                   </button>
                   <button
                     type="button"
                     class="step-socket"
                     data-step-id={step.id}
                     data-axis="y"
-                    title={`Y: ${pipelineModel.getParamLabel(step.yParam)}`}
+                    title={`Y: ${pipelineModel.getParamLabel(step.yParam, props.customParams())}`}
                   >
                     <span class="step-socket-dot" aria-hidden="true"></span>
                     <span class="step-socket-axis-label">Y</span>
-                    <span class="step-socket-param">{pipelineModel.getParamLabel(step.yParam)}</span>
+                    <span class="step-socket-param">{pipelineModel.getParamLabel(step.yParam, props.customParams())}</span>
                   </button>
                 </aside>
 
@@ -989,7 +1146,26 @@ export function mountParamNodeList(target: HTMLElement, options: ParamNodeListMo
   }
 
   target.textContent = '';
-  disposeParamNodeList = render(() => <ParamNodeList getMaterialSettings={options.getMaterialSettings} />, target);
+  disposeParamNodeList = render(() => {
+    const [customParams, setCustomParams] = createSignal<CustomParamModel[]>(cloneCustomParamArray(options.customParams));
+    syncParamNodeListInternal = nextCustomParams => {
+      if (!Array.isArray(nextCustomParams) || nextCustomParams.some(customParam => !isValidCustomParamModel(customParam))) {
+        paramNodeListStatusReporter('Paramノードリストの同期Custom Param配列が不正です。', 'error');
+        return;
+      }
+      setCustomParams(cloneCustomParamArray(nextCustomParams));
+    };
+    return (
+      <ParamNodeList
+        getMaterialSettings={options.getMaterialSettings}
+        customParams={customParams}
+        onAddCustomParam={options.onAddCustomParam}
+        onRenameCustomParam={options.onRenameCustomParam}
+        onSetCustomParamValue={options.onSetCustomParamValue}
+        onRemoveCustomParam={options.onRemoveCustomParam}
+      />
+    );
+  }, target);
 }
 
 export function mountStepList(target: HTMLElement, options: StepListMountOptions): void {
@@ -1007,13 +1183,15 @@ export function mountStepList(target: HTMLElement, options: StepListMountOptions
 
   const initialSteps = cloneStepArray(options.steps);
   const initialLuts = cloneLutArray(options.luts);
+  const initialCustomParams = cloneCustomParamArray(options.customParams);
 
   target.textContent = '';
   disposeStepList = render(() => {
     const [steps, setSteps] = createSignal<StepModel[]>(initialSteps);
     const [luts, setLuts] = createSignal<LutModel[]>(initialLuts);
+    const [customParams, setCustomParams] = createSignal<CustomParamModel[]>(initialCustomParams);
 
-    syncStepListInternal = (nextSteps, nextLuts) => {
+    syncStepListInternal = (nextSteps, nextLuts, nextCustomParams) => {
       if (!Array.isArray(nextSteps) || nextSteps.some(step => !isValidStepModel(step))) {
         stepListStatusReporter('Stepリストの同期Step配列が不正です。', 'error');
         return;
@@ -1022,11 +1200,16 @@ export function mountStepList(target: HTMLElement, options: StepListMountOptions
         stepListStatusReporter('Stepリストの同期LUT配列が不正です。', 'error');
         return;
       }
+      if (!Array.isArray(nextCustomParams) || nextCustomParams.some(customParam => !isValidCustomParamModel(customParam))) {
+        stepListStatusReporter('Stepリストの同期Custom Param配列が不正です。', 'error');
+        return;
+      }
 
       const scrollTop = target.scrollTop;
       const scrollLeft = target.scrollLeft;
       setSteps(cloneStepArray(nextSteps));
       setLuts(cloneLutArray(nextLuts));
+      setCustomParams(cloneCustomParamArray(nextCustomParams));
       restoreElementScrollPosition(target, scrollTop, scrollLeft);
     };
 
@@ -1034,6 +1217,7 @@ export function mountStepList(target: HTMLElement, options: StepListMountOptions
       <StepList
         steps={steps}
         luts={luts}
+        customParams={customParams}
         onAddStep={options.onAddStep}
         onDuplicateStep={options.onDuplicateStep}
         onRemoveStep={options.onRemoveStep}
@@ -1100,7 +1284,7 @@ export function mountLutStripList(target: HTMLElement, options: LutStripListMoun
   }, target);
 }
 
-export function syncStepListState(steps: StepModel[], luts: LutModel[]): void {
+export function syncStepListState(steps: StepModel[], luts: LutModel[], customParams: CustomParamModel[]): void {
   if (!Array.isArray(steps) || steps.some(step => !isValidStepModel(step))) {
     stepListStatusReporter('Stepリスト同期に失敗しました: Step配列が不正です。', 'error');
     return;
@@ -1109,9 +1293,24 @@ export function syncStepListState(steps: StepModel[], luts: LutModel[]): void {
     stepListStatusReporter('Stepリスト同期に失敗しました: LUT配列が不正です。', 'error');
     return;
   }
+  if (!Array.isArray(customParams) || customParams.some(customParam => !isValidCustomParamModel(customParam))) {
+    stepListStatusReporter('Stepリスト同期に失敗しました: Custom Param配列が不正です。', 'error');
+    return;
+  }
 
   if (syncStepListInternal) {
-    syncStepListInternal(steps, luts);
+    syncStepListInternal(steps, luts, customParams);
+  }
+}
+
+export function syncParamNodeListState(customParams: CustomParamModel[]): void {
+  if (!Array.isArray(customParams) || customParams.some(customParam => !isValidCustomParamModel(customParam))) {
+    paramNodeListStatusReporter('Paramノードリスト同期に失敗しました: Custom Param配列が不正です。', 'error');
+    return;
+  }
+
+  if (syncParamNodeListInternal) {
+    syncParamNodeListInternal(customParams);
   }
 }
 

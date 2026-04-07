@@ -10,6 +10,7 @@ import type {
 import { MAX_LUTS } from '../../../features/pipeline/pipeline-constants.ts';
 import * as pipelineModel from '../../../features/pipeline/pipeline-model.ts';
 import {
+  getCustomParams as getPipelineCustomParams,
   getLuts as getPipelineLuts,
   getSteps as getPipelineSteps,
   replacePipelineState,
@@ -97,6 +98,10 @@ interface PipelineCommandsLike {
   setStepChannelOp: (stepId: string, channel: ChannelName, op: BlendOp) => void;
   removeLut: (lutId: string) => void;
   duplicateLut: (lutId: string) => void;
+  addCustomParam: () => void;
+  renameCustomParam: (paramId: string, label: string) => void;
+  setCustomParamValue: (paramId: string, value: number) => void;
+  removeCustomParam: (paramId: string) => void;
   moveLutToPosition: (lutId: string, targetLutId: string | null, after: boolean) => void;
   moveStepToPosition: (stepId: string, targetStepId: string | null, after: boolean) => void;
 }
@@ -122,6 +127,7 @@ export interface BootstrapMainPostRuntimeOptions {
   getShaderBuildInput: () => {
     steps: StepModel[];
     luts: LutModel[];
+    customParams: import('../../../features/step/step-model.ts').CustomParamModel[];
     materialSettings: pipelineModel.MaterialSettings;
   };
   onExportShaderZip: () => void | Promise<void>;
@@ -254,6 +260,7 @@ export function bootstrapMainPostRuntime(options: BootstrapMainPostRuntimeOption
   replacePipelineState({
     luts: pipelineModel.createBuiltinLuts(),
     steps: [],
+    customParams: [],
   });
   options.pipelineHistoryActions.clearHistory();
 
@@ -285,6 +292,7 @@ export function bootstrapMainPostRuntime(options: BootstrapMainPostRuntimeOption
     lutStripListEl: options.lutStripListEl,
     getSteps: getPipelineSteps,
     getLuts: getPipelineLuts,
+    getCustomParams: getPipelineCustomParams,
     getMaterialSettings,
     shouldSuppressClick: () => performance.now() < getSuppressClickUntil(),
     computeLutUv: (stepIndex, pixelX, pixelY, canvasWidth, canvasHeight) =>
@@ -296,6 +304,7 @@ export function bootstrapMainPostRuntime(options: BootstrapMainPostRuntimeOption
         targetStepIndex: stepIndex,
         steps: getPipelineSteps(),
         luts: getPipelineLuts(),
+        customParams: getPipelineCustomParams(),
         materialSettings: getMaterialSettings(),
         lightSettings: getLightSettings(),
       }),

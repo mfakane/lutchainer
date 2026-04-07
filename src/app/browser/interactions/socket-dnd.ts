@@ -1,5 +1,5 @@
 import type { SocketAxis, SocketDragState, SocketDropTarget } from '../../../features/pipeline/pipeline-view';
-import type { ParamName } from '../../../features/step/step-model';
+import type { ParamRef } from '../../../features/step/step-model';
 import {
   isValidSocketDragState,
   isValidSocketDropTarget,
@@ -11,14 +11,14 @@ interface ResolveSocketDropTargetOptions {
   clientY: number;
   parseStepId: (value: string | undefined) => string | null;
   isValidSocketAxis: (value: string) => value is SocketAxis;
-  isValidParamName: (value: string) => value is ParamName;
+  isValidParamName: (value: string) => value is ParamRef;
   elementFromPoint?: (x: number, y: number) => Element | null;
 }
 
 interface SocketDropTargetResolverOptions {
   parseStepId: (value: string | undefined) => string | null;
   isValidSocketAxis: (value: string) => value is SocketAxis;
-  isValidParamName: (value: string) => value is ParamName;
+  isValidParamName: (value: string) => value is ParamRef;
   elementFromPoint?: (x: number, y: number) => Element | null;
 }
 
@@ -32,7 +32,7 @@ interface SyncSocketDropTargetStateOptions {
 interface ApplySocketDropConnectionOptions {
   dragState: SocketDragState;
   dropTarget: SocketDropTarget | null;
-  assignParamToSocket: (stepId: string, axis: SocketAxis, param: ParamName) => boolean;
+  assignParamToSocket: (stepId: string, axis: SocketAxis, param: ParamRef) => boolean;
 }
 
 interface HandleSocketDragMoveOptions {
@@ -108,8 +108,8 @@ function isValidPointerId(value: unknown): value is number {
   return typeof value === 'number' && Number.isInteger(value) && value >= 0;
 }
 
-function isHtmlButtonElement(value: unknown): value is HTMLButtonElement {
-  return value instanceof HTMLButtonElement;
+function isHtmlElement(value: unknown): value is HTMLElement {
+  return value instanceof HTMLElement;
 }
 
 function assertValidObject(value: unknown, label: string): asserts value is Record<string, unknown> {
@@ -429,7 +429,7 @@ export function resolveSocketDropTarget(options: ResolveSocketDropTargetOptions)
 
   if (socketDragState.mode === 'param') {
     const target = rawElement.closest('.step-socket');
-    if (!isHtmlButtonElement(target)) {
+    if (!isHtmlElement(target)) {
       return null;
     }
 
@@ -448,7 +448,7 @@ export function resolveSocketDropTarget(options: ResolveSocketDropTargetOptions)
   }
 
   const target = rawElement.closest('.param-socket');
-  if (!isHtmlButtonElement(target)) {
+  if (!isHtmlElement(target)) {
     return null;
   }
 

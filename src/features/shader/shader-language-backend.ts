@@ -2,7 +2,7 @@ import type { MaterialSettings } from '../pipeline/pipeline-model';
 import type {
   BlendMode,
   BlendModeEmitInput,
-  ParamName,
+  ParamRef,
   ShaderLocalKey,
 } from '../step/step-model';
 
@@ -23,7 +23,7 @@ export interface ShaderLanguageBackend {
   lerp: (from: string, to: string, alpha: string) => string;
   hsvFromColor: (expression: string) => string;
   hsvToColor: (expression: string) => string;
-  getParamExpr: (param: ParamName) => string;
+  getParamExpr: (param: ParamRef) => string;
   emitLocalDeclaration: (
     key: ShaderLocalKey,
     outputKind: ShaderOutputKind,

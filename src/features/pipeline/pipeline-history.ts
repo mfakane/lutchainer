@@ -1,5 +1,6 @@
 import { CHANNELS } from '../step/step-model';
 import type {
+  CustomParamModel,
   LutModel,
   StepModel,
 } from '../step/types';
@@ -58,6 +59,18 @@ function isLutModel(value: unknown): value is LutModel {
     && typeof candidate.thumbUrl === 'string';
 }
 
+function isCustomParamModel(value: unknown): value is CustomParamModel {
+  if (!isObject(value)) {
+    return false;
+  }
+
+  const candidate = value as Partial<CustomParamModel>;
+  return typeof candidate.id === 'string'
+    && typeof candidate.label === 'string'
+    && typeof candidate.defaultValue === 'number'
+    && Number.isFinite(candidate.defaultValue);
+}
+
 function isPipelineStateSnapshot(value: unknown): value is PipelineStateSnapshot {
   if (!isObject(value)) {
     return false;
@@ -67,7 +80,9 @@ function isPipelineStateSnapshot(value: unknown): value is PipelineStateSnapshot
   return Array.isArray(candidate.steps)
     && candidate.steps.every(step => isStepModel(step))
     && Array.isArray(candidate.luts)
-    && candidate.luts.every(lut => isLutModel(lut));
+    && candidate.luts.every(lut => isLutModel(lut))
+    && Array.isArray(candidate.customParams)
+    && candidate.customParams.every(customParam => isCustomParamModel(customParam));
 }
 
 function assertValidPipelineSnapshot(value: unknown, label: string): asserts value is PipelineStateSnapshot {
@@ -94,6 +109,7 @@ function clonePipelineSnapshot(snapshot: PipelineStateSnapshot): PipelineStateSn
   return {
     steps: snapshot.steps.map(step => cloneStepForHistory(step)),
     luts: snapshot.luts.map(lut => cloneLutForHistory(lut)),
+    customParams: snapshot.customParams.map(customParam => ({ ...customParam })),
   };
 }
 
@@ -124,7 +140,11 @@ function areLutModelsEqual(left: LutModel, right: LutModel): boolean {
 }
 
 function arePipelineSnapshotsEqual(left: PipelineStateSnapshot, right: PipelineStateSnapshot): boolean {
-  if (left.steps.length !== right.steps.length || left.luts.length !== right.luts.length) {
+  if (
+    left.steps.length !== right.steps.length
+    || left.luts.length !== right.luts.length
+    || left.customParams.length !== right.customParams.length
+  ) {
     return false;
   }
 
@@ -136,6 +156,18 @@ function arePipelineSnapshotsEqual(left: PipelineStateSnapshot, right: PipelineS
 
   for (let index = 0; index < left.luts.length; index += 1) {
     if (!areLutModelsEqual(left.luts[index], right.luts[index])) {
+      return false;
+    }
+  }
+
+  for (let index = 0; index < left.customParams.length; index += 1) {
+    const leftParam = left.customParams[index];
+    const rightParam = right.customParams[index];
+    if (
+      leftParam.id !== rightParam.id
+      || leftParam.label !== rightParam.label
+      || leftParam.defaultValue !== rightParam.defaultValue
+    ) {
       return false;
     }
   }

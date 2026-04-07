@@ -3,6 +3,7 @@ import type { MaterialSettings } from '../../../features/pipeline/pipeline-model
 import type {
   BlendOp,
   ChannelName,
+  CustomParamModel,
   LutModel,
   StepModel,
 } from '../../../features/step/step-model.ts';
@@ -22,6 +23,7 @@ export interface SetupMainPipelineListsOptions {
   lutStripListEl: HTMLElement;
   getSteps: () => StepModel[];
   getLuts: () => LutModel[];
+  getCustomParams: () => CustomParamModel[];
   getMaterialSettings: () => MaterialSettings;
   shouldSuppressClick: () => boolean;
   computeLutUv?: (stepIndex: number, pixelX: number, pixelY: number, canvasWidth: number, canvasHeight: number) => { u: number; v: number } | null;
@@ -33,6 +35,10 @@ export interface SetupMainPipelineListsOptions {
   onStepLutChange: (stepId: string, lutId: string) => void;
   onStepBlendModeChange: (stepId: string, blendMode: StepModel['blendMode']) => void;
   onStepOpChange: (stepId: string, channel: ChannelName, op: BlendOp) => void;
+  onAddCustomParam: () => void;
+  onRenameCustomParam: (paramId: string, label: string) => void;
+  onSetCustomParamValue: (paramId: string, value: number) => void;
+  onRemoveCustomParam: (paramId: string) => void;
   onRemoveLut: (lutId: string) => void;
   onEditLut?: (lutId: string) => void;
   onDuplicateLut?: (lutId: string) => void;
@@ -73,6 +79,7 @@ function ensureOptions(value: unknown): asserts value is SetupMainPipelineListsO
 
   ensureFunction(options.getSteps, 'Main pipeline lists setup: getSteps');
   ensureFunction(options.getLuts, 'Main pipeline lists setup: getLuts');
+  ensureFunction(options.getCustomParams, 'Main pipeline lists setup: getCustomParams');
   ensureFunction(options.getMaterialSettings, 'Main pipeline lists setup: getMaterialSettings');
   ensureFunction(options.shouldSuppressClick, 'Main pipeline lists setup: shouldSuppressClick');
   ensureFunction(options.onAddStep, 'Main pipeline lists setup: onAddStep');
@@ -83,6 +90,10 @@ function ensureOptions(value: unknown): asserts value is SetupMainPipelineListsO
   ensureFunction(options.onStepLutChange, 'Main pipeline lists setup: onStepLutChange');
   ensureFunction(options.onStepBlendModeChange, 'Main pipeline lists setup: onStepBlendModeChange');
   ensureFunction(options.onStepOpChange, 'Main pipeline lists setup: onStepOpChange');
+  ensureFunction(options.onAddCustomParam, 'Main pipeline lists setup: onAddCustomParam');
+  ensureFunction(options.onRenameCustomParam, 'Main pipeline lists setup: onRenameCustomParam');
+  ensureFunction(options.onSetCustomParamValue, 'Main pipeline lists setup: onSetCustomParamValue');
+  ensureFunction(options.onRemoveCustomParam, 'Main pipeline lists setup: onRemoveCustomParam');
   ensureFunction(options.onRemoveLut, 'Main pipeline lists setup: onRemoveLut');
   ensureFunction(options.createLutFromFile, 'Main pipeline lists setup: createLutFromFile');
 
@@ -105,12 +116,18 @@ export function setupMainPipelineLists(options: SetupMainPipelineListsOptions): 
 
   mountParamNodeList(options.paramNodeListEl, {
     getMaterialSettings: options.getMaterialSettings,
+    customParams: options.getCustomParams(),
+    onAddCustomParam: options.onAddCustomParam,
+    onRenameCustomParam: options.onRenameCustomParam,
+    onSetCustomParamValue: options.onSetCustomParamValue,
+    onRemoveCustomParam: options.onRemoveCustomParam,
     onStatus: options.onStatus,
   });
 
   mountStepList(options.stepListEl, {
     steps: options.getSteps(),
     luts: options.getLuts(),
+    customParams: options.getCustomParams(),
     onAddStep: options.onAddStep,
     onDuplicateStep: options.onDuplicateStep,
     onRemoveStep: options.onRemoveStep,

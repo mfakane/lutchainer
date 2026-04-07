@@ -6,6 +6,7 @@ import { getShaderGenerator } from '../../features/shader/shader-generator';
 import type {
   LutModel,
   StepModel,
+  CustomParamModel,
 } from '../../features/step/step-model';
 import {
   StepPreviewRenderer,
@@ -17,6 +18,7 @@ export interface EnsureStepPreviewRendererProgramInput {
   renderer: StepPreviewRenderer;
   steps: readonly StepModel[];
   luts: readonly LutModel[];
+  customParams: readonly CustomParamModel[];
 }
 
 export interface EnsureStepPreviewRendererProgramResult {
@@ -29,6 +31,7 @@ export interface BuildStepPreviewDrawOptionsInput {
   materialSettings: MaterialSettings;
   lightSettings: LightSettings;
   lightDirection: readonly [number, number, number];
+  customParams: readonly CustomParamModel[];
 }
 
 function isObject(value: unknown): value is Record<string, unknown> {
@@ -95,6 +98,9 @@ function assertValidEnsureProgramInput(input: EnsureStepPreviewRendererProgramIn
   if (!Array.isArray(input.luts)) {
     throw new Error('luts は配列で指定してください。');
   }
+  if (!Array.isArray(input.customParams)) {
+    throw new Error('customParams は配列で指定してください。');
+  }
 }
 
 function formatShaderErrors(errors: readonly StepPreviewShaderError[]): string {
@@ -137,7 +143,7 @@ export function ensureStepPreviewRendererProgram(
 ): EnsureStepPreviewRendererProgramResult {
   assertValidEnsureProgramInput(input);
 
-  const { renderer, steps, luts } = input;
+  const { renderer, steps, luts, customParams } = input;
   const lutError = renderer.setLutTextures(luts.map(lut => lut.image));
   if (lutError) {
     return {
@@ -153,8 +159,9 @@ export function ensureStepPreviewRendererProgram(
         throw new Error('GLSL generator does not support preview fragment generation.');
       }
       return glslGenerator.buildPreviewFragment({
-      steps: [...steps],
-      luts: [...luts],
+        steps: [...steps],
+        luts: [...luts],
+        customParams: [...customParams],
       });
     })(),
   );
@@ -187,5 +194,6 @@ export function buildStepPreviewDrawOptions(
     fresnelStrength: input.materialSettings.fresnelStrength,
     fresnelPower: input.materialSettings.fresnelPower,
     lightDirection: input.lightDirection,
+    customParams: input.customParams,
   };
 }

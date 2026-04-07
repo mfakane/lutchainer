@@ -1,5 +1,6 @@
 import type { MaterialSettings } from '../pipeline/pipeline-model';
-import type { ParamName, ShaderLocalKey } from '../step/step-model';
+import type { ParamName, ParamRef, ShaderLocalKey } from '../step/step-model';
+import { parseCustomParamRef } from '../step/step-model';
 import type { ShaderLanguageBackend } from './shader-language-backend';
 
 const PARAM_EXPRESSIONS: Record<ParamName, string> = {
@@ -92,6 +93,12 @@ export const HLSL_SHADER_BACKEND: ShaderLanguageBackend = {
   lerp: (from, to, alpha) => `lerp(${from}, ${to}, ${alpha})`,
   hsvFromColor: expression => `RgbToHsv(${expression})`,
   hsvToColor: expression => `HsvToRgb(${expression})`,
-  getParamExpr: param => PARAM_EXPRESSIONS[param],
+  getParamExpr: (param: ParamRef) => {
+    const customParamId = parseCustomParamRef(param);
+    if (customParamId) {
+      return `u_param_${customParamId}`;
+    }
+    return PARAM_EXPRESSIONS[param as ParamName];
+  },
   emitLocalDeclaration,
 };

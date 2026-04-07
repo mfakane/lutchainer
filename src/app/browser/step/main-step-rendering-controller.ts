@@ -1,4 +1,5 @@
 import {
+  syncParamNodeListState,
   syncLutStripListState,
   syncStepListState,
 } from '../components/solid-pipeline-lists.tsx';
@@ -8,6 +9,7 @@ import type {
 } from '../../../features/pipeline/pipeline-model.ts';
 import * as pipelineModel from '../../../features/pipeline/pipeline-model.ts';
 import type {
+  CustomParamModel,
   LutModel,
   StepModel,
 } from '../../../features/step/step-model.ts';
@@ -28,6 +30,7 @@ export interface MainStepRenderingControllerOptions {
   getStepListElement: () => HTMLElement;
   getSteps: () => StepModel[];
   getLuts: () => LutModel[];
+  getCustomParams: () => CustomParamModel[];
   getMaterialSettings: () => MaterialSettings;
   getLightSettings: () => LightSettings;
   getStepPreviewRenderer: () => StepPreviewRenderer | null;
@@ -61,6 +64,7 @@ function assertOptions(options: MainStepRenderingControllerOptions): void {
   ensureFunction(options.getStepListElement, 'Main step rendering getStepListElement');
   ensureFunction(options.getSteps, 'Main step rendering getSteps');
   ensureFunction(options.getLuts, 'Main step rendering getLuts');
+  ensureFunction(options.getCustomParams, 'Main step rendering getCustomParams');
   ensureFunction(options.getMaterialSettings, 'Main step rendering getMaterialSettings');
   ensureFunction(options.getLightSettings, 'Main step rendering getLightSettings');
   ensureFunction(options.getStepPreviewRenderer, 'Main step rendering getStepPreviewRenderer');
@@ -107,6 +111,7 @@ export function createMainStepRenderingController(
     updateStepSwatchesHelper({
       stepListEl,
       steps,
+      customParams: options.getCustomParams(),
       materialSettings: options.getMaterialSettings(),
       lightSettings: options.getLightSettings(),
       stepPreviewRenderer: options.getStepPreviewRenderer(),
@@ -121,9 +126,11 @@ export function createMainStepRenderingController(
   const renderSteps = (): void => {
     const steps = options.getSteps();
     const luts = options.getLuts();
+    const customParams = options.getCustomParams();
     options.getStepPreviewSystem()?.bumpPipelineVersion();
 
-    syncStepListState(steps, luts);
+    syncStepListState(steps, luts, customParams);
+    syncParamNodeListState(customParams);
     renderLutStrip();
     options.onUpdateShaderCodePanel();
 

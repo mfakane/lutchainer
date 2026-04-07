@@ -1,7 +1,8 @@
 import { reorderItemsById } from '../../shared/utils/reorder';
 import type {
+  CustomParamModel,
   LutModel,
-  ParamName,
+  ParamRef,
   StepModel,
 } from '../step/types';
 import * as pipelineModel from './pipeline-model';
@@ -22,8 +23,10 @@ interface PipelineCommandControllerOptions {
   setSteps: (steps: StepModel[]) => void;
   getLuts: () => LutModel[];
   setLuts: (luts: LutModel[]) => void;
+  getCustomParams: () => CustomParamModel[];
+  setCustomParams: (customParams: CustomParamModel[]) => void;
   parseLutId: (value: string | undefined) => string | null;
-  isValidParamName: (value: string) => value is ParamName;
+  isValidParamName: (value: string) => value is ParamRef;
   isValidSocketAxis: (value: string) => value is SocketAxis;
   captureSnapshot: () => PipelineStateSnapshot;
   commitSnapshot: (before: PipelineStateSnapshot) => boolean;
@@ -45,7 +48,11 @@ interface PipelineCommandController {
   removeStep: (stepId: string) => void;
   removeLut: (lutId: string) => void;
   duplicateLut: (lutId: string) => void;
-  assignParamToSocket: (stepId: string, axis: SocketAxis, param: ParamName) => boolean;
+  addCustomParam: () => void;
+  renameCustomParam: (paramId: string, label: unknown) => void;
+  setCustomParamValue: (paramId: string, value: unknown) => void;
+  removeCustomParam: (paramId: string) => void;
+  assignParamToSocket: (stepId: string, axis: SocketAxis, param: ParamRef) => boolean;
   moveStepToPosition: (stepId: string, targetStepId: string | null, after: boolean) => void;
   moveLutToPosition: (lutId: string, targetLutId: string | null, after: boolean) => void;
 }
@@ -73,6 +80,8 @@ function assertValidOptions(value: unknown): asserts value is PipelineCommandCon
     options.setSteps,
     options.getLuts,
     options.setLuts,
+    options.getCustomParams,
+    options.setCustomParams,
     options.parseLutId,
     options.isValidParamName,
     options.isValidSocketAxis,
@@ -412,7 +421,95 @@ export function createPipelineCommandController(options: PipelineCommandControll
     options.status(options.t('main.status.lutDuplicated', { name: newLut.name }), 'success');
   };
 
-  const assignParamToSocket = (stepId: string, axis: SocketAxis, param: ParamName): boolean => {
+  const addCustomParam = (): void => {
+    const before = options.captureSnapshot();
+    const result = pipelineModel.createCustomParam(options.getCustomParams());
+    if (!result.customParam) {
+      options.status(result.error ?? options.t('common.unknownError'), 'error');
+      return;
+    }
+
+    options.setCustomParams([...options.getCustomParams(), result.customParam]);
+    options.commitSnapshot(before);
+    options.renderSteps();
+    options.scheduleApply();
+  };
+
+  const renameCustomParam = (paramId: string, label: unknown): void => {
+    if (!isNonEmptyString(paramId)) {
+      return;
+    }
+
+    let parsedLabel: string;
+    try {
+      parsedLabel = pipelineModel.parseNonEmptyText(label, 'customParam.label', pipelineModel.MAX_CUSTOM_PARAM_LABEL_LENGTH);
+    } catch (error) {
+      options.status(pipelineModel.toErrorMessage(error), 'error');
+      return;
+    }
+
+    const customParams = options.getCustomParams();
+    const targetIndex = customParams.findIndex(param => param.id === paramId);
+    if (targetIndex < 0 || customParams[targetIndex].label === parsedLabel) {
+      return;
+    }
+
+    const before = options.captureSnapshot();
+    const nextCustomParams = customParams.map((param, index) => (index === targetIndex ? { ...param, label: parsedLabel } : param));
+    options.setCustomParams(nextCustomParams);
+    options.commitSnapshot(before);
+    options.renderSteps();
+    options.scheduleApply();
+  };
+
+  const setCustomParamValue = (paramId: string, value: unknown): void => {
+    if (!isNonEmptyString(paramId) || typeof value !== 'number' || !Number.isFinite(value)) {
+      return;
+    }
+
+    const customParams = options.getCustomParams();
+    const targetIndex = customParams.findIndex(param => param.id === paramId);
+    if (targetIndex < 0) {
+      return;
+    }
+
+    const normalizedValue = pipelineModel.normalizeCustomParamValue(value);
+    if (customParams[targetIndex].defaultValue === normalizedValue) {
+      return;
+    }
+
+    const before = options.captureSnapshot();
+    const nextCustomParams = customParams.map((param, index) => (index === targetIndex ? { ...param, defaultValue: normalizedValue } : param));
+    options.setCustomParams(nextCustomParams);
+    options.commitSnapshot(before);
+    options.renderSteps();
+    options.scheduleApply();
+  };
+
+  const removeCustomParam = (paramId: string): void => {
+    if (!isNonEmptyString(paramId)) {
+      return;
+    }
+
+    if (!pipelineModel.canRemoveCustomParam(options.getSteps(), paramId)) {
+      options.status(`Custom param '${paramId}' is still in use.`, 'error');
+      return;
+    }
+
+    const customParams = options.getCustomParams();
+    const nextCustomParams = customParams.filter(param => param.id !== paramId);
+    if (nextCustomParams.length === customParams.length) {
+      return;
+    }
+
+    const before = options.captureSnapshot();
+    options.setCustomParams(nextCustomParams);
+    options.commitSnapshot(before);
+    options.renderSteps();
+    options.scheduleApply();
+  };
+
+  const assignParamToSocket = (stepId: string, axis: SocketAxis, param: ParamRef): boolean => {
     if (typeof axis !== 'string' || !options.isValidSocketAxis(axis)) {
       return false;
     }
@@ -525,6 +622,10 @@ export function createPipelineCommandController(options: PipelineCommandControll
     removeStep,
     removeLut,
     duplicateLut,
+    addCustomParam,
+    renameCustomParam,
+    setCustomParamValue,
+    removeCustomParam,
     assignParamToSocket,
     moveStepToPosition,
     moveLutToPosition,

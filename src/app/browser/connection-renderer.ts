@@ -1,7 +1,7 @@
 import * as pipelineModel from '../../features/pipeline/pipeline-model';
 import type { SocketAxis, SocketDragState, SocketDropTarget } from '../../features/pipeline/pipeline-view';
 import * as pipelineView from '../../features/pipeline/pipeline-view';
-import type { ParamName, StepModel } from '../../features/step/step-model';
+import type { ParamRef, StepModel } from '../../features/step/step-model';
 import {
   resolveSocketDragPreviewColor,
   resolveSocketDragPreviewEnd,
@@ -119,7 +119,7 @@ function buildStepConnectionSpecs(
 
   for (const step of steps) {
     const stepConnectionColor = pipelineView.getStepConnectionColor(step.id);
-    const edges: Array<{ param: ParamName; axis: SocketAxis }> = [
+    const edges: Array<{ param: ParamRef; axis: SocketAxis }> = [
       { param: step.xParam, axis: 'x' },
       { param: step.yParam, axis: 'y' },
     ];

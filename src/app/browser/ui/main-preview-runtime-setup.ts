@@ -1,7 +1,7 @@
 import type { PipelineApplyController } from '../pipeline/pipeline-apply.ts';
 import { createPipelineApplyController } from '../pipeline/pipeline-apply.ts';
 import type { LightSettings, MaterialSettings } from '../../../features/pipeline/pipeline-model.ts';
-import type { LutModel, StepModel } from '../../../features/step/step-model.ts';
+import type { CustomParamModel, LutModel, StepModel } from '../../../features/step/step-model.ts';
 import {
   createStepPreviewSystem,
 } from '../step/step-preview-system.ts';
@@ -32,6 +32,7 @@ export interface MainPreviewRuntimeSetupOptions {
   syncPreviewWireframeState: (enabled: boolean) => void;
   getSteps: () => StepModel[];
   getLuts: () => LutModel[];
+  getCustomParams: () => CustomParamModel[];
   getMaterialSettings: () => MaterialSettings;
   getLightSettings: () => LightSettings;
   stepPreviewLightDirection: readonly [number, number, number];
@@ -81,6 +82,7 @@ function ensureOptions(value: unknown): asserts value is MainPreviewRuntimeSetup
   ensureFunction(options.syncPreviewWireframeState, 'Main preview runtime setup: syncPreviewWireframeState');
   ensureFunction(options.getSteps, 'Main preview runtime setup: getSteps');
   ensureFunction(options.getLuts, 'Main preview runtime setup: getLuts');
+  ensureFunction(options.getCustomParams, 'Main preview runtime setup: getCustomParams');
   ensureFunction(options.getMaterialSettings, 'Main preview runtime setup: getMaterialSettings');
   ensureFunction(options.getLightSettings, 'Main preview runtime setup: getLightSettings');
 
@@ -130,6 +132,7 @@ export function setupMainPreviewRuntime(options: MainPreviewRuntimeSetupOptions)
   const stepPreviewSystem = createStepPreviewSystem({
     getSteps: options.getSteps,
     getLuts: options.getLuts,
+    getCustomParams: options.getCustomParams,
     getMaterialSettings: options.getMaterialSettings,
     getLightSettings: options.getLightSettings,
     getStepPreviewRenderer: () => stepPreviewRenderer,

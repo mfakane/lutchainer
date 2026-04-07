@@ -1,5 +1,6 @@
 import type { Geometry } from '../../shared/utils/geometry';
 import type { Mat3, Mat4 } from '../../shared/utils/math';
+import type { CustomParamModel } from '../../features/step/step-model';
 import { applyLutTextures } from './lut-texture-utils';
 
 export interface ShaderError {
@@ -238,6 +239,7 @@ export class Renderer {
     ambientColor: readonly [number, number, number] = [0, 0, 0],
     showLightGuide = true,
     materialUniforms: MaterialUniformValues,
+    customParams: readonly CustomParamModel[] = [],
   ): void {
     const gl = this.gl;
     const { program, bufferedGeo: geo } = this;
@@ -297,6 +299,9 @@ export class Renderer {
     uni1f('u_specularPower', Number.isFinite(materialUniforms.specularPower) ? materialUniforms.specularPower : 1);
     uni1f('u_fresnelStrength', Number.isFinite(materialUniforms.fresnelStrength) ? materialUniforms.fresnelStrength : 0);
     uni1f('u_fresnelPower', Number.isFinite(materialUniforms.fresnelPower) ? materialUniforms.fresnelPower : 0.01);
+    for (const customParam of customParams) {
+      uni1f(`u_param_${customParam.id}`, Number.isFinite(customParam.defaultValue) ? customParam.defaultValue : 0);
+    }
     uniM4('u_modelMatrix', modelMatrix);
     uniM4('u_viewMatrix', viewMatrix);
     uniM4('u_projectionMatrix', projMatrix);

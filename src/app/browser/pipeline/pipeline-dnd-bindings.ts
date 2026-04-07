@@ -3,7 +3,7 @@ import {
   bindReorderDragHandlers,
   createPointerDragState,
 } from '../interactions/dnd';
-import type { ParamName } from '../../../features/step/step-model';
+import type { ParamRef } from '../../../features/step/step-model';
 import type {
   LutReorderDragState,
   SocketAxis,
@@ -54,7 +54,7 @@ interface SetupSocketPointerBindingsOptions {
   paramNodeListEl: HTMLElement;
   stepListEl: HTMLElement;
   parseStepId: (value: string | undefined) => string | null;
-  isValidParamName: (value: string) => value is ParamName;
+  isValidParamName: (value: string) => value is ParamRef;
   isValidSocketAxis: (value: string) => value is SocketAxis;
   setSocketDragState: (state: SocketDragState | null) => void;
   handleSocketDragMove: (event: PointerEvent) => void;
@@ -71,12 +71,12 @@ interface SetupPipelineDndBindingsOptions {
 type SocketDragStartSeed =
   | {
       mode: 'param';
-      sourceEl: HTMLButtonElement;
-      param: ParamName;
+      sourceEl: HTMLElement;
+      param: ParamRef;
     }
   | {
       mode: 'step';
-      sourceEl: HTMLButtonElement;
+      sourceEl: HTMLElement;
       stepId: string;
       axis: SocketAxis;
     };
@@ -303,10 +303,17 @@ export function setupSocketPointerBindings(options: SetupSocketPointerBindingsOp
       {
         containerEl: options.paramNodeListEl,
         resolvePointerDown: eventTarget => {
-          const directSocket = eventTarget.closest<HTMLButtonElement>('.param-socket');
-          const paramNode = eventTarget.closest<HTMLElement>('.param-node');
-          const target = directSocket ?? paramNode?.querySelector<HTMLButtonElement>('.param-socket') ?? null;
+          if (eventTarget.closest('[data-socket-drag-ignore="true"]')) {
+            return { kind: 'ignore' };
+          }
+
+          const target = eventTarget.closest<HTMLElement>('.param-socket');
           if (!target) {
+            return { kind: 'ignore' };
+          }
+
+          const interactiveChild = eventTarget.closest<HTMLElement>('input, select, textarea, button');
+          if (interactiveChild && interactiveChild !== target) {
             return { kind: 'ignore' };
           }
 

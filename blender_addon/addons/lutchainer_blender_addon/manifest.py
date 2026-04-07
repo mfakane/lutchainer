@@ -43,6 +43,14 @@ PARAM_NAMES = {
 CHANNEL_NAMES = {"r", "g", "b", "h", "s", "v"}
 LUT_FILENAME_RE = re.compile(r"^luts/[^/]+\.png$")
 MAX_LABEL_LENGTH = 40
+CUSTOM_PARAM_ID_RE = re.compile(r"^[A-Za-z][A-Za-z0-9_]{0,31}$")
+
+
+@dataclass(frozen=True)
+class LutchainCustomParam:
+    id: str
+    label: str
+    default_value: float
 
 
 @dataclass(frozen=True)
@@ -73,6 +81,7 @@ class LutchainImportData:
     display_name: str
     luts: list[LutchainLut]
     steps: list[LutchainStep]
+    custom_params: list[LutchainCustomParam]
 
 
 def _require_record(value: object, label: str) -> dict[str, object]:
@@ -178,6 +187,19 @@ def _parse_step(index: int, raw_step: object) -> LutchainStep:
     )
 
 
+def _parse_custom_param(index: int, raw_custom_param: object) -> LutchainCustomParam:
+    record = _require_record(raw_custom_param, f"customParams[{index}]")
+    custom_param_id = _require_text(record.get("id"), f"customParams[{index}].id", max_length=32)
+    if not CUSTOM_PARAM_ID_RE.match(custom_param_id):
+        raise ValueError(f"customParams[{index}].id is invalid")
+    label = _require_text(record.get("label"), f"customParams[{index}].label", max_length=MAX_LABEL_LENGTH)
+    default_value_raw = record.get("defaultValue")
+    if not isinstance(default_value_raw, (int, float)):
+        raise ValueError(f"customParams[{index}].defaultValue must be a number")
+    default_value = max(0.0, min(1.0, float(default_value_raw)))
+    return LutchainCustomParam(id=custom_param_id, label=label, default_value=default_value)
+
+
 def load_lutchain_file(filepath: str) -> LutchainImportData:
     if not filepath or not filepath.lower().endswith(".lutchain"):
         raise ValueError("Expected a .lutchain filepath")
@@ -197,15 +219,23 @@ def load_lutchain_file(filepath: str) -> LutchainImportData:
 
         raw_luts = root.get("luts")
         raw_steps = root.get("steps")
+        raw_custom_params = root.get("customParams", [])
         if not isinstance(raw_luts, list) or not raw_luts:
             raise ValueError("luts must be a non-empty array")
         if not isinstance(raw_steps, list):
             raise ValueError("steps must be an array")
+        if not isinstance(raw_custom_params, list):
+            raise ValueError("customParams must be an array when provided")
 
         luts = [_parse_lut(index, entry, archive) for index, entry in enumerate(raw_luts)]
         lut_ids = {lut.id for lut in luts}
         if len(lut_ids) != len(luts):
             raise ValueError("Duplicate LUT ids are not allowed")
+
+        custom_params = [_parse_custom_param(index, entry) for index, entry in enumerate(raw_custom_params)]
+        custom_param_ids = {custom_param.id for custom_param in custom_params}
+        if len(custom_param_ids) != len(custom_params):
+            raise ValueError("Duplicate custom param ids are not allowed")
 
         steps = [_parse_step(index, entry) for index, entry in enumerate(raw_steps)]
         step_ids = {step.id for step in steps}
@@ -215,6 +245,14 @@ def load_lutchain_file(filepath: str) -> LutchainImportData:
         for step in steps:
             if step.lut_id not in lut_ids:
                 raise ValueError(f"Step {step.id} references unknown LUT '{step.lut_id}'")
+            for param_name in (step.x_param, step.y_param):
+                if param_name in PARAM_NAMES:
+                    continue
+                if not param_name.startswith("custom:"):
+                    raise ValueError(f"Step {step.id} references unsupported parameter '{param_name}'")
+                custom_param_id = param_name.split(":", 1)[1]
+                if custom_param_id not in custom_param_ids:
+                    raise ValueError(f"Step {step.id} references unknown custom param '{custom_param_id}'")
 
     display_name = os.path.splitext(os.path.basename(filepath))[0]
     return LutchainImportData(
@@ -222,4 +260,5 @@ def load_lutchain_file(filepath: str) -> LutchainImportData:
         display_name=display_name,
         luts=luts,
         steps=steps,
+        custom_params=custom_params,
     )

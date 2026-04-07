@@ -4,6 +4,7 @@ import type {
 } from '../pipeline/pipeline-model';
 import type {
   Color,
+  CustomParamModel,
   LutModel,
   ParamName,
   StepModel,
@@ -25,6 +26,7 @@ export interface DrawStepPreviewSphereCpuInput {
   pixelHeight: number;
   steps: readonly StepModel[];
   luts: readonly LutModel[];
+  customParams: readonly CustomParamModel[];
   materialSettings: MaterialSettings;
   lightSettings: LightSettings;
   lightDirection: readonly [number, number, number];
@@ -121,6 +123,9 @@ function assertValidInput(input: DrawStepPreviewSphereCpuInput): void {
   }
   if (!Array.isArray(input.luts)) {
     throw new Error('luts は配列で指定してください。');
+  }
+  if (!Array.isArray(input.customParams)) {
+    throw new Error('customParams は配列で指定してください。');
   }
   if (!isValidMaterialSettings(input.materialSettings)) {
     throw new Error('materialSettings が不正です。');
@@ -321,6 +326,7 @@ function buildStepParamContext(
     linearDepth,
     texU,
     texV,
+    customParamValues: activeCustomParamValues,
   };
 }
 
@@ -329,6 +335,7 @@ let activeSpecularStrength = 0;
 let activeSpecularPower = 1;
 let activeFresnelStrength = 0;
 let activeFresnelPower = 0.01;
+let activeCustomParamValues: Readonly<Record<string, number>> = {};
 
 export function drawStepPreviewSphereCpu(input: DrawStepPreviewSphereCpuInput): void {
   assertValidInput(input);
@@ -340,6 +347,7 @@ export function drawStepPreviewSphereCpu(input: DrawStepPreviewSphereCpuInput): 
     pixelHeight,
     steps,
     luts,
+    customParams,
     materialSettings,
     lightSettings,
     lightDirection,
@@ -351,6 +359,9 @@ export function drawStepPreviewSphereCpu(input: DrawStepPreviewSphereCpuInput): 
   activeSpecularPower = Math.max(1.0, materialSettings.specularPower);
   activeFresnelStrength = materialSettings.fresnelStrength;
   activeFresnelPower = Math.max(0.01, materialSettings.fresnelPower);
+  activeCustomParamValues = Object.fromEntries(
+    customParams.map(param => [param.id, clamp01(param.defaultValue)] as const),
+  );
 
   renderSphereImage(
     canvas,
@@ -368,6 +379,7 @@ export function drawParamPreviewSphereCpu(input: DrawParamPreviewSphereCpuInput)
   activeSpecularPower = Math.max(1.0, input.materialSettings.specularPower);
   activeFresnelStrength = input.materialSettings.fresnelStrength;
   activeFresnelPower = Math.max(0.01, input.materialSettings.fresnelPower);
+  activeCustomParamValues = {};
 
   renderSphereImage(
     input.canvas,

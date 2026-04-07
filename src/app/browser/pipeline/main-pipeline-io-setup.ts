@@ -1,4 +1,4 @@
-import type { LutModel, StepModel } from '../../../features/step/step-model.ts';
+import type { CustomParamModel, LutModel, StepModel } from '../../../features/step/step-model.ts';
 import * as pipelineModel from '../../../features/pipeline/pipeline-model.ts';
 import { createPipelineIoSystem } from './pipeline-io-system.ts';
 
@@ -12,6 +12,7 @@ interface StepPreviewSystemLike {
 interface SetupMainPipelineIoSystemOptions {
   getLuts: () => LutModel[];
   getSteps: () => StepModel[];
+  getCustomParams: () => CustomParamModel[];
   getStepPreviewSystem: () => StepPreviewSystemLike | null;
   t: Translator;
 }
@@ -30,6 +31,7 @@ function ensureOptions(value: unknown): asserts value is SetupMainPipelineIoSyst
   const options = value as Partial<SetupMainPipelineIoSystemOptions>;
   ensureFunction(options.getLuts, 'Main pipeline IO setup getLuts');
   ensureFunction(options.getSteps, 'Main pipeline IO setup getSteps');
+  ensureFunction(options.getCustomParams, 'Main pipeline IO setup getCustomParams');
   ensureFunction(options.getStepPreviewSystem, 'Main pipeline IO setup getStepPreviewSystem');
   ensureFunction(options.t, 'Main pipeline IO setup t');
 }
@@ -40,6 +42,7 @@ export function setupMainPipelineIoSystem(options: SetupMainPipelineIoSystemOpti
   return createPipelineIoSystem({
     getLuts: options.getLuts,
     getSteps: options.getSteps,
+    getCustomParams: options.getCustomParams,
     renderPreviewPngBytes: async () => {
       const stepPreviewSystem = options.getStepPreviewSystem();
       if (!stepPreviewSystem) {

@@ -3,7 +3,11 @@ import {
 } from '../step/step-runtime';
 import { buildGeneratedShaderHeader } from '../../shared/build-info.ts';
 import { HLSL_SHADER_BACKEND } from './shader-hlsl-backend';
-import { buildSampleBody } from './shader-generator-utils';
+import {
+  buildCustomUniformComments,
+  buildSampleBody,
+  collectUsedCustomParams,
+} from './shader-generator-utils';
 import { buildShaderLocalDeclarations } from './shader-local-decls';
 import { buildShaderStepCode } from './shader-step-code';
 import type {
@@ -82,6 +86,8 @@ float3 HsvToRgb(float4 color) {
 
 function buildFragmentShader(input: ShaderBuildInput): string {
   const textureDecl = input.luts.map((_, index) => `Texture2D u_lut${index} : register(t${index});`).join('\n');
+  const usedCustomParams = collectUsedCustomParams(input.steps, input.customParams);
+  const customUniformComments = buildCustomUniformComments(usedCustomParams);
   const sampleBody = buildHlslSampleBody(input.luts);
   const stepModels = resolveStepRuntimeModels(input.steps, input.luts);
   const stepCode = buildShaderStepCode(stepModels, {
@@ -113,6 +119,7 @@ cbuffer SceneUniforms : register(b0)
   float u_specularPower;
   float u_fresnelStrength;
   float u_fresnelPower;
+${usedCustomParams.map(param => `  float u_param_${param.id};`).join('\n')}
 };
 
 Texture2D u_texture : register(t0);
@@ -132,6 +139,7 @@ struct PSInput {
   float2 texcoord : TEXCOORD2;
 };
 
+${customUniformComments ? `${customUniformComments}\n` : ''}
 ${buildSharedColorFunctions()}
 
 float4 SampleLut(int lutIndex, float2 uv) {

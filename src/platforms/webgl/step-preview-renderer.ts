@@ -1,5 +1,5 @@
 import { applyLutTextures } from './lut-texture-utils';
-import type { Color } from '../../features/step/step-model';
+import type { Color, CustomParamModel } from '../../features/step/step-model';
 
 export interface StepPreviewShaderError {
   type: 'vertex' | 'fragment' | 'link' | 'input';
@@ -22,6 +22,7 @@ export interface StepPreviewDrawOptions {
   fresnelStrength: number;
   fresnelPower: number;
   lightDirection: readonly [number, number, number];
+  customParams: readonly CustomParamModel[];
 }
 
 export interface CreateStepPreviewRendererOptions {
@@ -298,6 +299,12 @@ export class StepPreviewRenderer {
     }
     if (this.bindings.lightDirection) {
       gl.uniform3f(this.bindings.lightDirection, lx, ly, lz);
+    }
+    for (const customParam of options.customParams) {
+      const customUniform = gl.getUniformLocation(this.program, `u_param_${customParam.id}`);
+      if (customUniform) {
+        gl.uniform1f(customUniform, clamp01(customParam.defaultValue));
+      }
     }
 
     for (let i = 0; i < this.lutTextures.length; i++) {

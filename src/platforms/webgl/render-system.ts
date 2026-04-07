@@ -1,4 +1,5 @@
 import type { LightSettings, MaterialSettings } from '../../features/pipeline/pipeline-model';
+import type { CustomParamModel } from '../../features/step/step-model';
 import {
   mat4Identity,
   mat4LookAt,
@@ -28,6 +29,7 @@ export interface CreateRenderSystemOptions {
   getLightSettings: () => LightSettings;
   getLightDirectionWorld: () => [number, number, number];
   getMaterialSettings: () => MaterialSettings;
+  getCustomParams: () => CustomParamModel[];
   shouldSuppressLightGuide?: () => boolean;
   onAfterDraw?: (payload: AfterDrawPayload) => void;
   requestAnimationFrameImpl?: (callback: FrameRequestCallback) => number;
@@ -125,6 +127,9 @@ function assertValidOptions(value: unknown): asserts value is CreateRenderSystem
   }
   if (typeof options.getMaterialSettings !== 'function') {
     throw new Error('getMaterialSettings must be a function.');
+  }
+  if (typeof options.getCustomParams !== 'function') {
+    throw new Error('getCustomParams must be a function.');
   }
   if (options.shouldSuppressLightGuide !== undefined && typeof options.shouldSuppressLightGuide !== 'function') {
     throw new Error('shouldSuppressLightGuide must be a function when provided.');
@@ -226,6 +231,7 @@ export function createRenderSystem(options: CreateRenderSystemOptions): RenderSy
       lightSettings.ambientColor,
       showLightGuide,
       materialSettings,
+      options.getCustomParams(),
     );
 
     options.onAfterDraw?.({

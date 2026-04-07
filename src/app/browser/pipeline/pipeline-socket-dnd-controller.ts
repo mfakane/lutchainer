@@ -6,7 +6,7 @@ import {
   handleSocketDragMove as processSocketDragMove,
   syncSocketDropTargetState,
 } from '../interactions/socket-dnd.ts';
-import type { ParamName } from '../../../features/step/step-model.ts';
+import type { ParamRef } from '../../../features/step/step-model.ts';
 import type { SocketAxis, SocketDragState, SocketDropTarget } from '../../../features/pipeline/pipeline-view.ts';
 
 type StatusKind = 'success' | 'error' | 'info';
@@ -24,7 +24,7 @@ export interface PipelineSocketDndControllerOptions {
   getSocketDropTargetState: () => SocketDropTarget | null;
   setSocketDropTargetState: (nextTarget: SocketDropTarget | null) => void;
   resolveDropTarget: (dragState: SocketDragState, clientX: number, clientY: number) => SocketDropTarget | null;
-  assignParamToSocket: (stepId: string, axis: SocketAxis, param: ParamName) => boolean;
+  assignParamToSocket: (stepId: string, axis: SocketAxis, param: ParamRef) => boolean;
   scheduleConnectionDraw: () => void;
   setSuppressClickUntil: (until: number) => void;
   setUserSelect: (value: string) => void;

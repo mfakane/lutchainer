@@ -21,16 +21,22 @@ import {
   BLEND_OPS,
   CHANNELS,
   ColorWithHasChroma,
+  CUSTOM_PARAM_PREFIX,
   DEFAULT_OPS,
+  isBuiltinParamName,
+  isCustomParamRef,
   MAX_STEP_LABEL_LENGTH,
+  parseCustomParamRef,
   type BlendMode,
   type BlendOp,
   type ChannelName,
   type Color,
   type ColorWithAlpha,
+  type CustomParamModel,
   type LutModel,
   type ParamName,
-  type StepModel,
+  type ParamRef,
+  type StepModel
 } from '../step/step-model';
 import { MAX_LUTS, MAX_STEPS } from './pipeline-constants.ts';
 export {
@@ -43,7 +49,7 @@ export {
 } from '../../shared/lutchain/lutchain-archive.ts';
 
 export interface ParamDef {
-  key: ParamName;
+  key: ParamRef;
   label: string;
   description: string;
 }
@@ -104,6 +110,7 @@ export interface LightRangeBinding {
 export interface LoadedPipelineData {
   luts: LutModel[];
   steps: StepModel[];
+  customParams: CustomParamModel[];
 }
 
 export interface CreatePipelineStepResult {
@@ -121,6 +128,11 @@ export interface RemoveLutFromPipelineResult {
   luts: LutModel[];
   steps: StepModel[];
   removed: LutModel | null;
+  error: string | null;
+}
+
+export interface CreateCustomParamResult {
+  customParam: CustomParamModel | null;
   error: string | null;
 }
 
@@ -147,6 +159,9 @@ export const PARAMS: ParamDef[] = [
   { key: 'zero', label: 'Zero', description: 'Constant 0' },
   { key: 'one', label: 'One', description: 'Constant 1' },
 ];
+
+export const CUSTOM_PARAM_ID_RE = /^[A-Za-z][A-Za-z0-9_]{0,31}$/;
+export const MAX_CUSTOM_PARAM_LABEL_LENGTH = 40;
 
 export const PARAM_GROUPS: ParamGroupDef[] = [
   {
@@ -416,8 +431,19 @@ export function isValidChannelName(value: string): value is ChannelName {
   return CHANNELS.includes(value as ChannelName);
 }
 
-export function isValidParamName(value: string): value is ParamName {
-  return PARAMS.some(param => param.key === value);
+export function isCustomParamId(value: string): boolean {
+  return CUSTOM_PARAM_ID_RE.test(value);
+}
+
+export function buildCustomParamRef(paramId: string): ParamRef {
+  if (!isCustomParamId(paramId)) {
+    throw new Error(`カスタムパラメータIDが不正です: ${paramId}`);
+  }
+  return `${CUSTOM_PARAM_PREFIX}${paramId}`;
+}
+
+export function isValidParamName(value: string): value is ParamRef {
+  return isBuiltinParamName(value) || (isCustomParamRef(value) && isCustomParamId(value.slice(CUSTOM_PARAM_PREFIX.length)));
 }
 
 export function isValidBlendMode(value: string): value is BlendMode {
@@ -448,6 +474,27 @@ export function parseLutId(value: string | undefined): string | null {
   return lutId;
 }
 
+export function parseCustomParamId(value: string | undefined): string | null {
+  if (typeof value !== 'string') {
+    return null;
+  }
+
+  const customParamId = value.trim();
+  if (!isCustomParamId(customParamId)) {
+    return null;
+  }
+
+  return customParamId;
+}
+
+export function normalizeCustomParamValue(value: number): number {
+  return clamp01(Number.isFinite(value) ? value : 0);
+}
+
+export function parseCustomParamLabel(value: unknown): string {
+  return parseNonEmptyText(value, 'customParam.label', MAX_CUSTOM_PARAM_LABEL_LENGTH);
+}
+
 export function isZipLikeFile(file: File): boolean {
   return isZipLikeFileDescriptor(file);
 }
@@ -473,12 +520,33 @@ export function buildPipelineDownloadFilename(now: Date = new Date()): string {
   return `${PIPELINE_DOWNLOAD_BASENAME}-${yyyy}${mm}${dd}-${hh}${min}${ss}${PIPELINE_ARCHIVE_EXTENSION}`;
 }
 
-export function getParamLabel(param: ParamName): string {
+export function getParamLabel(param: ParamRef, customParams: readonly CustomParamModel[] = []): string {
+  if (isCustomParamRef(param)) {
+    const customParamId = parseCustomParamRef(param);
+    const customParam = customParamId
+      ? customParams.find(candidate => candidate.id === customParamId)
+      : null;
+    return customParam?.label ?? param;
+  }
   const found = PARAMS.find(p => p.key === param);
   return found ? found.label : param;
 }
 
-export function getParamDef(param: ParamName): ParamDef {
+export function getParamDef(param: ParamRef, customParams: readonly CustomParamModel[] = []): ParamDef {
+  if (isCustomParamRef(param)) {
+    const customParamId = parseCustomParamRef(param);
+    const customParam = customParamId
+      ? customParams.find(candidate => candidate.id === customParamId)
+      : null;
+    if (!customParam) {
+      throw new Error(`未知のカスタムパラメータです: ${param}`);
+    }
+    return {
+      key: param,
+      label: customParam.label,
+      description: `Custom float input (${customParam.id})`,
+    };
+  }
   const found = PARAMS.find(p => p.key === param);
   if (!found) {
     throw new Error(`未知のパラメータです: ${param}`);
@@ -540,6 +608,39 @@ export function createPipelineStep(
     },
     error: null,
   };
+}
+
+export function createCustomParam(customParams: CustomParamModel[]): CreateCustomParamResult {
+  if (!Array.isArray(customParams)) {
+    return { customParam: null, error: 'Custom Param の状態が不正です。' };
+  }
+
+  const generateId = () => {
+    let id = Math.random().toString(36).slice(2, 8);
+    while (!CUSTOM_PARAM_ID_RE.test(id)) id = Math.random().toString(36).slice(2, 8);
+    return id;
+  }
+
+  let suffix = customParams.length + 1;
+  let id = generateId();
+  while (customParams.some(param => param.id === id)) {
+    suffix += 1;
+    id = generateId();
+  }
+
+  return {
+    customParam: {
+      id,
+      label: `Param ${suffix}`,
+      defaultValue: 0.5,
+    },
+    error: null,
+  };
+}
+
+export function canRemoveCustomParam(steps: readonly StepModel[], paramId: string): boolean {
+  const paramRef = buildCustomParamRef(paramId);
+  return !steps.some(step => step.xParam === paramRef || step.yParam === paramRef);
 }
 
 function buildDuplicatedStepLabel(source: StepModel, sourceIndex: number): string {
@@ -904,7 +1005,11 @@ export async function createLutFromFile(file: File): Promise<LutModel> {
   return createLutFromCanvas(file.name, canvas);
 }
 
-function parsePipelineStepEntry(value: unknown, index: number): StepModel {
+function parsePipelineStepEntry(
+  value: unknown,
+  index: number,
+  customParamIds: ReadonlySet<string> = new Set<string>(),
+): StepModel {
   const fieldPrefix = `steps[${index}]`;
   if (!isRecord(value)) {
     throw new Error(`${fieldPrefix} はオブジェクトである必要があります。`);
@@ -942,10 +1047,22 @@ function parsePipelineStepEntry(value: unknown, index: number): StepModel {
   if (typeof xParamRaw !== 'string' || !isValidParamName(xParamRaw)) {
     throw new Error(`${fieldPrefix}.xParam が不正です。`);
   }
+  if (isCustomParamRef(xParamRaw)) {
+    const customParamId = parseCustomParamRef(xParamRaw);
+    if (!customParamId || !customParamIds.has(customParamId)) {
+      throw new Error(`${fieldPrefix}.xParam が未知のカスタムパラメータを参照しています。`);
+    }
+  }
 
   const yParamRaw = value.yParam;
   if (typeof yParamRaw !== 'string' || !isValidParamName(yParamRaw)) {
     throw new Error(`${fieldPrefix}.yParam が不正です。`);
+  }
+  if (isCustomParamRef(yParamRaw)) {
+    const customParamId = parseCustomParamRef(yParamRaw);
+    if (!customParamId || !customParamIds.has(customParamId)) {
+      throw new Error(`${fieldPrefix}.yParam が未知のカスタムパラメータを参照しています。`);
+    }
   }
 
   const ops: Record<ChannelName, BlendOp> = { ...DEFAULT_OPS };
@@ -999,9 +1116,10 @@ function canvasToPngBytes(canvas: HTMLCanvasElement): Promise<Uint8Array> {
 export async function serializePipelineAsZip(
   luts: LutModel[],
   steps: StepModel[],
+  customParams: CustomParamModel[] = [],
   previewPngBytes?: Uint8Array,
 ): Promise<Uint8Array> {
-  if (!Array.isArray(luts) || !Array.isArray(steps)) {
+  if (!Array.isArray(luts) || !Array.isArray(steps) || !Array.isArray(customParams)) {
     throw new Error('パイプライン状態が不正です。');
   }
 
@@ -1026,6 +1144,7 @@ export async function serializePipelineAsZip(
     PIPELINE_ZIP_FILE_VERSION,
     steps,
     lutEntries,
+    customParams,
   );
 
   if (previewPngBytes instanceof Uint8Array && previewPngBytes.length > 0) {
@@ -1160,6 +1279,30 @@ async function createLutFromZipPngBytes(
   };
 }
 
+function parseCustomParamEntry(value: unknown, index: number): CustomParamModel {
+  const fieldPrefix = `customParams[${index}]`;
+  if (!isRecord(value)) {
+    throw new Error(`${fieldPrefix} はオブジェクトである必要があります。`);
+  }
+
+  const id = parseCustomParamId(typeof value.id === 'string' ? value.id : undefined);
+  if (!id) {
+    throw new Error(`${fieldPrefix}.id が不正です。`);
+  }
+
+  const label = parseNonEmptyText(value.label, `${fieldPrefix}.label`, MAX_CUSTOM_PARAM_LABEL_LENGTH);
+  const defaultValueRaw = value.defaultValue;
+  if (typeof defaultValueRaw !== 'number' || !Number.isFinite(defaultValueRaw)) {
+    throw new Error(`${fieldPrefix}.defaultValue が不正です。`);
+  }
+
+  return {
+    id,
+    label,
+    defaultValue: normalizeCustomParamValue(defaultValueRaw),
+  };
+}
+
 export async function loadPipelineFromZip(data: ArrayBuffer): Promise<LoadedPipelineData> {
   if (!(data instanceof ArrayBuffer)) {
     throw new Error('.lutchain データが不正です。');
@@ -1180,6 +1323,7 @@ export async function loadPipelineFromZip(data: ArrayBuffer): Promise<LoadedPipe
   if (rawSteps.length > MAX_STEPS) {
     throw new Error(`steps は最大 ${MAX_STEPS} 件までです。`);
   }
+  const rawCustomParams = Array.isArray(manifest.customParams) ? manifest.customParams : [];
 
   const lutEntries = rawLuts.map((entry, index) => parsePipelineZipLutEntry(entry, index));
   const lutIdSet = new Set<string>();
@@ -1200,7 +1344,16 @@ export async function loadPipelineFromZip(data: ArrayBuffer): Promise<LoadedPipe
     loadedLuts.push(lut);
   }
 
-  const loadedSteps = rawSteps.map((entry, index) => parsePipelineStepEntry(entry, index));
+  const customParams = rawCustomParams.map((entry, index) => parseCustomParamEntry(entry, index));
+  const customParamIdSet = new Set<string>();
+  for (const customParam of customParams) {
+    if (customParamIdSet.has(customParam.id)) {
+      throw new Error(`customParams に重複IDがあります: ${customParam.id}`);
+    }
+    customParamIdSet.add(customParam.id);
+  }
+
+  const loadedSteps = rawSteps.map((entry, index) => parsePipelineStepEntry(entry, index, customParamIdSet));
   const stepIdSet = new Set<string>();
   const fallbackLutId = loadedLuts[0].id;
   for (const step of loadedSteps) {
@@ -1215,6 +1368,7 @@ export async function loadPipelineFromZip(data: ArrayBuffer): Promise<LoadedPipe
   }
 
   return {
+    customParams,
     luts: loadedLuts,
     steps: loadedSteps,
   };

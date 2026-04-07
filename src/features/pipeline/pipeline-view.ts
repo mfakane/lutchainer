@@ -1,12 +1,12 @@
-import { type ParamName } from '../step/step-model';
+import { type ParamRef } from '../step/step-model';
 
 export type SocketAxis = 'x' | 'y';
 
 export type SocketDragState =
   | {
       mode: 'param';
-      sourceEl: HTMLButtonElement;
-      param: ParamName;
+      sourceEl: HTMLElement;
+      param: ParamRef;
       pointerId: number;
       startX: number;
       startY: number;
@@ -16,7 +16,7 @@ export type SocketDragState =
     }
   | {
       mode: 'step';
-      sourceEl: HTMLButtonElement;
+      sourceEl: HTMLElement;
       stepId: string;
       axis: SocketAxis;
       pointerId: number;
@@ -30,12 +30,12 @@ export type SocketDragState =
 export type SocketDropTarget =
   | {
       kind: 'param';
-      element: HTMLButtonElement;
-      param: ParamName;
+      element: HTMLElement;
+      param: ParamRef;
     }
   | {
       kind: 'step';
-      element: HTMLButtonElement;
+      element: HTMLElement;
       stepId: string;
       axis: SocketAxis;
     };

@@ -4,7 +4,8 @@ import {
   CHANNELS,
   type BlendOp,
   type ChannelName,
-  type ParamName,
+  type CustomParamModel,
+  type ParamRef,
   type StepModel,
 } from '../../features/step/step-model.ts';
 
@@ -18,10 +19,12 @@ export interface PipelineStepEntry {
   label?: string;
   muted?: boolean;
   blendMode: string;
-  xParam: ParamName;
-  yParam: ParamName;
+  xParam: ParamRef;
+  yParam: ParamRef;
   ops?: PipelineStepOpsEntry;
 }
+
+export interface PipelineCustomParamEntry extends CustomParamModel {}
 
 export interface PipelineZipLutEntry {
   id: string;
@@ -36,6 +39,7 @@ export interface PipelineZipData {
   version: number;
   luts: PipelineZipLutEntry[];
   steps: PipelineStepEntry[];
+  customParams?: PipelineCustomParamEntry[];
 }
 
 export interface LegacyPipelineStepEntry extends Omit<PipelineStepEntry, 'id'> {
@@ -132,8 +136,8 @@ function serializePipelineStepEntry(step: StepModel, index: number): PipelineSte
     id: parseNonEmptyText(step.id, `${fieldPrefix}.id`, 128),
     lutId: parseNonEmptyText(step.lutId, `${fieldPrefix}.lutId`, 200),
     blendMode: parseNonEmptyText(step.blendMode, `${fieldPrefix}.blendMode`, 100),
-    xParam: parseNonEmptyText(step.xParam, `${fieldPrefix}.xParam`, 100) as ParamName,
-    yParam: parseNonEmptyText(step.yParam, `${fieldPrefix}.yParam`, 100) as ParamName,
+    xParam: parseNonEmptyText(step.xParam, `${fieldPrefix}.xParam`, 100) as ParamRef,
+    yParam: parseNonEmptyText(step.yParam, `${fieldPrefix}.yParam`, 100) as ParamRef,
   };
 
   if (step.label !== undefined) {
@@ -155,11 +159,21 @@ export function buildPipelineArchiveManifest(
   version: number,
   steps: StepModel[],
   lutEntries: PipelineZipLutEntry[],
+  customParams?: CustomParamModel[],
 ): PipelineZipData {
   return {
     version: parsePositiveInteger(version, 'version'),
     luts: lutEntries,
     steps: steps.map((step, index) => serializePipelineStepEntry(step, index)),
+    ...(Array.isArray(customParams) && customParams.length > 0
+      ? {
+          customParams: customParams.map((param, index) => ({
+            id: parseNonEmptyText(param.id, `customParams[${index}].id`, 32),
+            label: parseNonEmptyText(param.label, `customParams[${index}].label`, 40),
+            defaultValue: Number.isFinite(param.defaultValue) ? param.defaultValue : 0,
+          })),
+        }
+      : {}),
   };
 }
 

@@ -7,7 +7,12 @@ import {
 } from '../step/step-runtime';
 import { buildGeneratedShaderHeader } from '../../shared/build-info.ts';
 import { GLSL_SHADER_BACKEND } from './shader-glsl-backend';
-import { buildSampleBody } from './shader-generator-utils';
+import {
+  buildCustomUniformComments,
+  buildCustomUniformDeclarations,
+  buildSampleBody,
+  collectUsedCustomParams,
+} from './shader-generator-utils';
 import { buildShaderLocalDeclarations } from './shader-local-decls';
 import { buildShaderStepCode } from './shader-step-code';
 import type {
@@ -111,6 +116,8 @@ vec3 hsv2rgb(vec4 color) {
 
 function buildPreviewFragmentShader(input: StepPreviewShaderBuildInput): string {
   const samplerDecl = input.luts.map((_, index) => `uniform sampler2D u_lut${index};`).join('\n');
+  const usedCustomParams = collectUsedCustomParams(input.steps, input.customParams);
+  const customUniformDecl = buildCustomUniformDeclarations(usedCustomParams);
   const sampleBody = buildGlslSampleBody(input.luts);
   const stepModels = resolveStepRuntimeModels(input.steps, input.luts);
   const stepCode = buildShaderStepCode(stepModels, {
@@ -137,6 +144,7 @@ uniform float u_fresnelStrength;
 uniform float u_fresnelPower;
 uniform vec3 u_previewLightDir;
 ${samplerDecl}
+${customUniformDecl ? `${customUniformDecl}\n` : ''}
 
 ${buildSharedColorFunctions()}
 
@@ -187,6 +195,9 @@ void main() {
 
 function buildFragmentShader(input: ShaderBuildInput): string {
   const samplerDecl = input.luts.map((_, index) => `uniform sampler2D u_lut${index};`).join('\n');
+  const usedCustomParams = collectUsedCustomParams(input.steps, input.customParams);
+  const customUniformDecl = buildCustomUniformDeclarations(usedCustomParams);
+  const customUniformComments = buildCustomUniformComments(usedCustomParams);
   const sampleBody = buildGlslSampleBody(input.luts);
   const stepModels = resolveStepRuntimeModels(input.steps, input.luts);
   const stepCode = buildShaderStepCode(stepModels, {
@@ -216,11 +227,13 @@ uniform float u_fresnelStrength;
 uniform float u_fresnelPower;
 uniform sampler2D u_texture;
 ${samplerDecl}
+${customUniformDecl ? `${customUniformDecl}\n` : ''}
 
 varying vec3 v_worldPos;
 varying vec3 v_normal;
 varying vec2 v_texcoord;
 
+${customUniformComments ? `${customUniformComments}\n` : ''}
 ${buildSharedColorFunctions()}
 
 vec4 sampleLut(int lutIndex, vec2 uv) {

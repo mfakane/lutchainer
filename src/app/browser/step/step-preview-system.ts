@@ -1,5 +1,6 @@
 import type { LightSettings, MaterialSettings } from '../../../features/pipeline/pipeline-model';
 import {
+  type CustomParamModel,
   type LutModel,
   type StepModel,
 } from '../../../features/step/step-model';
@@ -15,6 +16,7 @@ import {
 interface StepPreviewSystemOptions {
   getSteps: () => StepModel[];
   getLuts: () => LutModel[];
+  getCustomParams: () => CustomParamModel[];
   getMaterialSettings: () => MaterialSettings;
   getLightSettings: () => LightSettings;
   getStepPreviewRenderer: () => StepPreviewRenderer | null;
@@ -76,6 +78,9 @@ function assertValidOptions(options: StepPreviewSystemOptions): void {
   }
   if (typeof options.getLuts !== 'function') {
     throw new Error('Step preview system option getLuts must be a function.');
+  }
+  if (typeof options.getCustomParams !== 'function') {
+    throw new Error('Step preview system option getCustomParams must be a function.');
   }
   if (typeof options.getMaterialSettings !== 'function') {
     throw new Error('Step preview system option getMaterialSettings must be a function.');
@@ -148,6 +153,7 @@ export function createStepPreviewSystem(options: StepPreviewSystemOptions): Step
       pixelHeight,
       steps: options.getSteps(),
       luts: options.getLuts(),
+      customParams: options.getCustomParams(),
       materialSettings: options.getMaterialSettings(),
       lightSettings: options.getLightSettings(),
       lightDirection,
@@ -181,6 +187,7 @@ export function createStepPreviewSystem(options: StepPreviewSystemOptions): Step
       renderer,
       steps: options.getSteps(),
       luts: options.getLuts(),
+      customParams: options.getCustomParams(),
     });
     if (!ensureResult.ok) {
       reportError(ensureResult.message ?? 'Stepプレビュー(WebGL) の初期化に失敗しました。');
@@ -224,6 +231,7 @@ export function createStepPreviewSystem(options: StepPreviewSystemOptions): Step
         materialSettings: options.getMaterialSettings(),
         lightSettings: options.getLightSettings(),
         lightDirection,
+        customParams: options.getCustomParams(),
       });
       const err = renderer.drawToSize(size, size, drawOptions);
       if (!err) {

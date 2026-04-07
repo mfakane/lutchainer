@@ -58,6 +58,7 @@ export function applyLoadedPipelineState(options: ApplyLoadedPipelineOptions): v
   assertOptions(options);
 
   options.replacePipelineState({
+    customParams: options.loaded.customParams,
     luts: options.loaded.luts,
     steps: options.loaded.steps,
   });

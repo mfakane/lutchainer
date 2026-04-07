@@ -6,7 +6,7 @@ import tempfile
 
 import bpy
 
-from .manifest import LutchainImportData, LutchainLut, LutchainStep
+from .manifest import LutchainCustomParam, LutchainImportData, LutchainLut, LutchainStep
 
 COLOR_INPUTS = [
     ("Base Color", "NodeSocketColor"),
@@ -145,7 +145,16 @@ def _step_group_context_inputs(step: LutchainStep) -> list[tuple[str, str]]:
         elif param_name in PARAMS_REQUIRING_TEXCOORD and "TexCoord" not in seen:
             ordered_inputs.append(("TexCoord", "NodeSocketVector"))
             seen.add("TexCoord")
+        elif param_name.startswith("custom:"):
+            input_name = _custom_param_socket_name(param_name.split(":", 1)[1])
+            if input_name not in seen:
+                ordered_inputs.append((input_name, "NodeSocketFloat"))
+                seen.add(input_name)
     return ordered_inputs
+
+
+def _custom_param_socket_name(param_id: str) -> str:
+    return f"Param {param_id}"
 
 
 def _configure_shader_group_interface(
@@ -153,7 +162,12 @@ def _configure_shader_group_interface(
     is_step_group: bool,
     *,
     step: LutchainStep | None = None,
+    custom_params: list[LutchainCustomParam] | None = None,
 ) -> None:
+    custom_param_defaults = {
+        _custom_param_socket_name(custom_param.id): custom_param.default_value
+        for custom_param in (custom_params or [])
+    }
     for item in list(tree.interface.items_tree):
         tree.interface.remove(item)
 
@@ -163,13 +177,15 @@ def _configure_shader_group_interface(
         inputs = STEP_INPUTS + _step_group_context_inputs(step)
     else:
         inputs = COLOR_INPUTS + [(name, "NodeSocketFloat") for name in FLOAT_INPUTS] + VECTOR_INPUTS
+        if custom_params:
+            inputs += [(_custom_param_socket_name(custom_param.id), "NodeSocketFloat") for custom_param in custom_params]
 
     for name, socket_type in inputs:
         socket = _new_interface_socket(tree, name, "INPUT", socket_type)
         if socket_type == "NodeSocketColor":
             socket.default_value = (1.0, 1.0, 1.0, 1.0)
         elif socket_type == "NodeSocketFloat":
-            socket.default_value = 0.0
+            socket.default_value = custom_param_defaults.get(name, 0.0)
             socket.min_value = 0.0
             socket.max_value = 8.0
         elif socket_type == "NodeSocketVector":
@@ -328,6 +344,8 @@ def _resolve_param_socket(
 ) -> bpy.types.NodeSocket:
     if param_name in PARAM_TO_GROUP_INPUT:
         return group_input.outputs[PARAM_TO_GROUP_INPUT[param_name]]
+    if param_name.startswith("custom:"):
+        return group_input.outputs[_custom_param_socket_name(param_name.split(":", 1)[1])]
 
     if param_name in {"r", "g", "b"}:
         node = _ensure_rgb_split(
@@ -783,10 +801,11 @@ def _build_pipeline_group(
         f"{_sanitize_name(import_data.display_name)} Lutchainer Pipeline",
         "ShaderNodeTree",
     )
-    _configure_shader_group_interface(tree, is_step_group=False)
+    _configure_shader_group_interface(tree, is_step_group=False, custom_params=import_data.custom_params)
     tree["lutchainer_kind"] = "pipeline"
     tree["lutchainer_source_filepath"] = filepath
     tree["lutchainer_version"] = import_data.version
+    tree["lutchainer_custom_param_count"] = len(import_data.custom_params)
 
     nodes = tree.nodes
     links = tree.links

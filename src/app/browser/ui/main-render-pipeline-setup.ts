@@ -8,6 +8,7 @@ import {
   type RenderSystemController,
 } from '../../../platforms/webgl/render-system.ts';
 import { Renderer } from '../../../platforms/webgl/renderer.ts';
+import type { CustomParamModel } from '../../../features/step/step-model.ts';
 
 interface GizmoLightElements {
   layer: SVGSVGElement;
@@ -44,6 +45,7 @@ interface SetupMainRenderPipelineOptions {
   getLightSettings: () => LightSettings;
   getLightDirectionWorld: () => [number, number, number];
   getMaterialSettings: () => MaterialSettings;
+  getCustomParams: () => CustomParamModel[];
   shouldSuppressLightGuide: () => boolean;
   onSettleFrameCapture: (canvas: HTMLCanvasElement) => void;
 }
@@ -111,6 +113,7 @@ function assertSetupMainRenderPipelineOptions(options: SetupMainRenderPipelineOp
   assertCallbackFn(options.getLightSettings, 'getLightSettings');
   assertCallbackFn(options.getLightDirectionWorld, 'getLightDirectionWorld');
   assertCallbackFn(options.getMaterialSettings, 'getMaterialSettings');
+  assertCallbackFn(options.getCustomParams, 'getCustomParams');
   assertCallbackFn(options.shouldSuppressLightGuide, 'shouldSuppressLightGuide');
   assertCallbackFn(options.onSettleFrameCapture, 'onSettleFrameCapture');
 }
@@ -128,6 +131,7 @@ export function setupMainRenderPipeline(
     getLightSettings,
     getLightDirectionWorld,
     getMaterialSettings,
+    getCustomParams,
     shouldSuppressLightGuide,
     onSettleFrameCapture,
   } = options;
@@ -143,6 +147,7 @@ export function setupMainRenderPipeline(
     getLightSettings,
     getLightDirectionWorld,
     getMaterialSettings,
+    getCustomParams,
     shouldSuppressLightGuide,
     onAfterDraw: ({ view, proj, canvas, lightDirection, lightSettings }) => {
       onSettleFrameCapture(canvas);

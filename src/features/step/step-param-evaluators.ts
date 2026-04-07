@@ -2,8 +2,10 @@ import type {
   Color,
   ParamEvaluator,
   ParamName,
+  ParamRef,
   StepParamContext,
 } from './step-model';
+import { parseCustomParamRef } from './step-model';
 
 function clamp01(v: number): number {
   return Math.max(0, Math.min(1, v));
@@ -100,8 +102,14 @@ export const PARAM_EVALUATORS: Record<ParamName, ParamEvaluator> = {
   },
 };
 
-export function evaluateStepParam(param: ParamName, current: Color, context: StepParamContext): number {
-  const evaluator = PARAM_EVALUATORS[param];
+export function evaluateStepParam(param: ParamRef, current: Color, context: StepParamContext): number {
+  const customParamId = parseCustomParamRef(param);
+  if (customParamId) {
+    const customValue = context.customParamValues[customParamId];
+    return Number.isFinite(customValue) ? clamp01(customValue) : 0;
+  }
+
+  const evaluator = PARAM_EVALUATORS[param as ParamName];
   const value = evaluator.evaluate(current, context);
   return Number.isFinite(value) ? value : 0;
 }

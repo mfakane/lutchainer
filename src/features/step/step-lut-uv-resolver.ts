@@ -6,6 +6,7 @@ import {
 } from '../pipeline/pipeline-model';
 import type {
   Color,
+  CustomParamModel,
   LutModel,
   StepModel,
 } from './step-model';
@@ -23,6 +24,7 @@ interface ResolveLutUvAtPixelInput {
   targetStepIndex: number;
   steps: readonly StepModel[];
   luts: readonly LutModel[];
+  customParams: readonly CustomParamModel[];
   materialSettings: MaterialSettings;
   lightSettings: LightSettings;
 }
@@ -47,6 +49,7 @@ export function resolveLutUvAtPixel(input: ResolveLutUvAtPixelInput): LutUvCoord
     targetStepIndex,
     steps,
     luts,
+    customParams,
     materialSettings,
     lightSettings,
   } = input;
@@ -134,6 +137,7 @@ export function resolveLutUvAtPixel(input: ResolveLutUvAtPixelInput): LutUvCoord
     linearDepth,
     texU,
     texV,
+    customParamValues: Object.fromEntries(customParams.map(param => [param.id, clamp01(param.defaultValue)] as const)),
   };
 
   const stepModels = resolveStepRuntimeModels(steps, luts, targetStepIndex);

@@ -5,7 +5,7 @@ import type { PipelineSocketDndController } from '../pipeline/pipeline-socket-dn
 import type { LightSettings, MaterialSettings } from '../../../features/pipeline/pipeline-model.ts';
 import type { SocketAxis, SocketDragState, StepReorderDragState, LutReorderDragState } from '../../../features/pipeline/pipeline-view.ts';
 import type { ShaderBuildInput } from '../../../features/shader/shader-generator.ts';
-import type { ParamName } from '../../../features/step/step-model.ts';
+import type { ParamRef } from '../../../features/step/step-model.ts';
 import { setupStepPreviewShapeUi } from '../step/step-preview-shape-ui.ts';
 import {
   mountHeaderActionGroup,
@@ -42,7 +42,7 @@ interface SetupMainUiOptions {
   paramColumnEl: HTMLElement;
   parseStepId: (value: string | undefined) => string | null;
   parseLutId: (value: string | undefined) => string | null;
-  isValidParamName: (value: string) => value is ParamName;
+  isValidParamName: (value: string) => value is ParamRef;
   isValidSocketAxis: (value: string) => value is SocketAxis;
   pipelineDropIndicators: PipelineDropIndicatorController;
   getLutReorderDragState: () => LutReorderDragState | null;

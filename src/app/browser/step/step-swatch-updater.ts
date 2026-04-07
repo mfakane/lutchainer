@@ -5,12 +5,13 @@ import type {
 import {
   STEP_PREVIEW_LIGHT_DIR,
 } from '../../../features/pipeline/pipeline-model';
-import type { StepModel } from '../../../features/step/step-model';
+import type { CustomParamModel, StepModel } from '../../../features/step/step-model';
 import type { StepPreviewRenderer } from '../../../platforms/webgl/step-preview-renderer.ts';
 
 export interface UpdateStepSwatchesInput {
   stepListEl: HTMLElement;
   steps: readonly StepModel[];
+  customParams: readonly CustomParamModel[];
   materialSettings: MaterialSettings;
   lightSettings: LightSettings;
   stepPreviewRenderer: StepPreviewRenderer | null;
@@ -43,6 +44,7 @@ export function updateStepSwatches(input: UpdateStepSwatchesInput): void {
   const {
     stepListEl,
     steps,
+    customParams,
     materialSettings,
     lightSettings,
     stepPreviewRenderer,
@@ -80,6 +82,7 @@ export function updateStepSwatches(input: UpdateStepSwatchesInput): void {
         fresnelStrength: materialSettings.fresnelStrength,
         fresnelPower: materialSettings.fresnelPower,
         lightDirection: STEP_PREVIEW_LIGHT_DIR,
+        customParams,
       }, outputScale);
 
       if (!drawError) {

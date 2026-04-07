@@ -1,5 +1,5 @@
 import { type MaterialSettings } from '../pipeline/pipeline-model';
-import type { LutModel, StepModel } from '../step/step-model';
+import type { CustomParamModel, LutModel, StepModel } from '../step/step-model';
 import { GLSL_SHADER_GENERATOR } from './shader-glsl-generator';
 import { HLSL_SHADER_GENERATOR } from './shader-hlsl-generator';
 import type { ShaderLanguage } from './shader-language-backend';
@@ -8,12 +8,14 @@ export type { ShaderLanguage } from './shader-language-backend';
 export interface ShaderBuildInput {
   steps: StepModel[];
   luts: LutModel[];
+  customParams: CustomParamModel[];
   materialSettings: MaterialSettings;
 }
 
 export interface StepPreviewShaderBuildInput {
   steps: StepModel[];
   luts: LutModel[];
+  customParams: CustomParamModel[];
 }
 
 export interface ShaderGeneratorCapabilities {
@@ -49,13 +51,19 @@ function isValidMaterialSettings(value: MaterialSettings): boolean {
 }
 
 export function assertValidStepPreviewInput(input: StepPreviewShaderBuildInput): void {
-  if (!input || !Array.isArray(input.steps) || !Array.isArray(input.luts)) {
+  if (!input || !Array.isArray(input.steps) || !Array.isArray(input.luts) || !Array.isArray(input.customParams)) {
     throw new Error('StepPreview shader 入力が不正です。');
   }
 }
 
 export function assertValidShaderBuildInput(input: ShaderBuildInput): void {
-  if (!input || !Array.isArray(input.steps) || !Array.isArray(input.luts) || !isValidMaterialSettings(input.materialSettings)) {
+  if (
+    !input
+    || !Array.isArray(input.steps)
+    || !Array.isArray(input.luts)
+    || !Array.isArray(input.customParams)
+    || !isValidMaterialSettings(input.materialSettings)
+  ) {
     throw new Error('Shader 入力が不正です。');
   }
 }

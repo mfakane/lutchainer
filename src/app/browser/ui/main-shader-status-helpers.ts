@@ -14,6 +14,7 @@ export type MainStatusReporter = (message: string, kind?: StatusKind) => void;
 interface CreateShaderBuildInputGetterOptions {
   getSteps: () => ShaderBuildInput['steps'];
   getLuts: () => ShaderBuildInput['luts'];
+  getCustomParams: () => ShaderBuildInput['customParams'];
   getMaterialSettings: () => ShaderBuildInput['materialSettings'];
 }
 
@@ -57,6 +58,7 @@ function assertShaderBuildInputGetterOptions(options: CreateShaderBuildInputGett
   ensureObject(options, 'Shader build input getter options');
   ensureFunction(options.getSteps, 'Shader build input getter options.getSteps');
   ensureFunction(options.getLuts, 'Shader build input getter options.getLuts');
+  ensureFunction(options.getCustomParams, 'Shader build input getter options.getCustomParams');
   ensureFunction(options.getMaterialSettings, 'Shader build input getter options.getMaterialSettings');
 }
 
@@ -85,6 +87,7 @@ export function createShaderBuildInputGetter(
   return (): ShaderBuildInput => ({
     steps: options.getSteps(),
     luts: options.getLuts(),
+    customParams: options.getCustomParams(),
     materialSettings: options.getMaterialSettings(),
   });
 }

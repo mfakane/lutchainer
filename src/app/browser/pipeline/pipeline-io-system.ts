@@ -1,4 +1,5 @@
 import type {
+  CustomParamModel,
   LutModel,
   StepModel,
 } from '../../../features/step/step-model.ts';
@@ -21,11 +22,13 @@ export interface LoadPipelineFromFileResult {
 interface PipelineIoSystemOptions {
   getLuts: () => LutModel[];
   getSteps: () => StepModel[];
+  getCustomParams: () => CustomParamModel[];
   renderPreviewPngBytes: () => Promise<Uint8Array>;
   maxPipelineFileBytes: number;
   serializePipelineAsZip: (
     luts: LutModel[],
     steps: StepModel[],
+    customParams: CustomParamModel[],
     previewPngBytes: Uint8Array,
   ) => Promise<Uint8Array>;
   buildPipelineDownloadFilename: () => string;
@@ -58,6 +61,9 @@ function assertValidOptions(options: PipelineIoSystemOptions): void {
   }
   if (typeof options.getSteps !== 'function') {
     throw new Error('Pipeline I/O option getSteps must be a function.');
+  }
+  if (typeof options.getCustomParams !== 'function') {
+    throw new Error('Pipeline I/O option getCustomParams must be a function.');
   }
   if (typeof options.renderPreviewPngBytes !== 'function') {
     throw new Error('Pipeline I/O option renderPreviewPngBytes must be a function.');
@@ -140,6 +146,7 @@ export function createPipelineIoSystem(options: PipelineIoSystemOptions): Pipeli
     try {
       const luts = options.getLuts();
       const steps = options.getSteps();
+      const customParams = options.getCustomParams();
       const stateError = validatePipelineSaveState(luts, steps);
       if (stateError) {
         return {
@@ -156,7 +163,7 @@ export function createPipelineIoSystem(options: PipelineIoSystemOptions): Pipeli
         };
       }
 
-      const zipData = await options.serializePipelineAsZip(luts, steps, previewBytes);
+      const zipData = await options.serializePipelineAsZip(luts, steps, customParams, previewBytes);
       if (!(zipData instanceof Uint8Array) || zipData.byteLength === 0) {
         return {
           ok: false,

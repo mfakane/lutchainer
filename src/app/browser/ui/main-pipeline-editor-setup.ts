@@ -3,6 +3,7 @@ import type { MaterialSettings } from '../../../features/pipeline/pipeline-model
 import type {
   BlendOp,
   ChannelName,
+  CustomParamModel,
   LutModel,
   StepModel,
 } from '../../../features/step/step-model.ts';
@@ -22,6 +23,10 @@ interface PipelineCommandsLike {
   setStepBlendMode: (stepId: string, blendMode: StepModel['blendMode']) => void;
   setStepChannelOp: (stepId: string, channel: ChannelName, op: BlendOp) => void;
   removeLut: (lutId: string) => void;
+  addCustomParam: () => void;
+  renameCustomParam: (paramId: string, label: string) => void;
+  setCustomParamValue: (paramId: string, value: number) => void;
+  removeCustomParam: (paramId: string) => void;
 }
 
 interface PipelineHistoryActionsLike {
@@ -35,6 +40,7 @@ export interface SetupMainPipelineEditorOptions {
   lutStripListEl: HTMLElement;
   getSteps: () => StepModel[];
   getLuts: () => LutModel[];
+  getCustomParams: () => CustomParamModel[];
   getMaterialSettings: () => MaterialSettings;
   shouldSuppressClick: () => boolean;
   computeLutUv?: (stepIndex: number, pixelX: number, pixelY: number, canvasWidth: number, canvasHeight: number) => { u: number; v: number } | null;
@@ -78,6 +84,10 @@ function assertPipelineCommandsLike(value: unknown): asserts value is PipelineCo
   ensureFunction(commands.setStepBlendMode, 'Main pipeline editor pipelineCommands.setStepBlendMode');
   ensureFunction(commands.setStepChannelOp, 'Main pipeline editor pipelineCommands.setStepChannelOp');
   ensureFunction(commands.removeLut, 'Main pipeline editor pipelineCommands.removeLut');
+  ensureFunction(commands.addCustomParam, 'Main pipeline editor pipelineCommands.addCustomParam');
+  ensureFunction(commands.renameCustomParam, 'Main pipeline editor pipelineCommands.renameCustomParam');
+  ensureFunction(commands.setCustomParamValue, 'Main pipeline editor pipelineCommands.setCustomParamValue');
+  ensureFunction(commands.removeCustomParam, 'Main pipeline editor pipelineCommands.removeCustomParam');
 }
 
 function assertPipelineHistoryActionsLike(value: unknown): asserts value is PipelineHistoryActionsLike {
@@ -103,6 +113,7 @@ function assertSetupMainPipelineEditorOptions(options: SetupMainPipelineEditorOp
 
   ensureFunction(options.getSteps, 'Main pipeline editor getSteps');
   ensureFunction(options.getLuts, 'Main pipeline editor getLuts');
+  ensureFunction(options.getCustomParams, 'Main pipeline editor getCustomParams');
   ensureFunction(options.getMaterialSettings, 'Main pipeline editor getMaterialSettings');
   ensureFunction(options.shouldSuppressClick, 'Main pipeline editor shouldSuppressClick');
   assertPipelineCommandsLike(options.pipelineCommands);
@@ -130,6 +141,7 @@ export function setupMainPipelineEditor(options: SetupMainPipelineEditorOptions)
     lutStripListEl: options.lutStripListEl,
     getSteps: options.getSteps,
     getLuts: options.getLuts,
+    getCustomParams: options.getCustomParams,
     getMaterialSettings: options.getMaterialSettings,
     shouldSuppressClick: options.shouldSuppressClick,
     computeLutUv: options.computeLutUv,
@@ -159,6 +171,18 @@ export function setupMainPipelineEditor(options: SetupMainPipelineEditorOptions)
     },
     onRemoveLut: lutId => {
       options.pipelineCommands.removeLut(lutId);
+    },
+    onAddCustomParam: () => {
+      options.pipelineCommands.addCustomParam();
+    },
+    onRenameCustomParam: (paramId, label) => {
+      options.pipelineCommands.renameCustomParam(paramId, label);
+    },
+    onSetCustomParamValue: (paramId, value) => {
+      options.pipelineCommands.setCustomParamValue(paramId, value);
+    },
+    onRemoveCustomParam: paramId => {
+      options.pipelineCommands.removeCustomParam(paramId);
     },
     onEditLut: options.onEditLut,
     onDuplicateLut: options.onDuplicateLut,

@@ -192,6 +192,7 @@ export function bootstrapMainRuntime(
   const pipelineIoSystem = setupMainPipelineIoSystem({
     getLuts: options.previewRuntime.getLuts,
     getSteps: options.previewRuntime.getSteps,
+    getCustomParams: options.previewRuntime.getCustomParams,
     getStepPreviewSystem: () => previewRuntime.stepPreviewSystem,
     t: options.t,
   });
@@ -204,6 +205,7 @@ export function bootstrapMainRuntime(
     getLightSettings: options.previewRuntime.getLightSettings,
     getLightDirectionWorld: options.getLightDirectionWorld,
     getMaterialSettings: options.previewRuntime.getMaterialSettings,
+    getCustomParams: options.previewRuntime.getCustomParams,
     shouldSuppressLightGuide: () => mainPreviewCapture.isSuppressLightGuide(),
     onSettleFrameCapture: canvas => mainPreviewCapture.settleFromFrame(canvas),
   });
