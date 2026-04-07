@@ -270,7 +270,7 @@ blender --background --factory-startup \
 Preferred Windows invocation:
 
 ```bash
-scripts/run_windows_blender.sh invoke_windows_blender.ps1 \
+scripts/run_windows_blender.sh \
   --background --factory-startup \
   --python tests/blender/validate_addon.py -- \
   blender_addon \

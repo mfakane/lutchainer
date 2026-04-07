@@ -112,7 +112,7 @@ npm run validate:lutchain-examples
 Preferred unified invocation:
 
 ```bash
-scripts/run_windows_blender.sh invoke_windows_blender.ps1 \
+scripts/run_windows_blender.sh \
   --background --factory-startup \
   --python tests/blender/validate_addon.py -- \
   blender_addon \
@@ -126,7 +126,7 @@ The shell wrapper reads `BLENDER_EXECUTABLE` from `.env`, converts WSL paths to 
 For raw Blender invocations, use:
 
 ```bash
-scripts/run_windows_blender.sh invoke_windows_blender.ps1 --background --factory-startup --version
+scripts/run_windows_blender.sh --background --factory-startup --version
 ```
 
 The headless script checks:
