@@ -85,7 +85,7 @@ float3 HsvToRgb(float4 color) {
 }
 
 function buildFragmentShader(input: ShaderBuildInput): string {
-  const textureDecl = input.luts.map((_, index) => `Texture2D u_lut${index} : register(t${index});`).join('\n');
+  const textureDecl = input.luts.map((_, index) => `Texture2D u_lut${index} : register(t${index + 1});`).join('\n');
   const usedCustomParams = collectUsedCustomParams(input.steps, input.customParams);
   const customUniformComments = buildCustomUniformComments(usedCustomParams);
   const sampleBody = buildHlslSampleBody(input.luts);
