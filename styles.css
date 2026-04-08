@@ -1351,6 +1351,7 @@ button:disabled:hover {
 .shader-dialog {
   margin: auto;
   width: min(980px, calc(100vw - 28px));
+  overflow: hidden;
 }
 
 .dialog-shell::backdrop,
@@ -1377,7 +1378,9 @@ button:disabled:hover {
 .shader-dialog-surface {
   display: flex;
   flex-direction: column;
-  min-height: min(74vh, 720px);
+  min-height: 0;
+  height: min(74vh, 720px);
+  max-height: calc(100vh - 28px);
 }
 
 .shader-dialog-head {
@@ -2368,7 +2371,9 @@ button:disabled:hover {
   }
 
   .shader-dialog-surface {
-    min-height: min(82vh, 700px);
+    min-height: 0;
+    height: min(82vh, 700px);
+    max-height: calc(100vh - 16px);
   }
 
   .axis-gizmo-layer {
