@@ -4,8 +4,7 @@ import test from 'node:test';
 import { pathToFileURL } from 'node:url';
 
 const repoRoot = path.resolve(import.meta.dirname, '..', '..');
-const shaderTestEntryPath = path.join(repoRoot, 'dist', 'test', 'shader-test.mjs');
-const shaderTest = await import(pathToFileURL(shaderTestEntryPath).href);
+const shaderTest = await import(pathToFileURL(path.join(repoRoot, 'dist', 'test', 'shader-test-helpers.mjs')).href);
 
 const exampleNames = [
   'Metallic.lutchain',
@@ -13,11 +12,11 @@ const exampleNames = [
   'HueSatShiftToon.lutchain',
 ];
 
-function escapeRegExp(value) {
+function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-async function tryLoadHeadlessGl() {
+async function tryLoadHeadlessGl(): Promise<((width: number, height: number, options?: object) => WebGLRenderingContext | null) | null> {
   try {
     const mod = await import('gl');
     return mod.default ?? mod;
@@ -26,8 +25,8 @@ async function tryLoadHeadlessGl() {
   }
 }
 
-function createProgramCompiler(gl) {
-  function compileShader(type, source) {
+function createProgramCompiler(gl: WebGLRenderingContext) {
+  function compileShader(type: number, source: string): WebGLShader {
     const shader = gl.createShader(type);
     assert.ok(shader, 'Expected shader object');
     gl.shaderSource(shader, source);
@@ -38,7 +37,7 @@ function createProgramCompiler(gl) {
     return shader;
   }
 
-  function linkProgram(vertexSource, fragmentSource) {
+  function linkProgram(vertexSource: string, fragmentSource: string): void {
     const vertexShader = compileShader(gl.VERTEX_SHADER, vertexSource);
     const fragmentShader = compileShader(gl.FRAGMENT_SHADER, fragmentSource);
     const program = gl.createProgram();
@@ -55,7 +54,7 @@ function createProgramCompiler(gl) {
   }
 
   return {
-    compileFragment: source => {
+    compileFragment(source: string): void {
       const fragmentShader = compileShader(gl.FRAGMENT_SHADER, source);
       gl.deleteShader(fragmentShader);
     },
@@ -65,8 +64,8 @@ function createProgramCompiler(gl) {
 
 test('coverage fixture spans every blend mode and built-in parameter', () => {
   const input = shaderTest.createShaderCoverageBuildInput();
-  const usedBlendModes = new Set(input.steps.map(step => step.blendMode));
-  const usedParams = new Set(input.steps.flatMap(step => [step.xParam, step.yParam]));
+  const usedBlendModes = new Set(input.steps.map((step: { blendMode: string }) => step.blendMode));
+  const usedParams = new Set<string>(input.steps.flatMap((step: { xParam: string; yParam: string }) => [step.xParam, step.yParam]));
 
   assert.deepEqual([...usedBlendModes].sort(), [...shaderTest.listShaderBlendModes()].sort());
   for (const param of shaderTest.listShaderBuiltinParams()) {
@@ -135,7 +134,7 @@ test('generated GLSL compiles with headless-gl when available', async t => {
   }
 
   t.after(() => {
-    const extension = gl.getExtension('STACKGL_destroy_context');
+    const extension = gl.getExtension('STACKGL_destroy_context') as { destroy?: () => void } | null;
     if (extension && typeof extension.destroy === 'function') {
       extension.destroy();
     }

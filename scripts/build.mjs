@@ -166,9 +166,9 @@ const cliBuildOptions = {
 };
 
 const shaderTestBuildOptions = {
-  entryPoints: ['tests/shader/shader-test-entry.ts'],
+  entryPoints: ['tests/shader/shader-test-helpers.mts'],
   bundle: true,
-  outfile: path.join(testDir, 'shader-test.mjs'),
+  outfile: path.join(testDir, 'shader-test-helpers.mjs'),
   sourcemap: true,
   target: ['node20'],
   format: 'esm',

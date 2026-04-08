@@ -11,10 +11,10 @@
     "build": "node scripts/build.mjs",
     "dev": "node scripts/build.mjs --watch",
     "serve": "node dist/cli/main.mjs serve",
-    "test": "npm run build && node --test tests/cli/*.test.mjs tests/shader/*.test.mjs",
-    "test:shader": "npm run build && node --test tests/shader/shader-generator.test.mjs",
-    "test:shader:strict": "npm run build && node --test tests/shader/strict-compilers.test.mjs",
-    "validate:lutchain-examples": "node tests/lutchain/validate-examples.mjs",
+    "test": "npm run build && node --test tests/cli/*.test.mts tests/shader/*.test.mts",
+    "test:shader": "npm run build && node --test tests/shader/shader-generator.test.mts",
+    "test:shader:strict": "npm run build && node --test tests/shader/strict-compilers.test.mts",
+    "validate:lutchain-examples": "node tests/lutchain/validate-examples.mts",
     "typecheck": "tsc --build tsconfig.json --noEmit"
   },
   "devDependencies": {

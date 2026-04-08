@@ -9,6 +9,8 @@
   },
   "include": [
     "tests/**/*.ts",
+    "tests/**/*.mts",
+    "tests/**/*.d.ts",
     "src/features/**/*.ts",
     "src/shared/**/*.ts",
     "src/types/node-shim.d.ts"
