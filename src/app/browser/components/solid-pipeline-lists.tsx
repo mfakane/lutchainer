@@ -581,7 +581,7 @@ function ParamNodeList(props: ParamNodeListProps): JSX.Element {
           <div class="param-group-title-row">
             <div class="param-group-title">Custom Params</div>
           </div>
-          <div class="param-group-desc">Global float inputs exposed as external uniforms / Blender sockets.</div>
+          <div class="param-group-desc">{tr('pipeline.paramGroup.customParamsDesc')}</div>
         </header>
 
         <div class="param-group-nodes">
@@ -596,7 +596,7 @@ function ParamNodeList(props: ParamNodeListProps): JSX.Element {
             )}
           </Index>
           
-          <button type="button" class="btn btn-secondary btn-inline-add" onClick={props.onAddCustomParam}>Add Param</button>
+          <button type="button" class="btn btn-secondary btn-inline-add" onClick={props.onAddCustomParam}>{tr('pipeline.param.add')}</button>
         </div>
       </section>
       <Show when={previewState()}>
