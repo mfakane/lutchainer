@@ -4,8 +4,8 @@ import type {
   ParamName,
   ParamRef,
   StepParamContext,
-} from './step-model';
-import { parseCustomParamRef } from './step-model';
+} from './step-model.ts';
+import { parseCustomParamRef } from './step-model.ts';
 
 function clamp01(v: number): number {
   return Math.max(0, Math.min(1, v));

@@ -1,4 +1,4 @@
-import { type ParamRef } from '../step/step-model';
+import { type ParamRef } from '../step/step-model.ts';
 
 export type SocketAxis = 'x' | 'y';
 

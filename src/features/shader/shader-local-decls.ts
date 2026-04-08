@@ -1,12 +1,12 @@
-import type { MaterialSettings } from '../pipeline/pipeline-model';
+import type { MaterialSettings } from '../pipeline/pipeline-model.ts';
 import type {
   ParamName,
   ShaderLocalKey,
   StepRuntimeModel,
-} from '../step/step-model';
-import { PARAM_EVALUATORS } from '../step/step-param-evaluators';
-import { parseCustomParamRef } from '../step/step-model';
-import type { ShaderLanguageBackend, ShaderOutputKind } from './shader-language-backend';
+} from '../step/step-model.ts';
+import { PARAM_EVALUATORS } from '../step/step-param-evaluators.ts';
+import { parseCustomParamRef } from '../step/step-model.ts';
+import type { ShaderLanguageBackend, ShaderOutputKind } from './shader-language-backend.ts';
 
 const ALL_LOCAL_KEYS: readonly ShaderLocalKey[] = [
   'N',

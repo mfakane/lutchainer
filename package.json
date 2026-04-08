@@ -4,6 +4,7 @@
   "description": "Browser-based LUT chaining shader editor with WebGL preview",
   "license": "CC0-1.0",
   "private": true,
+  "type": "module",
   "bin": {
     "lutchainer": "./dist/cli/main.mjs"
   },

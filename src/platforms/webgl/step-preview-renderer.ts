@@ -1,5 +1,5 @@
-import { applyLutTextures } from './lut-texture-utils';
-import type { Color, CustomParamModel } from '../../features/step/step-model';
+import { applyLutTextures } from './lut-texture-utils.ts';
+import type { Color, CustomParamModel } from '../../features/step/step-model.ts';
 
 export interface StepPreviewShaderError {
   type: 'vertex' | 'fragment' | 'link' | 'input';

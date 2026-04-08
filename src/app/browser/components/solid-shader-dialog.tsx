@@ -5,8 +5,8 @@ import {
     type ShaderBuildInput,
     type ShaderGenerator,
     type ShaderLanguage,
-} from '../../../features/shader/shader-generator';
-import { t, useLanguage } from '../i18n';
+} from '../../../features/shader/shader-generator.ts';
+import { t, useLanguage } from '../i18n.ts';
 
 type StatusKind = 'success' | 'error' | 'info';
 

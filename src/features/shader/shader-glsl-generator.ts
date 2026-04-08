@@ -1,26 +1,26 @@
 import {
   type MaterialSettings,
-} from '../pipeline/pipeline-model';
-import type { LutModel, StepModel } from '../step/step-model';
+} from '../pipeline/pipeline-model.ts';
+import type { LutModel, StepModel } from '../step/step-model.ts';
 import {
   resolveStepRuntimeModels,
-} from '../step/step-runtime';
+} from '../step/step-runtime.ts';
 import { buildGeneratedShaderHeader } from '../../shared/build-info.ts';
-import { GLSL_SHADER_BACKEND } from './shader-glsl-backend';
+import { GLSL_SHADER_BACKEND } from './shader-glsl-backend.ts';
 import {
   buildCustomUniformComments,
   buildCustomUniformDeclarations,
   buildSampleBody,
   collectUsedCustomParams,
-} from './shader-generator-utils';
-import { buildShaderLocalDeclarations } from './shader-local-decls';
-import { buildShaderStepCode } from './shader-step-code';
+} from './shader-generator-utils.ts';
+import { buildShaderLocalDeclarations } from './shader-local-decls.ts';
+import { buildShaderStepCode } from './shader-step-code.ts';
 import type {
   ShaderBuildInput,
   ShaderGenerator,
   ShaderGeneratorCapabilities,
   StepPreviewShaderBuildInput,
-} from './shader-generator';
+} from './shader-generator.ts';
 
 export const DEFAULT_GLSL_VERTEX_SHADER = `${buildGeneratedShaderHeader('//')}
 precision mediump float;

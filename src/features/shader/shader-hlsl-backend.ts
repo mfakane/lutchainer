@@ -1,7 +1,7 @@
-import type { MaterialSettings } from '../pipeline/pipeline-model';
-import type { ParamName, ParamRef, ShaderLocalKey } from '../step/step-model';
-import { parseCustomParamRef } from '../step/step-model';
-import type { ShaderLanguageBackend } from './shader-language-backend';
+import type { MaterialSettings } from '../pipeline/pipeline-model.ts';
+import type { ParamName, ParamRef, ShaderLocalKey } from '../step/step-model.ts';
+import { parseCustomParamRef } from '../step/step-model.ts';
+import type { ShaderLanguageBackend } from './shader-language-backend.ts';
 
 const PARAM_EXPRESSIONS: Record<ParamName, string> = {
   lightness: 'lambert',

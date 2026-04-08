@@ -3,5 +3,5 @@ export type {
   ShaderGenerator,
   ShaderGeneratorCapabilities,
   StepPreviewShaderBuildInput,
-} from './shader-generator';
-export type { ShaderLanguage } from './shader-language-backend';
+} from './shader-generator.ts';
+export type { ShaderLanguage } from './shader-language-backend.ts';

@@ -15,12 +15,11 @@ import {
   type ColorRamp,
   type ColorRamp2dLutData,
   type ColorStop
-} from '../lut-editor/lut-editor-model';
+} from '../lut-editor/lut-editor-model.ts';
 import {
   BLEND_MODES,
   BLEND_OPS,
   CHANNELS,
-  ColorWithHasChroma,
   CUSTOM_PARAM_PREFIX,
   DEFAULT_OPS,
   isBuiltinParamName,
@@ -32,12 +31,13 @@ import {
   type ChannelName,
   type Color,
   type ColorWithAlpha,
+  type ColorWithHasChroma,
   type CustomParamModel,
   type LutModel,
   type ParamName,
   type ParamRef,
   type StepModel
-} from '../step/step-model';
+} from '../step/step-model.ts';
 import { MAX_LUTS, MAX_STEPS } from './pipeline-constants.ts';
 export {
   parseNonEmptyText,

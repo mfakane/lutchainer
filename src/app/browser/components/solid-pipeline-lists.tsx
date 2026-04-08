@@ -1,6 +1,6 @@
 import { For, Index, Show, createSignal, onCleanup, type Accessor, type JSX } from 'solid-js';
 import { Portal, render } from 'solid-js/web';
-import * as pipelineModel from '../../../features/pipeline/pipeline-model';
+import * as pipelineModel from '../../../features/pipeline/pipeline-model.ts';
 import { getCustomChannelsForBlendMode, getSelectableBlendOpsForChannel } from '../../../features/step/step-blend-strategies.ts';
 import {
   BLEND_MODES,
@@ -12,11 +12,11 @@ import {
   type ParamName,
   type ParamRef,
   type StepModel
-} from '../../../features/step/step-model';
+} from '../../../features/step/step-model.ts';
 import {
   drawParamPreviewSphereCpu,
-} from '../../../features/step/step-preview-cpu-render';
-import { t, useLanguage } from '../i18n';
+} from '../../../features/step/step-preview-cpu-render.ts';
+import { t, useLanguage } from '../i18n.ts';
 import { DropdownMenu } from './solid-dropdown-menu.tsx';
 
 type StatusKind = 'success' | 'error' | 'info';

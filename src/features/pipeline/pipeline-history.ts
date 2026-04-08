@@ -1,10 +1,10 @@
-import { CHANNELS } from '../step/step-model';
+import { CHANNELS } from '../step/step-model.ts';
 import type {
   CustomParamModel,
   LutModel,
   StepModel,
-} from '../step/types';
-import type { PipelineStateSnapshot } from './pipeline-state';
+} from '../step/types.ts';
+import type { PipelineStateSnapshot } from './pipeline-state.ts';
 
 interface PipelineHistoryControllerOptions {
   historyLimit: number;

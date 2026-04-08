@@ -3,18 +3,18 @@ import {
   STEP_PREVIEW_VIEW_DIR,
   type LightSettings,
   type MaterialSettings,
-} from '../pipeline/pipeline-model';
+} from '../pipeline/pipeline-model.ts';
 import type {
   Color,
   CustomParamModel,
   LutModel,
   StepModel,
-} from './step-model';
-import { evaluateStepParam } from './step-param-evaluators';
+} from './step-model.ts';
+import { evaluateStepParam } from './step-param-evaluators.ts';
 import {
   composeColorFromSteps,
   resolveStepRuntimeModels,
-} from './step-runtime';
+} from './step-runtime.ts';
 
 interface ResolveLutUvAtPixelInput {
   pixelX: number;

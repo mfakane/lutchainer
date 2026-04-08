@@ -1,16 +1,16 @@
-import * as pipelineModel from '../../features/pipeline/pipeline-model';
-import type { SocketAxis, SocketDragState, SocketDropTarget } from '../../features/pipeline/pipeline-view';
-import * as pipelineView from '../../features/pipeline/pipeline-view';
-import type { ParamRef, StepModel } from '../../features/step/step-model';
+import * as pipelineModel from '../../features/pipeline/pipeline-model.ts';
+import type { SocketAxis, SocketDragState, SocketDropTarget } from '../../features/pipeline/pipeline-view.ts';
+import * as pipelineView from '../../features/pipeline/pipeline-view.ts';
+import type { ParamRef, StepModel } from '../../features/step/step-model.ts';
 import {
   resolveSocketDragPreviewColor,
   resolveSocketDragPreviewEnd,
   resolveSocketDragPreviewStart,
-} from './interactions/socket-dnd';
+} from './interactions/socket-dnd.ts';
 import {
   isValidSocketDragState,
   isValidSocketDropTarget,
-} from './interactions/socket-validation';
+} from './interactions/socket-validation.ts';
 
 export interface ConnectionLayerRenderOptions {
   pipelineWorkspaceEl: HTMLElement;

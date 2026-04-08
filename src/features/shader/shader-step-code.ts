@@ -1,5 +1,5 @@
-import type { StepRuntimeModel } from '../step/step-model';
-import { emitBlendModeCode, type ShaderLanguageBackend } from './shader-language-backend';
+import type { StepRuntimeModel } from '../step/step-model.ts';
+import { emitBlendModeCode, type ShaderLanguageBackend } from './shader-language-backend.ts';
 
 export interface BuildShaderStepCodeOptions {
   backend: ShaderLanguageBackend;

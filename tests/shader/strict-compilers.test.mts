@@ -5,11 +5,10 @@ import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import { promisify } from 'node:util';
-import { pathToFileURL } from 'node:url';
+import * as shaderTest from './shader-test-helpers.mts';
 
 const execFileAsync = promisify(execFile);
 const repoRoot = path.resolve(import.meta.dirname, '..', '..');
-const shaderTest = await import(pathToFileURL(path.join(repoRoot, 'dist', 'test', 'shader-test-helpers.mjs')).href);
 
 async function findExecutable(name: string): Promise<string | null> {
   try {

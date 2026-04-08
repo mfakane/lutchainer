@@ -1,11 +1,11 @@
 import type {
   LightSettings,
   MaterialSettings,
-} from '../../../features/pipeline/pipeline-model';
+} from '../../../features/pipeline/pipeline-model.ts';
 import {
   STEP_PREVIEW_LIGHT_DIR,
-} from '../../../features/pipeline/pipeline-model';
-import type { CustomParamModel, StepModel } from '../../../features/step/step-model';
+} from '../../../features/pipeline/pipeline-model.ts';
+import type { CustomParamModel, StepModel } from '../../../features/step/step-model.ts';
 import type { StepPreviewRenderer } from '../../../platforms/webgl/step-preview-renderer.ts';
 
 export interface UpdateStepSwatchesInput {

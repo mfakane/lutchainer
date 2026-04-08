@@ -1,18 +1,18 @@
 import type {
   LightSettings,
   MaterialSettings,
-} from '../../features/pipeline/pipeline-model';
-import { getShaderGenerator } from '../../features/shader/shader-generator';
+} from '../../features/pipeline/pipeline-model.ts';
+import { getShaderGenerator } from '../../features/shader/shader-generator.ts';
 import type {
   LutModel,
   StepModel,
   CustomParamModel,
-} from '../../features/step/step-model';
+} from '../../features/step/step-model.ts';
 import {
   StepPreviewRenderer,
   type StepPreviewDrawOptions,
   type StepPreviewShaderError,
-} from './step-preview-renderer';
+} from './step-preview-renderer.ts';
 
 export interface EnsureStepPreviewRendererProgramInput {
   renderer: StepPreviewRenderer;

@@ -1,7 +1,7 @@
-import type { Geometry } from '../../shared/utils/geometry';
-import type { Mat3, Mat4 } from '../../shared/utils/math';
-import type { CustomParamModel } from '../../features/step/step-model';
-import { applyLutTextures } from './lut-texture-utils';
+import type { Geometry } from '../../shared/utils/geometry.ts';
+import type { Mat3, Mat4 } from '../../shared/utils/math.ts';
+import type { CustomParamModel } from '../../features/step/step-model.ts';
+import { applyLutTextures } from './lut-texture-utils.ts';
 
 export interface ShaderError {
   type: 'vertex' | 'fragment' | 'link';

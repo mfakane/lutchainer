@@ -6,7 +6,7 @@ import {
   t,
   useLanguage,
   type Language,
-} from '../i18n';
+} from '../i18n.ts';
 import { DropdownMenu } from './solid-dropdown-menu.tsx';
 
 type StatusKind = 'success' | 'error' | 'info';

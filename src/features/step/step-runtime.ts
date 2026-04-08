@@ -1,11 +1,11 @@
 import {
   sampleLutColorLinear,
   type LutColorSample,
-} from './lut-sampling';
+} from './lut-sampling.ts';
 import {
   applyStepColor,
   getCustomChannelsForBlendMode
-} from './step-blend-strategies';
+} from './step-blend-strategies.ts';
 import type {
   BlendOp,
   ChannelName,
@@ -14,10 +14,10 @@ import type {
   StepModel,
   StepParamContext,
   StepRuntimeModel,
-} from './step-model';
+} from './step-model.ts';
 import {
   evaluateStepParam,
-} from './step-param-evaluators';
+} from './step-param-evaluators.ts';
 
 export {
   sampleLutColorLinear,

@@ -4,14 +4,14 @@ export type {
   ChannelName,
   Color, CustomParamModel, LutModel, ParamEvaluator, ParamName, ParamRef,
   StepModel, StepParamContext, StepRuntimeModel
-} from '../step/step-model';
+} from '../step/step-model.ts';
 
 export type {
   CreateCustomParamResult, CreatePipelineStepResult, LightAngleKey, LightRangeBinding, LightSettings, LoadedPipelineData, MaterialNumericKey, MaterialRangeBinding, MaterialSettings, ParamDef,
   ParamGroupDef, PipelineStepEntry, PipelineStepOpsEntry, PipelineZipData, PipelineZipLutEntry, RemoveLutFromPipelineResult
-} from './pipeline-model';
+} from './pipeline-model.ts';
 
-export type { PipelineStateSnapshot } from './pipeline-state';
+export type { PipelineStateSnapshot } from './pipeline-state.ts';
 
 export type {
   ConnectionPathOptions,
@@ -19,4 +19,4 @@ export type {
   SocketDragState,
   SocketDropTarget,
   StepReorderDragState
-} from './pipeline-view';
+} from './pipeline-view.ts';

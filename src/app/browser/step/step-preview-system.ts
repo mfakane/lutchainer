@@ -1,13 +1,13 @@
-import type { LightSettings, MaterialSettings } from '../../../features/pipeline/pipeline-model';
+import type { LightSettings, MaterialSettings } from '../../../features/pipeline/pipeline-model.ts';
 import {
   type CustomParamModel,
   type LutModel,
   type StepModel,
-} from '../../../features/step/step-model';
+} from '../../../features/step/step-model.ts';
 import type { StepPreviewRenderer } from '../../../platforms/webgl/step-preview-renderer.ts';
 import {
   drawStepPreviewSphereCpu,
-} from '../../../features/step/step-preview-cpu-render';
+} from '../../../features/step/step-preview-cpu-render.ts';
 import {
   buildStepPreviewDrawOptions,
   ensureStepPreviewRendererProgram,

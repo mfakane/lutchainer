@@ -1,5 +1,5 @@
-import type { CustomParamModel, LutModel, StepModel } from '../step/step-model';
-import { parseCustomParamRef } from '../step/step-model';
+import type { CustomParamModel, LutModel, StepModel } from '../step/step-model.ts';
+import { parseCustomParamRef } from '../step/step-model.ts';
 
 export function buildSampleBody(
   luts: readonly LutModel[],

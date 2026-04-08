@@ -1,9 +1,9 @@
-import { type MaterialSettings } from '../pipeline/pipeline-model';
-import type { CustomParamModel, LutModel, StepModel } from '../step/step-model';
-import { GLSL_SHADER_GENERATOR } from './shader-glsl-generator';
-import { HLSL_SHADER_GENERATOR } from './shader-hlsl-generator';
-import type { ShaderLanguage } from './shader-language-backend';
-export type { ShaderLanguage } from './shader-language-backend';
+import { type MaterialSettings } from '../pipeline/pipeline-model.ts';
+import type { CustomParamModel, LutModel, StepModel } from '../step/step-model.ts';
+import { GLSL_SHADER_GENERATOR } from './shader-glsl-generator.ts';
+import { HLSL_SHADER_GENERATOR } from './shader-hlsl-generator.ts';
+import type { ShaderLanguage } from './shader-language-backend.ts';
+export type { ShaderLanguage } from './shader-language-backend.ts';
 
 export interface ShaderBuildInput {
   steps: StepModel[];

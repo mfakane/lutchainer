@@ -1,7 +1,7 @@
 import type {
   LightSettings,
   MaterialSettings,
-} from '../pipeline/pipeline-model';
+} from '../pipeline/pipeline-model.ts';
 import type {
   Color,
   CustomParamModel,
@@ -10,14 +10,14 @@ import type {
   StepModel,
   StepParamContext,
   StepRuntimeModel,
-} from './step-model';
+} from './step-model.ts';
 import {
   evaluateStepParam,
-} from './step-param-evaluators';
+} from './step-param-evaluators.ts';
 import {
   composeColorFromSteps,
   resolveStepRuntimeModels,
-} from './step-runtime';
+} from './step-runtime.ts';
 
 export interface DrawStepPreviewSphereCpuInput {
   canvas: HTMLCanvasElement;

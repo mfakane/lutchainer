@@ -1,4 +1,4 @@
-import * as pipelineModel from '../../../features/pipeline/pipeline-model';
+import * as pipelineModel from '../../../features/pipeline/pipeline-model.ts';
 
 export interface MaterialPresetDefinition {
   key: string;

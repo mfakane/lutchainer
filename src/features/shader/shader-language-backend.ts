@@ -1,10 +1,10 @@
-import type { MaterialSettings } from '../pipeline/pipeline-model';
+import type { MaterialSettings } from '../pipeline/pipeline-model.ts';
 import type {
   BlendMode,
   BlendModeEmitInput,
   ParamRef,
   ShaderLocalKey,
-} from '../step/step-model';
+} from '../step/step-model.ts';
 
 export type ShaderLanguage = 'glsl' | 'hlsl';
 export type ShaderOutputKind = 'fragment' | 'previewFragment';

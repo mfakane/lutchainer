@@ -8,7 +8,6 @@ const watchMode = process.argv.includes('--watch');
 const distDir = path.resolve('dist');
 const webDir = path.join(distDir, 'web');
 const cliDir = path.join(distDir, 'cli');
-const testDir = path.join(distDir, 'test');
 const copyTargets = [
   {
     source: path.resolve('examples'),
@@ -47,7 +46,6 @@ function prepareOutputDirs() {
   fs.mkdirSync(distDir, { recursive: true });
   fs.mkdirSync(webDir, { recursive: true });
   fs.mkdirSync(cliDir, { recursive: true });
-  fs.mkdirSync(testDir, { recursive: true });
 
   for (const target of legacyDistTargets) {
     fs.rmSync(target, { recursive: true, force: true });
@@ -165,36 +163,15 @@ const cliBuildOptions = {
   plugins: [typeScriptExtensionPlugin],
 };
 
-const shaderTestBuildOptions = {
-  entryPoints: ['tests/shader/shader-test-helpers.mts'],
-  bundle: true,
-  outfile: path.join(testDir, 'shader-test-helpers.mjs'),
-  sourcemap: true,
-  target: ['node20'],
-  format: 'esm',
-  platform: 'node',
-  loader: {
-    '.ts': 'ts',
-    '.tsx': 'tsx',
-  },
-  define: {
-    __BUILD_COMMIT_ID__: JSON.stringify(buildCommitId),
-  },
-  plugins: [typeScriptExtensionPlugin],
-};
-
 if (watchMode) {
   prepareOutputDirs();
   const context = await esbuild.context(buildOptions);
   const cliContext = await esbuild.context(cliBuildOptions);
-  const shaderTestContext = await esbuild.context(shaderTestBuildOptions);
   await context.watch();
   await cliContext.watch();
-  await shaderTestContext.watch();
   console.log('[build] watching for changes...');
 } else {
   prepareOutputDirs();
   await esbuild.build(buildOptions);
   await esbuild.build(cliBuildOptions);
-  await esbuild.build(shaderTestBuildOptions);
 }

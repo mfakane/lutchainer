@@ -1,10 +1,9 @@
 import assert from 'node:assert/strict';
 import path from 'node:path';
 import test from 'node:test';
-import { pathToFileURL } from 'node:url';
+import * as shaderTest from './shader-test-helpers.mts';
 
 const repoRoot = path.resolve(import.meta.dirname, '..', '..');
-const shaderTest = await import(pathToFileURL(path.join(repoRoot, 'dist', 'test', 'shader-test-helpers.mjs')).href);
 
 const exampleNames = [
   'Metallic.lutchain',

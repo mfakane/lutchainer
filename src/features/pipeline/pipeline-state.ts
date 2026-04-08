@@ -1,4 +1,4 @@
-import type { CustomParamModel, LutModel, StepModel } from '../step/step-model';
+import type { CustomParamModel, LutModel, StepModel } from '../step/step-model.ts';
 
 export interface PipelineStateSnapshot {
   steps: StepModel[];

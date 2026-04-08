@@ -1,5 +1,5 @@
-import type { MaterialSettings } from '../pipeline/pipeline-model';
-import type { ShaderLocalKey } from '../step/step-model';
+import type { MaterialSettings } from '../pipeline/pipeline-model.ts';
+import type { ShaderLocalKey } from '../step/step-model.ts';
 
 export interface ShaderLocalDecl {
   requires: readonly ShaderLocalKey[];

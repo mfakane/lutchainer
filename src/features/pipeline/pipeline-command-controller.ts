@@ -1,13 +1,13 @@
-import { reorderItemsById } from '../../shared/utils/reorder';
+import { reorderItemsById } from '../../shared/utils/reorder.ts';
 import type {
   CustomParamModel,
   LutModel,
   ParamRef,
   StepModel,
-} from '../step/types';
-import * as pipelineModel from './pipeline-model';
-import type { PipelineStateSnapshot } from './pipeline-state';
-import type { SocketAxis } from './pipeline-view';
+} from '../step/types.ts';
+import * as pipelineModel from './pipeline-model.ts';
+import type { PipelineStateSnapshot } from './pipeline-state.ts';
+import type { SocketAxis } from './pipeline-view.ts';
 
 type StatusKind = 'success' | 'error' | 'info';
 type TemplateValue = string | number;

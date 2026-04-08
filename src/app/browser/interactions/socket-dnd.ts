@@ -1,9 +1,9 @@
-import type { SocketAxis, SocketDragState, SocketDropTarget } from '../../../features/pipeline/pipeline-view';
-import type { ParamRef } from '../../../features/step/step-model';
+import type { SocketAxis, SocketDragState, SocketDropTarget } from '../../../features/pipeline/pipeline-view.ts';
+import type { ParamRef } from '../../../features/step/step-model.ts';
 import {
   isValidSocketDragState,
   isValidSocketDropTarget,
-} from './socket-validation';
+} from './socket-validation.ts';
 
 interface ResolveSocketDropTargetOptions {
   socketDragState: SocketDragState | null;

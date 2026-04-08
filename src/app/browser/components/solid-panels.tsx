@@ -1,14 +1,14 @@
 import { For, createSignal, type Accessor, type JSX } from 'solid-js';
 import { render } from 'solid-js/web';
-import * as pipelineModel from '../../../features/pipeline/pipeline-model';
-import { t, useLanguage } from '../i18n';
+import * as pipelineModel from '../../../features/pipeline/pipeline-model.ts';
+import { t, useLanguage } from '../i18n.ts';
 import {
     LIGHT_PRESETS,
     MATERIAL_PRESETS,
     type LightPresetDefinition,
     type MaterialPresetDefinition,
-} from '../ui/preview-presets';
-import { DropdownMenu } from './solid-dropdown-menu';
+} from '../ui/preview-presets.ts';
+import { DropdownMenu } from './solid-dropdown-menu.tsx';
 
 type StatusKind = 'success' | 'error' | 'info';
 type StatusReporter = (message: string, kind?: StatusKind) => void;

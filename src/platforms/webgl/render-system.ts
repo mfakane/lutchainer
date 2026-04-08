@@ -1,12 +1,12 @@
-import type { LightSettings, MaterialSettings } from '../../features/pipeline/pipeline-model';
-import type { CustomParamModel } from '../../features/step/step-model';
+import type { LightSettings, MaterialSettings } from '../../features/pipeline/pipeline-model.ts';
+import type { CustomParamModel } from '../../features/step/step-model.ts';
 import {
   mat4Identity,
   mat4LookAt,
   mat4Perspective,
   normalMatrixFromMat4,
-} from '../../shared/utils/math';
-import { Renderer } from './renderer';
+} from '../../shared/utils/math.ts';
+import { Renderer } from './renderer.ts';
 
 export interface CameraOrbitState {
   orbitPitchDeg: number;

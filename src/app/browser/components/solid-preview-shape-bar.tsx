@@ -1,7 +1,7 @@
 import { For, createSignal, type Accessor, type JSX } from 'solid-js';
 import { render } from 'solid-js/web';
-import { t, useLanguage } from '../i18n';
-import { DropdownMenu } from './solid-dropdown-menu';
+import { t, useLanguage } from '../i18n.ts';
+import { DropdownMenu } from './solid-dropdown-menu.tsx';
 
 type StatusKind = 'success' | 'error' | 'info';
 type StatusReporter = (message: string, kind?: StatusKind) => void;

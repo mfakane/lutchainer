@@ -2,14 +2,14 @@ import {
   bindPointerDragSources,
   bindReorderDragHandlers,
   createPointerDragState,
-} from '../interactions/dnd';
-import type { ParamRef } from '../../../features/step/step-model';
+} from '../interactions/dnd.ts';
+import type { ParamRef } from '../../../features/step/step-model.ts';
 import type {
   LutReorderDragState,
   SocketAxis,
   SocketDragState,
   StepReorderDragState,
-} from '../../../features/pipeline/pipeline-view';
+} from '../../../features/pipeline/pipeline-view.ts';
 
 type StatusKind = 'success' | 'error' | 'info';
 type StatusReporter = (message: string, kind?: StatusKind) => void;

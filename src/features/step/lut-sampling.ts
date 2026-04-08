@@ -1,7 +1,7 @@
 import type {
   Color,
   LutModel,
-} from './step-model';
+} from './step-model.ts';
 
 export interface LutColorSample {
   color: Color;

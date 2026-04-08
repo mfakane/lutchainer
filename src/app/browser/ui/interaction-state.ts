@@ -1,8 +1,8 @@
-import * as pipelineView from '../../../features/pipeline/pipeline-view';
+import * as pipelineView from '../../../features/pipeline/pipeline-view.ts';
 import {
   isValidSocketDragState,
   isValidSocketDropTarget,
-} from '../interactions/socket-validation';
+} from '../interactions/socket-validation.ts';
 
 export type SocketDragState = pipelineView.SocketDragState;
 export type SocketDropTarget = pipelineView.SocketDropTarget;

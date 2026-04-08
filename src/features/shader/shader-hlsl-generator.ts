@@ -1,20 +1,20 @@
 import {
   resolveStepRuntimeModels,
-} from '../step/step-runtime';
+} from '../step/step-runtime.ts';
 import { buildGeneratedShaderHeader } from '../../shared/build-info.ts';
-import { HLSL_SHADER_BACKEND } from './shader-hlsl-backend';
+import { HLSL_SHADER_BACKEND } from './shader-hlsl-backend.ts';
 import {
   buildCustomUniformComments,
   buildSampleBody,
   collectUsedCustomParams,
-} from './shader-generator-utils';
-import { buildShaderLocalDeclarations } from './shader-local-decls';
-import { buildShaderStepCode } from './shader-step-code';
+} from './shader-generator-utils.ts';
+import { buildShaderLocalDeclarations } from './shader-local-decls.ts';
+import { buildShaderStepCode } from './shader-step-code.ts';
 import type {
   ShaderBuildInput,
   ShaderGenerator,
   ShaderGeneratorCapabilities,
-} from './shader-generator';
+} from './shader-generator.ts';
 
 const HLSL_GENERATOR_CAPABILITIES: ShaderGeneratorCapabilities = {
   fragment: true,

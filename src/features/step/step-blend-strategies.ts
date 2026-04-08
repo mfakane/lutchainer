@@ -6,7 +6,7 @@ import {
   type BlendOp,
   type ChannelName,
   type Color,
-} from './step-model';
+} from './step-model.ts';
 
 function clamp01(v: number): number {
   return Math.max(0, Math.min(1, v));
