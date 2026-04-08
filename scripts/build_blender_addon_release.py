@@ -21,7 +21,8 @@ def _parse_version(raw_version: str) -> tuple[str, tuple[int, int, int]]:
     match = VERSION_PATTERN.match(raw_version)
     if match is None:
         raise ValueError("version must be in X.Y.Z format")
-    return raw_version, tuple(int(part) for part in match.groups())
+    parts = match.groups()
+    return raw_version, (int(parts[0]), int(parts[1]), int(parts[2]))
 
 
 def _replace_bl_info_version(filepath: Path, version_tuple: tuple[int, int, int]) -> None:

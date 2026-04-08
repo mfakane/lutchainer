@@ -6,3 +6,4 @@ worktrees/
 __pycache__/
 .env
 artifacts/
+.venv/

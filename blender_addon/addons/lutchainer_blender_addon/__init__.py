@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 import os
+from typing import TYPE_CHECKING, Literal, TypeAlias, cast
 
 import bpy
-from bpy.props import EnumProperty, StringProperty
 from bpy.types import AddonPreferences, Operator, Panel
 from bpy_extras.io_utils import ImportHelper
 
@@ -42,6 +42,15 @@ LIGHTNESS_MODE_ITEMS = [
         "Approximate Lightness with shadowed dot(N, L) using the Shader Raycast node (Blender 5.1+)",
     ),
 ]
+
+OperatorResultItem: TypeAlias = Literal[
+    "RUNNING_MODAL",
+    "CANCELLED",
+    "FINISHED",
+    "PASS_THROUGH",
+    "INTERFACE",
+]
+OperatorResult: TypeAlias = set[OperatorResultItem]
 
 
 def _validate_lightness_mode(lightness_mode: str) -> None:
@@ -90,18 +99,22 @@ def run_import_from_path(
 class LUTCHAINER_AP_preferences(AddonPreferences):
     bl_idname = MODULE_NAME
 
-    last_fixture_path: StringProperty(
-        name="Last Fixture Path",
-        description="Last imported .lutchain path used by Reload And Reimport",
-        subtype="FILE_PATH",
-        default="",
-    )
-    lightness_mode_default: EnumProperty(
-        name="Lightness Mode",
-        description="Lightness helper mode for import and reload-and-reimport",
-        items=LIGHTNESS_MODE_ITEMS,
-        default=LIGHTNESS_MODE_SHADER_TO_RGB,
-    )
+    if TYPE_CHECKING:
+        last_fixture_path: str
+        lightness_mode_default: str
+    else:
+        __annotations__["last_fixture_path"] = bpy.props.StringProperty(
+            name="Last Fixture Path",
+            description="Last imported .lutchain path used by Reload And Reimport",
+            subtype="FILE_PATH",
+            default="",
+        )
+        __annotations__["lightness_mode_default"] = bpy.props.EnumProperty(
+            name="Lightness Mode",
+            description="Lightness helper mode for import and reload-and-reimport",
+            items=LIGHTNESS_MODE_ITEMS,
+            default=LIGHTNESS_MODE_SHADER_TO_RGB,
+        )
 
     def draw(self, _context: bpy.types.Context) -> None:
         layout = self.layout
@@ -121,26 +134,30 @@ class LUTCHAINER_OT_import_lutchain(Operator, ImportHelper):
     bl_options = {"REGISTER", "UNDO"}
 
     filename_ext = ".lutchain"
-    filter_glob: StringProperty(
-        default="*.lutchain",
-        options={"HIDDEN"},
-    )
-    lightness_mode: EnumProperty(
-        name="Lightness Mode",
-        description="How the wrapper material should generate the Lightness helper input",
-        items=LIGHTNESS_MODE_ITEMS,
-        default=LIGHTNESS_MODE_SHADER_TO_RGB,
-    )
+    if TYPE_CHECKING:
+        filter_glob: str
+        lightness_mode: str
+    else:
+        __annotations__["filter_glob"] = bpy.props.StringProperty(
+            default="*.lutchain",
+            options={"HIDDEN"},
+        )
+        __annotations__["lightness_mode"] = bpy.props.EnumProperty(
+            name="Lightness Mode",
+            description="How the wrapper material should generate the Lightness helper input",
+            items=LIGHTNESS_MODE_ITEMS,
+            default=LIGHTNESS_MODE_SHADER_TO_RGB,
+        )
 
-    def invoke(self, context: bpy.types.Context, event: bpy.types.Event) -> set[str]:
+    def invoke(self, context: bpy.types.Context, event: bpy.types.Event) -> OperatorResult:  # pyright: ignore[reportIncompatibleMethodOverride]
         preferences = get_addon_preferences(context)
         if preferences is not None:
             self.lightness_mode = preferences.lightness_mode_default
             if preferences.last_fixture_path:
                 self.filepath = preferences.last_fixture_path
-        return ImportHelper.invoke(self, context, event)
+        return cast(OperatorResult, ImportHelper.invoke(self, context, event))
 
-    def execute(self, context: bpy.types.Context) -> set[str]:
+    def execute(self, context: bpy.types.Context) -> OperatorResult:
         try:
             material = run_import_from_path(
                 context=context,
@@ -164,7 +181,7 @@ class LUTCHAINER_OT_reload_script(Operator):
     bl_description = "Reload the add-on implementation modules from disk"
     bl_options = {"REGISTER", "UNDO"}
 
-    def execute(self, context: bpy.types.Context) -> set[str]:
+    def execute(self, context: bpy.types.Context) -> OperatorResult:
         preferences = get_addon_preferences(context)
         if preferences is None:
             self.report({"ERROR"}, "Add-on preferences are not available")
@@ -188,7 +205,7 @@ class LUTCHAINER_OT_reload_and_reimport(Operator):
     bl_description = "Reload the add-on and reimport Last Fixture Path"
     bl_options = {"REGISTER", "UNDO"}
 
-    def execute(self, context: bpy.types.Context) -> set[str]:
+    def execute(self, context: bpy.types.Context) -> OperatorResult:
         preferences = get_addon_preferences(context)
         if preferences is None:
             self.report({"ERROR"}, "Add-on preferences are not available")
@@ -230,6 +247,8 @@ class LUTCHAINER_PT_import_panel(Panel):
 
     def draw(self, context: bpy.types.Context) -> None:
         layout = self.layout
+        if layout is None:
+            return
         preferences = get_addon_preferences(context)
 
         layout.label(text="Import .lutchain into shader nodes")
@@ -251,6 +270,8 @@ class LUTCHAINER_PT_import_panel(Panel):
 
 
 def _menu_import(self: bpy.types.Menu, _context: bpy.types.Context) -> None:
+    if self.layout is None:
+        return
     self.layout.operator(LUTCHAINER_OT_import_lutchain.bl_idname, text="LUT Chainer (.lutchain)")
 
 
@@ -258,7 +279,6 @@ COMMON_CLASSES = (
     LUTCHAINER_AP_preferences,
     LUTCHAINER_OT_import_lutchain,
 )
-
 DEBUG_CLASSES = (
     LUTCHAINER_OT_reload_script,
     LUTCHAINER_OT_reload_and_reimport,
@@ -266,7 +286,10 @@ DEBUG_CLASSES = (
 )
 
 
-def _get_registered_classes() -> tuple[type[object], ...]:
+RegistrableClass: TypeAlias = type[AddonPreferences] | type[Operator] | type[Panel]
+
+
+def _get_registered_classes() -> tuple[RegistrableClass, ...]:
     if IS_RELEASE_BUILD:
         return COMMON_CLASSES
     return COMMON_CLASSES + DEBUG_CLASSES

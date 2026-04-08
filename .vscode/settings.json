@@ -9,5 +9,11 @@
             "approve": true,
             "matchCommandLine": true
         }
+    },
+    "python-envs.workspaceSearchPaths": [
+      "./blender_addon/.venv"
+    ],
+    "python.analysis.diagnosticSeverityOverrides": {
+        "reportMissingModuleSource": "none"
     }
 }
