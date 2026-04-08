@@ -1,15 +1,5 @@
 {
     "nixEnvSelector.nixFile": "${workspaceFolder}/flake.nix",
-    "chat.tools.terminal.autoApprove": {
-        "/^npm run build && npx tsc --noEmit$/": {
-            "approve": true,
-            "matchCommandLine": true
-        },
-        "/^npx tsc --noEmit$/": {
-            "approve": true,
-            "matchCommandLine": true
-        }
-    },
     "python-envs.workspaceSearchPaths": [
       "./blender_addon/.venv"
     ],
