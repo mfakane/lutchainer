@@ -309,7 +309,6 @@ function CustomParamNode(props: CustomParamNodeProps): JSX.Element {
           <span class="custom-param-drag-grip" aria-hidden="true"></span>
         </button>
         <input
-          type="text"
           class="step-title-input param-node-custom-input"
           data-socket-drag-ignore="true"
           value={props.customParam().label}
@@ -597,7 +596,7 @@ function ParamNodeList(props: ParamNodeListProps): JSX.Element {
             )}
           </Index>
           
-          <button type="button" class="btn-secondary step-add-inline-btn" onClick={props.onAddCustomParam}>Add Param</button>
+          <button type="button" class="btn btn-secondary btn-inline-add" onClick={props.onAddCustomParam}>Add Param</button>
         </div>
       </section>
       <Show when={previewState()}>
@@ -765,7 +764,7 @@ function StepList(props: StepListProps): JSX.Element {
                   <div class="step-actions">
                     <button
                       type="button"
-                      class={step.muted ? 'step-mute active' : 'step-mute'}
+                      class={step.muted ? 'btn btn-step-action step-mute active' : 'btn btn-step-action step-mute'}
                       data-step-id={step.id}
                       aria-pressed={step.muted ? 'true' : 'false'}
                       onClick={() => {
@@ -780,7 +779,7 @@ function StepList(props: StepListProps): JSX.Element {
                     </button>
                     <button
                       type="button"
-                      class="step-duplicate"
+                      class="btn btn-step-action step-duplicate"
                       data-step-id={step.id}
                       onClick={() => {
                         if (shouldIgnoreClick()) {
@@ -794,7 +793,7 @@ function StepList(props: StepListProps): JSX.Element {
                     </button>
                     <button
                       type="button"
-                      class="step-remove"
+                      class="btn btn-step-action step-remove"
                       data-step-id={step.id}
                       onClick={() => {
                         if (shouldIgnoreClick()) {
@@ -839,7 +838,7 @@ function StepList(props: StepListProps): JSX.Element {
                     <label class="lut-select-field">
                       <span class="lut-select-label">{tr('pipeline.step.lut')}</span>
                       <select
-                        class="step-lut-select"
+                        class="control-select step-lut-select"
                         data-step-id={step.id}
                         onChange={event => {
                           const input = event.currentTarget as HTMLSelectElement | null;
@@ -885,7 +884,7 @@ function StepList(props: StepListProps): JSX.Element {
                     <label class="step-mode-field">
                       <span class="op-label">{tr('pipeline.step.blendMode')}</span>
                       <select
-                        class="step-blend-mode-select"
+                        class="control-select step-blend-mode-select"
                         data-step-id={step.id}
                         value={step.blendMode}
                         onChange={event => {
@@ -918,7 +917,7 @@ function StepList(props: StepListProps): JSX.Element {
                           <label class="op-item">
                             <span class="op-label">{channel.toUpperCase()}</span>
                             <select
-                              class="step-op-select"
+                              class="control-select step-op-select"
                               data-step-id={step.id}
                               data-channel={channel}
                               value={step.ops[channel]}
@@ -974,7 +973,7 @@ function StepList(props: StepListProps): JSX.Element {
         </For>
       </Show>
 
-      <button type="button" class="btn-secondary step-add-inline-btn" onClick={handleAddStepClick}>{tr('pipeline.step.add')}</button>
+      <button type="button" class="btn btn-secondary btn-inline-add" onClick={handleAddStepClick}>{tr('pipeline.step.add')}</button>
     </>
   );
 }

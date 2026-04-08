@@ -105,7 +105,7 @@ function PreviewShapeBar(props: PreviewShapeBarProps): JSX.Element {
           {shape => (
             <button
               type="button"
-              class={props.activeShape() === shape.key ? 'btn-shape active' : 'btn-shape'}
+              class={props.activeShape() === shape.key ? 'btn btn-shape active' : 'btn btn-shape'}
               onClick={() => props.onSelectShape(shape.key)}
             >
               {shape.label}
@@ -114,9 +114,9 @@ function PreviewShapeBar(props: PreviewShapeBarProps): JSX.Element {
         </For>
       </div>
       <DropdownMenu
-        wrapperClass="preview-action-menu-wrap"
-        triggerClass="preview-kebab-btn"
-        menuClass="preview-kebab-menu"
+        wrapperClass="menu-wrap preview-action-menu-wrap"
+        triggerClass="btn menu-trigger"
+        menuClass="menu preview-kebab-menu"
         triggerAriaLabel={tr('preview.menuButtonAria')}
         menuRole="menu"
       >
@@ -124,7 +124,7 @@ function PreviewShapeBar(props: PreviewShapeBarProps): JSX.Element {
           <>
             <button
               type="button"
-              class="preview-kebab-item"
+              class="btn menu-item"
               role="menuitem"
               onClick={() => {
                 handleMenuAction('toggle-wireframe');
@@ -137,7 +137,7 @@ function PreviewShapeBar(props: PreviewShapeBarProps): JSX.Element {
             </button>
             <button
               type="button"
-              class="preview-kebab-item"
+              class="btn menu-item"
               role="menuitem"
               onClick={() => {
                 handleMenuAction('export-main-preview');
@@ -148,7 +148,7 @@ function PreviewShapeBar(props: PreviewShapeBarProps): JSX.Element {
             </button>
             <button
               type="button"
-              class="preview-kebab-item"
+              class="btn menu-item"
               role="menuitem"
               onClick={() => {
                 handleMenuAction('export-step-preview');

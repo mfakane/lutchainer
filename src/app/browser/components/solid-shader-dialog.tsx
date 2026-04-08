@@ -1,10 +1,10 @@
 import { For, createSignal } from 'solid-js';
 import { render } from 'solid-js/web';
 import {
-  getShaderGenerator,
-  type ShaderBuildInput,
-  type ShaderGenerator,
-  type ShaderLanguage,
+    getShaderGenerator,
+    type ShaderBuildInput,
+    type ShaderGenerator,
+    type ShaderLanguage,
 } from '../../../features/shader/shader-generator';
 import { t, useLanguage } from '../i18n';
 
@@ -188,21 +188,21 @@ function ShaderDialogContent(props: { options: ShaderDialogContentOptions }) {
         <div class="shader-toolbar">
           <button
             type="button"
-            class="btn-secondary shader-copy-btn"
+            class="btn btn-secondary shader-copy-btn"
             onClick={() => void handleCopy()}
           >
             {tr('shader.copy')}
           </button>
           <button
             type="button"
-            class="btn-submit shader-export-btn"
+            class="btn btn-submit shader-export-btn"
             onClick={() => void handleExport()}
           >
             {tr('shader.export')}
           </button>
           <button
             type="button"
-            class="btn-secondary"
+            class="btn btn-secondary"
             aria-label={tr('shader.closeAria')}
             onClick={props.options.onClose}
           >

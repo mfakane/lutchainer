@@ -2,13 +2,13 @@ import { For, createSignal, type Accessor, type JSX } from 'solid-js';
 import { render } from 'solid-js/web';
 import * as pipelineModel from '../../../features/pipeline/pipeline-model';
 import { t, useLanguage } from '../i18n';
-import { DropdownMenu } from './solid-dropdown-menu';
 import {
-  LIGHT_PRESETS,
-  MATERIAL_PRESETS,
-  type LightPresetDefinition,
-  type MaterialPresetDefinition,
+    LIGHT_PRESETS,
+    MATERIAL_PRESETS,
+    type LightPresetDefinition,
+    type MaterialPresetDefinition,
 } from '../ui/preview-presets';
+import { DropdownMenu } from './solid-dropdown-menu';
 
 type StatusKind = 'success' | 'error' | 'info';
 type StatusReporter = (message: string, kind?: StatusKind) => void;
@@ -236,20 +236,20 @@ function MaterialPanel(props: MaterialPanelProps): JSX.Element {
           <div class="material-help">{tr('panel.materialHelp')}</div>
         </div>
         <DropdownMenu
-          wrapperClass="material-action-menu-wrap"
-          triggerClass="material-kebab-btn"
-          menuClass="material-kebab-menu"
+          wrapperClass="menu-wrap"
+          triggerClass="btn menu-trigger"
+          menuClass="menu"
           triggerAriaLabel={tr('panel.materialPreset')}
           menuRole="menu"
         >
           {controls => (
             <>
-              <div class="material-kebab-header">{tr('panel.materialPreset')}</div>
+              <div class="menu-header">{tr('panel.materialPreset')}</div>
               <For each={MATERIAL_PRESETS}>
                 {preset => (
                   <button
                     type="button"
-                    class="material-kebab-item"
+                    class="btn menu-item"
                     role="menuitem"
                     onClick={() => {
                       if (applyMaterialPreset(preset)) {
@@ -417,7 +417,7 @@ function LightPanel(props: LightPanelProps): JSX.Element {
         <div class="light-panel-actions">
           <button
             type="button"
-            class="btn-secondary light-toggle-btn"
+            class="btn btn-secondary light-toggle-btn"
             id="btn-toggle-light-gizmo"
             aria-pressed={props.settings().showGizmo ? 'true' : 'false'}
             onClick={toggleGizmo}
@@ -426,20 +426,20 @@ function LightPanel(props: LightPanelProps): JSX.Element {
           </button>
 
           <DropdownMenu
-            wrapperClass="light-action-menu-wrap"
-            triggerClass="light-kebab-btn"
-            menuClass="light-kebab-menu"
+            wrapperClass="menu-wrap"
+            triggerClass="btn menu-trigger"
+            menuClass="menu"
             triggerAriaLabel={tr('panel.lightPreset')}
             menuRole="menu"
           >
             {controls => (
               <>
-                <div class="light-kebab-header">{tr('panel.lightPreset')}</div>
+                <div class="menu-header">{tr('panel.lightPreset')}</div>
                 <For each={LIGHT_PRESETS}>
                   {preset => (
                     <button
                       type="button"
-                      class="light-kebab-item"
+                      class="btn menu-item"
                       role="menuitem"
                       onClick={() => {
                         if (applyLightPreset(preset)) {

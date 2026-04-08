@@ -897,10 +897,10 @@ function LutEditorDialogContent(props: { options: LutEditorDialogContentOptions 
           }}
         />
         <div class="lut-editor-head-actions">
-          <button type="button" class="btn-submit" onClick={handleApply} disabled={!rampData()}>
+          <button type="button" class="btn btn-submit" onClick={handleApply} disabled={!rampData()}>
             {tr('lutEditor.apply')}
           </button>
-          <button type="button" class="btn-secondary" onClick={props.options.onClose}>
+          <button type="button" class="btn btn-secondary" onClick={props.options.onClose}>
             {tr('lutEditor.cancel')}
           </button>
         </div>
@@ -1013,7 +1013,7 @@ function LutEditorDialogContent(props: { options: LutEditorDialogContentOptions 
               <div class="lut-editor-section-header-actions">
                 <button
                   type="button"
-                  class="btn-secondary lut-editor-ramp-add"
+                  class="btn btn-secondary lut-editor-ramp-add"
                   onClick={handleAddRamp}
                   disabled={!rampData() || (rampData()?.ramps.length ?? 0) >= MAX_RAMPS}
                 >
@@ -1021,9 +1021,9 @@ function LutEditorDialogContent(props: { options: LutEditorDialogContentOptions 
                 </button>
                 <Show when={selectedRamp()}>
                   <DropdownMenu
-                    wrapperClass="lut-editor-action-menu-wrap"
-                    triggerClass="lut-editor-kebab-btn"
-                    menuClass="lut-editor-kebab-menu"
+                    wrapperClass="menu-wrap"
+                    triggerClass="btn menu-trigger"
+                    menuClass="menu lut-editor-kebab-menu"
                     triggerAriaLabel={tr('lutEditor.rampMenuAria')}
                     menuRole="menu"
                   >
@@ -1031,7 +1031,7 @@ function LutEditorDialogContent(props: { options: LutEditorDialogContentOptions 
                       <>
                         <button
                           type="button"
-                          class="lut-editor-kebab-item"
+                          class="btn menu-item"
                           role="menuitem"
                           disabled={(rampData()?.ramps.length ?? 0) >= MAX_RAMPS}
                           onClick={() => {
@@ -1043,7 +1043,7 @@ function LutEditorDialogContent(props: { options: LutEditorDialogContentOptions 
                         </button>
                         <button
                           type="button"
-                          class="lut-editor-kebab-item"
+                          class="btn menu-item"
                           role="menuitem"
                           onClick={() => {
                             controls.closeMenu();
@@ -1078,7 +1078,7 @@ function LutEditorDialogContent(props: { options: LutEditorDialogContentOptions 
                       <Show when={canRemoveRamp(ramp.id)}>
                         <button
                           type="button"
-                          class="btn-ghost lut-editor-ramp-remove"
+                          class="btn btn-ghost lut-editor-ramp-remove"
                           onClick={ev => {
                             ev.stopPropagation();
                             handleRemoveRamp(ramp.id);
@@ -1138,7 +1138,7 @@ function LutEditorDialogContent(props: { options: LutEditorDialogContentOptions 
               <div class="lut-editor-section-header-actions">
                 <button
                   type="button"
-                  class="btn-secondary lut-editor-stop-add"
+                  class="btn btn-secondary lut-editor-stop-add"
                   onClick={handleAddStop}
                   disabled={!selectedRamp() || (selectedRamp()?.stops.length ?? 0) >= MAX_STOPS_PER_RAMP}
                 >
@@ -1147,7 +1147,7 @@ function LutEditorDialogContent(props: { options: LutEditorDialogContentOptions 
                 <Show when={focusedStop() && !isStopBoundary(focusedStop()!.id)}>
                   <button
                     type="button"
-                    class="btn-ghost lut-editor-stop-remove"
+                    class="btn btn-ghost lut-editor-stop-remove"
                     onClick={() => { const s = focusedStop(); if (s) handleRemoveStop(s.id); }}
                     >
                       {tr('lutEditor.removeStop')}
@@ -1155,9 +1155,9 @@ function LutEditorDialogContent(props: { options: LutEditorDialogContentOptions 
                   </Show>
                 <Show when={focusedStop()}>
                   <DropdownMenu
-                    wrapperClass="lut-editor-action-menu-wrap"
-                    triggerClass="lut-editor-kebab-btn"
-                    menuClass="lut-editor-kebab-menu"
+                    wrapperClass="menu-wrap"
+                    triggerClass="btn menu-trigger"
+                    menuClass="menu lut-editor-kebab-menu"
                     triggerAriaLabel={tr('lutEditor.stopMenuAria')}
                     menuRole="menu"
                   >
@@ -1165,7 +1165,7 @@ function LutEditorDialogContent(props: { options: LutEditorDialogContentOptions 
                       <>
                         <button
                           type="button"
-                          class="lut-editor-kebab-item"
+                          class="btn menu-item"
                           role="menuitem"
                           disabled={(selectedRamp()?.stops.length ?? 0) >= MAX_STOPS_PER_RAMP}
                           onClick={() => {
@@ -1177,7 +1177,7 @@ function LutEditorDialogContent(props: { options: LutEditorDialogContentOptions 
                         </button>
                         <button
                           type="button"
-                          class="lut-editor-kebab-item"
+                          class="btn menu-item"
                           role="menuitem"
                           onClick={() => {
                             controls.closeMenu();
