@@ -5,7 +5,7 @@ import {
   mountMaterialPanel,
   syncLightPanelState,
   syncMaterialPanelState,
-} from '../components/solid-panels.tsx';
+} from '../components/panels/index.tsx';
 import {
   mountShaderDialogShell,
   syncShaderDialogState,

@@ -1,21 +1,9 @@
-import './styles/app-theme.css.ts';
-import { setupMainPipelineIoSystem } from './pipeline/main-pipeline-io-setup.ts';
 import {
   applyLoadedPipelineState,
 } from '../../features/pipeline/main-pipeline-load-apply.ts';
-import { setupMainPipelineSocketDnd } from './pipeline/main-pipeline-socket-dnd-setup.ts';
-import {
-  type PipelineApplyController,
-} from './pipeline/pipeline-apply.ts';
 import {
   createPipelineCommandController,
 } from '../../features/pipeline/pipeline-command-controller.ts';
-import {
-  type PipelineDropIndicatorController,
-} from './pipeline/pipeline-drop-indicators.ts';
-import {
-  createPipelineHeaderActionController,
-} from './pipeline/pipeline-header-actions-controller.ts';
 import {
   createPipelineHistoryActionsController,
 } from '../../features/pipeline/pipeline-history-actions.ts';
@@ -23,9 +11,6 @@ import {
   createPipelineHistoryController,
 } from '../../features/pipeline/pipeline-history.ts';
 import * as pipelineModel from '../../features/pipeline/pipeline-model.ts';
-import {
-  type PipelineSocketDndController,
-} from './pipeline/pipeline-socket-dnd-controller.ts';
 import {
   getCustomParams as getPipelineCustomParams,
   getLuts as getPipelineLuts,
@@ -39,13 +24,11 @@ import * as pipelineView from '../../features/pipeline/pipeline-view.ts';
 import {
   createShaderExportSystem,
 } from '../../features/shader/shader-export-system.ts';
-import { createMainStepRenderingController } from './step/main-step-rendering-controller.ts';
 import { MAX_STEP_LABEL_LENGTH } from '../../features/step/step-model.ts';
 import {
   createStepPreviewDebugController,
 } from '../../features/step/step-preview-debug-controller.ts';
 import type { StepPreviewRenderer } from '../../platforms/webgl/step-preview-renderer.ts';
-import { createStepPreviewSystem } from './step/step-preview-system.ts';
 import {
   syncHeaderActionAutoApplyState,
   syncHeaderActionHistoryState,
@@ -64,6 +47,23 @@ import { setupStaticLocaleSync } from './i18n/static-locale-sync.ts';
 import {
   createSocketDropTargetResolver,
 } from './interactions/socket-dnd.ts';
+import { setupMainPipelineIoSystem } from './pipeline/main-pipeline-io-setup.ts';
+import { setupMainPipelineSocketDnd } from './pipeline/main-pipeline-socket-dnd-setup.ts';
+import {
+  type PipelineApplyController,
+} from './pipeline/pipeline-apply.ts';
+import {
+  type PipelineDropIndicatorController,
+} from './pipeline/pipeline-drop-indicators.ts';
+import {
+  createPipelineHeaderActionController,
+} from './pipeline/pipeline-header-actions-controller.ts';
+import {
+  type PipelineSocketDndController,
+} from './pipeline/pipeline-socket-dnd-controller.ts';
+import { createMainStepRenderingController } from './step/main-step-rendering-controller.ts';
+import { createStepPreviewSystem } from './step/step-preview-system.ts';
+import './styles/app-theme.css.ts';
 import {
   clearSocketDragState,
   getLutReorderDragState,

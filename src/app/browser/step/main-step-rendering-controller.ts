@@ -2,7 +2,7 @@ import {
   syncParamNodeListState,
   syncLutStripListState,
   syncStepListState,
-} from '../components/solid-pipeline-lists.tsx';
+} from '../components/pipeline-lists/index.tsx';
 import type {
   LightSettings,
   MaterialSettings,

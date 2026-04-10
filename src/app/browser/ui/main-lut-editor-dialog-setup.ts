@@ -3,7 +3,7 @@ import type { LutModel } from '../../../features/step/step-model.ts';
 import {
   mountLutEditorDialogShell,
   syncLutEditorDialogState,
-} from '../components/solid-lut-editor-dialog.tsx';
+} from '../components/lut-editor-dialog/index.tsx';
 
 type StatusKind = 'success' | 'error' | 'info';
 type StatusReporter = (message: string, kind?: StatusKind) => void;

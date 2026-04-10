@@ -18,7 +18,7 @@ import {
   mountLutStripList,
   mountParamNodeList,
   mountStepList,
-} from '../components/solid-pipeline-lists.tsx';
+} from '../components/pipeline-lists/index.tsx';
 
 type StatusKind = 'success' | 'error' | 'info';
 type StatusReporter = (message: string, kind?: StatusKind) => void;

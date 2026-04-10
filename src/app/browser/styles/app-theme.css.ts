@@ -42,18 +42,6 @@ export const vars = createGlobalTheme(':root', {
   },
 });
 
-globalStyle('*', {
-  boxSizing: 'border-box',
-});
-
-globalStyle('*::before', {
-  boxSizing: 'border-box',
-});
-
-globalStyle('*::after', {
-  boxSizing: 'border-box',
-});
-
 globalStyle('html, body', {
   height: '100%',
   margin: 0,

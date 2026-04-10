@@ -1,5 +1,5 @@
 import { style } from '@vanilla-extract/css';
-import { vars } from '../styles/app-theme.css.ts';
+import { vars } from '../../styles/app-theme.css.ts';
 
 export const root = style({
   display: 'flex',
