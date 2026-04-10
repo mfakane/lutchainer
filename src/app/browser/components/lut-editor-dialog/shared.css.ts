@@ -148,6 +148,11 @@ export const boundary = style({
   opacity: 0.6,
 });
 
+export const removeRampButton = style({
+  fontSize: '10px',
+  padding: '3px 7px',
+});
+
 export const pendingDeleteRamp = style({
   background: '#f44',
   opacity: 0.55,

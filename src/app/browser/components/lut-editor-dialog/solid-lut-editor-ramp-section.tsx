@@ -93,7 +93,7 @@ export function LutEditorRampSection(props: LutEditorRampSectionProps): JSX.Elem
                 <div class={styles.rampSwatch} style={props.rampSwatchStyle(ramp)} />
                 <span class={styles.rampY}>{props.tr('lutEditor.rampPosition')}: {formatPositionPercent(ramp.position)}%</span>
                 <Show when={props.canRemoveRamp(ramp.id)}>
-                  <button type="button" class={cx(ui.buttonBase, ui.ghostButton, ui.removeText)} onClick={event => { event.stopPropagation(); props.onRemoveRamp(ramp.id); }}>
+                  <button type="button" class={cx(ui.buttonBase, ui.ghostButton, ui.removeText, styles.removeRampButton)} onClick={event => { event.stopPropagation(); props.onRemoveRamp(ramp.id); }}>
                     {props.tr('lutEditor.removeRamp')}
                   </button>
                 </Show>
