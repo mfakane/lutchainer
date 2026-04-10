@@ -94,7 +94,7 @@ export function LutStripList(props: LutStripListProps): JSX.Element {
                   >
                     <DropdownMenu
                       wrapperClass={ui.menuWrap}
-                      triggerClass={cx(ui.buttonBase, ui.secondaryButton, styles.lutKebabTrigger)}
+                      triggerClass={cx(ui.buttonBase, ui.menuTrigger)}
                       menuClass={cx(ui.menu, styles.lutMenu)}
                       triggerAriaLabel={tr('pipeline.lut.kebabAria', { name: lut.name })}
                       menuRole="menu"

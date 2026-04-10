@@ -42,17 +42,6 @@ export const socketButton = style({
   },
 });
 
-export const lutKebabTrigger = style({
-  display: 'flex',
-  marginTop: 'auto',
-  alignItems: 'center',
-  justifyContent: 'center',
-  padding: '4px 7px',
-  minWidth: '30px',
-  minHeight: '24px',
-  boxSizing: 'content-box',
-});
-
 export const lutMenu = style({
   zIndex: 200,
   minWidth: '110px',
@@ -597,6 +586,7 @@ globalStyle(`${lutRoot} [data-part="lut-actions"]`, {
   alignItems: 'stretch',
   justifyContent: 'flex-end',
   gridRow: '2',
+  marginTop: 'auto',
 });
 
 globalStyle(`${lutRoot} [data-lut-remove="true"]`, {
