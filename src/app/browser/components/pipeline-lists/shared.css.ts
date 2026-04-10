@@ -21,7 +21,6 @@ export const stepTitleInput = style({
 export const customParamInput = style({
   minWidth: 0,
   width: '100%',
-  flex: '1 1 auto',
   color: vars.color.textStrong,
   fontSize: '12px',
   fontWeight: 700,
@@ -179,8 +178,9 @@ globalStyle(`${paramRoot} [data-custom-param-item="true"][data-drop-position="af
 });
 
 globalStyle(`${paramRoot} [data-part="custom-param-header"], ${paramRoot} [data-part="custom-param-slider-row"]`, {
-  display: 'flex',
+  display: 'grid',
   alignItems: 'center',
+  gridTemplateColumns: 'auto 1fr auto',
   gap: '4px',
   width: '100%',
   minWidth: 0,
@@ -196,7 +196,6 @@ globalStyle(`${paramRoot} [data-custom-param-handle="true"]`, {
   border: 'none',
   color: vars.color.muted,
   cursor: 'grab',
-  flex: '0 0 auto',
   background: 'transparent',
 });
 
