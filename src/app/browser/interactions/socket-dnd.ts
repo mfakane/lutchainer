@@ -26,7 +26,7 @@ interface SyncSocketDropTargetStateOptions {
   currentTarget: SocketDropTarget | null;
   nextTarget: SocketDropTarget | null;
   setState: (nextTarget: SocketDropTarget | null) => void;
-  className?: string;
+  attributeName?: string;
 }
 
 interface ApplySocketDropConnectionOptions {
@@ -62,7 +62,7 @@ interface CleanupSocketDragInteractionOptions {
   clearSocketDropTarget: () => void;
   clearUserSelect: () => void;
   onAfterCleanup?: () => void;
-  sourceActiveClassName?: string;
+  sourceActiveAttributeName?: string;
 }
 
 interface AnchorPoint {
@@ -196,12 +196,12 @@ function assertValidSyncSocketDropTargetStateOptions(
     throw new Error('nextTarget が不正です。');
   }
 
-  const className = options.className ?? 'socket-drop-target';
-  if (!isNonEmptyString(className)) {
-    throw new Error('className が不正です。');
+  const attributeName = options.attributeName ?? 'data-socket-target';
+  if (!isNonEmptyString(attributeName)) {
+    throw new Error('attributeName が不正です。');
   }
 
-  return className;
+  return attributeName;
 }
 
 function assertValidApplySocketDropConnectionOptions(
@@ -377,12 +377,12 @@ function assertValidCleanupSocketDragInteractionOptions(
     throw new Error('onAfterCleanup が不正です。');
   }
 
-  const className = options.sourceActiveClassName ?? 'socket-source-active';
-  if (!isNonEmptyString(className)) {
-    throw new Error('sourceActiveClassName が不正です。');
+  const attributeName = options.sourceActiveAttributeName ?? 'data-socket-source-active';
+  if (!isNonEmptyString(attributeName)) {
+    throw new Error('sourceActiveAttributeName が不正です。');
   }
 
-  return className;
+  return attributeName;
 }
 
 export function createSocketDropTargetResolver(options: SocketDropTargetResolverOptions): (
@@ -428,7 +428,7 @@ export function resolveSocketDropTarget(options: ResolveSocketDropTargetOptions)
   }
 
   if (socketDragState.mode === 'param') {
-    const target = rawElement.closest('.step-socket');
+    const target = rawElement.closest('[data-step-socket="true"]');
     if (!isHtmlElement(target)) {
       return null;
     }
@@ -447,7 +447,7 @@ export function resolveSocketDropTarget(options: ResolveSocketDropTargetOptions)
     };
   }
 
-  const target = rawElement.closest('.param-socket');
+  const target = rawElement.closest('[data-param-socket="true"]');
   if (!isHtmlElement(target)) {
     return null;
   }
@@ -466,7 +466,7 @@ export function resolveSocketDropTarget(options: ResolveSocketDropTargetOptions)
 
 export function syncSocketDropTargetState(options: SyncSocketDropTargetStateOptions): void {
   assertValidObject(options, 'SyncSocketDropTargetStateOptions');
-  const className = assertValidSyncSocketDropTargetStateOptions(options);
+  const attributeName = assertValidSyncSocketDropTargetStateOptions(options);
 
   const { currentTarget, nextTarget, setState } = options;
   if (
@@ -479,13 +479,13 @@ export function syncSocketDropTargetState(options: SyncSocketDropTargetStateOpti
   }
 
   if (currentTarget) {
-    currentTarget.element.classList.remove(className);
+    currentTarget.element.removeAttribute(attributeName);
   }
 
   setState(nextTarget);
 
   if (nextTarget) {
-    nextTarget.element.classList.add(className);
+    nextTarget.element.setAttribute(attributeName, 'true');
   }
 }
 
@@ -658,10 +658,10 @@ export function handleSocketDragEnd(options: HandleSocketDragEndOptions): boolea
 
 export function cleanupSocketDragInteraction(options: CleanupSocketDragInteractionOptions): void {
   assertValidObject(options, 'CleanupSocketDragInteractionOptions');
-  const sourceActiveClassName = assertValidCleanupSocketDragInteractionOptions(options);
+  const sourceActiveAttributeName = assertValidCleanupSocketDragInteractionOptions(options);
 
   if (options.socketDragState) {
-    options.socketDragState.sourceEl.classList.remove(sourceActiveClassName);
+    options.socketDragState.sourceEl.removeAttribute(sourceActiveAttributeName);
   }
 
   options.clearSocketDragState();

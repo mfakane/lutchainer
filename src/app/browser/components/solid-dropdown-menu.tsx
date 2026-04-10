@@ -1,5 +1,6 @@
 import { Show, createEffect, createSignal, onCleanup, type Accessor, type JSX } from 'solid-js';
 import { Portal } from 'solid-js/web';
+import * as styles from './solid-dropdown-menu.css.ts';
 
 export interface DropdownMenuControls {
   closeMenu: () => void;
@@ -256,6 +257,8 @@ export function DropdownMenu(props: DropdownMenuProps): JSX.Element {
               const rect = triggerElement.getBoundingClientRect();
               setFloatingStyle(
                 `position:fixed;` +
+                `left:auto;` +
+                `top:auto;` +
                 `right:${Math.round(window.innerWidth - rect.right)}px;` +
                 `bottom:${Math.round(window.innerHeight - rect.top)}px;`,
               );
@@ -268,7 +271,7 @@ export function DropdownMenu(props: DropdownMenuProps): JSX.Element {
           handleTriggerKeyDown(event as KeyboardEvent);
         }}
       >
-        {props.triggerContent ?? <span class="symbol-kebab">･･･</span>}
+        {props.triggerContent ?? <span class={styles.kebabSymbol}>･･･</span>}
       </button>
       <Show when={isOpen()}>
         <Show

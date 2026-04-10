@@ -205,11 +205,11 @@ export function setupLutReorderBindings(options: SetupLutReorderBindingsOptions)
   bindReorderDragHandlers({
     containerEl: options.lutStripListEl,
     resolveDragStart: eventTarget => {
-      if (eventTarget.closest('.lut-strip-remove')) {
+      if (eventTarget.closest('[data-lut-remove="true"]')) {
         return { kind: 'ignore' };
       }
 
-      const item = eventTarget.closest<HTMLElement>('.lut-strip-item');
+      const item = eventTarget.closest<HTMLElement>('[data-lut-item="true"]');
       if (!item) {
         return { kind: 'ignore' };
       }
@@ -253,7 +253,7 @@ export function setupStepReorderBindings(options: SetupStepReorderBindingsOption
   bindReorderDragHandlers({
     containerEl: options.stepListEl,
     resolveDragStart: eventTarget => {
-      const handle = eventTarget.closest<HTMLButtonElement>('.step-drag-handle');
+      const handle = eventTarget.closest<HTMLButtonElement>('[data-step-drag-handle="true"]');
       if (!handle) {
         return { kind: 'ignore' };
       }
@@ -307,7 +307,7 @@ export function setupSocketPointerBindings(options: SetupSocketPointerBindingsOp
             return { kind: 'ignore' };
           }
 
-          const target = eventTarget.closest<HTMLElement>('.param-socket');
+          const target = eventTarget.closest<HTMLElement>('[data-param-socket="true"]');
           if (!target) {
             return { kind: 'ignore' };
           }
@@ -335,7 +335,7 @@ export function setupSocketPointerBindings(options: SetupSocketPointerBindingsOp
       {
         containerEl: options.stepListEl,
         resolvePointerDown: eventTarget => {
-          const target = eventTarget.closest<HTMLButtonElement>('.step-socket');
+          const target = eventTarget.closest<HTMLButtonElement>('[data-step-socket="true"]');
           if (!target) {
             return { kind: 'ignore' };
           }

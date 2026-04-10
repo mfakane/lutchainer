@@ -116,7 +116,7 @@ export function createPipelineSocketDndController(
       resolveDropTarget: options.resolveDropTarget,
       setSocketDropTarget,
       onDragStart: dragState => {
-        dragState.sourceEl.classList.add('socket-source-active');
+        dragState.sourceEl.setAttribute('data-socket-source-active', 'true');
         options.setUserSelect('none');
       },
       onDragProgress: options.scheduleConnectionDraw,

@@ -2,12 +2,15 @@ import { For, createSignal, type Accessor, type JSX } from 'solid-js';
 import { render } from 'solid-js/web';
 import * as pipelineModel from '../../../features/pipeline/pipeline-model.ts';
 import { t, useLanguage } from '../i18n.ts';
+import { cx } from '../styles/cx.ts';
+import * as ui from '../styles/ui-primitives.css.ts';
 import {
     LIGHT_PRESETS,
     MATERIAL_PRESETS,
     type LightPresetDefinition,
     type MaterialPresetDefinition,
 } from '../ui/preview-presets.ts';
+import * as styles from './solid-panels.css.ts';
 import { DropdownMenu } from './solid-dropdown-menu.tsx';
 
 type StatusKind = 'success' | 'error' | 'info';
@@ -230,26 +233,27 @@ function MaterialPanel(props: MaterialPanelProps): JSX.Element {
 
   return (
     <>
-      <div class="material-panel-head">
+      <div class={styles.panelRoot}>
+      <div class={styles.panelHead}>
         <div>
-          <div class="section-label">Material</div>
-          <div class="material-help">{tr('panel.materialHelp')}</div>
+          <div class={ui.sectionLabel}>Material</div>
+          <div class={styles.helpText}>{tr('panel.materialHelp')}</div>
         </div>
         <DropdownMenu
-          wrapperClass="menu-wrap"
-          triggerClass="btn menu-trigger"
-          menuClass="menu"
+          wrapperClass={ui.menuWrap}
+          triggerClass={cx(ui.buttonBase, ui.menuTrigger)}
+          menuClass={ui.menu}
           triggerAriaLabel={tr('panel.materialPreset')}
           menuRole="menu"
         >
           {controls => (
             <>
-              <div class="menu-header">{tr('panel.materialPreset')}</div>
+              <div class={ui.menuHeader}>{tr('panel.materialPreset')}</div>
               <For each={MATERIAL_PRESETS}>
                 {preset => (
                   <button
                     type="button"
-                    class="btn menu-item"
+                    class={ui.menuItem}
                     role="menuitem"
                     onClick={() => {
                       if (applyMaterialPreset(preset)) {
@@ -266,14 +270,14 @@ function MaterialPanel(props: MaterialPanelProps): JSX.Element {
         </DropdownMenu>
       </div>
 
-      <div class="material-grid">
-        <label class="material-field material-field-color">
-          <span class="material-label-row">
-            <span class="material-label">Base Color</span>
-            <span class="material-value" id="mat-base-color-value">{pipelineModel.colorToHex(props.settings().baseColor)}</span>
+      <div class={styles.grid}>
+        <label class={cx(styles.field, styles.colorField)}>
+          <span class={styles.labelRow}>
+            <span class={styles.labelText}>Base Color</span>
+            <span class={styles.valueText} id="mat-base-color-value">{pipelineModel.colorToHex(props.settings().baseColor)}</span>
           </span>
           <input
-            class="material-color-input"
+            class={ui.colorInput}
             type="color"
             id="mat-base-color"
             value={pipelineModel.colorToHex(props.settings().baseColor)}
@@ -283,15 +287,15 @@ function MaterialPanel(props: MaterialPanelProps): JSX.Element {
 
         <For each={pipelineModel.MATERIAL_RANGE_BINDINGS}>
           {binding => (
-            <label class="material-field">
-              <span class="material-label-row">
-                <span class="material-label">{binding.label}</span>
-                <span class="material-value" id={binding.outputId}>
+            <label class={styles.field}>
+              <span class={styles.labelRow}>
+                <span class={styles.labelText}>{binding.label}</span>
+                <span class={styles.valueText} id={binding.outputId}>
                   {props.settings()[binding.key].toFixed(binding.fractionDigits)}
                 </span>
               </span>
               <input
-                class="material-range-input"
+                class={ui.rangeInput}
                 type="range"
                 id={binding.inputId}
                 min={String(binding.min)}
@@ -305,6 +309,7 @@ function MaterialPanel(props: MaterialPanelProps): JSX.Element {
             </label>
           )}
         </For>
+      </div>
       </div>
     </>
   );
@@ -408,16 +413,17 @@ function LightPanel(props: LightPanelProps): JSX.Element {
 
   return (
     <>
-      <div class="light-panel-head">
+      <div class={styles.panelRoot}>
+      <div class={styles.panelHead}>
         <div>
-          <div class="section-label">Light</div>
-          <div class="material-help">{tr('panel.lightHelp')}</div>
+          <div class={ui.sectionLabel}>Light</div>
+          <div class={styles.helpText}>{tr('panel.lightHelp')}</div>
         </div>
 
-        <div class="light-panel-actions">
+        <div class={styles.lightActions}>
           <button
             type="button"
-            class="btn btn-secondary light-toggle-btn"
+            class={cx(ui.buttonBase, ui.secondaryButton, styles.lightToggleButton)}
             id="btn-toggle-light-gizmo"
             aria-pressed={props.settings().showGizmo ? 'true' : 'false'}
             onClick={toggleGizmo}
@@ -426,20 +432,20 @@ function LightPanel(props: LightPanelProps): JSX.Element {
           </button>
 
           <DropdownMenu
-            wrapperClass="menu-wrap"
-            triggerClass="btn menu-trigger"
-            menuClass="menu"
+            wrapperClass={ui.menuWrap}
+            triggerClass={cx(ui.buttonBase, ui.menuTrigger)}
+            menuClass={ui.menu}
             triggerAriaLabel={tr('panel.lightPreset')}
             menuRole="menu"
           >
             {controls => (
               <>
-                <div class="menu-header">{tr('panel.lightPreset')}</div>
+                <div class={ui.menuHeader}>{tr('panel.lightPreset')}</div>
                 <For each={LIGHT_PRESETS}>
                   {preset => (
                     <button
                       type="button"
-                      class="btn menu-item"
+                      class={ui.menuItem}
                       role="menuitem"
                       onClick={() => {
                         if (applyLightPreset(preset)) {
@@ -457,14 +463,14 @@ function LightPanel(props: LightPanelProps): JSX.Element {
         </div>
       </div>
 
-      <div class="light-grid">
-        <label class="material-field material-field-color">
-          <span class="material-label-row">
-            <span class="material-label">Light Color</span>
-            <span class="material-value" id="light-color-value">{pipelineModel.colorToHex(props.settings().lightColor)}</span>
+      <div class={styles.grid}>
+        <label class={cx(styles.field, styles.colorField)}>
+          <span class={styles.labelRow}>
+            <span class={styles.labelText}>Light Color</span>
+            <span class={styles.valueText} id="light-color-value">{pipelineModel.colorToHex(props.settings().lightColor)}</span>
           </span>
           <input
-            class="material-color-input"
+            class={ui.colorInput}
             type="color"
             id="light-color"
             value={pipelineModel.colorToHex(props.settings().lightColor)}
@@ -472,13 +478,13 @@ function LightPanel(props: LightPanelProps): JSX.Element {
           />
         </label>
 
-        <label class="material-field material-field-color">
-          <span class="material-label-row">
-            <span class="material-label">Ambient Color</span>
-            <span class="material-value" id="light-ambient-color-value">{pipelineModel.colorToHex(props.settings().ambientColor)}</span>
+        <label class={cx(styles.field, styles.colorField)}>
+          <span class={styles.labelRow}>
+            <span class={styles.labelText}>Ambient Color</span>
+            <span class={styles.valueText} id="light-ambient-color-value">{pipelineModel.colorToHex(props.settings().ambientColor)}</span>
           </span>
           <input
-            class="material-color-input"
+            class={ui.colorInput}
             type="color"
             id="light-ambient-color"
             value={pipelineModel.colorToHex(props.settings().ambientColor)}
@@ -488,17 +494,17 @@ function LightPanel(props: LightPanelProps): JSX.Element {
 
         <For each={pipelineModel.LIGHT_RANGE_BINDINGS}>
           {binding => (
-            <label class="material-field">
-              <span class="material-label-row">
-                <span class="material-label">{binding.label}</span>
-                <span class="material-value" id={binding.outputId}>
+            <label class={styles.field}>
+              <span class={styles.labelRow}>
+                <span class={styles.labelText}>{binding.label}</span>
+                <span class={styles.valueText} id={binding.outputId}>
                   {isLightAngleBinding(binding)
                     ? `${props.settings()[binding.key].toFixed(binding.fractionDigits)}°`
                     : props.settings()[binding.key].toFixed(binding.fractionDigits)}
                 </span>
               </span>
               <input
-                class="material-range-input"
+                class={ui.rangeInput}
                 type="range"
                 id={binding.inputId}
                 min={String(binding.min)}
@@ -512,6 +518,7 @@ function LightPanel(props: LightPanelProps): JSX.Element {
             </label>
           )}
         </For>
+      </div>
       </div>
     </>
   );

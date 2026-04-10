@@ -1,4 +1,5 @@
 import esbuild from 'esbuild';
+import { vanillaExtractPlugin } from '@vanilla-extract/esbuild-plugin';
 import { solidPlugin } from 'esbuild-plugin-solid';
 import childProcess from 'child_process';
 import fs from 'fs';
@@ -139,7 +140,7 @@ const buildOptions = {
   define: {
     __BUILD_COMMIT_ID__: JSON.stringify(buildCommitId),
   },
-  plugins: [typeScriptExtensionPlugin, copyBuildAssetsPlugin, solidPlugin({ dev: watchMode })],
+  plugins: [typeScriptExtensionPlugin, vanillaExtractPlugin(), copyBuildAssetsPlugin, solidPlugin({ dev: watchMode })],
 };
 
 const cliBuildOptions = {

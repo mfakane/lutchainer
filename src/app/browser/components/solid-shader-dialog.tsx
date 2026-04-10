@@ -7,6 +7,9 @@ import {
     type ShaderLanguage,
 } from '../../../features/shader/shader-generator.ts';
 import { t, useLanguage } from '../i18n.ts';
+import { cx } from '../styles/cx.ts';
+import * as ui from '../styles/ui-primitives.css.ts';
+import * as styles from './solid-shader-dialog.css.ts';
 
 type StatusKind = 'success' | 'error' | 'info';
 
@@ -165,17 +168,17 @@ function ShaderDialogContent(props: { options: ShaderDialogContentOptions }) {
 
   return (
     <>
-      <div class="shader-panel-head shader-dialog-head">
+      <div class={styles.header}>
         <div>
-          <div class="section-label" id="shader-dialog-title">Generated Shader</div>
-          <div class="shader-help">{tr('shader.help')}</div>
+          <div class={ui.sectionLabel} id="shader-dialog-title">Generated Shader</div>
+          <div class={styles.helpText}>{tr('shader.help')}</div>
         </div>
-        <div class="shader-tabs" aria-label={tr('shader.tabsAria')}>
+        <div class={styles.tabs} aria-label={tr('shader.tabsAria')}>
           <For each={SHADER_CODE_ENTRIES}>
             {entry => (
               <button
                 type="button"
-                class={`shader-tab${activeEntryId() === entry.id ? ' active' : ''}`}
+                class={cx(ui.buttonBase, styles.tab, activeEntryId() === entry.id ? styles.tabState.active : styles.tabState.inactive)}
                 data-shader-stage={entry.id}
                 aria-pressed={activeEntryId() === entry.id ? 'true' : 'false'}
                 onClick={() => setActiveEntryId(entry.id)}
@@ -185,24 +188,24 @@ function ShaderDialogContent(props: { options: ShaderDialogContentOptions }) {
             )}
           </For>
         </div>
-        <div class="shader-toolbar">
+        <div class={styles.toolbar}>
           <button
             type="button"
-            class="btn btn-secondary shader-copy-btn"
+            class={cx(ui.buttonBase, ui.secondaryButton)}
             onClick={() => void handleCopy()}
           >
             {tr('shader.copy')}
           </button>
           <button
             type="button"
-            class="btn btn-submit shader-export-btn"
+            class={cx(ui.buttonBase, ui.submitButton)}
             onClick={() => void handleExport()}
           >
             {tr('shader.export')}
           </button>
           <button
             type="button"
-            class="btn btn-secondary"
+            class={cx(ui.buttonBase, ui.secondaryButton)}
             aria-label={tr('shader.closeAria')}
             onClick={props.options.onClose}
           >
@@ -210,8 +213,8 @@ function ShaderDialogContent(props: { options: ShaderDialogContentOptions }) {
           </button>
         </div>
       </div>
-      <div class="shader-meta">{metaText()}</div>
-      <pre class="shader-code-output">{shaderSource()}</pre>
+      <div class={styles.meta}>{metaText()}</div>
+      <pre class={styles.codeOutput}>{shaderSource()}</pre>
     </>
   );
 }

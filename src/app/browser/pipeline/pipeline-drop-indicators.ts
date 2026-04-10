@@ -88,7 +88,7 @@ export function createPipelineDropIndicatorController(
     const stepReorderDragState = options.getStepReorderDragState();
     const candidates: LinearDropCandidate<string>[] = [];
 
-    for (const item of Array.from(options.stepListEl.querySelectorAll<HTMLElement>('.step-item'))) {
+    for (const item of Array.from(options.stepListEl.querySelectorAll<HTMLElement>('[data-step-item="true"]'))) {
       const itemStepId = options.parseStepId(item.dataset.stepId);
       if (itemStepId === null || itemStepId === stepReorderDragState?.stepId) {
         continue;
@@ -119,7 +119,7 @@ export function createPipelineDropIndicatorController(
     const lutReorderDragState = options.getLutReorderDragState();
     const candidates: LinearDropCandidate<string>[] = [];
 
-    for (const item of Array.from(options.lutStripListEl.querySelectorAll<HTMLElement>('.lut-strip-item'))) {
+    for (const item of Array.from(options.lutStripListEl.querySelectorAll<HTMLElement>('[data-lut-item="true"]'))) {
       const lutId = item.dataset.lutId;
       if (!lutId || lutId === lutReorderDragState?.lutId) {
         continue;

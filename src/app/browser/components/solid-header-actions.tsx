@@ -7,6 +7,9 @@ import {
   useLanguage,
   type Language,
 } from '../i18n.ts';
+import { cx } from '../styles/cx.ts';
+import * as ui from '../styles/ui-primitives.css.ts';
+import * as styles from './solid-header-actions.css.ts';
 import { DropdownMenu } from './solid-dropdown-menu.tsx';
 
 type StatusKind = 'success' | 'error' | 'info';
@@ -186,23 +189,23 @@ function HeaderActionGroup(props: HeaderActionGroupProps): JSX.Element {
   return (
     <>
       <button
-        class="btn btn-secondary"
+        class={cx(ui.buttonBase, ui.secondaryButton)}
         id="btn-undo-pipeline"
         aria-label={tr('header.undoAria')}
         disabled={!props.canUndo()}
         onClick={props.onUndoPipeline}
       >{tr('header.undo')}</button>
       <button
-        class="btn btn-secondary"
+        class={cx(ui.buttonBase, ui.secondaryButton)}
         id="btn-redo-pipeline"
         aria-label={tr('header.redoAria')}
         disabled={!props.canRedo()}
         onClick={props.onRedoPipeline}
       >{tr('header.redo')}</button>
       <DropdownMenu
-        wrapperClass="menu-wrap"
-        triggerClass="btn btn-secondary"
-        menuClass="menu"
+        wrapperClass={ui.menuWrap}
+        triggerClass={cx(ui.buttonBase, ui.secondaryButton)}
+        menuClass={ui.menu}
         triggerAriaLabel={tr('header.reset')}
         triggerContent={<span>{tr('header.reset')}</span>}
         menuRole="menu"
@@ -211,7 +214,7 @@ function HeaderActionGroup(props: HeaderActionGroupProps): JSX.Element {
           <>
             <button
               type="button"
-              class="btn menu-item"
+              class={ui.menuItem}
               role="menuitem"
               onClick={() => {
                 controls.closeMenu();
@@ -220,11 +223,11 @@ function HeaderActionGroup(props: HeaderActionGroupProps): JSX.Element {
             >
               {tr('header.resetInitial')}
             </button>
-            <div class="menu-header">{tr('header.resetExamples')}</div>
+            <div class={ui.menuHeader}>{tr('header.resetExamples')}</div>
             {RESET_PRESETS.map(preset => (
               <button
                 type="button"
-                class="btn menu-item"
+                class={ui.menuItem}
                 role="menuitem"
                 onClick={() => {
                   controls.closeMenu();
@@ -237,8 +240,8 @@ function HeaderActionGroup(props: HeaderActionGroupProps): JSX.Element {
           </>
         )}
       </DropdownMenu>
-      <button class="btn btn-secondary" id="btn-load-pipeline" onClick={openPipelineFilePicker}>{tr('header.load')}</button>
-      <button class="btn btn-secondary" id="btn-save-pipeline" onClick={() => void handleSavePipeline()}>{tr('header.save')}</button>
+      <button class={cx(ui.buttonBase, ui.secondaryButton)} id="btn-load-pipeline" onClick={openPipelineFilePicker}>{tr('header.load')}</button>
+      <button class={cx(ui.buttonBase, ui.secondaryButton)} id="btn-save-pipeline" onClick={() => void handleSavePipeline()}>{tr('header.save')}</button>
       <input
         ref={element => {
           pipelineFileInputRef = element;
@@ -249,7 +252,7 @@ function HeaderActionGroup(props: HeaderActionGroupProps): JSX.Element {
         hidden
         onChange={event => void handlePipelineFileInputChange(event)}
       />
-      <label class="auto-label">
+      <label class={styles.autoLabel}>
         <input
           type="checkbox"
           id="chk-auto-apply"
@@ -258,8 +261,8 @@ function HeaderActionGroup(props: HeaderActionGroupProps): JSX.Element {
         />
         {tr('header.autoApply')}
       </label>
-      <button class="btn btn-secondary" id="btn-apply-pipeline" onClick={props.onApplyPipeline}>{tr('header.apply')}</button>
-      <button type="button" class="btn btn-submit shader-open-btn" id="btn-open-shader-dialog">{tr('header.openCode')}</button>
+      <button class={cx(ui.buttonBase, ui.secondaryButton)} id="btn-apply-pipeline" onClick={props.onApplyPipeline}>{tr('header.apply')}</button>
+      <button type="button" class={cx(ui.buttonBase, ui.submitButton, styles.shaderOpenButton)} id="btn-open-shader-dialog">{tr('header.openCode')}</button>
     </>
   );
 }
@@ -294,10 +297,10 @@ export function mountLanguageSwitcher(target: HTMLElement): void {
       setLanguage(value);
     };
     return (
-      <div class="language-switcher" role="group" aria-label={tr('header.languageGroupAria')}>
+      <div class={styles.languageSwitcher} role="group" aria-label={tr('header.languageGroupAria')}>
         <button
           type="button"
-          class={isLanguageActive('en') ? 'btn btn-secondary btn-language active' : 'btn btn-secondary btn-language'}
+          class={cx(ui.buttonBase, ui.secondaryButton, ui.languageButton, isLanguageActive('en') && ui.activeAccent)}
           id="btn-set-language-en"
           aria-label={tr('language.switchAria', { language: getLanguageLabel('en') })}
           aria-pressed={isLanguageActive('en') ? 'true' : 'false'}
@@ -305,7 +308,7 @@ export function mountLanguageSwitcher(target: HTMLElement): void {
         >en</button>
         <button
           type="button"
-          class={isLanguageActive('ja') ? 'btn btn-secondary btn-language active' : 'btn btn-secondary btn-language'}
+          class={cx(ui.buttonBase, ui.secondaryButton, ui.languageButton, isLanguageActive('ja') && ui.activeAccent)}
           id="btn-set-language-ja"
           aria-label={tr('language.switchAria', { language: getLanguageLabel('ja') })}
           aria-pressed={isLanguageActive('ja') ? 'true' : 'false'}

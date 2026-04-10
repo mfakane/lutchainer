@@ -130,9 +130,10 @@ function updateCustomParamDropIndicators(
   paramNodeListEl: HTMLElement,
   dragState: CustomParamReorderDragState | null,
 ): void {
-  const items = Array.from(paramNodeListEl.querySelectorAll<HTMLElement>('.param-node-custom'));
+  const items = Array.from(paramNodeListEl.querySelectorAll<HTMLElement>('[data-custom-param-item="true"]'));
   for (const item of items) {
-    item.classList.remove('dragging-custom-param', 'custom-param-drop-before', 'custom-param-drop-after');
+    delete item.dataset.dragging;
+    delete item.dataset.dropPosition;
   }
 
   if (!dragState) {
@@ -145,10 +146,10 @@ function updateCustomParamDropIndicators(
       continue;
     }
     if (itemParamId === dragState.paramId) {
-      item.classList.add('dragging-custom-param');
+      item.dataset.dragging = 'true';
     }
     if (itemParamId === dragState.overParamId) {
-      item.classList.add(dragState.dropAfter ? 'custom-param-drop-after' : 'custom-param-drop-before');
+      item.dataset.dropPosition = dragState.dropAfter ? 'after' : 'before';
     }
   }
 }
@@ -167,12 +168,12 @@ function setupCustomParamReorderBindings(options: {
   const binding: ReorderDragBinding<string, CustomParamReorderDragState> = {
     containerEl: options.paramNodeListEl,
     resolveDragStart: eventTarget => {
-      const handle = eventTarget.closest<HTMLButtonElement>('.custom-param-drag-handle');
+      const handle = eventTarget.closest<HTMLButtonElement>('[data-custom-param-handle="true"]');
       if (!handle) {
         return { kind: 'ignore' };
       }
 
-      const item = handle.closest<HTMLElement>('.param-node-custom');
+      const item = handle.closest<HTMLElement>('[data-custom-param-item="true"]');
       const paramId = item?.dataset.paramId;
       if (!paramId) {
         return { kind: 'invalid', message: 'Custom param ID is invalid.' };
@@ -192,7 +193,7 @@ function setupCustomParamReorderBindings(options: {
       const dragState = customParamReorderDragState;
       const candidates: LinearDropCandidate<string>[] = [];
 
-      for (const item of Array.from(options.paramNodeListEl.querySelectorAll<HTMLElement>('.param-node-custom'))) {
+      for (const item of Array.from(options.paramNodeListEl.querySelectorAll<HTMLElement>('[data-custom-param-item="true"]'))) {
         const paramId = item.dataset.paramId;
         if (!paramId || paramId === dragState?.paramId) {
           continue;

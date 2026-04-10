@@ -64,7 +64,7 @@ export function updateStepSwatches(input: UpdateStepSwatchesInput): void {
 
     const stepId = step.id;
     const afterCanvas = stepListEl.querySelector<HTMLCanvasElement>(
-      `.preview-sphere[data-step-id="${stepId}"][data-preview="after"]`,
+      `[data-part="preview-swatch"][data-step-id="${stepId}"][data-preview="after"]`,
     );
     if (!afterCanvas) {
       continue;

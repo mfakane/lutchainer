@@ -17,7 +17,10 @@ import {
   drawParamPreviewSphereCpu,
 } from '../../../features/step/step-preview-cpu-render.ts';
 import { t, useLanguage } from '../i18n.ts';
+import { cx } from '../styles/cx.ts';
+import * as ui from '../styles/ui-primitives.css.ts';
 import { DropdownMenu } from './solid-dropdown-menu.tsx';
+import * as styles from './solid-pipeline-lists.css.ts';
 
 type StatusKind = 'success' | 'error' | 'info';
 type StatusReporter = (message: string, kind?: StatusKind) => void;
@@ -290,26 +293,29 @@ function CustomParamNode(props: CustomParamNodeProps): JSX.Element {
 
   return (
     <div
-      class="param-node param-socket param-node-custom"
+      class={ui.buttonBase}
       data-param-id={props.customParam().id}
       data-param={pipelineModel.buildCustomParamRef(props.customParam().id)}
+      data-param-socket="true"
+      data-custom-param-item="true"
       aria-label={`Connect ${props.customParam().label}`}
       title={`Connect ${props.customParam().label}`}
     >
-      <span class="param-socket-dot" aria-hidden="true"></span>
-      <div class="param-node-custom-header" data-socket-drag-ignore="true">
+      <span data-part="socket-dot" aria-hidden="true"></span>
+      <div data-part="custom-param-header" data-socket-drag-ignore="true">
         <button
           type="button"
-          class="custom-param-drag-handle"
+          class={ui.ghostButton}
           data-socket-drag-ignore="true"
+          data-custom-param-handle="true"
           draggable={true}
           aria-label={`Reorder ${props.customParam().label}`}
           onPointerDown={stopPointerPropagation}
         >
-          <span class="custom-param-drag-grip" aria-hidden="true"></span>
+          <span data-part="custom-param-grip" aria-hidden="true"></span>
         </button>
         <input
-          class="step-title-input param-node-custom-input"
+          class={cx(ui.editableTextInput, styles.customParamInput)}
           data-socket-drag-ignore="true"
           value={props.customParam().label}
           maxLength={pipelineModel.MAX_CUSTOM_PARAM_LABEL_LENGTH}
@@ -318,20 +324,20 @@ function CustomParamNode(props: CustomParamNodeProps): JSX.Element {
         />
         <button
           type="button"
-          class="step-remove param-node-custom-remove"
+          class={cx(ui.buttonBase, ui.smallActionButton, ui.removeText)}
           data-socket-drag-ignore="true"
           onClick={() => props.onRemoveCustomParam(props.customParam().id)}
         >
           {tr('pipeline.param.remove')}
         </button>
       </div>
-      <div class="param-node-custom-meta">
-        <span class="param-desc">{`u_param_${props.customParam().id}`}</span>
+      <div data-part="custom-param-meta">
+        <span data-part="param-desc">{`u_param_${props.customParam().id}`}</span>
       </div>
-      <div class="param-node-custom-slider-row" data-socket-drag-ignore="true">
+      <div data-part="custom-param-slider-row" data-socket-drag-ignore="true">
         <input
           type="range"
-          class="material-range-input param-node-custom-slider"
+          class={ui.rangeInput}
           data-socket-drag-ignore="true"
           min="0"
           max="1"
@@ -340,7 +346,7 @@ function CustomParamNode(props: CustomParamNodeProps): JSX.Element {
           onInput={handleValueSliderInput}
           onWheel={handleValueSliderWheel}
         />
-        <span class="param-node-custom-value">{props.customParam().defaultValue.toFixed(2)}</span>
+        <span data-part="custom-param-value">{props.customParam().defaultValue.toFixed(2)}</span>
       </div>
     </div>
   );
@@ -517,7 +523,7 @@ function ParamNodeList(props: ParamNodeListProps): JSX.Element {
     if (!current) {
       return;
     }
-    const anchor = document.querySelector<HTMLElement>(`.param-node[data-param="${current.param}"]`);
+    const anchor = document.querySelector<HTMLElement>(`[data-param-socket="true"][data-param="${current.param}"]`);
     if (!(anchor instanceof HTMLElement)) {
       hidePreview();
       return;
@@ -533,21 +539,21 @@ function ParamNodeList(props: ParamNodeListProps): JSX.Element {
   });
 
   return (
-    <>
+    <div class={styles.paramRoot}>
       <For each={pipelineModel.PARAM_GROUPS}>
         {group => (
-          <section class={`param-group param-group-${group.tone}`} data-group={group.key}>
-            <header class="param-group-head">
-              <div class="param-group-title-row">
-                <div class="param-group-title">{group.label}</div>
+          <section data-param-group={group.key} data-param-group-tone={group.tone}>
+            <header data-part="param-group-head">
+              <div data-part="param-group-title-row">
+                <div data-part="param-group-title">{group.label}</div>
                 <Show when={group.tone === 'feedback'}>
-                  <span class="param-group-badge">{tr('pipeline.paramGroup.prevColorBadge')}</span>
+                  <span data-part="param-group-badge">{tr('pipeline.paramGroup.prevColorBadge')}</span>
                 </Show>
               </div>
-              <div class="param-group-desc">{tr(group.descriptionKey)}</div>
+              <div data-part="param-group-desc">{tr(group.descriptionKey)}</div>
             </header>
 
-            <div class="param-group-nodes">
+            <div data-part="param-group-nodes">
               <For each={group.params}>
                 {paramName => {
                   const param = pipelineModel.getParamDef(paramName);
@@ -555,7 +561,8 @@ function ParamNodeList(props: ParamNodeListProps): JSX.Element {
                   return (
                     <button
                       type="button"
-                      class="param-node param-socket"
+                      class={ui.buttonBase}
+                      data-param-socket="true"
                       data-param={param.key}
                       title={isPreviewTarget(param.key) ? undefined : tr('pipeline.param.connectTitle', { label: param.label })}
                       aria-label={tr('pipeline.param.connectTitle', { label: param.label })}
@@ -565,9 +572,9 @@ function ParamNodeList(props: ParamNodeListProps): JSX.Element {
                       onBlur={hidePreview}
                       aria-describedby={isPreviewTarget(param.key) ? `param-preview-${param.key}` : undefined}
                     >
-                      <span class="param-socket-dot" aria-hidden="true"></span>
-                      <span class="param-name">{param.label}</span>
-                      <span class="param-desc">{param.description}</span>
+                      <span data-part="socket-dot" aria-hidden="true"></span>
+                      <span data-part="param-name">{param.label}</span>
+                      <span data-part="param-desc">{param.description}</span>
                     </button>
                   );
                 }}
@@ -576,15 +583,15 @@ function ParamNodeList(props: ParamNodeListProps): JSX.Element {
           </section>
         )}
       </For>
-      <section class="param-group param-group-default" data-group="custom-params">
-        <header class="param-group-head">
-          <div class="param-group-title-row">
-            <div class="param-group-title">Custom Params</div>
+      <section data-param-group="custom-params" data-param-group-tone="default">
+        <header data-part="param-group-head">
+          <div data-part="param-group-title-row">
+            <div data-part="param-group-title">Custom Params</div>
           </div>
-          <div class="param-group-desc">{tr('pipeline.paramGroup.customParamsDesc')}</div>
+          <div data-part="param-group-desc">{tr('pipeline.paramGroup.customParamsDesc')}</div>
         </header>
 
-        <div class="param-group-nodes">
+        <div data-part="param-group-nodes">
           <Index each={props.customParams()}>
             {customParam => (
               <CustomParamNode
@@ -596,14 +603,14 @@ function ParamNodeList(props: ParamNodeListProps): JSX.Element {
             )}
           </Index>
           
-          <button type="button" class="btn btn-secondary btn-inline-add" onClick={props.onAddCustomParam}>{tr('pipeline.param.add')}</button>
+          <button type="button" class={cx(ui.buttonBase, ui.secondaryButton, ui.inlineAddButton)} onClick={props.onAddCustomParam}>{tr('pipeline.param.add')}</button>
         </div>
       </section>
       <Show when={previewState()}>
         {state => (
           <Portal>
             <span
-              class="param-preview-tooltip"
+              class={styles.tooltip}
               id={`param-preview-${state().param}`}
               role="tooltip"
               aria-label={tr('pipeline.param.previewTooltip', { label: pipelineModel.getParamDef(state().param).label })}
@@ -612,9 +619,9 @@ function ParamNodeList(props: ParamNodeListProps): JSX.Element {
                 top: `${state().top}px`,
               }}
             >
-              <span class="param-preview-tooltip-label">{tr('pipeline.param.previewScale')}</span>
+              <span class={styles.tooltipLabel}>{tr('pipeline.param.previewScale')}</span>
               <canvas
-                class="param-preview-tooltip-canvas"
+                class={styles.tooltipCanvas}
                 width={PARAM_PREVIEW_SIZE}
                 height={PARAM_PREVIEW_SIZE}
                 ref={element => {
@@ -626,7 +633,7 @@ function ParamNodeList(props: ParamNodeListProps): JSX.Element {
           </Portal>
         )}
       </Show>
-    </>
+    </div>
   );
 }
 
@@ -704,10 +711,10 @@ function StepList(props: StepListProps): JSX.Element {
   };
 
   return (
-    <>
+    <div class={styles.stepRoot}>
       <Show
         when={props.steps().length > 0}
-        fallback={<div class="step-core">{tr('pipeline.step.empty')}</div>}
+        fallback={<div data-step-empty="true">{tr('pipeline.step.empty')}</div>}
       >
         <For each={props.steps()}>
           {(step, index) => {
@@ -718,13 +725,14 @@ function StepList(props: StepListProps): JSX.Element {
             const [crosshairUv, setCrosshairUv] = createSignal<{ u: number; v: number } | null>(null);
 
             return (
-              <article class={step.muted ? 'step-item step-item-muted' : 'step-item'} data-step-id={step.id}>
-                <section class="step-head">
-                  <div class="step-title-row">
+              <article data-step-item="true" data-step-id={step.id} data-muted={step.muted ? 'true' : undefined}>
+                <section data-part="step-head">
+                  <div data-part="step-title-row">
                     <button
                       type="button"
-                      class="step-drag-handle"
+                      class={ui.ghostButton}
                       draggable={true}
+                      data-step-drag-handle="true"
                       data-step-id={step.id}
                       title={tr('pipeline.step.dragMove')}
                     >
@@ -732,7 +740,7 @@ function StepList(props: StepListProps): JSX.Element {
                     </button>
                     <input
                       type="text"
-                      class="step-title-input"
+                      class={cx(ui.editableTextInput, styles.stepTitleInput)}
                       value={resolveStepLabel(step, displayIndex())}
                       maxLength={MAX_STEP_LABEL_LENGTH}
                       aria-label={tr('pipeline.step.titleAria', { index: displayIndex() })}
@@ -761,10 +769,10 @@ function StepList(props: StepListProps): JSX.Element {
                       }}
                     />
                   </div>
-                  <div class="step-actions">
+                  <div data-part="step-actions">
                     <button
                       type="button"
-                      class={step.muted ? 'btn btn-step-action step-mute active' : 'btn btn-step-action step-mute'}
+                      class={cx(ui.buttonBase, ui.smallActionButton, step.muted && ui.activeAccent)}
                       data-step-id={step.id}
                       aria-pressed={step.muted ? 'true' : 'false'}
                       onClick={() => {
@@ -779,7 +787,7 @@ function StepList(props: StepListProps): JSX.Element {
                     </button>
                     <button
                       type="button"
-                      class="btn btn-step-action step-duplicate"
+                      class={cx(ui.buttonBase, ui.smallActionButton)}
                       data-step-id={step.id}
                       onClick={() => {
                         if (shouldIgnoreClick()) {
@@ -793,7 +801,7 @@ function StepList(props: StepListProps): JSX.Element {
                     </button>
                     <button
                       type="button"
-                      class="btn btn-step-action step-remove"
+                      class={cx(ui.buttonBase, ui.smallActionButton, ui.removeText)}
                       data-step-id={step.id}
                       onClick={() => {
                         if (shouldIgnoreClick()) {
@@ -808,37 +816,39 @@ function StepList(props: StepListProps): JSX.Element {
                   </div>
                 </section>
 
-                <aside class="step-socket-rail">
+                <aside data-part="step-socket-rail">
                   <button
                     type="button"
-                    class="step-socket"
+                    class={styles.socketButton}
+                    data-step-socket="true"
                     data-step-id={step.id}
                     data-axis="x"
                     title={`X: ${pipelineModel.getParamLabel(step.xParam, props.customParams())}`}
                   >
-                    <span class="step-socket-dot" aria-hidden="true"></span>
-                    <span class="step-socket-axis-label">X</span>
-                    <span class="step-socket-param">{pipelineModel.getParamLabel(step.xParam, props.customParams())}</span>
+                    <span data-part="socket-dot" aria-hidden="true"></span>
+                    <span data-part="step-socket-axis-label">X</span>
+                    <span data-part="step-socket-param">{pipelineModel.getParamLabel(step.xParam, props.customParams())}</span>
                   </button>
                   <button
                     type="button"
-                    class="step-socket"
+                    class={styles.socketButton}
+                    data-step-socket="true"
                     data-step-id={step.id}
                     data-axis="y"
                     title={`Y: ${pipelineModel.getParamLabel(step.yParam, props.customParams())}`}
                   >
-                    <span class="step-socket-dot" aria-hidden="true"></span>
-                    <span class="step-socket-axis-label">Y</span>
-                    <span class="step-socket-param">{pipelineModel.getParamLabel(step.yParam, props.customParams())}</span>
+                    <span data-part="socket-dot" aria-hidden="true"></span>
+                    <span data-part="step-socket-axis-label">Y</span>
+                    <span data-part="step-socket-param">{pipelineModel.getParamLabel(step.yParam, props.customParams())}</span>
                   </button>
                 </aside>
 
-                <section class="step-core">
-                  <div class="lut-row">
-                    <label class="lut-select-field">
-                      <span class="lut-select-label">{tr('pipeline.step.lut')}</span>
+                <section data-part="step-core">
+                  <div data-part="lut-row">
+                    <label data-part="lut-select-field">
+                      <span data-part="lut-select-label">{tr('pipeline.step.lut')}</span>
                       <select
-                        class="control-select step-lut-select"
+                        class={ui.controlSelect}
                         data-step-id={step.id}
                         onChange={event => {
                           const input = event.currentTarget as HTMLSelectElement | null;
@@ -868,11 +878,11 @@ function StepList(props: StepListProps): JSX.Element {
                       </select>
                     </label>
 
-                    <div class="lut-thumb-wrap">
-                      <img class="lut-thumb checker-bg" src={selectedLut()?.thumbUrl ?? ''} alt="LUT thumbnail" />
+                    <div data-part="lut-thumb-wrap">
+                      <img class={ui.checkerBg} data-part="lut-thumb" src={selectedLut()?.thumbUrl ?? ''} alt="LUT thumbnail" />
                       <Show when={crosshairUv() !== null}>
                         <div
-                          class="lut-crosshair"
+                          data-part="lut-crosshair"
                           style={`--ch-x: ${(crosshairUv()?.u ?? 0) * 100}%; --ch-y: ${(crosshairUv()?.v ?? 0) * 100}%`}
                           aria-hidden="true"
                         />
@@ -880,11 +890,11 @@ function StepList(props: StepListProps): JSX.Element {
                     </div>
                   </div>
 
-                  <div class="step-mode-row">
-                    <label class="step-mode-field">
-                      <span class="op-label">{tr('pipeline.step.blendMode')}</span>
+                  <div>
+                    <label data-part="step-mode-field">
+                      <span data-part="op-label">{tr('pipeline.step.blendMode')}</span>
                       <select
-                        class="control-select step-blend-mode-select"
+                        class={ui.controlSelect}
                         data-step-id={step.id}
                         value={step.blendMode}
                         onChange={event => {
@@ -911,13 +921,13 @@ function StepList(props: StepListProps): JSX.Element {
                   </div>
 
                   <Show when={editableChannels().length > 0}>
-                    <div class="op-grid">
+                    <div data-part="op-grid">
                       <For each={editableChannels()}>
                         {channel => (
-                          <label class="op-item">
-                            <span class="op-label">{channel.toUpperCase()}</span>
+                          <label data-part="op-item">
+                            <span data-part="op-label">{channel.toUpperCase()}</span>
                             <select
-                              class="control-select step-op-select"
+                              class={ui.controlSelect}
                               data-step-id={step.id}
                               data-channel={channel}
                               value={step.ops[channel]}
@@ -948,9 +958,10 @@ function StepList(props: StepListProps): JSX.Element {
                   </Show>
                 </section>
 
-                <aside class="step-preview">
+                <aside data-part="step-preview">
                   <canvas
-                    class="preview-swatch preview-sphere"
+                    class={styles.stepPreviewCanvas}
+                    data-part="preview-swatch"
                     data-step-id={step.id}
                     data-preview="after"
                     aria-label={tr('pipeline.step.previewAria', { index: index() + 1 })}
@@ -973,8 +984,8 @@ function StepList(props: StepListProps): JSX.Element {
         </For>
       </Show>
 
-      <button type="button" class="btn btn-secondary btn-inline-add" onClick={handleAddStepClick}>{tr('pipeline.step.add')}</button>
-    </>
+      <button type="button" class={cx(ui.buttonBase, ui.secondaryButton, ui.inlineAddButton)} onClick={handleAddStepClick}>{tr('pipeline.step.add')}</button>
+    </div>
   );
 }
 
@@ -1040,25 +1051,26 @@ function LutStripList(props: LutStripListProps): JSX.Element {
   };
 
   return (
-    <>
-      <Show when={props.luts().length > 0} fallback={<div class="lut-strip-empty">{tr('pipeline.lut.empty')}</div>}>
+    <div class={styles.lutRoot}>
+      <Show when={props.luts().length > 0} fallback={<div data-lut-empty="true">{tr('pipeline.lut.empty')}</div>}>
         <For each={props.luts()}>
           {lut => (
-            <article class="lut-strip-item" draggable={true} data-lut-id={lut.id}>
-              <div class="lut-strip-thumb-wrap checker-bg">
-                <img class="lut-strip-thumb" src={lut.thumbUrl} alt={`${lut.name} thumbnail`} loading="lazy" />
+            <article data-lut-item="true" draggable={true} data-lut-id={lut.id}>
+              <div class={ui.checkerBg} data-part="lut-thumb-wrap">
+                <img data-part="lut-thumb" src={lut.thumbUrl} alt={`${lut.name} thumbnail`} loading="lazy" />
               </div>
-              <div class="lut-strip-meta">
-                <div class="lut-strip-name">{lut.name}</div>
-                <div class="lut-strip-stats">{tr('pipeline.lut.stats', { width: lut.width, height: lut.height, count: usageCount(lut.id) })}</div>
-                <div class="lut-strip-actions">
+              <div data-part="lut-meta">
+                <div data-part="lut-name">{lut.name}</div>
+                <div data-part="lut-stats">{tr('pipeline.lut.stats', { width: lut.width, height: lut.height, count: usageCount(lut.id) })}</div>
+                <div data-part="lut-actions">
                   <Show
                     when={lut.ramp2dData}
                     fallback={
                       <button
                         type="button"
-                        class="lut-strip-remove"
+                        class={cx(ui.buttonBase, ui.smallActionButton, ui.removeText)}
                         data-lut-id={lut.id}
+                        data-lut-remove="true"
                         aria-label={tr('pipeline.lut.removeAria', { name: lut.name })}
                         onClick={() => handleRemoveLut(lut.id)}
                       >
@@ -1067,9 +1079,9 @@ function LutStripList(props: LutStripListProps): JSX.Element {
                     }
                   >
                     <DropdownMenu
-                      wrapperClass="lut-strip-kebab-wrap"
-                      triggerClass="lut-strip-kebab"
-                      menuClass="lut-strip-menu"
+                      wrapperClass={ui.menuWrap}
+                      triggerClass={cx(ui.buttonBase, ui.secondaryButton, styles.lutKebabTrigger)}
+                      menuClass={cx(ui.menu, styles.lutMenu)}
                       triggerAriaLabel={tr('pipeline.lut.kebabAria', { name: lut.name })}
                       menuRole="menu"
                       floating={true}
@@ -1078,19 +1090,19 @@ function LutStripList(props: LutStripListProps): JSX.Element {
                         <>
                           <button
                             type="button"
-                            class="lut-strip-menu-item"
+                            class={ui.menuItem}
                             role="menuitem"
                             onClick={() => { controls.closeMenu(); props.onEditLut?.(lut.id); }}
                           >{tr('pipeline.lut.edit')}</button>
                           <button
                             type="button"
-                            class="lut-strip-menu-item"
+                            class={ui.menuItem}
                             role="menuitem"
                             onClick={() => { controls.closeMenu(); props.onDuplicateLut?.(lut.id); }}
                           >{tr('pipeline.lut.duplicate')}</button>
                           <button
                             type="button"
-                            class="lut-strip-menu-item lut-strip-menu-item--danger"
+                            class={cx(ui.menuItem, ui.removeText)}
                             role="menuitem"
                             onClick={() => { controls.closeMenu(); handleRemoveLut(lut.id); }}
                           >{tr('pipeline.step.remove')}</button>
@@ -1106,15 +1118,15 @@ function LutStripList(props: LutStripListProps): JSX.Element {
         <Show
           when={props.onNewLut}
           fallback={
-            <div class="lut-strip-add-item" onClick={openFilePicker} title={tr('pipeline.lut.add')}>
-              <button type="button">{tr('pipeline.lut.add')}</button>
+            <div data-part="lut-add-item" onClick={openFilePicker} title={tr('pipeline.lut.add')}>
+              <button type="button" class={ui.ghostButton}>{tr('pipeline.lut.add')}</button>
             </div>
           }
         >
-          <div class="lut-strip-add-item lut-strip-add-item--split">
+          <div data-part="lut-add-item">
             <button
               type="button"
-              class="lut-strip-add-new"
+              data-part="lut-add-new"
               aria-label={tr('lutEditor.newLutAria')}
               onClick={props.onNewLut}
             >
@@ -1122,7 +1134,7 @@ function LutStripList(props: LutStripListProps): JSX.Element {
             </button>
             <button
               type="button"
-              class="lut-strip-add-browse"
+              data-part="lut-add-browse"
               aria-label={tr('pipeline.lut.browseAria')}
               onClick={openFilePicker}
             >
@@ -1136,13 +1148,12 @@ function LutStripList(props: LutStripListProps): JSX.Element {
           fileInputRef = element;
         }}
         type="file"
-        class="lut-strip-file-input"
         accept="image/*"
         multiple
         hidden
         onChange={event => void handleFileInputChange(event)}
       />
-    </>
+    </div>
   );
 }
 

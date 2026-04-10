@@ -62,9 +62,8 @@ export interface ReorderIndicatorBinding<TId extends string | number> {
   containerEl: HTMLElement;
   itemSelector: string;
   getItemId: (item: HTMLElement) => TId | null;
-  draggingClass: string;
-  dropBeforeClass: string;
-  dropAfterClass: string;
+  draggingAttribute: string;
+  dropPositionAttribute: string;
 }
 
 export interface ConnectionPathOptions {
@@ -113,14 +112,11 @@ function assertValidReorderIndicatorBinding<TId extends string | number>(
   if (typeof binding.getItemId !== 'function') {
     throw new Error('Reorder indicator getItemId must be a function.');
   }
-  if (!isNonEmptyString(binding.draggingClass)) {
-    throw new Error('Reorder indicator draggingClass must be a non-empty string.');
+  if (!isNonEmptyString(binding.draggingAttribute)) {
+    throw new Error('Reorder indicator draggingAttribute must be a non-empty string.');
   }
-  if (!isNonEmptyString(binding.dropBeforeClass)) {
-    throw new Error('Reorder indicator dropBeforeClass must be a non-empty string.');
-  }
-  if (!isNonEmptyString(binding.dropAfterClass)) {
-    throw new Error('Reorder indicator dropAfterClass must be a non-empty string.');
+  if (!isNonEmptyString(binding.dropPositionAttribute)) {
+    throw new Error('Reorder indicator dropPositionAttribute must be a non-empty string.');
   }
 }
 
@@ -163,7 +159,7 @@ export function isValidSocketAxis(value: string): value is SocketAxis {
 }
 
 export function getParamSocketAnchorPoint(element: HTMLElement, workspaceRect: DOMRect): AnchorPoint {
-  const anchor = element.querySelector<HTMLElement>('.param-socket-dot') ?? element;
+  const anchor = element.querySelector<HTMLElement>('[data-part="socket-dot"]') ?? element;
   const rect = anchor.getBoundingClientRect();
   return {
     x: rect.left + rect.width * 0.5 - workspaceRect.left,
@@ -172,7 +168,7 @@ export function getParamSocketAnchorPoint(element: HTMLElement, workspaceRect: D
 }
 
 export function getStepSocketAnchorPoint(element: HTMLElement, workspaceRect: DOMRect): AnchorPoint {
-  const anchor = element.querySelector<HTMLElement>('.step-socket-dot') ?? element;
+  const anchor = element.querySelector<HTMLElement>('[data-part="socket-dot"]') ?? element;
   const rect = anchor.getBoundingClientRect();
   return {
     x: rect.left + rect.width * 0.5 - workspaceRect.left,
@@ -328,7 +324,8 @@ export function clearReorderDropIndicators<TId extends string | number>(binding:
   assertValidReorderIndicatorBinding(binding);
   const items = getItemElements(binding);
   items.forEach(item => {
-    item.classList.remove(binding.draggingClass, binding.dropBeforeClass, binding.dropAfterClass);
+    delete item.dataset[binding.draggingAttribute];
+    delete item.dataset[binding.dropPositionAttribute];
   });
 }
 
@@ -344,7 +341,9 @@ export function updateReorderDropIndicators<TId extends string | number>(
   assertValidReorderIndicatorState(state);
 
   const draggingEl = findIndicatorItemById(binding, state.draggedId);
-  draggingEl?.classList.add(binding.draggingClass);
+  if (draggingEl) {
+    draggingEl.dataset[binding.draggingAttribute] = 'true';
+  }
 
   if (state.overId === null || state.overId === state.draggedId) {
     return;
@@ -355,7 +354,7 @@ export function updateReorderDropIndicators<TId extends string | number>(
     return;
   }
 
-  targetEl.classList.add(state.dropAfter ? binding.dropAfterClass : binding.dropBeforeClass);
+  targetEl.dataset[binding.dropPositionAttribute] = state.dropAfter ? 'after' : 'before';
 }
 
 function createStepReorderBinding(stepListEl: HTMLElement): ReorderIndicatorBinding<string> {
@@ -365,14 +364,13 @@ function createStepReorderBinding(stepListEl: HTMLElement): ReorderIndicatorBind
 
   return {
     containerEl: stepListEl,
-    itemSelector: '.step-item',
+    itemSelector: '[data-step-item="true"]',
     getItemId: item => {
       const rawStepId = item.dataset.stepId;
       return isNonEmptyString(rawStepId) ? rawStepId : null;
     },
-    draggingClass: 'dragging-step',
-    dropBeforeClass: 'step-drop-before',
-    dropAfterClass: 'step-drop-after',
+    draggingAttribute: 'dragging',
+    dropPositionAttribute: 'dropPosition',
   };
 }
 
@@ -383,14 +381,13 @@ function createLutReorderBinding(lutStripListEl: HTMLElement): ReorderIndicatorB
 
   return {
     containerEl: lutStripListEl,
-    itemSelector: '.lut-strip-item',
+    itemSelector: '[data-lut-item="true"]',
     getItemId: item => {
       const lutId = item.dataset.lutId;
       return isNonEmptyString(lutId) ? lutId : null;
     },
-    draggingClass: 'dragging-lut',
-    dropBeforeClass: 'lut-drop-before',
-    dropAfterClass: 'lut-drop-after',
+    draggingAttribute: 'dragging',
+    dropPositionAttribute: 'dropPosition',
   };
 }
 

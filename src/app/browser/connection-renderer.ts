@@ -125,8 +125,8 @@ function buildStepConnectionSpecs(
     ];
 
     for (const edge of edges) {
-      const source = pipelineWorkspaceEl.querySelector<HTMLElement>(`.param-socket[data-param="${edge.param}"]`);
-      const target = pipelineWorkspaceEl.querySelector<HTMLElement>(`.step-socket[data-step-id="${step.id}"][data-axis="${edge.axis}"]`);
+      const source = pipelineWorkspaceEl.querySelector<HTMLElement>(`[data-param-socket="true"][data-param="${edge.param}"]`);
+      const target = pipelineWorkspaceEl.querySelector<HTMLElement>(`[data-step-socket="true"][data-step-id="${step.id}"][data-axis="${edge.axis}"]`);
       if (!source || !target) {
         continue;
       }

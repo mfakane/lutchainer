@@ -25,6 +25,9 @@ import {
 import { colorToHex, parseHexColor, uid } from '../../../features/pipeline/pipeline-model.ts';
 import type { LutModel } from '../../../features/step/step-model.ts';
 import { t, useLanguage } from '../i18n.ts';
+import { cx } from '../styles/cx.ts';
+import * as ui from '../styles/ui-primitives.css.ts';
+import * as styles from './solid-lut-editor-dialog.css.ts';
 import { DropdownMenu } from './solid-dropdown-menu.tsx';
 
 // Pixels the pointer must travel perpendicular to a rail to trigger delete
@@ -881,36 +884,40 @@ function LutEditorDialogContent(props: { options: LutEditorDialogContentOptions 
   };
 
   const rampKnobClass = (ramp: ColorRamp): string => {
-    const parts = ['lut-editor-ramp-knob'];
-    if (selectedRampId() === ramp.id) parts.push('selected');
-    if (isRampBoundary(ramp.id)) parts.push('boundary');
-    if (draggingRampDeleteId() === ramp.id) parts.push('pending-delete');
-    return parts.join(' ');
+    return cx(
+      styles.rampKnob,
+      selectedRampId() === ramp.id && styles.selected,
+      isRampBoundary(ramp.id) && styles.boundary,
+      draggingRampDeleteId() === ramp.id && styles.pendingDeleteRamp,
+    );
   };
 
   const stopKnobClass = (stop: ColorStop): string => {
-    const parts = ['lut-editor-stop-knob'];
-    if (focusedStopId() === stop.id) parts.push('focused');
-    if (isStopBoundary(stop.id)) parts.push('boundary');
-    if (draggingStopDeleteId() === stop.id) parts.push('pending-delete');
-    return parts.join(' ');
+    return cx(
+      styles.stopKnob,
+      focusedStopId() === stop.id && styles.focused,
+      isStopBoundary(stop.id) && styles.boundary,
+      draggingStopDeleteId() === stop.id && styles.pendingDeleteStop,
+    );
   };
 
   const previewStopKnobClass = (stop: ColorStop): string => {
     const placement = stopKnobPlacements().get(stop.id) ?? 'below';
-    const parts = ['lut-editor-preview-stop-knob', placement];
-    if (focusedStopId() === stop.id) parts.push('focused');
-    if (isStopBoundary(stop.id)) parts.push('boundary');
-    return parts.join(' ');
+    return cx(
+      styles.previewStopKnob,
+      placement === 'above' && styles.above,
+      focusedStopId() === stop.id && styles.focused,
+      isStopBoundary(stop.id) && styles.boundary,
+    );
   };
 
   return (
-    <>
-      <div class="lut-editor-head">
+    <div class={styles.root}>
+      <div class={styles.head}>
         <input
           id="lut-editor-dialog-title"
           type="text"
-          class="lut-editor-title-input"
+          class={styles.titleInput}
           value={rampData()?.name ?? ''}
           onInput={e => {
             const name = (e.target as HTMLInputElement).value;
@@ -918,25 +925,25 @@ function LutEditorDialogContent(props: { options: LutEditorDialogContentOptions 
             if (data) setRampData({ ...data, name });
           }}
         />
-        <div class="lut-editor-head-actions">
-          <button type="button" class="btn btn-submit" onClick={handleApply} disabled={!rampData()}>
+        <div class={styles.headActions}>
+          <button type="button" class={cx(ui.buttonBase, ui.submitButton)} onClick={handleApply} disabled={!rampData()}>
             {tr('lutEditor.apply')}
           </button>
-          <button type="button" class="btn btn-secondary" onClick={props.options.onClose}>
+          <button type="button" class={cx(ui.buttonBase, ui.secondaryButton)} onClick={props.options.onClose}>
             {tr('lutEditor.cancel')}
           </button>
         </div>
       </div>
 
-      <div class="lut-editor-body">
+      <div class={styles.body}>
         {/* Left: canvas + knob rails */}
-        <div class="lut-editor-preview-col">
-          <div class={`lut-editor-canvas-area${rampData()?.axisSwap ? ' axis-swapped' : ''}`}>
+        <div class={styles.previewCol}>
+          <div class={cx(styles.canvasArea, rampData()?.axisSwap && styles.axisSwapped)}>
             {/* Main 2D preview canvas */}
-            <div class="lut-editor-canvas-wrap checker-bg" onClick={handleCanvasClick}>
+            <div class={cx(styles.canvasWrap, ui.checkerBg)} onClick={handleCanvasClick}>
               <canvas
                 ref={el => { previewCanvasRef = el; }}
-                class="lut-editor-canvas"
+                class={styles.canvas}
                 width={rampData()?.width ?? 256}
                 height={rampData()?.height ?? 256}
               />
@@ -946,7 +953,7 @@ function LutEditorDialogContent(props: { options: LutEditorDialogContentOptions 
                 Click on empty area → add ramp.
                 Drag knob left past threshold → delete ramp. */}
             <div
-              class="lut-editor-ramp-knob-strip"
+              class={styles.rampKnobStrip}
               ref={el => { rampKnobStripRef = el; }}
               title={tr('lutEditor.rampRailHint')}
               onPointerDown={(ev: PointerEvent) => handleRampStripPointerDown(ev)}
@@ -973,7 +980,7 @@ function LutEditorDialogContent(props: { options: LutEditorDialogContentOptions 
                 Click on empty area → add stop.
                 Drag knob up past threshold → delete stop. */}
             <div
-              class="lut-editor-stop-knob-strip"
+              class={styles.stopKnobStrip}
               ref={el => { stopKnobStripRef = el; }}
               title={tr('lutEditor.stopRailHint')}
               onPointerDown={(ev: PointerEvent) => handleStopStripPointerDown(ev)}
@@ -998,8 +1005,8 @@ function LutEditorDialogContent(props: { options: LutEditorDialogContentOptions 
           </div>
 
           {/* Axis orientation selector */}
-          <div class="lut-editor-axis-options">
-            <label class="lut-editor-axis-option">
+          <div class={styles.axisOptions}>
+            <label class={styles.axisOption}>
               <input
                 type="radio"
                 name="lut-editor-axis"
@@ -1011,7 +1018,7 @@ function LutEditorDialogContent(props: { options: LutEditorDialogContentOptions 
               />
               {tr('lutEditor.axisStopXRampY')}
             </label>
-            <label class="lut-editor-axis-option">
+            <label class={styles.axisOption}>
               <input
                 type="radio"
                 name="lut-editor-axis"
@@ -1027,15 +1034,15 @@ function LutEditorDialogContent(props: { options: LutEditorDialogContentOptions 
         </div>
 
         {/* Right: ramp list + focused stop editor */}
-        <div class="lut-editor-right-col">
+        <div class={styles.rightCol}>
           {/* Ramp list */}
-          <div class="lut-editor-ramp-section">
-            <div class="lut-editor-section-header">
-              <div class="lut-editor-section-label">{tr('lutEditor.rampListLabel')}</div>
-              <div class="lut-editor-section-header-actions">
+          <div class={styles.rampSection}>
+            <div class={styles.sectionHeader}>
+              <div class={styles.sectionLabel}>{tr('lutEditor.rampListLabel')}</div>
+              <div class={styles.sectionHeaderActions}>
                 <button
                   type="button"
-                  class="btn btn-secondary lut-editor-ramp-add"
+                  class={cx(ui.buttonBase, ui.secondaryButton)}
                   onClick={handleAddRamp}
                   disabled={!rampData() || (rampData()?.ramps.length ?? 0) >= MAX_RAMPS}
                 >
@@ -1043,9 +1050,9 @@ function LutEditorDialogContent(props: { options: LutEditorDialogContentOptions 
                 </button>
                 <Show when={selectedRamp()}>
                   <DropdownMenu
-                    wrapperClass="menu-wrap"
-                    triggerClass="btn menu-trigger"
-                    menuClass="menu lut-editor-kebab-menu"
+                    wrapperClass={ui.menuWrap}
+                    triggerClass={cx(ui.buttonBase, ui.menuTrigger)}
+                    menuClass={cx(ui.menu, styles.kebabMenu)}
                     triggerAriaLabel={tr('lutEditor.rampMenuAria')}
                     menuRole="menu"
                   >
@@ -1053,7 +1060,7 @@ function LutEditorDialogContent(props: { options: LutEditorDialogContentOptions 
                       <>
                         <button
                           type="button"
-                          class="btn menu-item"
+                          class={ui.menuItem}
                           role="menuitem"
                           disabled={(rampData()?.ramps.length ?? 0) >= MAX_RAMPS}
                           onClick={() => {
@@ -1065,7 +1072,7 @@ function LutEditorDialogContent(props: { options: LutEditorDialogContentOptions 
                         </button>
                         <button
                           type="button"
-                          class="btn menu-item"
+                          class={ui.menuItem}
                           role="menuitem"
                           onClick={() => {
                             controls.closeMenu();
@@ -1080,27 +1087,27 @@ function LutEditorDialogContent(props: { options: LutEditorDialogContentOptions 
                 </Show>
               </div>
             </div>
-            <div class="lut-editor-ramp-list">
+            <div class={styles.rampList}>
               <For each={rampData()?.ramps ?? []}>
                 {(ramp, getIdx) => (
                   <>
                     <Show when={showDropBefore(getIdx())}>
-                      <div class="lut-editor-ramp-drop-indicator" />
+                      <div class={styles.rampDropIndicator} />
                     </Show>
                     <div
-                      class={`lut-editor-ramp-row${selectedRampId() === ramp.id ? ' selected' : ''}${draggingRampListIdx() === getIdx() ? ' dragging' : ''}`}
+                      class={cx(styles.rampRow, selectedRampId() === ramp.id && styles.rampRowSelected, draggingRampListIdx() === getIdx() && styles.rampRowDragging)}
                       ref={el => { rampRowElMap.set(ramp.id, el); }}
                       onPointerDown={ev => startRampListDrag(getIdx(), ev)}
                       onClick={() => { if (!rampListDragOccurredRef) setSelectedRampId(ramp.id); }}
                     >
-                      <div class="lut-editor-ramp-swatch" style={rampSwatchStyle(ramp)} />
-                      <span class="lut-editor-ramp-y">
+                      <div class={styles.rampSwatch} style={rampSwatchStyle(ramp)} />
+                      <span class={styles.rampY}>
                         {tr('lutEditor.rampPosition')}: {formatPositionPercent(ramp.position)}%
                       </span>
                       <Show when={canRemoveRamp(ramp.id)}>
                         <button
                           type="button"
-                          class="btn btn-ghost lut-editor-ramp-remove"
+                          class={cx(ui.buttonBase, ui.ghostButton, ui.removeText)}
                           onClick={ev => {
                             ev.stopPropagation();
                             handleRemoveRamp(ramp.id);
@@ -1114,18 +1121,18 @@ function LutEditorDialogContent(props: { options: LutEditorDialogContentOptions 
                 )}
               </For>
               <Show when={showDropAfterLast()}>
-                <div class="lut-editor-ramp-drop-indicator" />
+                <div class={styles.rampDropIndicator} />
               </Show>
             </div>
             <Show when={selectedRamp()}>
               {getSelectedRamp => (
-                <div class="lut-editor-ramp-position-editor">
-                  <label class="lut-editor-stop-editor-label">{tr('lutEditor.rampPosition')}</label>
+                <div class={styles.rampPositionEditor}>
+                  <label class={styles.stopEditorLabel}>{tr('lutEditor.rampPosition')}</label>
                   <input
                     ref={rampPositionInputRef}
                     type="text"
                     inputmode="decimal"
-                    class="lut-editor-stop-pos-input"
+                    class={styles.posInput}
                     value={editingRampPositionId() === getSelectedRamp().id
                       ? rampPositionDraft()
                       : formatPositionPercent(getSelectedRamp().position)}
@@ -1147,20 +1154,20 @@ function LutEditorDialogContent(props: { options: LutEditorDialogContentOptions 
                     }}
                     onWheel={ev => handleRampPositionWheel(getSelectedRamp().id, getSelectedRamp().position, ev)}
                   />
-                  <span class="lut-editor-stop-editor-unit">%</span>
+                  <span class={styles.stopEditorUnit}>%</span>
                 </div>
               )}
             </Show>
           </div>
 
           {/* Focused stop editor */}
-          <div class="lut-editor-stop-section">
-            <div class="lut-editor-section-header">
-              <div class="lut-editor-section-label">{tr('lutEditor.stopEditorLabel')}</div>
-              <div class="lut-editor-section-header-actions">
+          <div class={styles.stopSection}>
+            <div class={styles.sectionHeader}>
+              <div class={styles.sectionLabel}>{tr('lutEditor.stopEditorLabel')}</div>
+              <div class={styles.sectionHeaderActions}>
                 <button
                   type="button"
-                  class="btn btn-secondary lut-editor-stop-add"
+                  class={cx(ui.buttonBase, ui.secondaryButton)}
                   onClick={handleAddStop}
                   disabled={!selectedRamp() || (selectedRamp()?.stops.length ?? 0) >= MAX_STOPS_PER_RAMP}
                 >
@@ -1169,7 +1176,7 @@ function LutEditorDialogContent(props: { options: LutEditorDialogContentOptions 
                 <Show when={focusedStop() && !isStopBoundary(focusedStop()!.id)}>
                   <button
                     type="button"
-                    class="btn btn-ghost lut-editor-stop-remove"
+                    class={cx(ui.buttonBase, ui.ghostButton, ui.removeText)}
                     onClick={() => { const s = focusedStop(); if (s) handleRemoveStop(s.id); }}
                     >
                       {tr('lutEditor.removeStop')}
@@ -1177,9 +1184,9 @@ function LutEditorDialogContent(props: { options: LutEditorDialogContentOptions 
                   </Show>
                 <Show when={focusedStop()}>
                   <DropdownMenu
-                    wrapperClass="menu-wrap"
-                    triggerClass="btn menu-trigger"
-                    menuClass="menu lut-editor-kebab-menu"
+                    wrapperClass={ui.menuWrap}
+                    triggerClass={cx(ui.buttonBase, ui.menuTrigger)}
+                    menuClass={cx(ui.menu, styles.kebabMenu)}
                     triggerAriaLabel={tr('lutEditor.stopMenuAria')}
                     menuRole="menu"
                   >
@@ -1187,7 +1194,7 @@ function LutEditorDialogContent(props: { options: LutEditorDialogContentOptions 
                       <>
                         <button
                           type="button"
-                          class="btn menu-item"
+                          class={ui.menuItem}
                           role="menuitem"
                           disabled={(selectedRamp()?.stops.length ?? 0) >= MAX_STOPS_PER_RAMP}
                           onClick={() => {
@@ -1199,7 +1206,7 @@ function LutEditorDialogContent(props: { options: LutEditorDialogContentOptions 
                         </button>
                         <button
                           type="button"
-                          class="btn menu-item"
+                          class={ui.menuItem}
                           role="menuitem"
                           onClick={() => {
                             controls.closeMenu();
@@ -1218,9 +1225,9 @@ function LutEditorDialogContent(props: { options: LutEditorDialogContentOptions 
             {/* Gradient preview bar + draggable stop knobs */}
             <Show when={selectedRamp()}>
               {getSelectedRamp => (
-                <div class="lut-editor-stop-preview-area">
+                <div class={styles.stopPreviewArea}>
                   <div
-                    class="lut-editor-stop-preview"
+                    class={styles.stopPreview}
                     ref={el => { stopPreviewBarRef = el as HTMLDivElement; }}
                     style={rampSwatchStyle(getSelectedRamp())}
                   >
@@ -1249,26 +1256,26 @@ function LutEditorDialogContent(props: { options: LutEditorDialogContentOptions 
             {/* Focused stop editor fields */}
             <Show
               when={focusedStop()}
-              fallback={<div class="lut-editor-no-ramp">{tr('lutEditor.noStopSelected')}</div>}
+              fallback={<div class={styles.noRamp}>{tr('lutEditor.noStopSelected')}</div>}
             >
               {getStop => (
-                <div class="lut-editor-stop-editor">
-                  <div class="lut-editor-stop-editor-field">
-                    <label class="lut-editor-stop-editor-label">{tr('lutEditor.stopColor')}</label>
+                <div class={styles.stopEditor}>
+                  <div class={styles.stopEditorField}>
+                    <label class={styles.stopEditorLabel}>{tr('lutEditor.stopColor')}</label>
                     <input
                       type="color"
-                      class="lut-editor-stop-color"
+                      class={styles.stopColorInput}
                       value={colorToHex(getStop().color)}
                       onInput={ev => handleStopColorChange(getStop().id, (ev.currentTarget as HTMLInputElement).value)}
                     />
                   </div>
-                  <div class="lut-editor-stop-editor-field">
-                    <label class="lut-editor-stop-editor-label">{tr('lutEditor.stopPosition')}</label>
+                  <div class={styles.stopEditorField}>
+                    <label class={styles.stopEditorLabel}>{tr('lutEditor.stopPosition')}</label>
                     <input
                       ref={stopPositionInputRef}
                       type="text"
                       inputmode="decimal"
-                      class="lut-editor-stop-pos-input"
+                      class={styles.posInput}
                       value={editingStopPositionId() === getStop().id
                         ? stopPositionDraft()
                         : formatPositionPercent(getStop().position)}
@@ -1290,20 +1297,20 @@ function LutEditorDialogContent(props: { options: LutEditorDialogContentOptions 
                       }}
                       onWheel={ev => handleStopPositionWheel(getStop().id, getStop().position, ev)}
                     />
-                    <span class="lut-editor-stop-editor-unit">%</span>
+                    <span class={styles.stopEditorUnit}>%</span>
                   </div>
-                  <div class="lut-editor-stop-editor-field">
-                    <label class="lut-editor-stop-editor-label">{tr('lutEditor.alpha')}</label>
+                  <div class={styles.stopEditorField}>
+                    <label class={styles.stopEditorLabel}>{tr('lutEditor.alpha')}</label>
                     <input
                       type="range"
-                      class="lut-editor-stop-alpha"
+                      class={styles.stopAlphaInput}
                       min="0"
                       max="100"
                       value={Math.round(getStop().alpha * 100)}
                       onInput={ev => handleStopAlphaChange(getStop().id, (ev.currentTarget as HTMLInputElement).value)}
                       onWheel={ev => handleStopAlphaWheel(getStop().id, getStop().alpha, ev)}
                     />
-                    <span class="lut-editor-stop-editor-unit">{Math.round(getStop().alpha * 100)}%</span>
+                    <span class={styles.stopEditorUnit}>{Math.round(getStop().alpha * 100)}%</span>
                   </div>
                 </div>
               )}
@@ -1311,7 +1318,7 @@ function LutEditorDialogContent(props: { options: LutEditorDialogContentOptions 
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 }
 

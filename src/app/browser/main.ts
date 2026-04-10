@@ -1,3 +1,4 @@
+import './styles/app-theme.css.ts';
 import { setupMainPipelineIoSystem } from './pipeline/main-pipeline-io-setup.ts';
 import {
   applyLoadedPipelineState,

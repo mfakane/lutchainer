@@ -1,5 +1,7 @@
 import { createSignal } from 'solid-js';
 import { render } from 'solid-js/web';
+import { cx } from '../styles/cx.ts';
+import * as styles from './solid-status.css.ts';
 
 export type StatusKind = 'success' | 'error' | 'info';
 
@@ -58,7 +60,7 @@ function normalizeInitialState(options: StatusLogMountOptions | undefined): Stat
 }
 
 function StatusLog(props: { state: () => StatusState }) {
-  return <div class={`error-log ${props.state().kind}`}>{props.state().message}</div>;
+  return <div class={cx(styles.statusLog, styles.statusTone[props.state().kind])}>{props.state().message}</div>;
 }
 
 export function mountStatusLog(target: HTMLElement, options?: StatusLogMountOptions): void {
