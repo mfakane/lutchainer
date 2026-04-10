@@ -164,6 +164,7 @@ export function ParamNodeList(props: ParamNodeListProps): JSX.Element {
                 customParam={customParam}
                 onRenameCustomParam={props.onRenameCustomParam}
                 onSetCustomParamValue={props.onSetCustomParamValue}
+                onCommitCustomParamValueChange={props.onCommitCustomParamValueChange}
                 onRemoveCustomParam={props.onRemoveCustomParam}
               />
             )}

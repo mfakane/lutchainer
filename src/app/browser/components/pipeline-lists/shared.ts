@@ -35,7 +35,8 @@ export interface ParamNodeListMountOptions {
   customParams: CustomParamModel[];
   onAddCustomParam: () => void;
   onRenameCustomParam: (paramId: string, label: string) => void;
-  onSetCustomParamValue: (paramId: string, value: number) => void;
+  onSetCustomParamValue: (paramId: string, value: number, options?: { recordHistory?: boolean }) => void;
+  onCommitCustomParamValueChange: () => void;
   onRemoveCustomParam: (paramId: string) => void;
   onStatus: StatusReporter;
 }
@@ -79,7 +80,8 @@ export interface ParamNodeListProps {
   customParams: Accessor<CustomParamModel[]>;
   onAddCustomParam: () => void;
   onRenameCustomParam: (paramId: string, label: string) => void;
-  onSetCustomParamValue: (paramId: string, value: number) => void;
+  onSetCustomParamValue: (paramId: string, value: number, options?: { recordHistory?: boolean }) => void;
+  onCommitCustomParamValueChange: () => void;
   onRemoveCustomParam: (paramId: string) => void;
   onStatus: StatusReporter;
 }
@@ -93,7 +95,8 @@ export interface ParamPreviewState {
 export interface CustomParamNodeProps {
   customParam: Accessor<CustomParamModel>;
   onRenameCustomParam: (paramId: string, label: string) => void;
-  onSetCustomParamValue: (paramId: string, value: number) => void;
+  onSetCustomParamValue: (paramId: string, value: number, options?: { recordHistory?: boolean }) => void;
+  onCommitCustomParamValueChange: () => void;
   onRemoveCustomParam: (paramId: string) => void;
 }
 
@@ -282,6 +285,9 @@ export function ensureParamNodeListMountOptions(value: unknown): asserts value i
   }
   if (typeof options.onSetCustomParamValue !== 'function') {
     throw new Error('ParamノードリストのCustom Param値変更コールバックが不正です。');
+  }
+  if (typeof options.onCommitCustomParamValueChange !== 'function') {
+    throw new Error('ParamノードリストのCustom Param値確定コールバックが不正です。');
   }
   if (typeof options.onRemoveCustomParam !== 'function') {
     throw new Error('ParamノードリストのCustom Param削除コールバックが不正です。');

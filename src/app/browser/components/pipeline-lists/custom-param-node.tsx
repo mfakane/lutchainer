@@ -18,7 +18,11 @@ export function CustomParamNode(props: CustomParamNodeProps): JSX.Element {
   const handleValueSliderInput = (event: InputEvent): void => {
     const target = event.currentTarget as HTMLInputElement;
     const nextValue = Number(target.value);
-    props.onSetCustomParamValue(props.customParam().id, nextValue);
+    props.onSetCustomParamValue(props.customParam().id, nextValue, { recordHistory: false });
+  };
+
+  const handleValueSliderChange = (): void => {
+    props.onCommitCustomParamValueChange();
   };
 
   const handleValueSliderWheel = (event: WheelEvent): void => {
@@ -81,6 +85,7 @@ export function CustomParamNode(props: CustomParamNodeProps): JSX.Element {
           step="0.01"
           value={String(props.customParam().defaultValue)}
           onInput={handleValueSliderInput}
+          onChange={handleValueSliderChange}
           onWheel={handleValueSliderWheel}
         />
         <span data-part="custom-param-value">{props.customParam().defaultValue.toFixed(2)}</span>

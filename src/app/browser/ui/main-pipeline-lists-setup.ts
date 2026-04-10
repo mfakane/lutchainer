@@ -50,7 +50,8 @@ export interface SetupMainPipelineListsOptions {
   onStepOpChange: (stepId: string, channel: ChannelName, op: BlendOp) => void;
   onAddCustomParam: () => void;
   onRenameCustomParam: (paramId: string, label: string) => void;
-  onSetCustomParamValue: (paramId: string, value: number) => void;
+  onSetCustomParamValue: (paramId: string, value: number, options?: { recordHistory?: boolean }) => void;
+  onCommitCustomParamValueChange: () => void;
   onRemoveCustomParam: (paramId: string) => void;
   onMoveCustomParam: (paramId: string, targetParamId: string | null, after: boolean) => void;
   onRemoveLut: (lutId: string) => void;
@@ -107,6 +108,7 @@ function ensureOptions(value: unknown): asserts value is SetupMainPipelineListsO
   ensureFunction(options.onAddCustomParam, 'Main pipeline lists setup: onAddCustomParam');
   ensureFunction(options.onRenameCustomParam, 'Main pipeline lists setup: onRenameCustomParam');
   ensureFunction(options.onSetCustomParamValue, 'Main pipeline lists setup: onSetCustomParamValue');
+  ensureFunction(options.onCommitCustomParamValueChange, 'Main pipeline lists setup: onCommitCustomParamValueChange');
   ensureFunction(options.onRemoveCustomParam, 'Main pipeline lists setup: onRemoveCustomParam');
   ensureFunction(options.onMoveCustomParam, 'Main pipeline lists setup: onMoveCustomParam');
   ensureFunction(options.onRemoveLut, 'Main pipeline lists setup: onRemoveLut');
@@ -238,6 +240,7 @@ export function setupMainPipelineLists(options: SetupMainPipelineListsOptions): 
     onAddCustomParam: options.onAddCustomParam,
     onRenameCustomParam: options.onRenameCustomParam,
     onSetCustomParamValue: options.onSetCustomParamValue,
+    onCommitCustomParamValueChange: options.onCommitCustomParamValueChange,
     onRemoveCustomParam: options.onRemoveCustomParam,
     onStatus: options.onStatus,
   });

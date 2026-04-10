@@ -64,6 +64,7 @@ export function mountParamNodeList(target: HTMLElement, options: ParamNodeListMo
         onAddCustomParam={options.onAddCustomParam}
         onRenameCustomParam={options.onRenameCustomParam}
         onSetCustomParamValue={options.onSetCustomParamValue}
+        onCommitCustomParamValueChange={options.onCommitCustomParamValueChange}
         onRemoveCustomParam={options.onRemoveCustomParam}
         onStatus={options.onStatus}
       />

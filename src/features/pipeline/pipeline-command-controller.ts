@@ -17,6 +17,10 @@ export interface AddStepOptions {
   recordHistory?: boolean;
 }
 
+export interface SetCustomParamValueOptions {
+  recordHistory?: boolean;
+}
+
 interface PipelineCommandControllerOptions {
   maxStepLabelLength: number;
   getSteps: () => StepModel[];
@@ -50,7 +54,7 @@ interface PipelineCommandController {
   duplicateLut: (lutId: string) => void;
   addCustomParam: () => void;
   renameCustomParam: (paramId: string, label: unknown) => void;
-  setCustomParamValue: (paramId: string, value: unknown) => void;
+  setCustomParamValue: (paramId: string, value: unknown, options?: SetCustomParamValueOptions) => void;
   removeCustomParam: (paramId: string) => void;
   assignParamToSocket: (stepId: string, axis: SocketAxis, param: ParamRef) => boolean;
   moveCustomParamToPosition: (paramId: string, targetParamId: string | null, after: boolean) => void;
@@ -114,6 +118,24 @@ function parseAddStepOptions(options: AddStepOptions | undefined): { recordHisto
 
   if (options.recordHistory !== undefined && typeof options.recordHistory !== 'boolean') {
     throw new Error(`addStep.recordHistory は boolean で指定してください: ${String(options.recordHistory)}`);
+  }
+
+  return {
+    recordHistory: options.recordHistory ?? true,
+  };
+}
+
+function parseSetCustomParamValueOptions(options: SetCustomParamValueOptions | undefined): { recordHistory: boolean } {
+  if (options === undefined) {
+    return { recordHistory: true };
+  }
+
+  if (!isObject(options)) {
+    throw new Error('setCustomParamValue オプションが不正です。');
+  }
+
+  if (options.recordHistory !== undefined && typeof options.recordHistory !== 'boolean') {
+    throw new Error(`setCustomParamValue.recordHistory は boolean で指定してください: ${String(options.recordHistory)}`);
   }
 
   return {
@@ -463,8 +485,16 @@ export function createPipelineCommandController(options: PipelineCommandControll
     options.scheduleApply();
   };
 
-  const setCustomParamValue = (paramId: string, value: unknown): void => {
+  const setCustomParamValue = (paramId: string, value: unknown, setValueOptions?: SetCustomParamValueOptions): void => {
     if (!isNonEmptyString(paramId) || typeof value !== 'number' || !Number.isFinite(value)) {
+      return;
+    }
+
+    let parsedOptions: { recordHistory: boolean };
+    try {
+      parsedOptions = parseSetCustomParamValueOptions(setValueOptions);
+    } catch (error) {
+      options.status(pipelineModel.toErrorMessage(error), 'error');
       return;
     }
 
@@ -479,10 +509,12 @@ export function createPipelineCommandController(options: PipelineCommandControll
       return;
     }
 
-    const before = options.captureSnapshot();
+    const before = parsedOptions.recordHistory ? options.captureSnapshot() : null;
     const nextCustomParams = customParams.map((param, index) => (index === targetIndex ? { ...param, defaultValue: normalizedValue } : param));
     options.setCustomParams(nextCustomParams);
-    options.commitSnapshot(before);
+    if (before) {
+      options.commitSnapshot(before);
+    }
     options.renderSteps();
     options.scheduleApply();
   };

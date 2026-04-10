@@ -25,7 +25,7 @@ interface PipelineCommandsLike {
   removeLut: (lutId: string) => void;
   addCustomParam: () => void;
   renameCustomParam: (paramId: string, label: string) => void;
-  setCustomParamValue: (paramId: string, value: number) => void;
+  setCustomParamValue: (paramId: string, value: number, options?: { recordHistory?: boolean }) => void;
   removeCustomParam: (paramId: string) => void;
   moveCustomParamToPosition: (paramId: string, targetParamId: string | null, after: boolean) => void;
 }
@@ -136,6 +136,7 @@ function assertSetupMainPipelineEditorOptions(options: SetupMainPipelineEditorOp
 
 export function setupMainPipelineEditor(options: SetupMainPipelineEditorOptions): void {
   assertSetupMainPipelineEditorOptions(options);
+  let pendingCustomParamValueSnapshot: PipelineStateSnapshot | null = null;
 
   setupMainPipelineLists({
     paramNodeListEl: options.paramNodeListEl,
@@ -180,8 +181,19 @@ export function setupMainPipelineEditor(options: SetupMainPipelineEditorOptions)
     onRenameCustomParam: (paramId, label) => {
       options.pipelineCommands.renameCustomParam(paramId, label);
     },
-    onSetCustomParamValue: (paramId, value) => {
-      options.pipelineCommands.setCustomParamValue(paramId, value);
+    onSetCustomParamValue: (paramId, value, setValueOptions) => {
+      if (setValueOptions?.recordHistory === false && pendingCustomParamValueSnapshot === null) {
+        pendingCustomParamValueSnapshot = options.pipelineHistoryActions.captureSnapshot();
+      }
+      options.pipelineCommands.setCustomParamValue(paramId, value, setValueOptions);
+    },
+    onCommitCustomParamValueChange: () => {
+      if (pendingCustomParamValueSnapshot === null) {
+        return;
+      }
+
+      options.pipelineHistoryActions.commitSnapshot(pendingCustomParamValueSnapshot);
+      pendingCustomParamValueSnapshot = null;
     },
     onRemoveCustomParam: paramId => {
       options.pipelineCommands.removeCustomParam(paramId);
