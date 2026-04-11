@@ -1,13 +1,7 @@
-import {
-  type PipelineApplyController,
-} from '../pipeline/pipeline-apply.ts';
-import type {
-  PipelineHeaderActionController,
-} from '../pipeline/pipeline-header-actions-controller.ts';
+import { MAX_LUTS } from '../../../features/pipeline/pipeline-constants.ts';
 import type {
   PipelineHistoryActionsController,
 } from '../../../features/pipeline/pipeline-history-actions.ts';
-import { MAX_LUTS } from '../../../features/pipeline/pipeline-constants.ts';
 import * as pipelineModel from '../../../features/pipeline/pipeline-model.ts';
 import {
   getCustomParams as getPipelineCustomParams,
@@ -17,49 +11,58 @@ import {
   setLuts as setPipelineLuts,
 } from '../../../features/pipeline/pipeline-state.ts';
 import * as pipelineView from '../../../features/pipeline/pipeline-view.ts';
-import type {
-  PipelineDropIndicatorController,
-} from '../pipeline/pipeline-drop-indicators.ts';
-import type {
-  PipelineSocketDndController,
-} from '../pipeline/pipeline-socket-dnd-controller.ts';
-import type {
-  MainStepRenderingController,
-} from '../step/main-step-rendering-controller.ts';
+import {
+  resolveLutUvAtPixel,
+} from '../../../features/step/step-lut-uv-resolver.ts';
 import type {
   BlendOp,
   ChannelName,
   LutModel,
   StepModel,
 } from '../../../features/step/step-model.ts';
+import type {
+  CameraOrbitState,
+} from '../interactions/layout-interactions.ts';
 import {
-  resolveLutUvAtPixel,
-} from '../../../features/step/step-lut-uv-resolver.ts';
+  type PipelineApplyController,
+} from '../pipeline/pipeline-apply.ts';
+import type {
+  PipelineDropIndicatorController,
+} from '../pipeline/pipeline-drop-indicators.ts';
+import type {
+  PipelineHeaderActionController,
+} from '../pipeline/pipeline-header-actions-controller.ts';
+import type {
+  PipelineSocketDndController,
+} from '../pipeline/pipeline-socket-dnd-controller.ts';
+import type {
+  MainStepRenderingController,
+} from '../step/main-step-rendering-controller.ts';
 import {
-  getSuppressClickUntil,
-  getLutReorderDragState,
-  setLutReorderDragState,
   clearLutReorderDragState,
-  getStepReorderDragState,
-  setStepReorderDragState,
   clearStepReorderDragState,
+  getLutReorderDragState,
+  getStepReorderDragState,
+  getSuppressClickUntil,
+  setLutReorderDragState,
   setSocketDragState,
+  setStepReorderDragState,
 } from './interaction-state.ts';
 import {
   setupMainLayoutControls,
 } from './main-layout-controls-setup.ts';
 import {
-  setupMainPipelineEditor,
-} from './main-pipeline-editor-setup.ts';
-import {
   setupMainLutEditorDialog,
 } from './main-lut-editor-dialog-setup.ts';
-import type {
-  MainRenderPipeline,
-} from './main-render-pipeline-setup.ts';
+import {
+  setupMainPipelineEditor,
+} from './main-pipeline-editor-setup.ts';
 import type {
   MainPreviewCaptureController,
 } from './main-preview-capture-controller.ts';
+import type {
+  MainRenderPipeline,
+} from './main-render-pipeline-setup.ts';
 import {
   setupMainUi,
 } from './main-ui-setup.ts';
@@ -75,9 +78,6 @@ import {
 import {
   isPreviewWireframeOverlayEnabled,
 } from './ui-state.ts';
-import type {
-  CameraOrbitState,
-} from '../interactions/layout-interactions.ts';
 
 type StatusKind = 'success' | 'error' | 'info';
 type StatusReporter = (message: string, kind?: StatusKind) => void;
@@ -300,7 +300,7 @@ export function bootstrapMainPostRuntime(options: BootstrapMainPostRuntimeOption
     onLoadExample: async example => {
       await options.pipelineHeaderActions.buildMountOptions().onResetPresetSelected(example);
     },
-    welcomeExamples: ['HueShiftToon', 'HueSatShiftToon', 'Metallic'],
+    welcomeExamples: ['StandardToon', 'HueShiftToon', 'HueSatShiftToon', 'Metallic'],
     welcomeGithubUrl: 'https://github.com/mfakane/lutchainer',
     computeLutUv: (stepIndex, pixelX, pixelY, canvasWidth, canvasHeight) =>
       resolveLutUvAtPixel({

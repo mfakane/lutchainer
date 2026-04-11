@@ -10,10 +10,10 @@ import {
   type ParamRef,
   type StepModel,
 } from '../../../../features/step/step-model.ts';
+import type { PipelinePresetKey } from '../../ui/pipeline-presets.ts';
 
 export type StatusKind = 'success' | 'error' | 'info';
 export type StatusReporter = (message: string, kind?: StatusKind) => void;
-export type WelcomeExample = 'HueShiftToon' | 'HueSatShiftToon' | 'Metallic';
 
 export const CHANNELS: ChannelName[] = ['r', 'g', 'b', 'h', 's', 'v'];
 export const PARAM_PREVIEW_SIZE = 112;
@@ -56,8 +56,8 @@ export interface StepListMountOptions {
   onStepOpChange: (stepId: string, channel: ChannelName, op: BlendOp) => void;
   shouldSuppressClick?: () => boolean;
   onOpenPipelineFilePicker: () => void;
-  onLoadExample: (example: WelcomeExample) => void | Promise<void>;
-  welcomeExamples: readonly WelcomeExample[];
+  onLoadExample: (example: PipelinePresetKey) => void | Promise<void>;
+  welcomeExamples: readonly PipelinePresetKey[];
   welcomeGithubUrl: string;
   computeLutUv?: (
     stepIndex: number,
@@ -119,8 +119,8 @@ export interface StepListProps {
   onStepOpChange: (stepId: string, channel: ChannelName, op: BlendOp) => void;
   shouldSuppressClick?: () => boolean;
   onOpenPipelineFilePicker: () => void;
-  onLoadExample: (example: WelcomeExample) => void | Promise<void>;
-  welcomeExamples: readonly WelcomeExample[];
+  onLoadExample: (example: PipelinePresetKey) => void | Promise<void>;
+  welcomeExamples: readonly PipelinePresetKey[];
   welcomeGithubUrl: string;
   computeLutUv?: (
     stepIndex: number,
@@ -134,8 +134,8 @@ export interface StepListProps {
 
 export interface StepWelcomeProps {
   onOpenPipelineFilePicker: () => void;
-  onLoadExample: (example: WelcomeExample) => void | Promise<void>;
-  welcomeExamples: readonly WelcomeExample[];
+  onLoadExample: (example: PipelinePresetKey) => void | Promise<void>;
+  welcomeExamples: readonly PipelinePresetKey[];
   welcomeGithubUrl: string;
 }
 

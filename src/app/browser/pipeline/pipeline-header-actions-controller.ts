@@ -1,8 +1,9 @@
+import type { LoadedPipelineData } from '../../../features/pipeline/pipeline-model.ts';
+import { isPipelinePresetKey, type PipelinePresetKey } from '../ui/pipeline-presets.ts';
 import type {
   LoadPipelineFromFileResult,
   SavePipelineAsFileResult,
 } from './pipeline-io-system.ts';
-import type { LoadedPipelineData } from '../../../features/pipeline/pipeline-model.ts';
 
 type StatusKind = 'success' | 'error' | 'info';
 type StatusReporter = (message: string, kind?: StatusKind) => void;
@@ -14,15 +15,13 @@ interface PipelineIoSystemLike {
   loadPipelineFromFile: (file: File) => Promise<LoadPipelineFromFileResult>;
 }
 
-type ResetPreset = 'Initial' | 'HueShiftToon' | 'HueSatShiftToon' | 'Metallic';
-
 export interface PipelineHeaderActionMountOptions {
   initialAutoApplyEnabled: boolean;
   initialCanUndo: boolean;
   initialCanRedo: boolean;
   onUndoPipeline: () => void;
   onRedoPipeline: () => void;
-  onResetPresetSelected: (preset: ResetPreset) => void | Promise<void>;
+  onResetPresetSelected: (preset: PipelinePresetKey) => void | Promise<void>;
   onSavePipeline: () => void | Promise<void>;
   onApplyPipeline: () => void;
   onPipelineFileSelected: (file: File) => void | Promise<void>;
@@ -61,13 +60,6 @@ function ensureBoolean(value: unknown, label: string): asserts value is boolean 
   if (typeof value !== 'boolean') {
     throw new Error(`${label} が不正です。`);
   }
-}
-
-function isResetPreset(value: unknown): value is ResetPreset {
-  return value === 'Initial'
-    || value === 'HueShiftToon'
-    || value === 'HueSatShiftToon'
-    || value === 'Metallic';
 }
 
 function hasFileApi(): boolean {
@@ -113,8 +105,8 @@ export function createPipelineHeaderActionController(
     options.onRedoPipeline();
   };
 
-  const onResetPresetSelected = async (preset: ResetPreset): Promise<void> => {
-    if (!isResetPreset(preset)) {
+  const onResetPresetSelected = async (preset: PipelinePresetKey): Promise<void> => {
+    if (!isPipelinePresetKey(preset)) {
       options.onStatus(
         options.t('main.status.pipelineLoadFailed', {
           message: `不正なプリセットです: ${String(preset)}`,

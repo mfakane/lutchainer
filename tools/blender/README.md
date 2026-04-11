@@ -118,7 +118,8 @@ scripts/run_windows_blender.sh \
   blender_addon \
   examples/Metallic.lutchain \
   examples/HueShiftToon.lutchain \
-  examples/HueSatShiftToon.lutchain
+  examples/HueSatShiftToon.lutchain \
+  examples/StandardToon.lutchain
 ```
 
 The shell wrapper reads `BLENDER_EXECUTABLE` from `.env`, converts WSL paths to Windows paths for you, and invokes PowerShell.

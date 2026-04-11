@@ -92,6 +92,7 @@ import {
   createShaderExportHandler,
   createStatusReporter,
 } from './ui/main-shader-status-helpers.ts';
+import type { PipelinePresetKey } from './ui/pipeline-presets.ts';
 import {
   type PreviewShapeController,
 } from './ui/preview-shape-controller.ts';
@@ -454,7 +455,7 @@ window.addEventListener('DOMContentLoaded', () => {
     setLightSettings,
     loadPreset: async (preset: string) => {
       await pipelineHeaderActions.buildMountOptions().onResetPresetSelected(
-        preset as 'Initial' | 'HueShiftToon' | 'HueSatShiftToon' | 'Metallic',
+        preset as PipelinePresetKey,
       );
     },
   });

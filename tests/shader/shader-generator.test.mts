@@ -9,6 +9,7 @@ const exampleNames = [
   'Metallic.lutchain',
   'HueShiftToon.lutchain',
   'HueSatShiftToon.lutchain',
+  'StandardToon.lutchain',
 ];
 
 function escapeRegExp(value: string): string {

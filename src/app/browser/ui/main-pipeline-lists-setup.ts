@@ -1,5 +1,5 @@
-import type { PipelineStateSnapshot } from '../../../features/pipeline/pipeline-state.ts';
 import type { MaterialSettings } from '../../../features/pipeline/pipeline-model.ts';
+import type { PipelineStateSnapshot } from '../../../features/pipeline/pipeline-state.ts';
 import type {
   BlendOp,
   ChannelName,
@@ -8,18 +8,18 @@ import type {
   StepModel,
 } from '../../../features/step/step-model.ts';
 import {
+  mountLutStripList,
+  mountParamNodeList,
+  mountStepList,
+} from '../components/pipeline-lists/index.tsx';
+import {
   bindReorderDragHandlers,
   getLinearDropPlacement,
   type LinearDropCandidate,
   type LinearDropPlacement,
   type ReorderDragBinding,
 } from '../interactions/dnd.ts';
-import {
-  mountLutStripList,
-  mountParamNodeList,
-  mountStepList,
-} from '../components/pipeline-lists/index.tsx';
-import type { WelcomeExample } from '../components/pipeline-lists/shared.ts';
+import type { PipelinePresetKey } from './pipeline-presets.ts';
 
 type StatusKind = 'success' | 'error' | 'info';
 type StatusReporter = (message: string, kind?: StatusKind) => void;
@@ -41,8 +41,8 @@ export interface SetupMainPipelineListsOptions {
   getMaterialSettings: () => MaterialSettings;
   shouldSuppressClick: () => boolean;
   onOpenPipelineFilePicker: () => void;
-  onLoadExample: (example: WelcomeExample) => void | Promise<void>;
-  welcomeExamples: readonly WelcomeExample[];
+  onLoadExample: (example: PipelinePresetKey) => void | Promise<void>;
+  welcomeExamples: readonly PipelinePresetKey[];
   welcomeGithubUrl: string;
   computeLutUv?: (stepIndex: number, pixelX: number, pixelY: number, canvasWidth: number, canvasHeight: number) => { u: number; v: number } | null;
   onAddStep: () => void;

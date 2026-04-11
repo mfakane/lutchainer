@@ -9,14 +9,14 @@ import {
 } from '../i18n.ts';
 import { cx } from '../styles/cx.ts';
 import * as ui from '../styles/ui-primitives.css.ts';
-import * as styles from './solid-header-actions.css.ts';
+import type { PipelinePresetKey } from '../ui/pipeline-presets.ts';
 import { DropdownMenu } from './solid-dropdown-menu.tsx';
+import * as styles from './solid-header-actions.css.ts';
 
 type StatusKind = 'success' | 'error' | 'info';
 type StatusReporter = (message: string, kind?: StatusKind) => void;
-type ResetPreset = 'Initial' | 'HueShiftToon' | 'HueSatShiftToon' | 'Metallic';
 
-const RESET_PRESETS: readonly ResetPreset[] = ['HueShiftToon', 'HueSatShiftToon', 'Metallic'];
+const RESET_PRESETS: readonly PipelinePresetKey[] = ['StandardToon', 'HueShiftToon', 'HueSatShiftToon', 'Metallic'];
 
 interface HeaderActionGroupMountOptions {
   initialAutoApplyEnabled: boolean;
@@ -24,7 +24,7 @@ interface HeaderActionGroupMountOptions {
   initialCanRedo: boolean;
   onUndoPipeline: () => void;
   onRedoPipeline: () => void;
-  onResetPresetSelected: (preset: ResetPreset) => void | Promise<void>;
+  onResetPresetSelected: (preset: PipelinePresetKey) => void | Promise<void>;
   onSavePipeline: () => void | Promise<void>;
   onApplyPipeline: () => void;
   onPipelineFileSelected: (file: File) => void | Promise<void>;
@@ -38,7 +38,7 @@ interface HeaderActionGroupProps {
   canRedo: Accessor<boolean>;
   onUndoPipeline: () => void;
   onRedoPipeline: () => void;
-  onResetPresetSelected: (preset: ResetPreset) => void | Promise<void>;
+  onResetPresetSelected: (preset: PipelinePresetKey) => void | Promise<void>;
   onSavePipeline: () => void | Promise<void>;
   onApplyPipeline: () => void;
   onPipelineFileSelected: (file: File) => void | Promise<void>;
@@ -127,7 +127,7 @@ function HeaderActionGroup(props: HeaderActionGroupProps): JSX.Element {
     }
   };
 
-  const handleResetPresetSelect = async (preset: ResetPreset): Promise<void> => {
+  const handleResetPresetSelect = async (preset: PipelinePresetKey): Promise<void> => {
     try {
       await props.onResetPresetSelected(preset);
     } catch (error) {

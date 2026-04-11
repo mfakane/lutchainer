@@ -2,8 +2,9 @@ import { For, type JSX } from 'solid-js';
 import { t, useLanguage } from '../../i18n.ts';
 import { cx } from '../../styles/cx.ts';
 import * as ui from '../../styles/ui-primitives.css.ts';
+import type { PipelinePresetKey } from '../../ui/pipeline-presets.ts';
 import * as styles from './shared.css.ts';
-import type { StepWelcomeProps, WelcomeExample } from './shared.ts';
+import type { StepWelcomeProps } from './shared.ts';
 
 interface SolidStepWelcomeProps extends StepWelcomeProps {
   onStatus: (message: string, kind?: 'success' | 'error' | 'info') => void;
@@ -17,7 +18,7 @@ export function StepWelcome(props: SolidStepWelcomeProps): JSX.Element {
     return t(key, values);
   };
 
-  const handleLoadExample = async (example: WelcomeExample): Promise<void> => {
+  const handleLoadExample = async (example: PipelinePresetKey): Promise<void> => {
     try {
       await props.onLoadExample(example);
     } catch (error) {
