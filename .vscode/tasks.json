@@ -4,7 +4,7 @@
     {
       "label": "TypeScript: Type Check and Build",
       "type": "shell",
-      "command": "npx tsc --noEmit && npm run build",
+      "command": "npm run typecheck && npm run build",
       "group": {
         "kind": "build",
         "isDefault": true
@@ -20,7 +20,7 @@
     {
       "label": "TypeScript: Type Check",
       "type": "shell",
-      "command": "npx tsc --noEmit",
+      "command": "npm run typecheck",
       "group": "build",
       "problemMatcher": "$tsc",
       "presentation": {
