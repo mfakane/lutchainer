@@ -42,8 +42,6 @@ export interface SetupMainPipelineListsOptions {
   shouldSuppressClick: () => boolean;
   onOpenPipelineFilePicker: () => void;
   onLoadExample: (example: PipelinePresetKey) => void | Promise<void>;
-  welcomeExamples: readonly PipelinePresetKey[];
-  welcomeGithubUrl: string;
   computeLutUv?: (stepIndex: number, pixelX: number, pixelY: number, canvasWidth: number, canvasHeight: number) => { u: number; v: number } | null;
   onAddStep: () => void;
   onDuplicateStep: (stepId: string) => void;
@@ -273,8 +271,6 @@ export function setupMainPipelineLists(options: SetupMainPipelineListsOptions): 
     shouldSuppressClick: options.shouldSuppressClick,
     onOpenPipelineFilePicker: options.onOpenPipelineFilePicker,
     onLoadExample: options.onLoadExample,
-    welcomeExamples: options.welcomeExamples,
-    welcomeGithubUrl: options.welcomeGithubUrl,
     computeLutUv: options.computeLutUv,
     onStatus: options.onStatus,
   });

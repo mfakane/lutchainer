@@ -1,9 +1,6 @@
 import { createSignal } from 'solid-js';
 import { render } from 'solid-js/web';
 import type { CustomParamModel, LutModel, StepModel } from '../../../../features/step/step-model.ts';
-import { ParamNodeList } from './solid-param-node-list.tsx';
-import { StepList } from './solid-step-list.tsx';
-import { LutStripList } from './solid-lut-strip-list.tsx';
 import {
   cloneCustomParamArray,
   cloneLutArray,
@@ -20,6 +17,9 @@ import {
   type StatusReporter,
   type StepListMountOptions,
 } from './shared.ts';
+import { LutStripList } from './solid-lut-strip-list.tsx';
+import { ParamNodeList } from './solid-param-node-list.tsx';
+import { StepList } from './solid-step-list.tsx';
 
 let disposeParamNodeList: (() => void) | null = null;
 let disposeStepList: (() => void) | null = null;
@@ -129,8 +129,6 @@ export function mountStepList(target: HTMLElement, options: StepListMountOptions
         shouldSuppressClick={options.shouldSuppressClick}
         onOpenPipelineFilePicker={options.onOpenPipelineFilePicker}
         onLoadExample={options.onLoadExample}
-        welcomeExamples={options.welcomeExamples}
-        welcomeGithubUrl={options.welcomeGithubUrl}
         computeLutUv={options.computeLutUv}
         onStatus={options.onStatus}
       />

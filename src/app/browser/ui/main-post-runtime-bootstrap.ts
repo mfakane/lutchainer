@@ -300,8 +300,6 @@ export function bootstrapMainPostRuntime(options: BootstrapMainPostRuntimeOption
     onLoadExample: async example => {
       await options.pipelineHeaderActions.buildMountOptions().onResetPresetSelected(example);
     },
-    welcomeExamples: ['StandardToon', 'HueShiftToon', 'HueSatShiftToon', 'Metallic'],
-    welcomeGithubUrl: 'https://github.com/mfakane/lutchainer',
     computeLutUv: (stepIndex, pixelX, pixelY, canvasWidth, canvasHeight) =>
       resolveLutUvAtPixel({
         pixelX,

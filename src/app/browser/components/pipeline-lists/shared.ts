@@ -57,8 +57,6 @@ export interface StepListMountOptions {
   shouldSuppressClick?: () => boolean;
   onOpenPipelineFilePicker: () => void;
   onLoadExample: (example: PipelinePresetKey) => void | Promise<void>;
-  welcomeExamples: readonly PipelinePresetKey[];
-  welcomeGithubUrl: string;
   computeLutUv?: (
     stepIndex: number,
     pixelX: number,
@@ -120,8 +118,6 @@ export interface StepListProps {
   shouldSuppressClick?: () => boolean;
   onOpenPipelineFilePicker: () => void;
   onLoadExample: (example: PipelinePresetKey) => void | Promise<void>;
-  welcomeExamples: readonly PipelinePresetKey[];
-  welcomeGithubUrl: string;
   computeLutUv?: (
     stepIndex: number,
     pixelX: number,
@@ -135,8 +131,6 @@ export interface StepListProps {
 export interface StepWelcomeProps {
   onOpenPipelineFilePicker: () => void;
   onLoadExample: (example: PipelinePresetKey) => void | Promise<void>;
-  welcomeExamples: readonly PipelinePresetKey[];
-  welcomeGithubUrl: string;
 }
 
 export interface LutStripListProps {

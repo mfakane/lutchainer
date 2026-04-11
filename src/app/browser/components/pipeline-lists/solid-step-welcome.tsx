@@ -6,6 +6,9 @@ import type { PipelinePresetKey } from '../../ui/pipeline-presets.ts';
 import * as styles from './shared.css.ts';
 import type { StepWelcomeProps } from './shared.ts';
 
+const WELCOME_EXAMPLES: PipelinePresetKey[] = ['StandardToon', 'HueShiftToon', 'HueSatShiftToon', 'Metallic'];
+const GITHUB_URL = 'https://github.com/mfakane/lutchainer';
+
 interface SolidStepWelcomeProps extends StepWelcomeProps {
   onStatus: (message: string, kind?: 'success' | 'error' | 'info') => void;
 }
@@ -43,7 +46,7 @@ export function StepWelcome(props: SolidStepWelcomeProps): JSX.Element {
         </button>
         <a
           class={cx(ui.buttonBase, ui.secondaryButton, styles.welcomeLinkButton)}
-          href={props.welcomeGithubUrl}
+          href={GITHUB_URL}
           target="_blank"
           rel="noreferrer"
         >
@@ -54,7 +57,7 @@ export function StepWelcome(props: SolidStepWelcomeProps): JSX.Element {
       <div data-part="welcome-examples">
         <div data-part="welcome-section-title">{tr('pipeline.welcome.examplesTitle')}</div>
         <div data-part="welcome-example-list">
-          <For each={props.welcomeExamples}>
+          <For each={WELCOME_EXAMPLES}>
             {example => (
               <button
                 type="button"

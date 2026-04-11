@@ -96,8 +96,6 @@ export function StepList(props: StepListProps): JSX.Element {
 
               await props.onLoadExample(example);
             }}
-            welcomeExamples={props.welcomeExamples}
-            welcomeGithubUrl={props.welcomeGithubUrl}
             onStatus={props.onStatus}
           />
         )}
