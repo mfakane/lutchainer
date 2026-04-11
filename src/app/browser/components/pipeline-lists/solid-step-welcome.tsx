@@ -8,6 +8,7 @@ import type { StepWelcomeProps } from './shared.ts';
 
 const WELCOME_EXAMPLES: PipelinePresetKey[] = ['StandardToon', 'HueShiftToon', 'HueSatShiftToon', 'Metallic'];
 const GITHUB_URL = 'https://github.com/mfakane/lutchainer';
+const BLENDER_ADDON_URL = 'https://github.com/mfakane/lutchainer/releases';
 
 interface SolidStepWelcomeProps extends StepWelcomeProps {
   onStatus: (message: string, kind?: 'success' | 'error' | 'info') => void;
@@ -51,6 +52,14 @@ export function StepWelcome(props: SolidStepWelcomeProps): JSX.Element {
           rel="noreferrer"
         >
           {tr('pipeline.welcome.github')}
+        </a>
+        <a
+          class={cx(ui.buttonBase, ui.secondaryButton, styles.welcomeLinkButton)}
+          href={BLENDER_ADDON_URL}
+          target="_blank"
+          rel="noreferrer"
+        >
+          {tr('pipeline.welcome.blenderAddon')}
         </a>
       </div>
 
