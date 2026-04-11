@@ -1,7 +1,6 @@
-type StatusKind = 'success' | 'error' | 'info';
+import type { AppTranslator } from '../../shared/i18n/browser-translation-contract.ts';
 
-type TranslationParam = string | number;
-type TranslateFn = (key: string, params?: Record<string, TranslationParam>) => string;
+type StatusKind = 'success' | 'error' | 'info';
 
 export interface StepPreviewDebugApiResult {
   ok: boolean;
@@ -18,7 +17,7 @@ interface CreateStepPreviewDebugControllerOptions {
   getStepPreviewSystem: () => StepPreviewSystemLike | null;
   onUpdateStepSwatches: () => void;
   onStatus: (message: string, kind: StatusKind) => void;
-  t: TranslateFn;
+  t: AppTranslator;
 }
 
 interface RegisterGlobalDebugApiOptions {

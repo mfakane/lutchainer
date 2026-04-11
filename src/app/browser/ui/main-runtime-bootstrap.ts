@@ -10,6 +10,7 @@ import type {
 import type {
   StepPreviewDebugController,
 } from '../../../features/step/step-preview-debug-controller.ts';
+import type { AppTranslator } from '../../../shared/i18n/browser-translation-contract.ts';
 import {
   createMainPreviewCaptureController,
   type MainPreviewCaptureController,
@@ -26,7 +27,6 @@ import {
 
 type StatusKind = 'success' | 'error' | 'info';
 type StatusReporter = (message: string, kind?: StatusKind) => void;
-type Translator = (key: unknown, values?: Record<string, string | number>) => string;
 
 interface OrbitState {
   orbitPitchDeg: number;
@@ -65,7 +65,7 @@ export interface MainRuntimeBootstrapOptions {
   stepPreviewDebugController: StepPreviewDebugController;
   debugGlobalObject: Record<string, unknown>;
   onStatus: StatusReporter;
-  t: Translator;
+  t: AppTranslator;
   lightGizmoElements: GizmoLightElements;
   axisGizmoElements: GizmoAxisElements;
   getCameraOrbit: () => OrbitState;

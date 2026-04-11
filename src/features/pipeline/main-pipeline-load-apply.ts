@@ -1,9 +1,9 @@
 import type { LoadedPipelineData } from './pipeline-model.ts';
 import type { PipelineStateSnapshot } from './pipeline-state.ts';
+import type { AppTranslator } from '../../shared/i18n/browser-translation-contract.ts';
 
 type StatusKind = 'success' | 'error' | 'info';
 type StatusReporter = (message: string, kind?: StatusKind) => void;
-type Translator = (key: unknown, values?: Record<string, string | number>) => string;
 
 interface ApplyLoadedPipelineOptions {
   loaded: LoadedPipelineData;
@@ -13,7 +13,7 @@ interface ApplyLoadedPipelineOptions {
   cancelPendingApply: () => void;
   applyNow: () => void;
   onStatus: StatusReporter;
-  t: Translator;
+  t: AppTranslator;
 }
 
 function ensureFunction(value: unknown, label: string): void {

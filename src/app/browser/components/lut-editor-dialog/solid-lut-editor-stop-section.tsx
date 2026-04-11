@@ -1,6 +1,7 @@
 import { For, Show, type Accessor, type JSX } from 'solid-js';
 import { MAX_STOPS_PER_RAMP, type ColorRamp, type ColorStop } from '../../../../features/lut-editor/lut-editor-model.ts';
 import { colorToHex } from '../../../../features/pipeline/pipeline-model.ts';
+import type { AppTranslator } from '../../../../shared/i18n/browser-translation-contract.ts';
 import { cx } from '../../styles/cx.ts';
 import * as ui from '../../styles/ui-primitives.css.ts';
 import { DropdownMenu } from '../solid-dropdown-menu.tsx';
@@ -8,7 +9,7 @@ import * as styles from './shared.css.ts';
 import { formatPositionPercent, scheduleSelectAllTextIfFocused } from './shared.ts';
 
 interface LutEditorStopSectionProps {
-  tr: (key: string, values?: Record<string, string | number>) => string;
+  tr: AppTranslator;
   selectedRamp: Accessor<ColorRamp | null>;
   focusedStop: Accessor<ColorStop | null>;
   stopKnobPlacements: Accessor<Map<string, 'below' | 'above'>>;

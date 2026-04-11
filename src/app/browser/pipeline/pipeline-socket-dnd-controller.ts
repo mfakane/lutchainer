@@ -8,6 +8,7 @@ import {
 } from '../interactions/socket-dnd.ts';
 import type { ParamRef } from '../../../features/step/step-model.ts';
 import type { SocketAxis, SocketDragState, SocketDropTarget } from '../../../features/pipeline/pipeline-view.ts';
+import type { AppTranslator } from '../../../shared/i18n/browser-translation-contract.ts';
 
 type StatusKind = 'success' | 'error' | 'info';
 
@@ -29,7 +30,7 @@ export interface PipelineSocketDndControllerOptions {
   setSuppressClickUntil: (until: number) => void;
   setUserSelect: (value: string) => void;
   onStatus: (message: string, kind?: StatusKind) => void;
-  t: (key: unknown, values?: Record<string, string | number>) => string;
+  t: AppTranslator;
   now?: () => number;
 }
 

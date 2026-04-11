@@ -6,7 +6,7 @@ import {
     type ShaderGenerator,
     type ShaderLanguage,
 } from '../../../features/shader/shader-generator.ts';
-import { t, useLanguage } from '../i18n.ts';
+import { t, useLanguage, type TranslationArgs, type TranslationKey } from '../i18n.ts';
 import { cx } from '../styles/cx.ts';
 import * as ui from '../styles/ui-primitives.css.ts';
 import * as styles from './solid-shader-dialog.css.ts';
@@ -107,10 +107,10 @@ function ensureShaderDialogShellOptions(value: unknown): asserts value is Shader
 
 function ShaderDialogContent(props: { options: ShaderDialogContentOptions }) {
   const language = useLanguage();
-  const tr = (key: string, values?: Record<string, string | number>): string => {
+  function tr<K extends TranslationKey>(key: K, ...args: TranslationArgs<K>): string {
     language();
-    return t(key, values);
-  };
+    return t(key, ...args);
+  }
 
   const [activeEntryId, setActiveEntryId] = createSignal<ShaderCodeEntryId>('glsl-fragment');
   const [buildInput, setBuildInput] = createSignal<ShaderBuildInput | null>(null);

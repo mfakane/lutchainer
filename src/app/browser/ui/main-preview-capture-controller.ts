@@ -5,10 +5,9 @@ import {
   downloadBlobAsFile,
 } from '../../../platforms/browser/preview-export.ts';
 import { Renderer } from '../../../platforms/webgl/renderer.ts';
+import type { AppTranslator } from '../../../shared/i18n/browser-translation-contract.ts';
 
 type StatusKind = 'success' | 'error' | 'info';
-type TranslationParam = string | number;
-type TranslateFn = (key: string, params?: Record<string, TranslationParam>) => string;
 
 interface CaptureRequestOptions {
   hideLightGuide?: boolean;
@@ -35,7 +34,7 @@ interface CreateMainPreviewCaptureControllerOptions {
   getRenderSystem: () => RenderSystemLike | null;
   getStepPreviewSystem: () => StepPreviewSystemLike | null;
   onStatus: (message: string, kind: StatusKind) => void;
-  t: TranslateFn;
+  t: AppTranslator;
 }
 
 export interface MainPreviewCaptureController {

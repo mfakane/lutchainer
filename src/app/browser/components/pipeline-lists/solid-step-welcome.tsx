@@ -1,5 +1,5 @@
 import { For, type JSX } from 'solid-js';
-import { t, useLanguage } from '../../i18n.ts';
+import { t, useLanguage, type TranslationArgs, type TranslationKey } from '../../i18n.ts';
 import { cx } from '../../styles/cx.ts';
 import * as ui from '../../styles/ui-primitives.css.ts';
 import type { PipelinePresetKey } from '../../ui/pipeline-presets.ts';
@@ -17,10 +17,10 @@ interface SolidStepWelcomeProps extends StepWelcomeProps {
 export function StepWelcome(props: SolidStepWelcomeProps): JSX.Element {
   const language = useLanguage();
 
-  const tr = (key: string, values?: Record<string, string | number>): string => {
+  function tr<K extends TranslationKey>(key: K, ...args: TranslationArgs<K>): string {
     language();
-    return t(key, values);
-  };
+    return t(key, ...args);
+  }
 
   const handleLoadExample = async (example: PipelinePresetKey): Promise<void> => {
     try {

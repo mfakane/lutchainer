@@ -3,14 +3,27 @@ import {
   readTextFromLocalStorage,
   writeTextToLocalStorage,
 } from '../../platforms/browser/storage.ts';
+import type {
+  AppTranslator,
+  RuntimeTranslationValues,
+  TranslationArgs,
+  TranslationKey,
+  TranslationSchema,
+} from '../../shared/i18n/browser-translation-contract.ts';
+export type {
+  AppTranslator as Translator,
+  PanelPresetTranslationKey,
+  ParamGroupDescriptionTranslationKey,
+  StaticTranslationKey,
+  TranslationArgs,
+  TranslationKey,
+  TranslationParams,
+  TranslationSchema,
+} from '../../shared/i18n/browser-translation-contract.ts';
 
 export type Language = 'ja' | 'en';
 
-type TemplateValue = string | number;
-type TemplateValues = Record<string, TemplateValue>;
 type LanguageChangeListener = (language: Language) => void;
-
-type TranslationMap = Record<string, string>;
 
 const STORAGE_KEY = 'lutchainer.language';
 const SUPPORTED_LANGUAGES: Language[] = ['ja', 'en'];
@@ -20,7 +33,7 @@ const LANGUAGE_LABELS: Record<Language, string> = {
   en: 'English',
 };
 
-const TRANSLATIONS: Record<Language, TranslationMap> = {
+const TRANSLATIONS: Record<Language, TranslationSchema> = {
   ja: {
     'common.unknownError': '不明なエラー',
     'common.on': 'ON',
@@ -504,7 +517,7 @@ function isLanguage(value: unknown): value is Language {
   return value === 'ja' || value === 'en';
 }
 
-function isTemplateValues(value: unknown): value is TemplateValues {
+function isTemplateValues(value: unknown): value is RuntimeTranslationValues {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     return false;
   }
@@ -577,7 +590,7 @@ function notifyLanguageListeners(language: Language): void {
   }
 }
 
-function formatTemplate(template: string, values?: TemplateValues): string {
+function formatTemplate(template: string, values?: RuntimeTranslationValues): string {
   if (typeof template !== 'string') {
     throw new Error('formatTemplate: template must be a string.');
   }
@@ -633,15 +646,15 @@ export function getLanguageLabel(language: unknown, displayLanguage: unknown = g
   return LANGUAGE_LABELS[language];
 }
 
-export function t(key: unknown, values?: TemplateValues): string {
+export const t: AppTranslator = <K extends TranslationKey>(key: K, ...args: TranslationArgs<K>): string => {
   if (typeof key !== 'string' || key.trim().length === 0) {
     throw new Error(`Invalid translation key: ${String(key)}`);
   }
 
   const currentLanguage = getLanguage();
   const template = TRANSLATIONS[currentLanguage][key] ?? TRANSLATIONS.en[key] ?? key;
-  return formatTemplate(template, values);
-}
+  return formatTemplate(template, args[0]);
+};
 
 export function subscribeLanguageChange(listener: unknown): () => void {
   if (typeof listener !== 'function') {

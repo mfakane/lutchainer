@@ -1,9 +1,7 @@
 import type { CustomParamModel, LutModel, StepModel } from '../../../features/step/step-model.ts';
 import * as pipelineModel from '../../../features/pipeline/pipeline-model.ts';
+import type { AppTranslator } from '../../../shared/i18n/browser-translation-contract.ts';
 import { createPipelineIoSystem } from './pipeline-io-system.ts';
-
-type TranslationParam = string | number;
-type Translator = (key: unknown, values?: Record<string, TranslationParam>) => string;
 
 interface StepPreviewSystemLike {
   renderPreviewPngBytes: () => Promise<Uint8Array>;
@@ -14,7 +12,7 @@ interface SetupMainPipelineIoSystemOptions {
   getSteps: () => StepModel[];
   getCustomParams: () => CustomParamModel[];
   getStepPreviewSystem: () => StepPreviewSystemLike | null;
-  t: Translator;
+  t: AppTranslator;
 }
 
 function ensureFunction(value: unknown, label: string): void {

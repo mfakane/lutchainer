@@ -6,6 +6,8 @@ import {
   t,
   useLanguage,
   type Language,
+  type TranslationArgs,
+  type TranslationKey,
 } from '../i18n.ts';
 import { cx } from '../styles/cx.ts';
 import * as ui from '../styles/ui-primitives.css.ts';
@@ -104,10 +106,10 @@ function HeaderActionGroup(props: HeaderActionGroupProps): JSX.Element {
   let pipelineFileInputRef: HTMLInputElement | null = null;
   const language = useLanguage();
 
-  const tr = (key: string, values?: Record<string, string | number>): string => {
+  function tr<K extends TranslationKey>(key: K, ...args: TranslationArgs<K>): string {
     language();
-    return t(key, values);
-  };
+    return t(key, ...args);
+  }
 
   const openPipelineFilePicker = (): void => {
     if (!pipelineFileInputRef) {
@@ -283,10 +285,10 @@ export function mountLanguageSwitcher(target: HTMLElement): void {
 
   disposeLanguageSwitcher = render(() => {
     const language = useLanguage();
-    const tr = (key: string, values?: Record<string, string | number>): string => {
+    function tr<K extends TranslationKey>(key: K, ...args: TranslationArgs<K>): string {
       language();
-      return t(key, values);
-    };
+      return t(key, ...args);
+    }
     const isLanguageActive = (candidate: Language): boolean => language() === candidate;
     const handleLanguageSelect = (value: unknown): void => {
       if (!isLanguage(value)) {

@@ -1,12 +1,13 @@
 import { For, type Accessor, type JSX } from 'solid-js';
 import type { ColorRamp, ColorRamp2dLutData, ColorStop } from '../../../../features/lut-editor/lut-editor-model.ts';
 import { colorToHex } from '../../../../features/pipeline/pipeline-model.ts';
+import type { AppTranslator } from '../../../../shared/i18n/browser-translation-contract.ts';
 import { cx } from '../../styles/cx.ts';
 import * as ui from '../../styles/ui-primitives.css.ts';
 import * as styles from './shared.css.ts';
 
 interface LutEditorPreviewProps {
-  tr: (key: string, values?: Record<string, string | number>) => string;
+  tr: AppTranslator;
   rampData: Accessor<ColorRamp2dLutData | null>;
   selectedRampId: Accessor<string | null>;
   focusedStopId: Accessor<string | null>;

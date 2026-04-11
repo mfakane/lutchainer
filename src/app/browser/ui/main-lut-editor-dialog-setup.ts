@@ -1,5 +1,6 @@
 import { createDefaultColorRamp2dLutData } from '../../../features/lut-editor/lut-editor-runtime.ts';
 import type { LutModel } from '../../../features/step/step-model.ts';
+import type { AppTranslator } from '../../../shared/i18n/browser-translation-contract.ts';
 import {
   mountLutEditorDialogShell,
   syncLutEditorDialogState,
@@ -7,7 +8,6 @@ import {
 
 type StatusKind = 'success' | 'error' | 'info';
 type StatusReporter = (message: string, kind?: StatusKind) => void;
-type Translator = (key: unknown, values?: Record<string, string | number>) => string;
 
 export interface SetupMainLutEditorDialogOptions {
   dialogEl: HTMLDialogElement;
@@ -21,7 +21,7 @@ export interface SetupMainLutEditorDialogOptions {
   scheduleApply: () => void;
   renderLutStrip: () => void;
   onStatus: StatusReporter;
-  t: Translator;
+  t: AppTranslator;
 }
 
 export interface LutEditorDialogController {

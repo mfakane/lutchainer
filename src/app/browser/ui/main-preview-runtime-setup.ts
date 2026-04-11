@@ -11,13 +11,13 @@ import {
 } from '../../../platforms/webgl/step-preview-renderer.ts';
 import type { ShaderBuildInput } from '../../../features/shader/shader-generator.ts';
 import type { PreviewShapeType } from '../components/solid-preview-shape-bar.tsx';
+import type { AppTranslator } from '../../../shared/i18n/browser-translation-contract.ts';
 import type { PreviewShapeController } from './preview-shape-controller.ts';
 import { createPreviewShapeController } from './preview-shape-controller.ts';
 import { Renderer } from '../../../platforms/webgl/renderer.ts';
 
 type StatusKind = 'success' | 'error' | 'info';
 type StatusReporter = (message: string, kind?: StatusKind) => void;
-type Translator = (key: unknown, values?: Record<string, string | number>) => string;
 
 export interface MainPreviewRuntimeSetupOptions {
   canvas: HTMLCanvasElement;
@@ -25,7 +25,7 @@ export interface MainPreviewRuntimeSetupOptions {
   isAutoApplyEnabled: () => boolean;
   onUpdateShaderCodePanel: (frag: string) => void;
   onStatus: StatusReporter;
-  t: Translator;
+  t: AppTranslator;
   getWireframeEnabled: () => boolean;
   setWireframeEnabled: (enabled: boolean) => void;
   syncPreviewShapeState: (shape: PreviewShapeType) => void;

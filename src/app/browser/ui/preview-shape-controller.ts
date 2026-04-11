@@ -1,10 +1,10 @@
 import type { PreviewShapeType } from '../components/solid-preview-shape-bar.tsx';
 import type { Renderer } from '../../../platforms/webgl/renderer.ts';
+import type { AppTranslator } from '../../../shared/i18n/browser-translation-contract.ts';
 import { createCube, createSphere, createTorus } from '../../../shared/utils/geometry.ts';
 
 type StatusKind = 'success' | 'error' | 'info';
 type StatusReporter = (message: string, kind?: StatusKind) => void;
-type Translator = (key: unknown, values?: Record<string, string | number>) => string;
 
 export interface PreviewShapeControllerOptions {
   renderer: Renderer;
@@ -14,7 +14,7 @@ export interface PreviewShapeControllerOptions {
   syncPreviewShapeState: (shape: PreviewShapeType) => void;
   syncPreviewWireframeState: (enabled: boolean) => void;
   onStatus: StatusReporter;
-  t: Translator;
+  t: AppTranslator;
 }
 
 export interface PreviewShapeController {

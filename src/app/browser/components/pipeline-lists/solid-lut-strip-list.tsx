@@ -1,5 +1,5 @@
 import { For, Show, type JSX } from 'solid-js';
-import { t, useLanguage } from '../../i18n.ts';
+import { t, useLanguage, type TranslationArgs, type TranslationKey } from '../../i18n.ts';
 import { cx } from '../../styles/cx.ts';
 import * as ui from '../../styles/ui-primitives.css.ts';
 import { DropdownMenu } from '../solid-dropdown-menu.tsx';
@@ -11,10 +11,10 @@ export function LutStripList(props: LutStripListProps): JSX.Element {
   let fileInputRef: HTMLInputElement | null = null;
   const language = useLanguage();
 
-  const tr = (key: string, values?: Record<string, string | number>): string => {
+  function tr<K extends TranslationKey>(key: K, ...args: TranslationArgs<K>): string {
     language();
-    return t(key, values);
-  };
+    return t(key, ...args);
+  }
 
   const usageCount = (lutId: string): number => props.steps().reduce((count, step) => (step.lutId === lutId ? count + 1 : count), 0);
 

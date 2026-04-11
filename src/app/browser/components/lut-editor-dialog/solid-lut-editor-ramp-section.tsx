@@ -1,5 +1,6 @@
 import { For, Show, type Accessor, type JSX } from 'solid-js';
 import { MAX_RAMPS, type ColorRamp, type ColorRamp2dLutData } from '../../../../features/lut-editor/lut-editor-model.ts';
+import type { AppTranslator } from '../../../../shared/i18n/browser-translation-contract.ts';
 import { cx } from '../../styles/cx.ts';
 import * as ui from '../../styles/ui-primitives.css.ts';
 import { DropdownMenu } from '../solid-dropdown-menu.tsx';
@@ -7,7 +8,7 @@ import * as styles from './shared.css.ts';
 import { formatPositionPercent, scheduleSelectAllTextIfFocused } from './shared.ts';
 
 interface LutEditorRampSectionProps {
-  tr: (key: string, values?: Record<string, string | number>) => string;
+  tr: AppTranslator;
   rampData: Accessor<ColorRamp2dLutData | null>;
   selectedRamp: Accessor<ColorRamp | null>;
   selectedRampId: Accessor<string | null>;

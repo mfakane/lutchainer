@@ -2,7 +2,7 @@ import { For, Show, createSignal, type JSX } from 'solid-js';
 import * as pipelineModel from '../../../../features/pipeline/pipeline-model.ts';
 import { getCustomChannelsForBlendMode, getSelectableBlendOpsForChannel } from '../../../../features/step/step-blend-strategies.ts';
 import { BLEND_MODES, MAX_STEP_LABEL_LENGTH, type BlendOp, type ChannelName, type LutModel, type StepModel } from '../../../../features/step/step-model.ts';
-import { t, useLanguage } from '../../i18n.ts';
+import { t, useLanguage, type TranslationArgs, type TranslationKey } from '../../i18n.ts';
 import { cx } from '../../styles/cx.ts';
 import * as ui from '../../styles/ui-primitives.css.ts';
 import * as styles from './shared.css.ts';
@@ -13,10 +13,10 @@ import { StepWelcome } from './solid-step-welcome.tsx';
 export function StepList(props: StepListProps): JSX.Element {
   const language = useLanguage();
 
-  const tr = (key: string, values?: Record<string, string | number>): string => {
+  function tr<K extends TranslationKey>(key: K, ...args: TranslationArgs<K>): string {
     language();
-    return t(key, values);
-  };
+    return t(key, ...args);
+  }
 
   const resolveLut = (lutId: string): LutModel | null => {
     const candidates = props.luts();

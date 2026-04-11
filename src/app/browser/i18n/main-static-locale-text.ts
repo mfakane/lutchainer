@@ -1,14 +1,14 @@
+import type { AppTranslator, StaticTranslationKey } from '../../../shared/i18n/browser-translation-contract.ts';
+
 type TranslationTarget = {
   selector: string;
-  key: string;
+  key: StaticTranslationKey;
   attribute?: 'textContent' | 'aria-label';
 };
 
-type Translator = (key: string) => string;
-
 interface SyncMainStaticLocaleTextOptions {
   getLanguage: () => string;
-  t: Translator;
+  t: AppTranslator;
 }
 
 const STATIC_TRANSLATION_TARGETS: TranslationTarget[] = [

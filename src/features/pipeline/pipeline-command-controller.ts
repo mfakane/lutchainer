@@ -8,10 +8,9 @@ import type {
 import * as pipelineModel from './pipeline-model.ts';
 import type { PipelineStateSnapshot } from './pipeline-state.ts';
 import type { SocketAxis } from './pipeline-view.ts';
+import type { AppTranslator } from '../../shared/i18n/browser-translation-contract.ts';
 
 type StatusKind = 'success' | 'error' | 'info';
-type TemplateValue = string | number;
-type TemplateValues = Record<string, TemplateValue>;
 
 export interface AddStepOptions {
   recordHistory?: boolean;
@@ -38,7 +37,7 @@ interface PipelineCommandControllerOptions {
   scheduleApply: () => void;
   onStepOpsChanged?: () => void;
   status: (message: string, kind?: StatusKind) => void;
-  t: (key: unknown, params?: TemplateValues) => string;
+  t: AppTranslator;
 }
 
 interface PipelineCommandController {

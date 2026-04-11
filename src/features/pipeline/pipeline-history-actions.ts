@@ -1,4 +1,5 @@
 import type { PipelineStateSnapshot } from './pipeline-state.ts';
+import type { AppTranslator } from '../../shared/i18n/browser-translation-contract.ts';
 
 type StatusKind = 'success' | 'error' | 'info';
 
@@ -13,7 +14,7 @@ interface PipelineHistoryLike {
 export interface PipelineHistoryActionsControllerOptions {
   history: PipelineHistoryLike;
   onStatus: (message: string, kind?: StatusKind) => void;
-  t: (key: unknown, values?: Record<string, string | number>) => string;
+  t: AppTranslator;
 }
 
 export interface PipelineHistoryActionsController {

@@ -1,14 +1,15 @@
 import * as pipelineModel from '../../../features/pipeline/pipeline-model.ts';
+import type { PanelPresetTranslationKey } from '../../../shared/i18n/browser-translation-contract.ts';
 
 export interface MaterialPresetDefinition {
   key: string;
-  labelKey: string;
+  labelKey: PanelPresetTranslationKey;
   settings: pipelineModel.MaterialSettings;
 }
 
 export interface LightPresetDefinition {
   key: string;
-  labelKey: string;
+  labelKey: PanelPresetTranslationKey;
   settings: pipelineModel.LightSettings;
 }
 

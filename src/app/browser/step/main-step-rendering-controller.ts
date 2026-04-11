@@ -13,11 +13,9 @@ import type {
   LutModel,
   StepModel,
 } from '../../../features/step/step-model.ts';
+import type { AppTranslator } from '../../../shared/i18n/browser-translation-contract.ts';
 import type { StepPreviewRenderer } from '../../../platforms/webgl/step-preview-renderer.ts';
 import { updateStepSwatches as updateStepSwatchesHelper } from './step-swatch-updater.ts';
-
-type TranslationParam = string | number;
-type Translator = (key: string, params?: Record<string, TranslationParam>) => string;
 
 interface StepPreviewSystemLike {
   bumpPipelineVersion: () => void;
@@ -37,7 +35,7 @@ export interface MainStepRenderingControllerOptions {
   getStepPreviewSystem: () => StepPreviewSystemLike | null;
   onUpdateShaderCodePanel: () => void;
   onScheduleConnectionDraw: () => void;
-  t: Translator;
+  t: AppTranslator;
 }
 
 export interface MainStepRenderingController {

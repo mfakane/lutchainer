@@ -1,6 +1,6 @@
 import { For, createSignal, type Accessor, type JSX } from 'solid-js';
 import { render } from 'solid-js/web';
-import { t, useLanguage } from '../i18n.ts';
+import { t, useLanguage, type TranslationArgs, type TranslationKey } from '../i18n.ts';
 import { cx } from '../styles/cx.ts';
 import * as ui from '../styles/ui-primitives.css.ts';
 import * as styles from './solid-preview-shape-bar.css.ts';
@@ -83,10 +83,10 @@ function ensureMountOptions(value: unknown): asserts value is PreviewShapeBarMou
 function PreviewShapeBar(props: PreviewShapeBarProps): JSX.Element {
   const language = useLanguage();
 
-  const tr = (key: string, values?: Record<string, string | number>): string => {
+  function tr<K extends TranslationKey>(key: K, ...args: TranslationArgs<K>): string {
     language();
-    return t(key, values);
-  };
+    return t(key, ...args);
+  }
 
   const handleMenuAction = (action: PreviewActionMenuValue): void => {
     if (!isValidActionMenuValue(action)) {

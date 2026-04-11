@@ -1,6 +1,7 @@
 import * as pipelineModel from '../../../features/pipeline/pipeline-model.ts';
 import type { ExportShaderZipResult } from '../../../features/shader/shader-export-system.ts';
 import type { ShaderBuildInput } from '../../../features/shader/shader-generator.ts';
+import type { AppTranslator } from '../../../shared/i18n/browser-translation-contract.ts';
 import {
   syncStatusPanelState,
 } from '../components/panels/index.tsx';
@@ -33,7 +34,7 @@ interface ShaderExportSystemLike {
 interface CreateShaderExportHandlerOptions {
   getShaderExportSystem: () => ShaderExportSystemLike | null;
   onStatus: MainStatusReporter;
-  t: (key: unknown, values?: Record<string, string | number>) => string;
+  t: AppTranslator;
 }
 
 function ensureFunction(value: unknown, label: string): void {

@@ -3,7 +3,7 @@ import { Portal } from 'solid-js/web';
 import * as pipelineModel from '../../../../features/pipeline/pipeline-model.ts';
 import type { ParamName, ParamRef } from '../../../../features/step/step-model.ts';
 import { drawParamPreviewSphereCpu } from '../../../../features/step/step-preview-cpu-render.ts';
-import { t, useLanguage } from '../../i18n.ts';
+import { t, useLanguage, type TranslationArgs, type TranslationKey } from '../../i18n.ts';
 import { cx } from '../../styles/cx.ts';
 import * as ui from '../../styles/ui-primitives.css.ts';
 import { CustomParamNode } from './custom-param-node.tsx';
@@ -16,10 +16,10 @@ export function ParamNodeList(props: ParamNodeListProps): JSX.Element {
   const [previewState, setPreviewState] = createSignal<ParamPreviewState | null>(null);
   const previewCanvases = new Map<ParamRef, HTMLCanvasElement>();
 
-  const tr = (key: string, values?: Record<string, string | number>): string => {
+  function tr<K extends TranslationKey>(key: K, ...args: TranslationArgs<K>): string {
     language();
-    return t(key, values);
-  };
+    return t(key, ...args);
+  }
 
   const isPreviewTarget = (param: ParamRef): boolean => PARAM_PREVIEW_TARGETS.has(param as ParamName);
 

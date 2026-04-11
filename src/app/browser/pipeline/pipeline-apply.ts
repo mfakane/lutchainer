@@ -1,6 +1,7 @@
 import type { Renderer } from '../../../platforms/webgl/renderer.ts';
 import type { ShaderBuildInput } from '../../../features/shader/shader-generator.ts';
 import { getShaderGenerator } from '../../../features/shader/shader-generator.ts';
+import type { AppTranslator } from '../../../shared/i18n/browser-translation-contract.ts';
 
 export interface PipelineApplyControllerOptions {
   getShaderBuildInput: () => ShaderBuildInput;
@@ -8,7 +9,7 @@ export interface PipelineApplyControllerOptions {
   isAutoApplyEnabled: () => boolean;
   onUpdateShaderCodePanel: (frag: string) => void;
   onStatus: (message: string, kind: 'success' | 'error' | 'info') => void;
-  t: (key: unknown, params?: Record<string, string | number>) => string;
+  t: AppTranslator;
   autoApplyDelayMs?: number;
 }
 

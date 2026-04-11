@@ -69,6 +69,7 @@ import {
 import type {
   PreviewShapeController,
 } from './preview-shape-controller.ts';
+import type { AppTranslator } from '../../../shared/i18n/browser-translation-contract.ts';
 import {
   getLightSettings,
   getMaterialSettings,
@@ -81,7 +82,6 @@ import {
 
 type StatusKind = 'success' | 'error' | 'info';
 type StatusReporter = (message: string, kind?: StatusKind) => void;
-type Translator = (key: unknown, values?: Record<string, string | number>) => string;
 type DomSelector = <T extends Element>(selector: string) => T;
 
 interface PipelineCommandsLike {
@@ -134,7 +134,7 @@ export interface BootstrapMainPostRuntimeOptions {
   setOrbitState: (nextState: CameraOrbitState) => void;
   onScheduleConnectionDraw: () => void;
   onStatus: StatusReporter;
-  t: Translator;
+  t: AppTranslator;
 }
 
 function ensureFunction(value: unknown, label: string): void {

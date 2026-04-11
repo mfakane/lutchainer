@@ -1,5 +1,6 @@
 import type { MaterialSettings } from '../../../features/pipeline/pipeline-model.ts';
 import type { PipelineStateSnapshot } from '../../../features/pipeline/pipeline-state.ts';
+import type { AppTranslator } from '../../../shared/i18n/browser-translation-contract.ts';
 import type {
   BlendOp,
   ChannelName,
@@ -23,7 +24,6 @@ import type { PipelinePresetKey } from './pipeline-presets.ts';
 
 type StatusKind = 'success' | 'error' | 'info';
 type StatusReporter = (message: string, kind?: StatusKind) => void;
-type Translator = (key: unknown, values?: Record<string, string | number>) => string;
 
 interface CustomParamReorderDragState {
   paramId: string;
@@ -71,7 +71,7 @@ export interface SetupMainPipelineListsOptions {
   scheduleApply: () => void;
   renderLutStrip: () => void;
   onStatus: StatusReporter;
-  t: Translator;
+  t: AppTranslator;
 }
 
 function ensureFunction(value: unknown, label: string): void {

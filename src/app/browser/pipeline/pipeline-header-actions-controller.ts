@@ -1,4 +1,5 @@
 import type { LoadedPipelineData } from '../../../features/pipeline/pipeline-model.ts';
+import type { AppTranslator } from '../../../shared/i18n/browser-translation-contract.ts';
 import { isPipelinePresetKey, type PipelinePresetKey } from '../ui/pipeline-presets.ts';
 import type {
   LoadPipelineFromFileResult,
@@ -7,7 +8,6 @@ import type {
 
 type StatusKind = 'success' | 'error' | 'info';
 type StatusReporter = (message: string, kind?: StatusKind) => void;
-type Translator = (key: unknown, values?: Record<string, string | number>) => string;
 
 interface PipelineIoSystemLike {
   savePipelineAsFile: () => Promise<SavePipelineAsFileResult>;
@@ -43,7 +43,7 @@ export interface PipelineHeaderActionControllerOptions {
   syncAutoApplyState: (enabled: boolean) => void;
   scheduleApply: () => void;
   onStatus: StatusReporter;
-  t: Translator;
+  t: AppTranslator;
 }
 
 export interface PipelineHeaderActionController {

@@ -39,6 +39,7 @@ import {
   type StepModel
 } from '../step/step-model.ts';
 import { MAX_LUTS, MAX_STEPS } from './pipeline-constants.ts';
+import type { ParamGroupDescriptionTranslationKey } from '../../shared/i18n/browser-translation-contract.ts';
 export {
   parseNonEmptyText,
   toErrorMessage,
@@ -57,7 +58,7 @@ export interface ParamDef {
 export interface ParamGroupDef {
   key: string;
   label: string;
-  descriptionKey: string;
+  descriptionKey: ParamGroupDescriptionTranslationKey;
   tone: 'default' | 'feedback';
   params: ParamName[];
 }
