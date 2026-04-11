@@ -300,6 +300,7 @@ export function bootstrapMainPostRuntime(options: BootstrapMainPostRuntimeOption
     onLoadExample: async example => {
       await options.pipelineHeaderActions.buildMountOptions().onResetPresetSelected(example);
     },
+    onScheduleConnectionDraw: () => options.onScheduleConnectionDraw(),
     computeLutUv: (stepIndex, pixelX, pixelY, canvasWidth, canvasHeight) =>
       resolveLutUvAtPixel({
         pixelX,

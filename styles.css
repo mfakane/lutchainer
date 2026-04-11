@@ -313,17 +313,6 @@ button:disabled:hover {
   opacity: 0.95;
 }
 
-.step-list {
-  position: relative;
-  z-index: 4;
-  flex: 1;
-  min-height: 0;
-  overflow: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
 .step-title {
   font-size: 12px;
   font-weight: 700;

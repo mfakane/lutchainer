@@ -68,10 +68,6 @@ export function setupPipelineUiInteractions(options: SetupPipelineUiInteractions
 
   setupPipelineDndBindings(options.dndBindings);
 
-  options.stepListEl.addEventListener('scroll', () => {
-    options.onScheduleConnectionDraw();
-  });
-
   options.paramColumnEl.addEventListener('scroll', () => {
     options.onScheduleConnectionDraw();
   });

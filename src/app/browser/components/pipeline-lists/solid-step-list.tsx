@@ -77,7 +77,7 @@ export function StepList(props: StepListProps): JSX.Element {
   };
 
   return (
-    <div class={styles.stepRoot}>
+    <div class={styles.stepRoot} onscroll={() => props.onScheduleConnectionDraw()}>
       <Show
         when={props.steps().length > 0}
         fallback={(

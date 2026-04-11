@@ -129,6 +129,7 @@ export function mountStepList(target: HTMLElement, options: StepListMountOptions
         shouldSuppressClick={options.shouldSuppressClick}
         onOpenPipelineFilePicker={options.onOpenPipelineFilePicker}
         onLoadExample={options.onLoadExample}
+        onScheduleConnectionDraw={options.onScheduleConnectionDraw}
         computeLutUv={options.computeLutUv}
         onStatus={options.onStatus}
       />

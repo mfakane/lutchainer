@@ -47,7 +47,7 @@ export function resolveMainDomElements(options: ResolveMainDomElementsOptions): 
   const select = options.select;
   return {
     pipelineWorkspaceEl: select<HTMLElement>('#pipeline-workspace'),
-    stepListEl: select<HTMLElement>('#step-list'),
+    stepListEl: select<HTMLElement>('#step-column'),
     lutStripListEl: select<HTMLElement>('#lut-strip-list'),
     paramNodeListEl: select<HTMLElement>('#param-node-list'),
     connectionLayerEl: select<SVGSVGElement>('#connection-layer'),
