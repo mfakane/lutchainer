@@ -553,7 +553,8 @@ globalStyle(`${lutRoot}`, {
   overflowX: 'auto',
   overflowY: 'hidden',
   minHeight: '122px',
-  paddingBottom: '2px',
+  padding: '12px',
+  paddingTop: 0,
 });
 
 globalStyle(`${lutRoot} [data-lut-empty="true"]`, {
