@@ -318,7 +318,7 @@ globalStyle(`${stepRoot} [data-part="welcome-actions"]`, {
 });
 
 globalStyle(`${stepRoot} [data-part="welcome-examples"]`, {
-  paddingTop: '4px',
+  paddingTop: '8px',
   borderTop: `1px solid color-mix(in srgb, ${vars.color.line}, transparent 30%)`,
 });
 
