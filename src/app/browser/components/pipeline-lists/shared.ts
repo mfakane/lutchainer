@@ -13,6 +13,7 @@ import {
 
 export type StatusKind = 'success' | 'error' | 'info';
 export type StatusReporter = (message: string, kind?: StatusKind) => void;
+export type WelcomeExample = 'HueShiftToon' | 'HueSatShiftToon' | 'Metallic';
 
 export const CHANNELS: ChannelName[] = ['r', 'g', 'b', 'h', 's', 'v'];
 export const PARAM_PREVIEW_SIZE = 112;
@@ -54,6 +55,10 @@ export interface StepListMountOptions {
   onStepBlendModeChange: (stepId: string, blendMode: StepModel['blendMode']) => void;
   onStepOpChange: (stepId: string, channel: ChannelName, op: BlendOp) => void;
   shouldSuppressClick?: () => boolean;
+  onOpenPipelineFilePicker: () => void;
+  onLoadExample: (example: WelcomeExample) => void | Promise<void>;
+  welcomeExamples: readonly WelcomeExample[];
+  welcomeGithubUrl: string;
   computeLutUv?: (
     stepIndex: number,
     pixelX: number,
@@ -113,6 +118,10 @@ export interface StepListProps {
   onStepBlendModeChange: (stepId: string, blendMode: StepModel['blendMode']) => void;
   onStepOpChange: (stepId: string, channel: ChannelName, op: BlendOp) => void;
   shouldSuppressClick?: () => boolean;
+  onOpenPipelineFilePicker: () => void;
+  onLoadExample: (example: WelcomeExample) => void | Promise<void>;
+  welcomeExamples: readonly WelcomeExample[];
+  welcomeGithubUrl: string;
   computeLutUv?: (
     stepIndex: number,
     pixelX: number,
@@ -121,6 +130,13 @@ export interface StepListProps {
     canvasHeight: number,
   ) => { u: number; v: number } | null;
   onStatus: StatusReporter;
+}
+
+export interface StepWelcomeProps {
+  onOpenPipelineFilePicker: () => void;
+  onLoadExample: (example: WelcomeExample) => void | Promise<void>;
+  welcomeExamples: readonly WelcomeExample[];
+  welcomeGithubUrl: string;
 }
 
 export interface LutStripListProps {

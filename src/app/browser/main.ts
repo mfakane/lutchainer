@@ -318,7 +318,9 @@ const pipelineHeaderActions = createPipelineHeaderActionController({
       customParams: [],
     });
     pipelineHistoryActions.clearHistory();
-    pipelineCommands.addStep({ recordHistory: false });
+    mainStepRendering.renderSteps();
+    pipelineApply.cancelPending();
+    pipelineApply.applyNow();
   },
   onApplyPipeline: () => {
     pipelineApply.applyNow();

@@ -127,6 +127,10 @@ export function mountStepList(target: HTMLElement, options: StepListMountOptions
         onStepBlendModeChange={options.onStepBlendModeChange}
         onStepOpChange={options.onStepOpChange}
         shouldSuppressClick={options.shouldSuppressClick}
+        onOpenPipelineFilePicker={options.onOpenPipelineFilePicker}
+        onLoadExample={options.onLoadExample}
+        welcomeExamples={options.welcomeExamples}
+        welcomeGithubUrl={options.welcomeGithubUrl}
         computeLutUv={options.computeLutUv}
         onStatus={options.onStatus}
       />

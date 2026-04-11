@@ -19,6 +19,7 @@ import {
   mountParamNodeList,
   mountStepList,
 } from '../components/pipeline-lists/index.tsx';
+import type { WelcomeExample } from '../components/pipeline-lists/shared.ts';
 
 type StatusKind = 'success' | 'error' | 'info';
 type StatusReporter = (message: string, kind?: StatusKind) => void;
@@ -39,6 +40,10 @@ export interface SetupMainPipelineListsOptions {
   getCustomParams: () => CustomParamModel[];
   getMaterialSettings: () => MaterialSettings;
   shouldSuppressClick: () => boolean;
+  onOpenPipelineFilePicker: () => void;
+  onLoadExample: (example: WelcomeExample) => void | Promise<void>;
+  welcomeExamples: readonly WelcomeExample[];
+  welcomeGithubUrl: string;
   computeLutUv?: (stepIndex: number, pixelX: number, pixelY: number, canvasWidth: number, canvasHeight: number) => { u: number; v: number } | null;
   onAddStep: () => void;
   onDuplicateStep: (stepId: string) => void;
@@ -97,6 +102,8 @@ function ensureOptions(value: unknown): asserts value is SetupMainPipelineListsO
   ensureFunction(options.getCustomParams, 'Main pipeline lists setup: getCustomParams');
   ensureFunction(options.getMaterialSettings, 'Main pipeline lists setup: getMaterialSettings');
   ensureFunction(options.shouldSuppressClick, 'Main pipeline lists setup: shouldSuppressClick');
+  ensureFunction(options.onOpenPipelineFilePicker, 'Main pipeline lists setup: onOpenPipelineFilePicker');
+  ensureFunction(options.onLoadExample, 'Main pipeline lists setup: onLoadExample');
   ensureFunction(options.onAddStep, 'Main pipeline lists setup: onAddStep');
   ensureFunction(options.onDuplicateStep, 'Main pipeline lists setup: onDuplicateStep');
   ensureFunction(options.onRemoveStep, 'Main pipeline lists setup: onRemoveStep');
@@ -264,6 +271,10 @@ export function setupMainPipelineLists(options: SetupMainPipelineListsOptions): 
     onStepBlendModeChange: options.onStepBlendModeChange,
     onStepOpChange: options.onStepOpChange,
     shouldSuppressClick: options.shouldSuppressClick,
+    onOpenPipelineFilePicker: options.onOpenPipelineFilePicker,
+    onLoadExample: options.onLoadExample,
+    welcomeExamples: options.welcomeExamples,
+    welcomeGithubUrl: options.welcomeGithubUrl,
     computeLutUv: options.computeLutUv,
     onStatus: options.onStatus,
   });

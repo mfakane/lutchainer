@@ -296,6 +296,20 @@ export function bootstrapMainPostRuntime(options: BootstrapMainPostRuntimeOption
     getCustomParams: getPipelineCustomParams,
     getMaterialSettings,
     shouldSuppressClick: () => performance.now() < getSuppressClickUntil(),
+    onOpenPipelineFilePicker: () => {
+      const pipelineFileInput = document.querySelector<HTMLInputElement>('#pipeline-file-input');
+      if (!(pipelineFileInput instanceof HTMLInputElement)) {
+        options.onStatus(options.t('header.status.missingPipelineFileInput'), 'error');
+        return;
+      }
+
+      pipelineFileInput.click();
+    },
+    onLoadExample: async example => {
+      await options.pipelineHeaderActions.buildMountOptions().onResetPresetSelected(example);
+    },
+    welcomeExamples: ['HueShiftToon', 'HueSatShiftToon', 'Metallic'],
+    welcomeGithubUrl: 'https://github.com/mfakane/lutchainer',
     computeLutUv: (stepIndex, pixelX, pixelY, canvasWidth, canvasHeight) =>
       resolveLutUvAtPixel({
         pixelX,
@@ -378,7 +392,6 @@ export function bootstrapMainPostRuntime(options: BootstrapMainPostRuntimeOption
     onStatus: options.onStatus,
   });
 
-  options.pipelineCommands.addStep({ recordHistory: false });
   options.pipelineApply.applyNow();
   if (options.mainRenderPipeline && !options.mainRenderPipeline.renderSystem.isRunning()) {
     options.mainRenderPipeline.renderSystem.start();

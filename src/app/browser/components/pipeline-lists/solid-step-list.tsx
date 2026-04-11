@@ -8,6 +8,7 @@ import * as ui from '../../styles/ui-primitives.css.ts';
 import * as styles from './shared.css.ts';
 import type { StepListProps } from './shared.ts';
 import { isNonEmptyString } from './shared.ts';
+import { StepWelcome } from './solid-step-welcome.tsx';
 
 export function StepList(props: StepListProps): JSX.Element {
   const language = useLanguage();
@@ -77,7 +78,30 @@ export function StepList(props: StepListProps): JSX.Element {
 
   return (
     <div class={styles.stepRoot}>
-      <Show when={props.steps().length > 0} fallback={<div data-step-empty="true">{tr('pipeline.step.empty')}</div>}>
+      <Show
+        when={props.steps().length > 0}
+        fallback={(
+          <StepWelcome
+            onOpenPipelineFilePicker={() => {
+              if (shouldIgnoreClick()) {
+                return;
+              }
+
+              props.onOpenPipelineFilePicker();
+            }}
+            onLoadExample={async example => {
+              if (shouldIgnoreClick()) {
+                return;
+              }
+
+              await props.onLoadExample(example);
+            }}
+            welcomeExamples={props.welcomeExamples}
+            welcomeGithubUrl={props.welcomeGithubUrl}
+            onStatus={props.onStatus}
+          />
+        )}
+      >
         <For each={props.steps()}>
           {(step, index) => {
             const selectedLut = (): LutModel | null => resolveLut(step.lutId);

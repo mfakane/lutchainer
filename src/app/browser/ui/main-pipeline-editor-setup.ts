@@ -8,6 +8,7 @@ import type {
   StepModel,
 } from '../../../features/step/step-model.ts';
 import { setupMainPipelineLists } from './main-pipeline-lists-setup.ts';
+import type { WelcomeExample } from '../components/pipeline-lists/shared.ts';
 
 type StatusKind = 'success' | 'error' | 'info';
 type StatusReporter = (message: string, kind?: StatusKind) => void;
@@ -44,6 +45,10 @@ export interface SetupMainPipelineEditorOptions {
   getCustomParams: () => CustomParamModel[];
   getMaterialSettings: () => MaterialSettings;
   shouldSuppressClick: () => boolean;
+  onOpenPipelineFilePicker: () => void;
+  onLoadExample: (example: WelcomeExample) => void | Promise<void>;
+  welcomeExamples: readonly WelcomeExample[];
+  welcomeGithubUrl: string;
   computeLutUv?: (stepIndex: number, pixelX: number, pixelY: number, canvasWidth: number, canvasHeight: number) => { u: number; v: number } | null;
   pipelineCommands: PipelineCommandsLike;
   onEditLut?: (lutId: string) => void;
@@ -118,6 +123,8 @@ function assertSetupMainPipelineEditorOptions(options: SetupMainPipelineEditorOp
   ensureFunction(options.getCustomParams, 'Main pipeline editor getCustomParams');
   ensureFunction(options.getMaterialSettings, 'Main pipeline editor getMaterialSettings');
   ensureFunction(options.shouldSuppressClick, 'Main pipeline editor shouldSuppressClick');
+  ensureFunction(options.onOpenPipelineFilePicker, 'Main pipeline editor onOpenPipelineFilePicker');
+  ensureFunction(options.onLoadExample, 'Main pipeline editor onLoadExample');
   assertPipelineCommandsLike(options.pipelineCommands);
   ensureFunction(options.createLutFromFile, 'Main pipeline editor createLutFromFile');
 
@@ -147,6 +154,10 @@ export function setupMainPipelineEditor(options: SetupMainPipelineEditorOptions)
     getCustomParams: options.getCustomParams,
     getMaterialSettings: options.getMaterialSettings,
     shouldSuppressClick: options.shouldSuppressClick,
+    onOpenPipelineFilePicker: options.onOpenPipelineFilePicker,
+    onLoadExample: options.onLoadExample,
+    welcomeExamples: options.welcomeExamples,
+    welcomeGithubUrl: options.welcomeGithubUrl,
     computeLutUv: options.computeLutUv,
     onAddStep: () => {
       options.pipelineCommands.addStep();

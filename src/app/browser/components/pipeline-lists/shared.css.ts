@@ -9,6 +9,9 @@ export const paramRoot = style({
 export const stepRoot = style({});
 export const lutRoot = style({});
 export const stepPreviewCanvas = style({});
+export const welcomeLinkButton = style({
+  textDecoration: 'none',
+});
 export const stepTitleInput = style({
   minWidth: 0,
   width: 'min(180px, 38vw)',
@@ -279,9 +282,59 @@ globalStyle(`${stepRoot}`, {
 globalStyle(`${stepRoot} [data-step-empty="true"]`, {
   minWidth: 0,
   border: `1px solid ${vars.color.panelBorderStrong}`,
-  borderRadius: '10px',
-  padding: '8px',
-  background: `color-mix(in srgb, ${vars.color.panel}, #000 8%)`,
+  borderRadius: '14px',
+  padding: '18px',
+  background: `linear-gradient(180deg, color-mix(in srgb, ${vars.color.panel2}, #000 2%), color-mix(in srgb, ${vars.color.panel}, #000 10%))`,
+  display: 'grid',
+  gap: '14px',
+});
+
+globalStyle(`${stepRoot} [data-part="welcome-eyebrow"]`, {
+  fontSize: '10px',
+  letterSpacing: '0.14em',
+  textTransform: 'uppercase',
+  color: vars.color.accent,
+  fontWeight: 700,
+});
+
+globalStyle(`${stepRoot} [data-part="welcome-title"]`, {
+  margin: 0,
+  fontSize: '24px',
+  lineHeight: 1.1,
+  color: vars.color.textStrong,
+});
+
+globalStyle(`${stepRoot} [data-part="welcome-copy"], ${stepRoot} [data-part="welcome-step-hint"]`, {
+  margin: 0,
+  fontSize: '13px',
+  lineHeight: 1.6,
+  color: vars.color.text,
+});
+
+globalStyle(`${stepRoot} [data-part="welcome-actions"]`, {
+  display: 'flex',
+  flexWrap: 'wrap',
+  gap: '8px',
+});
+
+globalStyle(`${stepRoot} [data-part="welcome-examples"]`, {
+  paddingTop: '4px',
+  borderTop: `1px solid color-mix(in srgb, ${vars.color.line}, transparent 30%)`,
+});
+
+globalStyle(`${stepRoot} [data-part="welcome-section-title"]`, {
+  fontSize: '11px',
+  fontWeight: 700,
+  color: vars.color.muted,
+  textTransform: 'uppercase',
+  letterSpacing: '0.08em',
+  marginBottom: '8px',
+});
+
+globalStyle(`${stepRoot} [data-part="welcome-example-list"]`, {
+  display: 'flex',
+  flexWrap: 'wrap',
+  gap: '8px',
 });
 
 globalStyle(`${stepRoot} [data-step-item="true"]`, {
