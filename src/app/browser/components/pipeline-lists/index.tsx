@@ -11,7 +11,6 @@ import {
   isValidCustomParamModel,
   isValidLutModel,
   isValidStepModel,
-  restoreElementScrollPosition,
   type LutStripListMountOptions,
   type ParamNodeListMountOptions,
   type StatusReporter,
@@ -105,12 +104,9 @@ export function mountStepList(target: HTMLElement, options: StepListMountOptions
         return;
       }
 
-      const scrollTop = target.scrollTop;
-      const scrollLeft = target.scrollLeft;
       setSteps(cloneStepArray(nextSteps));
       setLuts(cloneLutArray(nextLuts));
       setCustomParams(cloneCustomParamArray(nextCustomParams));
-      restoreElementScrollPosition(target, scrollTop, scrollLeft);
     };
 
     return (

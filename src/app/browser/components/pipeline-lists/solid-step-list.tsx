@@ -1,4 +1,4 @@
-import { For, Show, createSignal, type JSX } from 'solid-js';
+import { For, Show, createEffect, createSignal, on, type JSX } from 'solid-js';
 import * as pipelineModel from '../../../../features/pipeline/pipeline-model.ts';
 import { getCustomChannelsForBlendMode, getSelectableBlendOpsForChannel } from '../../../../features/step/step-blend-strategies.ts';
 import { BLEND_MODES, MAX_STEP_LABEL_LENGTH, type BlendOp, type ChannelName, type LutModel, type StepModel } from '../../../../features/step/step-model.ts';
@@ -7,11 +7,14 @@ import { cx } from '../../styles/cx.ts';
 import * as ui from '../../styles/ui-primitives.css.ts';
 import * as styles from './shared.css.ts';
 import type { StepListProps } from './shared.ts';
-import { isNonEmptyString } from './shared.ts';
+import { isNonEmptyString, restoreElementScrollPosition } from './shared.ts';
 import { StepWelcome } from './solid-step-welcome.tsx';
 
 export function StepList(props: StepListProps): JSX.Element {
   const language = useLanguage();
+  let scrollRoot: HTMLDivElement | undefined;
+  let savedScrollTop = 0;
+  let savedScrollLeft = 0;
 
   function tr<K extends TranslationKey>(key: K, ...args: TranslationArgs<K>): string {
     language();
@@ -76,8 +79,39 @@ export function StepList(props: StepListProps): JSX.Element {
     inputElement.value = trimmed.length > 0 ? trimmed : `Step ${displayIndex}`;
   };
 
+  const captureScrollPosition = (): void => {
+    if (!scrollRoot) {
+      return;
+    }
+
+    savedScrollTop = scrollRoot.scrollTop;
+    savedScrollLeft = scrollRoot.scrollLeft;
+  };
+
+  createEffect(on(
+    [props.steps, props.luts, props.customParams],
+    () => {
+      if (!scrollRoot) {
+        return;
+      }
+
+      restoreElementScrollPosition(scrollRoot, savedScrollTop, savedScrollLeft);
+    },
+    { defer: true },
+  ));
+
   return (
-    <div class={styles.stepRoot} onscroll={() => props.onScheduleConnectionDraw()}>
+    <div
+      ref={element => {
+        scrollRoot = element;
+        captureScrollPosition();
+      }}
+      class={styles.stepRoot}
+      onscroll={() => {
+        captureScrollPosition();
+        props.onScheduleConnectionDraw();
+      }}
+    >
       <Show
         when={props.steps().length > 0}
         fallback={(
