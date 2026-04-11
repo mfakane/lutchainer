@@ -36,9 +36,6 @@ import {
   resolveLutUvAtPixel,
 } from '../../../features/step/step-lut-uv-resolver.ts';
 import {
-  mountStatusLog,
-} from '../components/solid-status.tsx';
-import {
   getSuppressClickUntil,
   getLutReorderDragState,
   setLutReorderDragState,
@@ -265,11 +262,6 @@ export function bootstrapMainPostRuntime(options: BootstrapMainPostRuntimeOption
   });
   options.pipelineHistoryActions.clearHistory();
 
-  mountStatusLog(options.select<HTMLElement>('#error-log'), {
-    initialMessage: options.t('main.status.initialPrompt'),
-    initialKind: 'info',
-  });
-
   const lutEditorDialogEl = options.select<HTMLDialogElement>('#lut-editor-dialog');
   const lutEditorSurfaceEl = options.select<HTMLElement>('.lut-editor-dialog-surface');
   const lutEditorController = setupMainLutEditorDialog({
@@ -377,6 +369,8 @@ export function bootstrapMainPostRuntime(options: BootstrapMainPostRuntimeOption
     onUndoPipeline: options.pipelineHistoryActions.undo,
     onRedoPipeline: options.pipelineHistoryActions.redo,
     onStatus: options.onStatus,
+    initialStatusMessage: options.t('main.status.initialPrompt'),
+    initialStatusKind: 'info',
   });
 
   setupMainLayoutControls({

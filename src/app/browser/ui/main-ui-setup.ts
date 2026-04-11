@@ -1,18 +1,18 @@
-import type { PipelineDropIndicatorController } from '../pipeline/pipeline-drop-indicators.ts';
-import type { PipelineHeaderActionController } from '../pipeline/pipeline-header-actions-controller.ts';
-import { setupPipelineUiInteractions } from '../pipeline/pipeline-ui-interactions.ts';
-import type { PipelineSocketDndController } from '../pipeline/pipeline-socket-dnd-controller.ts';
 import type { LightSettings, MaterialSettings } from '../../../features/pipeline/pipeline-model.ts';
-import type { SocketAxis, SocketDragState, StepReorderDragState, LutReorderDragState } from '../../../features/pipeline/pipeline-view.ts';
+import type { LutReorderDragState, SocketAxis, SocketDragState, StepReorderDragState } from '../../../features/pipeline/pipeline-view.ts';
 import type { ShaderBuildInput } from '../../../features/shader/shader-generator.ts';
 import type { ParamRef } from '../../../features/step/step-model.ts';
-import { setupStepPreviewShapeUi } from '../step/step-preview-shape-ui.ts';
 import {
   mountHeaderActionGroup,
   mountLanguageSwitcher,
 } from '../components/solid-header-actions.tsx';
-import type { MainPreviewCaptureController } from './main-preview-capture-controller.ts';
+import type { PipelineDropIndicatorController } from '../pipeline/pipeline-drop-indicators.ts';
+import type { PipelineHeaderActionController } from '../pipeline/pipeline-header-actions-controller.ts';
+import type { PipelineSocketDndController } from '../pipeline/pipeline-socket-dnd-controller.ts';
+import { setupPipelineUiInteractions } from '../pipeline/pipeline-ui-interactions.ts';
+import { setupStepPreviewShapeUi } from '../step/step-preview-shape-ui.ts';
 import { setupMainPanels } from './main-panels-setup.ts';
+import type { MainPreviewCaptureController } from './main-preview-capture-controller.ts';
 import type { PreviewShapeController } from './preview-shape-controller.ts';
 
 type StatusKind = 'success' | 'error' | 'info';
@@ -25,6 +25,8 @@ interface SetupMainUiOptions {
   pipelineHeaderActions: PipelineHeaderActionController;
   previewShapeController: PreviewShapeController;
   mainPreviewCapture: MainPreviewCaptureController;
+  initialStatusMessage: string;
+  initialStatusKind?: StatusKind;
   isPreviewWireframeOverlayEnabled: () => boolean;
   lightGizmoLayerEl: SVGSVGElement;
   getMaterialSettings: () => MaterialSettings;
@@ -100,6 +102,17 @@ function assertSetupMainUiOptions(options: SetupMainUiOptions): void {
   ensureObject(options.mainPreviewCapture, 'Main UI setup mainPreviewCapture');
   ensureFunction(options.mainPreviewCapture.exportMainPreviewPng, 'Main UI setup mainPreviewCapture.exportMainPreviewPng');
   ensureFunction(options.mainPreviewCapture.exportStepPreviewPng, 'Main UI setup mainPreviewCapture.exportStepPreviewPng');
+  if (typeof options.initialStatusMessage !== 'string') {
+    throw new Error('Main UI setup initialStatusMessage must be a string.');
+  }
+  if (
+    options.initialStatusKind !== undefined
+      && options.initialStatusKind !== 'success'
+      && options.initialStatusKind !== 'error'
+      && options.initialStatusKind !== 'info'
+  ) {
+    throw new Error('Main UI setup initialStatusKind must be a valid status kind.');
+  }
 
   ensureSvgElement(options.lightGizmoLayerEl, 'Main UI setup lightGizmoLayerEl');
   ensureHTMLElement(options.paramNodeListEl, 'Main UI setup paramNodeListEl');
@@ -182,6 +195,9 @@ export function setupMainUi(options: SetupMainUiOptions): void {
   setupMainPanels({
     materialPanelEl: options.select<HTMLElement>('#material-panel'),
     lightPanelEl: options.select<HTMLElement>('#light-panel'),
+    statusPanelEl: options.select<HTMLElement>('#statusbar'),
+    initialStatusMessage: options.initialStatusMessage,
+    initialStatusKind: options.initialStatusKind,
     shaderDialogEl: options.select<HTMLDialogElement>('#shader-dialog'),
     shaderOpenButtonEl: options.select<HTMLButtonElement>('#btn-open-shader-dialog'),
     shaderSurfaceEl: options.select<Element>('.shader-dialog-surface'),

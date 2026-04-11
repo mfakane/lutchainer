@@ -1,22 +1,21 @@
-import { createSignal } from 'solid-js';
+import { createSignal, type JSX } from 'solid-js';
 import { render } from 'solid-js/web';
-import { cx } from '../styles/cx.ts';
-import * as styles from './solid-status.css.ts';
-
-export type StatusKind = 'success' | 'error' | 'info';
+import { cx } from '../../styles/cx.ts';
+import * as statusStyles from '../solid-status.css.ts';
+import type { StatusKind } from './shared.ts';
 
 interface StatusState {
   message: string;
   kind: StatusKind;
 }
 
-interface StatusLogMountOptions {
+interface StatusPanelMountOptions {
   initialMessage?: string;
   initialKind?: StatusKind;
 }
 
-let disposeStatusLog: (() => void) | null = null;
-let syncStatusLogInternal: ((nextState: StatusState) => void) | null = null;
+let disposeStatusPanel: (() => void) | null = null;
+let syncStatusPanelInternal: ((nextState: StatusState) => void) | null = null;
 
 function isValidStatusKind(value: unknown): value is StatusKind {
   return value === 'success' || value === 'error' || value === 'info';
@@ -41,7 +40,7 @@ function assertValidStatusState(value: unknown): asserts value is StatusState {
   }
 }
 
-function normalizeInitialState(options: StatusLogMountOptions | undefined): StatusState {
+function normalizeInitialState(options: StatusPanelMountOptions | undefined): StatusState {
   const message = options?.initialMessage;
   const kind = options?.initialKind;
 
@@ -59,24 +58,29 @@ function normalizeInitialState(options: StatusLogMountOptions | undefined): Stat
   };
 }
 
-function StatusLog(props: { state: () => StatusState }) {
-  return <div class={cx(styles.statusLog, styles.statusTone[props.state().kind])}>{props.state().message}</div>;
+export function StatusPanel(props: { state: () => StatusState }): JSX.Element {
+  return (
+    <div class={cx(statusStyles.statusLog, statusStyles.statusTone[props.state().kind])}>
+      {props.state().message}
+    </div>
+  );
 }
 
-export function mountStatusLog(target: HTMLElement, options?: StatusLogMountOptions): void {
+export function mountStatusPanel(target: HTMLElement, options?: StatusPanelMountOptions): void {
   if (!(target instanceof HTMLElement)) {
-    throw new Error('mountStatusLog: target must be an HTMLElement.');
+    throw new Error('mountStatusPanel: target must be an HTMLElement.');
   }
 
   const initialState = normalizeInitialState(options);
 
-  if (disposeStatusLog) {
-    disposeStatusLog();
-    disposeStatusLog = null;
+  if (disposeStatusPanel) {
+    disposeStatusPanel();
+    disposeStatusPanel = null;
   }
 
+  target.textContent = '';
   const [state, setState] = createSignal<StatusState>(initialState);
-  syncStatusLogInternal = nextState => {
+  syncStatusPanelInternal = nextState => {
     assertValidStatusState(nextState);
     setState({
       message: nextState.message,
@@ -84,10 +88,10 @@ export function mountStatusLog(target: HTMLElement, options?: StatusLogMountOpti
     });
   };
 
-  disposeStatusLog = render(() => <StatusLog state={state} />, target);
+  disposeStatusPanel = render(() => <StatusPanel state={state} />, target);
 }
 
-export function syncStatusLogState(nextState: StatusState): void {
+export function syncStatusPanelState(nextState: StatusState): void {
   assertValidStatusState(nextState);
-  syncStatusLogInternal?.(nextState);
+  syncStatusPanelInternal?.(nextState);
 }

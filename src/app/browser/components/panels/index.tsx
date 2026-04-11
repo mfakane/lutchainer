@@ -2,8 +2,6 @@ import { createSignal } from 'solid-js';
 import { render } from 'solid-js/web';
 import * as pipelineModel from '../../../../features/pipeline/pipeline-model.ts';
 import { t } from '../../i18n.ts';
-import { LightPanel } from './solid-light-panel.tsx';
-import { MaterialPanel } from './solid-material-panel.tsx';
 import {
   cloneLightSettings,
   cloneMaterialSettings,
@@ -15,6 +13,12 @@ import {
   type MaterialPanelMountOptions,
   type StatusReporter,
 } from './shared.ts';
+import { LightPanel } from './solid-light-panel.tsx';
+import { MaterialPanel } from './solid-material-panel.tsx';
+export {
+  mountStatusPanel,
+  syncStatusPanelState,
+} from './solid-status-panel.tsx';
 
 let disposeMaterialPanel: (() => void) | null = null;
 let syncMaterialPanelInternal: ((nextSettings: pipelineModel.MaterialSettings) => void) | null = null;

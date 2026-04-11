@@ -2,11 +2,11 @@ import * as pipelineModel from '../../../features/pipeline/pipeline-model.ts';
 import type { ExportShaderZipResult } from '../../../features/shader/shader-export-system.ts';
 import type { ShaderBuildInput } from '../../../features/shader/shader-generator.ts';
 import {
+  syncStatusPanelState,
+} from '../components/panels/index.tsx';
+import {
   syncShaderDialogState,
 } from '../components/solid-shader-dialog.tsx';
-import {
-  syncStatusLogState,
-} from '../components/solid-status.tsx';
 
 type StatusKind = 'success' | 'error' | 'info';
 export type MainStatusReporter = (message: string, kind?: StatusKind) => void;
@@ -109,7 +109,7 @@ export function createStatusReporter(): MainStatusReporter {
     }
     ensureStatusKind(kind);
 
-    syncStatusLogState({
+    syncStatusPanelState({
       message,
       kind,
     });

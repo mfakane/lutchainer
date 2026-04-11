@@ -3,6 +3,7 @@ import type { ShaderBuildInput } from '../../../features/shader/shader-generator
 import {
   mountLightPanel,
   mountMaterialPanel,
+  mountStatusPanel,
   syncLightPanelState,
   syncMaterialPanelState,
 } from '../components/panels/index.tsx';
@@ -17,6 +18,9 @@ type StatusReporter = (message: string, kind?: StatusKind) => void;
 export interface SetupMainPanelsOptions {
   materialPanelEl: HTMLElement;
   lightPanelEl: HTMLElement;
+  statusPanelEl: HTMLElement;
+  initialStatusMessage: string;
+  initialStatusKind?: StatusKind;
   shaderDialogEl: HTMLDialogElement;
   shaderOpenButtonEl: HTMLButtonElement;
   shaderSurfaceEl: Element;
@@ -50,6 +54,20 @@ function ensureOptions(value: unknown): asserts value is SetupMainPanelsOptions 
   }
   if (!(options.lightPanelEl instanceof HTMLElement)) {
     throw new Error('Main panel setup: lightPanelEl が不正です。');
+  }
+  if (!(options.statusPanelEl instanceof HTMLElement)) {
+    throw new Error('Main panel setup: statusPanelEl が不正です。');
+  }
+  if (typeof options.initialStatusMessage !== 'string') {
+    throw new Error('Main panel setup: initialStatusMessage が不正です。');
+  }
+  if (
+    options.initialStatusKind !== undefined
+      && options.initialStatusKind !== 'success'
+      && options.initialStatusKind !== 'error'
+      && options.initialStatusKind !== 'info'
+  ) {
+    throw new Error('Main panel setup: initialStatusKind が不正です。');
   }
   if (!(options.shaderDialogEl instanceof HTMLDialogElement)) {
     throw new Error('Main panel setup: shaderDialogEl が不正です。');
@@ -109,6 +127,11 @@ export function setupMainPanels(options: SetupMainPanelsOptions): void {
   });
 
   syncLightPanelState(options.getLightSettings());
+
+  mountStatusPanel(options.statusPanelEl, {
+    initialMessage: options.initialStatusMessage,
+    initialKind: options.initialStatusKind,
+  });
 
   mountShaderDialogShell({
     dialogEl: options.shaderDialogEl,

@@ -330,11 +330,12 @@ button:disabled:hover {
   font-weight: 700;
   color: var(--text-strong);
 }
+
 .step-mode-row {
   margin-bottom: 8px;
 }
 
-.error-section {
+.statusbar {
   border-top: 1px solid var(--line);
 }
 
