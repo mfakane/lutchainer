@@ -14,7 +14,7 @@
         "reveal": "silent",
         "panel": "shared",
         "showReuseMessage": true,
-        "clear": true
+        "revealProblems": "onProblem"
       }
     },
     {
@@ -27,7 +27,7 @@
         "reveal": "silent",
         "panel": "shared",
         "showReuseMessage": true,
-        "clear": true
+        "revealProblems": "onProblem"
       }
     }
   ]
