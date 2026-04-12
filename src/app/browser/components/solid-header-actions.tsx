@@ -18,7 +18,7 @@ import * as styles from './solid-header-actions.css.ts';
 type StatusKind = 'success' | 'error' | 'info';
 type StatusReporter = (message: string, kind?: StatusKind) => void;
 
-const RESET_PRESETS: readonly PipelinePresetKey[] = ['StandardToon', 'HueShiftToon', 'HueSatShiftToon', 'Metallic'];
+const RESET_PRESETS: readonly PipelinePresetKey[] = ['StandardToon', 'HueShiftToon', 'HueSatShiftToon', 'Gradient', 'Plastic', 'Metallic'];
 
 interface HeaderActionGroupMountOptions {
   initialAutoApplyEnabled: boolean;

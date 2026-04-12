@@ -1,12 +1,15 @@
+import { strFromU8, unzipSync } from 'fflate';
 import fs from 'node:fs';
 import path from 'node:path';
-import { unzipSync, strFromU8 } from 'fflate';
 
 const examplesDir = path.resolve('examples');
 const expectedFiles = [
-  'Metallic.lutchain',
+  'StandardToon.lutchain',
   'HueShiftToon.lutchain',
   'HueSatShiftToon.lutchain',
+  'Gradient.lutchain',
+  'Plastic.lutchain',
+  'Metallic.lutchain',
 ];
 
 function assert(condition: unknown, message: string): asserts condition {

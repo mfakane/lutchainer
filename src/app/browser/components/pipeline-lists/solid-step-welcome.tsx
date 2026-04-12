@@ -6,7 +6,7 @@ import type { PipelinePresetKey } from '../../ui/pipeline-presets.ts';
 import * as styles from './shared.css.ts';
 import type { StepWelcomeProps } from './shared.ts';
 
-const WELCOME_EXAMPLES: PipelinePresetKey[] = ['StandardToon', 'HueShiftToon', 'HueSatShiftToon', 'Metallic'];
+const WELCOME_EXAMPLES: PipelinePresetKey[] = ['StandardToon', 'HueShiftToon', 'HueSatShiftToon', 'Gradient', 'Plastic', 'Metallic'];
 const GITHUB_URL = 'https://github.com/mfakane/lutchainer';
 const BLENDER_ADDON_URL = 'https://github.com/mfakane/lutchainer/releases';
 
