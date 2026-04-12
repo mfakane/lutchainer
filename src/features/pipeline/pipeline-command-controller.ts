@@ -1,14 +1,9 @@
+import type { AppTranslator } from '../../shared/i18n/browser-translation-contract.ts';
 import { reorderItemsById } from '../../shared/utils/reorder.ts';
-import type {
-  CustomParamModel,
-  LutModel,
-  ParamRef,
-  StepModel,
-} from '../step/types.ts';
+import type { CustomParamModel, LutModel, ParamRef, StepModel } from '../step/step-model.ts';
 import * as pipelineModel from './pipeline-model.ts';
 import type { PipelineStateSnapshot } from './pipeline-state.ts';
 import type { SocketAxis } from './pipeline-view.ts';
-import type { AppTranslator } from '../../shared/i18n/browser-translation-contract.ts';
 
 type StatusKind = 'success' | 'error' | 'info';
 
