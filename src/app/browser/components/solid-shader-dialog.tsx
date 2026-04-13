@@ -35,23 +35,20 @@ interface ShaderDialogShellOptions {
 type ShaderCodeEntryId = 'glsl-fragment' | 'glsl-vertex' | 'hlsl-fragment' | 'mme-fragment';
 
 interface ShaderCodeEntry {
-  id: ShaderCodeEntryId;
   label: string;
   stageLabel: string;
   language: ShaderLanguage;
   getSource: (generator: ShaderGenerator, input: ShaderBuildInput, cachedFragShader?: string) => string;
 }
 
-const SHADER_CODE_ENTRIES: readonly ShaderCodeEntry[] = [
-  {
-    id: 'glsl-fragment',
+const SHADER_CODE_ENTRIES: Record<ShaderCodeEntryId, ShaderCodeEntry> = {
+  'glsl-fragment': {
     label: 'GLSL Fragment',
     stageLabel: 'Fragment',
     language: 'glsl',
     getSource: (generator, input, cachedFragShader) => cachedFragShader ?? generator.buildFragment(input),
   },
-  {
-    id: 'glsl-vertex',
+  'glsl-vertex': {
     label: 'GLSL Vertex',
     stageLabel: 'Vertex',
     language: 'glsl',
@@ -62,21 +59,19 @@ const SHADER_CODE_ENTRIES: readonly ShaderCodeEntry[] = [
       return generator.buildVertex();
     },
   },
-  {
-    id: 'hlsl-fragment',
+  'hlsl-fragment': {
     label: 'HLSL',
     stageLabel: 'HLSL',
     language: 'hlsl',
     getSource: (generator, input) => generator.buildFragment(input),
   },
-  {
-    id: 'mme-fragment',
+  'mme-fragment': {
     label: 'MMEffect',
     stageLabel: 'MMEffect',
     language: 'mme',
     getSource: (generator, input) => generator.buildFragment(input),
   },
-];
+};
 
 // --- Module-level state (populated when component renders) ---
 
@@ -128,7 +123,7 @@ function ShaderDialogContent(props: { options: ShaderDialogContentOptions }) {
     setCachedFragShader(fragmentShader);
   };
 
-  const activeEntry = () => SHADER_CODE_ENTRIES.find(entry => entry.id === activeEntryId()) ?? SHADER_CODE_ENTRIES[0];
+  const activeEntry = () => SHADER_CODE_ENTRIES[activeEntryId()] ?? SHADER_CODE_ENTRIES['glsl-fragment'];
 
   const shaderSource = () => {
     const input = buildInput();
@@ -181,14 +176,14 @@ function ShaderDialogContent(props: { options: ShaderDialogContentOptions }) {
           <div class={styles.helpText}>{tr('shader.help')}</div>
         </div>
         <div class={styles.tabs} aria-label={tr('shader.tabsAria')}>
-          <For each={SHADER_CODE_ENTRIES}>
-            {entry => (
+          <For each={Object.entries(SHADER_CODE_ENTRIES)}>
+            {([id, entry]) => (
               <button
                 type="button"
-                class={cx(ui.buttonBase, styles.tab, activeEntryId() === entry.id ? styles.tabState.active : styles.tabState.inactive)}
-                data-shader-stage={entry.id}
-                aria-pressed={activeEntryId() === entry.id ? 'true' : 'false'}
-                onClick={() => setActiveEntryId(entry.id)}
+                class={cx(ui.buttonBase, styles.tab, activeEntryId() === id ? styles.tabState.active : styles.tabState.inactive)}
+                data-shader-stage={id}
+                aria-pressed={activeEntryId() === id ? 'true' : 'false'}
+                onClick={() => setActiveEntryId(id as ShaderCodeEntryId)}
               >
                 {entry.label}
               </button>
