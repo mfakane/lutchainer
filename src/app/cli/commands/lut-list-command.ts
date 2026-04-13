@@ -1,9 +1,9 @@
-import process from 'node:process';
 import { parseArgs } from 'node:util';
 import {
   type PipelineZipLutEntry,
 } from '../../../shared/lutchain/lutchain-archive.ts';
 import { loadLutchainArchive } from '../cli-archive.ts';
+import { PROCESS_CLI_IO, type CliIo } from '../cli-io.ts';
 import { formatLutList, type LutListRow } from '../cli-output.ts';
 
 export function getLutListUsage(): string {
@@ -69,24 +69,24 @@ function toLutListJsonEntries(luts: readonly PipelineZipLutEntry[]): LutListJson
   }));
 }
 
-export async function runLutListCommand(argv: string[]): Promise<number> {
+export async function runLutListCommand(argv: string[], io: CliIo = PROCESS_CLI_IO): Promise<number> {
   try {
     const options = resolveLutListTarget(argv);
     const { archive } = await loadLutchainArchive(options.filePath);
     if (options.json) {
-      process.stdout.write(`${JSON.stringify(toLutListJsonEntries(archive.manifest.luts), null, 2)}\n`);
+      io.stdout(`${JSON.stringify(toLutListJsonEntries(archive.manifest.luts), null, 2)}\n`);
       return 0;
     }
 
-    process.stdout.write(`${formatLutList(toLutListRows(archive.manifest.luts))}\n`);
+    io.stdout(`${formatLutList(toLutListRows(archive.manifest.luts))}\n`);
     return 0;
   } catch (error) {
     if (error instanceof Error && error.message === '__help__') {
-      process.stdout.write(`${getLutListUsage()}\n`);
+      io.stdout(`${getLutListUsage()}\n`);
       return 0;
     }
     if (error instanceof Error) {
-      process.stderr.write(`${error.message}\n${getLutListUsage()}\n`);
+      io.stderr(`${error.message}\n${getLutListUsage()}\n`);
       return 1;
     }
     throw error;

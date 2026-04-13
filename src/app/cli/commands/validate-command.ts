@@ -1,4 +1,3 @@
-import process from 'node:process';
 import { parseArgs } from 'node:util';
 import {
   isRecord,
@@ -14,6 +13,7 @@ import {
 } from '../../../features/step/step-model.ts';
 import { MAX_LUTS, MAX_STEPS } from '../../../features/pipeline/pipeline-constants.ts';
 import { readLutchainBytes } from '../cli-archive.ts';
+import { PROCESS_CLI_IO, type CliIo } from '../cli-io.ts';
 
 const PARAM_NAMES = new Set([
   'lightness',
@@ -262,7 +262,7 @@ function formatValidateResult(result: ValidateResult): string {
   ].join('\n');
 }
 
-export async function runValidateCommand(argv: string[]): Promise<number> {
+export async function runValidateCommand(argv: string[], io: CliIo = PROCESS_CLI_IO): Promise<number> {
   try {
     const options = resolveValidateOptions(argv);
     const { bytes } = await readLutchainBytes(options.filePath);
@@ -295,18 +295,18 @@ export async function runValidateCommand(argv: string[]): Promise<number> {
     }
 
     if (options.json) {
-      process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+      io.stdout(`${JSON.stringify(result, null, 2)}\n`);
     } else {
-      process.stdout.write(`${formatValidateResult(result)}\n`);
+      io.stdout(`${formatValidateResult(result)}\n`);
     }
     return result.valid ? 0 : 1;
   } catch (error) {
     if (error instanceof Error && error.message === '__help__') {
-      process.stdout.write(`${getValidateUsage()}\n`);
+      io.stdout(`${getValidateUsage()}\n`);
       return 0;
     }
     if (error instanceof Error) {
-      process.stderr.write(`${error.message}\n${getValidateUsage()}\n`);
+      io.stderr(`${error.message}\n${getValidateUsage()}\n`);
       return 1;
     }
     throw error;

@@ -1,7 +1,7 @@
-import process from 'node:process';
 import { parseArgs } from 'node:util';
 import type { PipelineStepEntry } from '../../../shared/lutchain/lutchain-archive.ts';
 import { findStepById, formatCompactStepOps, loadLutchainArchive } from '../cli-archive.ts';
+import { PROCESS_CLI_IO, type CliIo } from '../cli-io.ts';
 import { formatInfoSummary, type InfoSummaryRow } from '../cli-output.ts';
 
 export function getStepShowUsage(): string {
@@ -55,26 +55,26 @@ function toStepShowRows(step: PipelineStepEntry): InfoSummaryRow[] {
   ];
 }
 
-export async function runStepShowCommand(argv: string[]): Promise<number> {
+export async function runStepShowCommand(argv: string[], io: CliIo = PROCESS_CLI_IO): Promise<number> {
   try {
     const options = resolveStepShowOptions(argv);
     const { archive } = await loadLutchainArchive(options.filePath);
     const step = findStepById(archive.manifest.steps, options.stepId);
 
     if (options.json) {
-      process.stdout.write(`${JSON.stringify(step, null, 2)}\n`);
+      io.stdout(`${JSON.stringify(step, null, 2)}\n`);
       return 0;
     }
 
-    process.stdout.write(`${formatInfoSummary(toStepShowRows(step))}\n`);
+    io.stdout(`${formatInfoSummary(toStepShowRows(step))}\n`);
     return 0;
   } catch (error) {
     if (error instanceof Error && error.message === '__help__') {
-      process.stdout.write(`${getStepShowUsage()}\n`);
+      io.stdout(`${getStepShowUsage()}\n`);
       return 0;
     }
     if (error instanceof Error) {
-      process.stderr.write(`${error.message}\n${getStepShowUsage()}\n`);
+      io.stderr(`${error.message}\n${getStepShowUsage()}\n`);
       return 1;
     }
     throw error;

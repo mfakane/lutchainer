@@ -1,5 +1,4 @@
 import path from 'node:path';
-import process from 'node:process';
 import { parseArgs } from 'node:util';
 import {
   ensureOutputDir,
@@ -8,6 +7,7 @@ import {
   outputBasename,
   writeOutputFile,
 } from '../cli-archive.ts';
+import { PROCESS_CLI_IO, type CliIo } from '../cli-io.ts';
 
 export function getLutExtractUsage(): string {
   return [
@@ -94,7 +94,7 @@ function resolveLutExtractOptions(argv: string[]): LutExtractCommandOptions {
   };
 }
 
-export async function runLutExtractCommand(argv: string[]): Promise<number> {
+export async function runLutExtractCommand(argv: string[], io: CliIo = PROCESS_CLI_IO): Promise<number> {
   try {
     const options = resolveLutExtractOptions(argv);
     const { archive } = await loadLutchainArchive(options.filePath);
@@ -110,7 +110,7 @@ export async function runLutExtractCommand(argv: string[]): Promise<number> {
         const outputPath = path.join(outputDir, outputBasename(lut.filename));
         writtenPaths.push(await writeOutputFile(outputPath, bytes));
       }
-      process.stdout.write(`${writtenPaths.join('\n')}\n`);
+      io.stdout(`${writtenPaths.join('\n')}\n`);
       return 0;
     }
 
@@ -121,15 +121,15 @@ export async function runLutExtractCommand(argv: string[]): Promise<number> {
     }
 
     const writtenPath = await writeOutputFile(options.out ?? '', bytes);
-    process.stdout.write(`${writtenPath}\n`);
+    io.stdout(`${writtenPath}\n`);
     return 0;
   } catch (error) {
     if (error instanceof Error && error.message === '__help__') {
-      process.stdout.write(`${getLutExtractUsage()}\n`);
+      io.stdout(`${getLutExtractUsage()}\n`);
       return 0;
     }
     if (error instanceof Error) {
-      process.stderr.write(`${error.message}\n${getLutExtractUsage()}\n`);
+      io.stderr(`${error.message}\n${getLutExtractUsage()}\n`);
       return 1;
     }
     throw error;

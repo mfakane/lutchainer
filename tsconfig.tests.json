@@ -11,12 +11,15 @@
     "tests/**/*.ts",
     "tests/**/*.mts",
     "tests/**/*.d.ts",
+    "src/app/cli/**/*.ts",
     "src/features/**/*.ts",
+    "src/platforms/node/**/*.ts",
     "src/shared/**/*.ts",
     "src/types/node-shim.d.ts"
   ],
   "exclude": [
-    "src/app/**",
-    "src/platforms/**"
+    "src/app/browser/**",
+    "src/platforms/browser/**",
+    "src/platforms/webgl/**"
   ]
 }

@@ -1,7 +1,7 @@
-import process from 'node:process';
 import { parseArgs } from 'node:util';
 import type { PipelineStepEntry } from '../../../shared/lutchain/lutchain-archive.ts';
 import { loadLutchainArchive } from '../cli-archive.ts';
+import { PROCESS_CLI_IO, type CliIo } from '../cli-io.ts';
 import { formatStepList, type StepListRow } from '../cli-output.ts';
 
 export function getStepListUsage(): string {
@@ -76,25 +76,25 @@ function toStepListJsonEntries(steps: readonly PipelineStepEntry[]): StepListJso
   }));
 }
 
-export async function runStepListCommand(argv: string[]): Promise<number> {
+export async function runStepListCommand(argv: string[], io: CliIo = PROCESS_CLI_IO): Promise<number> {
   try {
     const options = resolveStepListOptions(argv);
     const { archive } = await loadLutchainArchive(options.filePath);
 
     if (options.json) {
-      process.stdout.write(`${JSON.stringify(toStepListJsonEntries(archive.manifest.steps), null, 2)}\n`);
+      io.stdout(`${JSON.stringify(toStepListJsonEntries(archive.manifest.steps), null, 2)}\n`);
       return 0;
     }
 
-    process.stdout.write(`${formatStepList(toStepListRows(archive.manifest.steps))}\n`);
+    io.stdout(`${formatStepList(toStepListRows(archive.manifest.steps))}\n`);
     return 0;
   } catch (error) {
     if (error instanceof Error && error.message === '__help__') {
-      process.stdout.write(`${getStepListUsage()}\n`);
+      io.stdout(`${getStepListUsage()}\n`);
       return 0;
     }
     if (error instanceof Error) {
-      process.stderr.write(`${error.message}\n${error.stack}\n${getStepListUsage()}\n`);
+      io.stderr(`${error.message}\n${getStepListUsage()}\n`);
       return 1;
     }
     throw error;

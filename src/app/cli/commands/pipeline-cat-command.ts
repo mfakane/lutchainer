@@ -1,6 +1,6 @@
-import process from 'node:process';
 import { parseArgs } from 'node:util';
 import { loadLutchainArchive } from '../cli-archive.ts';
+import { PROCESS_CLI_IO, type CliIo } from '../cli-io.ts';
 
 export function getPipelineCatUsage(): string {
   return [
@@ -36,19 +36,19 @@ function resolvePipelineCatOptions(argv: string[]): PipelineCatCommandOptions {
   };
 }
 
-export async function runPipelineCatCommand(argv: string[]): Promise<number> {
+export async function runPipelineCatCommand(argv: string[], io: CliIo = PROCESS_CLI_IO): Promise<number> {
   try {
     const options = resolvePipelineCatOptions(argv);
     const { archive } = await loadLutchainArchive(options.filePath);
-    process.stdout.write(`${JSON.stringify(archive.manifest, null, 2)}\n`);
+    io.stdout(`${JSON.stringify(archive.manifest, null, 2)}\n`);
     return 0;
   } catch (error) {
     if (error instanceof Error && error.message === '__help__') {
-      process.stdout.write(`${getPipelineCatUsage()}\n`);
+      io.stdout(`${getPipelineCatUsage()}\n`);
       return 0;
     }
     if (error instanceof Error) {
-      process.stderr.write(`${error.message}\n${getPipelineCatUsage()}\n`);
+      io.stderr(`${error.message}\n${getPipelineCatUsage()}\n`);
       return 1;
     }
     throw error;

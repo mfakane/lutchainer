@@ -2,6 +2,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { parseArgs } from 'node:util';
 import { createStaticServer } from '../../../platforms/node/serve/static-server-runtime.ts';
+import { PROCESS_CLI_IO, type CliIo } from '../cli-io.ts';
 
 const DEFAULT_HOST = '127.0.0.1';
 const DEFAULT_PORT = 8000;
@@ -59,17 +60,17 @@ function resolveServeOptions(argv: string[]): { host: string; port: number } {
   };
 }
 
-export async function runServeCommand(argv: string[]): Promise<number> {
+export async function runServeCommand(argv: string[], io: CliIo = PROCESS_CLI_IO): Promise<number> {
   let options: { host: string; port: number };
   try {
     options = resolveServeOptions(argv);
   } catch (error) {
     if (error instanceof Error && error.message === '__help__') {
-      process.stdout.write(`${getServeUsage()}\n`);
+      io.stdout(`${getServeUsage()}\n`);
       return 0;
     }
     if (error instanceof Error) {
-      process.stderr.write(`${error.message}\n${getServeUsage()}\n`);
+      io.stderr(`${error.message}\n${getServeUsage()}\n`);
       return 1;
     }
     throw error;
@@ -81,12 +82,12 @@ export async function runServeCommand(argv: string[]): Promise<number> {
       host: options.host,
       port: options.port,
     });
-    process.stdout.write(`Server running on http://${server.host}:${server.port}\n`);
+    io.stdout(`Server running on http://${server.host}:${server.port}\n`);
     await new Promise<void>(() => {});
     return 0;
   } catch (error) {
     if (error instanceof Error) {
-      process.stderr.write(`${error.message}\n`);
+      io.stderr(`${error.message}\n`);
       return 1;
     }
     throw error;

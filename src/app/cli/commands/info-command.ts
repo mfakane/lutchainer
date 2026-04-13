@@ -1,6 +1,6 @@
-import process from 'node:process';
 import { parseArgs } from 'node:util';
 import { loadLutchainArchive } from '../cli-archive.ts';
+import { PROCESS_CLI_IO, type CliIo } from '../cli-io.ts';
 import { formatInfoSummary, type InfoSummaryRow } from '../cli-output.ts';
 
 export function getInfoUsage(): string {
@@ -74,26 +74,26 @@ function toInfoSummaryRows(summary: InfoSummary): InfoSummaryRow[] {
   ];
 }
 
-export async function runInfoCommand(argv: string[]): Promise<number> {
+export async function runInfoCommand(argv: string[], io: CliIo = PROCESS_CLI_IO): Promise<number> {
   try {
     const options = resolveInfoOptions(argv);
     const { archive } = await loadLutchainArchive(options.filePath);
     const summary = buildInfoSummary(archive.manifest);
 
     if (options.json) {
-      process.stdout.write(`${JSON.stringify(summary, null, 2)}\n`);
+      io.stdout(`${JSON.stringify(summary, null, 2)}\n`);
       return 0;
     }
 
-    process.stdout.write(`${formatInfoSummary(toInfoSummaryRows(summary))}\n`);
+    io.stdout(`${formatInfoSummary(toInfoSummaryRows(summary))}\n`);
     return 0;
   } catch (error) {
     if (error instanceof Error && error.message === '__help__') {
-      process.stdout.write(`${getInfoUsage()}\n`);
+      io.stdout(`${getInfoUsage()}\n`);
       return 0;
     }
     if (error instanceof Error) {
-      process.stderr.write(`${error.message}\n${getInfoUsage()}\n`);
+      io.stderr(`${error.message}\n${getInfoUsage()}\n`);
       return 1;
     }
     throw error;

@@ -1,5 +1,5 @@
-import process from 'node:process';
 import { getCliBuildLabel } from './cli-build-info.ts';
+import { PROCESS_CLI_IO, type CliIo } from './cli-io.ts';
 import { runInfoCommand } from './commands/info-command.ts';
 import { runLutExtractCommand } from './commands/lut-extract-command.ts';
 import { runLutListCommand } from './commands/lut-list-command.ts';
@@ -79,17 +79,17 @@ function pipelineUsage(): string {
   ].join('\n');
 }
 
-function writeTopLevelUsage(exitCode: 0 | 1): number {
+function writeTopLevelUsage(exitCode: 0 | 1, io: CliIo): number {
   const output = `${rootUsage()}\n`;
   if (exitCode === 0) {
-    process.stdout.write(output);
+    io.stdout(output);
   } else {
-    process.stderr.write(output);
+    io.stderr(output);
   }
   return exitCode;
 }
 
-function writeGroupUsage(group: Group, exitCode: 0 | 1): number {
+function writeGroupUsage(group: Group, exitCode: 0 | 1, io: CliIo): number {
   let usage: string;
   switch (group) {
     case 'lut':
@@ -104,18 +104,18 @@ function writeGroupUsage(group: Group, exitCode: 0 | 1): number {
   }
   const output = `${usage}\n`;
   if (exitCode === 0) {
-    process.stdout.write(output);
+    io.stdout(output);
   } else {
-    process.stderr.write(output);
+    io.stderr(output);
   }
   return exitCode;
 }
 
-export async function runCli(argv: string[]): Promise<number> {
+export async function runCliWithIo(argv: string[], io: CliIo): Promise<number> {
   const [command, subcommand, ...rest] = argv;
 
   if (!command || command === '--help' || command === '-h') {
-    return writeTopLevelUsage(0);
+    return writeTopLevelUsage(0, io);
   }
 
   const nestedArgv = [subcommand, ...rest].filter((value): value is string => value !== undefined);
@@ -123,50 +123,54 @@ export async function runCli(argv: string[]): Promise<number> {
 
   switch (command as TopLevelCommand | Group) {
     case 'serve':
-      return await runServeCommand(nestedArgv);
+      return await runServeCommand(nestedArgv, io);
     case 'info':
-      return await runInfoCommand(nestedArgv);
+      return await runInfoCommand(nestedArgv, io);
     case 'validate':
-      return await runValidateCommand(nestedArgv);
+      return await runValidateCommand(nestedArgv, io);
     case 'version':
-      return await runVersionCommand(nestedArgv);
+      return await runVersionCommand(nestedArgv, io);
     case 'lut':
       if (isGroupHelp) {
-        return writeGroupUsage('lut', 0);
+        return writeGroupUsage('lut', 0, io);
       }
       switch (subcommand as LutSubcommand) {
         case 'list':
-          return await runLutListCommand(rest);
+          return await runLutListCommand(rest, io);
         case 'show':
-          return await runLutShowCommand(rest);
+          return await runLutShowCommand(rest, io);
         case 'extract':
-          return await runLutExtractCommand(rest);
+          return await runLutExtractCommand(rest, io);
         default:
-          return writeGroupUsage('lut', 1);
+          return writeGroupUsage('lut', 1, io);
       }
     case 'step':
       if (isGroupHelp) {
-        return writeGroupUsage('step', 0);
+        return writeGroupUsage('step', 0, io);
       }
       switch (subcommand as StepSubcommand) {
         case 'list':
-          return await runStepListCommand(rest);
+          return await runStepListCommand(rest, io);
         case 'show':
-          return await runStepShowCommand(rest);
+          return await runStepShowCommand(rest, io);
         default:
-          return writeGroupUsage('step', 1);
+          return writeGroupUsage('step', 1, io);
       }
     case 'pipeline':
       if (isGroupHelp) {
-        return writeGroupUsage('pipeline', 0);
+        return writeGroupUsage('pipeline', 0, io);
       }
       switch (subcommand as PipelineSubcommand) {
         case 'cat':
-          return await runPipelineCatCommand(rest);
+          return await runPipelineCatCommand(rest, io);
         default:
-          return writeGroupUsage('pipeline', 1);
+          return writeGroupUsage('pipeline', 1, io);
       }
     default:
-      return writeTopLevelUsage(1);
+      return writeTopLevelUsage(1, io);
   }
+}
+
+export async function runCli(argv: string[]): Promise<number> {
+  return await runCliWithIo(argv, PROCESS_CLI_IO);
 }
