@@ -73,11 +73,12 @@ const SHADER_CODE_ENTRIES: Record<ShaderCodeEntryId, ShaderCodeEntry> = {
   },
 };
 
-// --- Module-level state (populated when component renders) ---
+interface ShaderDialogController {
+  dispose: () => void;
+  sync: (input: ShaderBuildInput, fragmentShader?: string) => void;
+}
 
-let syncShaderDialogInternal: ((input: ShaderBuildInput, fragmentShader?: string) => void) | null = null;
-let disposeShaderDialogContent: (() => void) | null = null;
-let disposeShaderDialogShell: (() => void) | null = null;
+let activeShaderDialogController: ShaderDialogController | null = null;
 
 function ensureShaderDialogShellOptions(value: unknown): asserts value is ShaderDialogShellOptions {
   if (!value || typeof value !== 'object') {
@@ -107,7 +108,10 @@ function ensureShaderDialogShellOptions(value: unknown): asserts value is Shader
 
 // --- Component ---
 
-function ShaderDialogContent(props: { options: ShaderDialogContentOptions }) {
+function ShaderDialogContent(props: {
+  options: ShaderDialogContentOptions;
+  onRegisterSync: (sync: (input: ShaderBuildInput, fragmentShader?: string) => void) => void;
+}) {
   const language = useLanguage();
   function tr<K extends TranslationKey>(key: K, ...args: TranslationArgs<K>): string {
     language();
@@ -118,10 +122,10 @@ function ShaderDialogContent(props: { options: ShaderDialogContentOptions }) {
   const [buildInput, setBuildInput] = createSignal<ShaderBuildInput | null>(null);
   const [cachedFragShader, setCachedFragShader] = createSignal<string | undefined>(undefined);
 
-  syncShaderDialogInternal = (input: ShaderBuildInput, fragmentShader?: string) => {
+  props.onRegisterSync((input: ShaderBuildInput, fragmentShader?: string) => {
     setBuildInput(input);
     setCachedFragShader(fragmentShader);
-  };
+  });
 
   const activeEntry = () => SHADER_CODE_ENTRIES[activeEntryId()] ?? SHADER_CODE_ENTRIES['glsl-fragment'];
 
@@ -223,29 +227,42 @@ function ShaderDialogContent(props: { options: ShaderDialogContentOptions }) {
 
 // --- Public API ---
 
-export function mountShaderDialogContent(
+function mountShaderDialogContent(
   el: Element,
   options: ShaderDialogContentOptions,
-): void {
+): ShaderDialogController {
   if (!(el instanceof Element)) {
     throw new Error('mountShaderDialogContent: el must be a DOM Element');
   }
 
-  if (disposeShaderDialogContent) {
-    disposeShaderDialogContent();
-    disposeShaderDialogContent = null;
+  let sync: ((input: ShaderBuildInput, fragmentShader?: string) => void) | null = null;
+
+  const dispose = render(() => (
+    <ShaderDialogContent
+      options={options}
+      onRegisterSync={nextSync => {
+        sync = nextSync;
+      }}
+    />
+  ), el);
+
+  if (!sync) {
+    dispose();
+    throw new Error('mountShaderDialogContent: sync handler was not initialized');
   }
 
-  syncShaderDialogInternal = null;
-  disposeShaderDialogContent = render(() => <ShaderDialogContent options={options} />, el);
+  return {
+    dispose,
+    sync,
+  };
 }
 
 export function mountShaderDialogShell(options: ShaderDialogShellOptions): void {
   ensureShaderDialogShellOptions(options);
 
-  if (disposeShaderDialogShell) {
-    disposeShaderDialogShell();
-    disposeShaderDialogShell = null;
+  if (activeShaderDialogController) {
+    activeShaderDialogController.dispose();
+    activeShaderDialogController = null;
   }
 
   const closeShaderDialog = (): void => {
@@ -272,7 +289,7 @@ export function mountShaderDialogShell(options: ShaderDialogShellOptions): void 
     options.dialogEl.setAttribute('open', '');
   };
 
-  mountShaderDialogContent(options.surfaceEl, {
+  const contentController = mountShaderDialogContent(options.surfaceEl, {
     onClose: closeShaderDialog,
     onExport: options.onExport,
     onStatus: options.onStatus,
@@ -304,10 +321,18 @@ export function mountShaderDialogShell(options: ShaderDialogShellOptions): void 
   options.dialogEl.addEventListener('cancel', onCancel);
   options.dialogEl.addEventListener('click', onDialogClick);
 
-  disposeShaderDialogShell = () => {
+  const disposeShell = () => {
     options.openButtonEl.removeEventListener('click', onOpenClick);
     options.dialogEl.removeEventListener('cancel', onCancel);
     options.dialogEl.removeEventListener('click', onDialogClick);
+  };
+
+  activeShaderDialogController = {
+    dispose: () => {
+      disposeShell();
+      contentController.dispose();
+    },
+    sync: contentController.sync,
   };
 }
 
@@ -315,5 +340,5 @@ export function syncShaderDialogState(
   input: ShaderBuildInput,
   fragmentShader?: string,
 ): void {
-  syncShaderDialogInternal?.(input, fragmentShader);
+  activeShaderDialogController?.sync(input, fragmentShader);
 }

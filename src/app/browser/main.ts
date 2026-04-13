@@ -28,6 +28,12 @@ import { MAX_STEP_LABEL_LENGTH } from '../../features/step/step-model.ts';
 import {
   createStepPreviewDebugController,
 } from '../../features/step/step-preview-debug-controller.ts';
+import {
+  createBrowserPipelineImageAdapter,
+} from '../../platforms/browser/pipeline-image-adapter.ts';
+import {
+  downloadBlobAsFile,
+} from '../../platforms/browser/preview-export.ts';
 import type { StepPreviewRenderer } from '../../platforms/webgl/step-preview-renderer.ts';
 import {
   syncHeaderActionAutoApplyState,
@@ -112,6 +118,8 @@ import {
 declare const __BUILD_COMMIT_ID__: string;
 
 const PIPELINE_HISTORY_LIMIT = 100;
+
+pipelineModel.configurePipelineImageAdapter(createBrowserPipelineImageAdapter());
 
 const parseStepId = pipelineModel.parseStepId;
 const parseLutId = pipelineModel.parseLutId;
@@ -465,6 +473,13 @@ window.addEventListener('DOMContentLoaded', () => {
 
   shaderExportSystem = createShaderExportSystem({
     getShaderBuildInput,
+    onDownloadZip: (zipData, filename) => {
+      const blob = new Blob(
+        [(zipData.buffer as ArrayBuffer).slice(zipData.byteOffset, zipData.byteOffset + zipData.byteLength)],
+        { type: 'application/zip' },
+      );
+      downloadBlobAsFile(blob, filename);
+    },
     toErrorMessage: pipelineModel.toErrorMessage,
   });
 

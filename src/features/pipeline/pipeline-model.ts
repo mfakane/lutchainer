@@ -1,3 +1,4 @@
+import type { ParamGroupDescriptionTranslationKey } from '../../shared/i18n/browser-translation-contract.ts';
 import {
   buildPipelineArchiveManifest,
   isRecord,
@@ -39,7 +40,6 @@ import {
   type StepModel
 } from '../step/step-model.ts';
 import { MAX_LUTS, MAX_STEPS } from './pipeline-constants.ts';
-import type { ParamGroupDescriptionTranslationKey } from '../../shared/i18n/browser-translation-contract.ts';
 export {
   parseNonEmptyText,
   toErrorMessage,
@@ -135,6 +135,46 @@ export interface RemoveLutFromPipelineResult {
 export interface CreateCustomParamResult {
   customParam: CustomParamModel | null;
   error: string | null;
+}
+
+export interface PipelineImageAdapter {
+  createLutFromPainter: (name: string, painter: (u: number, v: number) => ColorWithAlpha) => LutModel;
+  createLutFromFile: (file: File) => Promise<LutModel>;
+  canvasToPngBytes: (canvas: HTMLCanvasElement) => Promise<Uint8Array>;
+  createLutFromZipPngBytes: (entry: PipelineZipLutEntry, pngBytes: Uint8Array) => Promise<LutModel>;
+}
+
+let pipelineImageAdapter: PipelineImageAdapter | null = null;
+
+function assertValidPipelineImageAdapter(adapter: PipelineImageAdapter): void {
+  if (!adapter || typeof adapter !== 'object') {
+    throw new Error('PipelineImageAdapter が不正です。');
+  }
+
+  if (typeof adapter.createLutFromPainter !== 'function') {
+    throw new Error('PipelineImageAdapter.createLutFromPainter が不正です。');
+  }
+  if (typeof adapter.createLutFromFile !== 'function') {
+    throw new Error('PipelineImageAdapter.createLutFromFile が不正です。');
+  }
+  if (typeof adapter.canvasToPngBytes !== 'function') {
+    throw new Error('PipelineImageAdapter.canvasToPngBytes が不正です。');
+  }
+  if (typeof adapter.createLutFromZipPngBytes !== 'function') {
+    throw new Error('PipelineImageAdapter.createLutFromZipPngBytes が不正です。');
+  }
+}
+
+export function configurePipelineImageAdapter(adapter: PipelineImageAdapter): void {
+  assertValidPipelineImageAdapter(adapter);
+  pipelineImageAdapter = adapter;
+}
+
+function getPipelineImageAdapter(): PipelineImageAdapter {
+  if (!pipelineImageAdapter) {
+    throw new Error('Pipeline image adapter is not configured.');
+  }
+  return pipelineImageAdapter;
 }
 
 export const PARAMS: ParamDef[] = [
@@ -744,74 +784,7 @@ export function createLutFromPainter(name: string, painter: (u: number, v: numbe
   if (typeof painter !== 'function') {
     throw new Error('LUT painter が不正です。');
   }
-
-  const canvas = document.createElement('canvas');
-  canvas.width = 256;
-  canvas.height = 256;
-
-  const ctx = canvas.getContext('2d');
-  if (!ctx) {
-    throw new Error('LUT キャンバスのコンテキスト取得に失敗しました。');
-  }
-
-  const imageData = ctx.createImageData(canvas.width, canvas.height);
-  const d = imageData.data;
-  for (let y = 0; y < canvas.height; y++) {
-    for (let x = 0; x < canvas.width; x++) {
-      const u = x / (canvas.width - 1);
-      const v = y / (canvas.height - 1);
-      const c = painter(u, v);
-      if (!hasFiniteColor(c)) {
-        throw new Error('LUT painter が不正な色を返しました。');
-      }
-      const idx = (y * canvas.width + x) * 4;
-      d[idx + 0] = Math.round(clamp01(c[0]) * 255);
-      d[idx + 1] = Math.round(clamp01(c[1]) * 255);
-      d[idx + 2] = Math.round(clamp01(c[2]) * 255);
-      d[idx + 3] = Math.round(clamp01(c[3] ?? 1) * 255);
-    }
-  }
-
-  ctx.putImageData(imageData, 0, 0);
-
-  return {
-    id: uid('lut'),
-    name: safeName,
-    image: canvas,
-    width: canvas.width,
-    height: canvas.height,
-    pixels: imageData.data,
-    thumbUrl: canvas.toDataURL('image/png'),
-  };
-}
-
-function createLutFromCanvas(name: string, srcCanvas: HTMLCanvasElement): LutModel {
-  const safeName = parseNonEmptyText(name, 'name');
-  if (!(srcCanvas instanceof HTMLCanvasElement)) {
-    throw new Error('LUT 元画像が不正です。');
-  }
-  if (srcCanvas.width < 2 || srcCanvas.height < 2) {
-    throw new Error('LUT 画像サイズが小さすぎます。2x2以上の画像を指定してください。');
-  }
-
-  const canvas = document.createElement('canvas');
-  canvas.width = srcCanvas.width;
-  canvas.height = srcCanvas.height;
-  const ctx = canvas.getContext('2d');
-  if (!ctx) throw new Error('LUT キャンバス化に失敗しました。');
-
-  ctx.drawImage(srcCanvas, 0, 0);
-  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-
-  return {
-    id: uid('lut-file'),
-    name: safeName,
-    image: canvas,
-    width: canvas.width,
-    height: canvas.height,
-    pixels: imageData.data,
-    thumbUrl: canvas.toDataURL('image/png'),
-  };
+  return getPipelineImageAdapter().createLutFromPainter(safeName, painter);
 }
 
 function interpolateBuiltinRampStops(stops: readonly ColorStop[], t: number): [number, number, number, number] {
@@ -959,25 +932,8 @@ export function createBuiltinLuts(): LutModel[] {
   return [lutA, lutB, lutC];
 }
 
-function loadImageFromFile(file: File): Promise<HTMLImageElement> {
-  return new Promise((resolve, reject) => {
-    const url = URL.createObjectURL(file);
-    const img = new Image();
-    img.onload = () => {
-      URL.revokeObjectURL(url);
-      resolve(img);
-    };
-    img.onerror = () => {
-      URL.revokeObjectURL(url);
-      reject(new Error(`画像読み込みに失敗しました: ${file.name}`));
-    };
-    img.src = url;
-  });
-}
-
-
 export async function createLutFromFile(file: File): Promise<LutModel> {
-  if (!(file instanceof File)) {
+  if (!isRecord(file) || typeof file.name !== 'string' || typeof file.type !== 'string' || !Number.isFinite(file.size)) {
     throw new Error('LUTファイル入力が不正です。');
   }
   if (!file.type.startsWith('image/')) {
@@ -987,23 +943,7 @@ export async function createLutFromFile(file: File): Promise<LutModel> {
     throw new Error(`ファイルサイズが大きすぎます (${file.name})。上限は 12MB です。`);
   }
 
-  const img = await loadImageFromFile(file);
-  const maxSide = 512;
-  const scale = Math.min(1, maxSide / Math.max(img.width, img.height));
-  const w = Math.max(2, Math.round(img.width * scale));
-  const h = Math.max(2, Math.round(img.height * scale));
-
-  const canvas = document.createElement('canvas');
-  canvas.width = w;
-  canvas.height = h;
-
-  const ctx = canvas.getContext('2d');
-  if (!ctx) {
-    throw new Error(`LUT変換に失敗しました: ${file.name}`);
-  }
-  ctx.drawImage(img, 0, 0, w, h);
-
-  return createLutFromCanvas(file.name, canvas);
+  return getPipelineImageAdapter().createLutFromFile(file);
 }
 
 function parsePipelineStepEntry(
@@ -1100,20 +1040,6 @@ function parsePipelineStepEntry(
 // ZIP形式の保存・読み込み
 // ---------------------------------------------------------------------------
 
-function canvasToPngBytes(canvas: HTMLCanvasElement): Promise<Uint8Array> {
-  return new Promise((resolve, reject) => {
-    canvas.toBlob(blob => {
-      if (!blob) {
-        reject(new Error('PNG変換に失敗しました。'));
-        return;
-      }
-      blob.arrayBuffer()
-        .then(ab => resolve(new Uint8Array(ab)))
-        .catch(reject);
-    }, 'image/png');
-  });
-}
-
 export async function serializePipelineAsZip(
   luts: LutModel[],
   steps: StepModel[],
@@ -1129,7 +1055,7 @@ export async function serializePipelineAsZip(
 
   for (const lut of luts) {
     const filename = `luts/${lut.id}.png`;
-    const pngBytes = await canvasToPngBytes(lut.image);
+    const pngBytes = await getPipelineImageAdapter().canvasToPngBytes(lut.image);
     zipFiles[filename] = pngBytes;
     lutEntries.push({
       id: lut.id,
@@ -1227,59 +1153,6 @@ function parsePipelineZipLutEntry(value: unknown, index: number): PipelineZipLut
   return { id: lutId, name, filename, width, height, ...(ramp2dData !== undefined ? { ramp2dData } : {}) };
 }
 
-async function createLutFromZipPngBytes(
-  entry: PipelineZipLutEntry,
-  pngBytes: Uint8Array,
-): Promise<LutModel> {
-  const blob = new Blob([(pngBytes.buffer as ArrayBuffer).slice(pngBytes.byteOffset, pngBytes.byteOffset + pngBytes.byteLength)], { type: 'image/png' });
-  const url = URL.createObjectURL(blob);
-
-  let img: HTMLImageElement;
-  try {
-    img = await new Promise<HTMLImageElement>((resolve, reject) => {
-      const image = new Image();
-      image.onload = () => resolve(image);
-      image.onerror = () => reject(new Error(`LUT「${entry.name}」の画像読み込みに失敗しました。`));
-      image.src = url;
-    });
-  } finally {
-    URL.revokeObjectURL(url);
-  }
-
-  if (img.width < 2 || img.height < 2) {
-    throw new Error(`LUT「${entry.name}」の画像サイズが小さすぎます。2x2以上が必要です。`);
-  }
-  if (img.width > MAX_PIPELINE_IMAGE_SIDE || img.height > MAX_PIPELINE_IMAGE_SIDE) {
-    throw new Error(`LUT「${entry.name}」の画像サイズが大きすぎます。最大 ${MAX_PIPELINE_IMAGE_SIDE}px です。`);
-  }
-  if (img.width !== entry.width || img.height !== entry.height) {
-    throw new Error(`LUT「${entry.name}」の画像サイズがmanifestの情報と一致しません。`);
-  }
-
-  const canvas = document.createElement('canvas');
-  canvas.width = img.width;
-  canvas.height = img.height;
-
-  const ctx = canvas.getContext('2d');
-  if (!ctx) {
-    throw new Error(`LUT「${entry.name}」のキャンバス生成に失敗しました。`);
-  }
-
-  ctx.drawImage(img, 0, 0);
-  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-
-  return {
-    id: entry.id,
-    name: entry.name,
-    image: canvas,
-    width: canvas.width,
-    height: canvas.height,
-    pixels: imageData.data,
-    thumbUrl: canvas.toDataURL('image/png'),
-    ...(entry.ramp2dData !== undefined ? { ramp2dData: entry.ramp2dData } : {}),
-  };
-}
-
 function parseCustomParamEntry(value: unknown, index: number): CustomParamModel {
   const fieldPrefix = `customParams[${index}]`;
   if (!isRecord(value)) {
@@ -1341,7 +1214,7 @@ export async function loadPipelineFromZip(data: ArrayBuffer): Promise<LoadedPipe
     if (!pngBytes) {
       throw new Error(`LUT「${entry.name}」の画像ファイル (${entry.filename}) がZIP内に見つかりません。`);
     }
-    const lut = await createLutFromZipPngBytes(entry, pngBytes);
+    const lut = await getPipelineImageAdapter().createLutFromZipPngBytes(entry, pngBytes);
     loadedLuts.push(lut);
   }
 

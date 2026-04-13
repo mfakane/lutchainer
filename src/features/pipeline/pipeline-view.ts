@@ -184,58 +184,6 @@ export function buildConnectionPath(startX: number, startY: number, endX: number
   return `M ${startX} ${startY} C ${c1x} ${startY}, ${c2x} ${endY}, ${endX} ${endY}`;
 }
 
-function isValidConnectionColor(value: string): boolean {
-  return /^#[0-9A-Fa-f]{6}$/.test(value)
-    || /^hsl\(\s*(?:\d+(?:\.\d+)?)\s*,\s*(?:\d+(?:\.\d+)?)%\s*,\s*(?:\d+(?:\.\d+)?)%\s*\)$/.test(value);
-}
-
-function assertValidConnectionPathSpec(spec: ConnectionPathSpec, index: number): void {
-  if (!spec || typeof spec !== 'object') {
-    throw new Error(`ConnectionPathSpec at index ${index} must be an object.`);
-  }
-  if (!isNonEmptyString(spec.key)) {
-    throw new Error(`ConnectionPathSpec key at index ${index} must be a non-empty string.`);
-  }
-  if (
-    !Number.isFinite(spec.start.x)
-    || !Number.isFinite(spec.start.y)
-    || !Number.isFinite(spec.end.x)
-    || !Number.isFinite(spec.end.y)
-  ) {
-    throw new Error(`ConnectionPathSpec coordinates at index ${index} must be finite numbers.`);
-  }
-  if (spec.options !== undefined && (spec.options === null || typeof spec.options !== 'object')) {
-    throw new Error(`ConnectionPathSpec options at index ${index} must be an object when provided.`);
-  }
-}
-
-function resolveConnectionClassName(extraClass: string | undefined): string {
-  const normalizedExtraClass = typeof extraClass === 'string' ? extraClass.trim() : '';
-  return normalizedExtraClass ? `connection-path ${normalizedExtraClass}` : 'connection-path';
-}
-
-function resolveConnectionStrokeColor(strokeColor: string | undefined): string {
-  const rawStrokeColor = typeof strokeColor === 'string' ? strokeColor.trim() : '';
-  return isValidConnectionColor(rawStrokeColor) ? rawStrokeColor : '';
-}
-
-function applyConnectionPathAttributes(
-  path: SVGPathElement,
-  start: AnchorPoint,
-  end: AnchorPoint,
-  options: ConnectionPathOptions = {},
-): void {
-  path.setAttribute('class', resolveConnectionClassName(options.extraClass));
-  path.setAttribute('d', buildConnectionPath(start.x, start.y, end.x, end.y));
-
-  const strokeColor = resolveConnectionStrokeColor(options.strokeColor);
-  if (strokeColor) {
-    path.style.setProperty('--connection-color', strokeColor);
-  } else {
-    path.style.removeProperty('--connection-color');
-  }
-}
-
 export function getStepConnectionColor(stepId: string): string {
   if (!isNonEmptyString(stepId)) {
     return CONNECTION_FALLBACK_COLOR;
@@ -247,77 +195,6 @@ export function getStepConnectionColor(stepId: string): string {
   }
   const hue = (normalizedSeed * 137.50776405003785 + 24) % 360;
   return `hsl(${hue.toFixed(1)}, 78%, 68%)`;
-}
-
-export function appendConnectionPath(
-  connectionLayerEl: SVGSVGElement,
-  start: AnchorPoint,
-  end: AnchorPoint,
-  options: ConnectionPathOptions = {},
-): void {
-  if (
-    !(connectionLayerEl instanceof SVGSVGElement)
-    || !Number.isFinite(start.x)
-    || !Number.isFinite(start.y)
-    || !Number.isFinite(end.x)
-    || !Number.isFinite(end.y)
-  ) {
-    return;
-  }
-
-  const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-  applyConnectionPathAttributes(path, start, end, options);
-  connectionLayerEl.appendChild(path);
-}
-
-export function syncConnectionPaths(connectionLayerEl: SVGSVGElement, specs: ConnectionPathSpec[]): void {
-  if (!(connectionLayerEl instanceof SVGSVGElement)) {
-    throw new Error('syncConnectionPaths connectionLayerEl must be an SVGSVGElement.');
-  }
-  if (!Array.isArray(specs)) {
-    throw new Error('syncConnectionPaths specs must be an array.');
-  }
-
-  const keyedExistingPaths = new Map<string, SVGPathElement>();
-
-  for (const path of Array.from(connectionLayerEl.querySelectorAll<SVGPathElement>('path.connection-path[data-connection-key]'))) {
-    const key = path.dataset.connectionKey?.trim() ?? '';
-    if (!isNonEmptyString(key)) {
-      path.remove();
-      continue;
-    }
-
-    if (keyedExistingPaths.has(key)) {
-      path.remove();
-      continue;
-    }
-
-    keyedExistingPaths.set(key, path);
-  }
-
-  for (const stalePath of Array.from(connectionLayerEl.querySelectorAll<SVGPathElement>('path.connection-path:not([data-connection-key])'))) {
-    stalePath.remove();
-  }
-
-  for (let index = 0; index < specs.length; index++) {
-    const spec = specs[index];
-    assertValidConnectionPathSpec(spec, index);
-
-    const key = spec.key.trim();
-    let path = keyedExistingPaths.get(key);
-    if (!path) {
-      path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-    }
-
-    path.dataset.connectionKey = key;
-    applyConnectionPathAttributes(path, spec.start, spec.end, spec.options);
-    connectionLayerEl.appendChild(path);
-    keyedExistingPaths.delete(key);
-  }
-
-  for (const stalePath of keyedExistingPaths.values()) {
-    stalePath.remove();
-  }
 }
 
 export function clearReorderDropIndicators<TId extends string | number>(binding: ReorderIndicatorBinding<TId>): void {

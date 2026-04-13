@@ -48,9 +48,14 @@ interface HeaderActionGroupProps {
   onStatus: StatusReporter;
 }
 
-let disposeHeaderActionGroup: (() => void) | null = null;
-let syncHeaderActionAutoApplyInternal: ((enabled: boolean) => void) | null = null;
-let syncHeaderActionHistoryInternal: ((canUndo: boolean, canRedo: boolean) => void) | null = null;
+interface HeaderActionGroupController {
+  dispose: () => void;
+  syncAutoApply: (enabled: boolean) => void;
+  syncHistory: (canUndo: boolean, canRedo: boolean) => void;
+  onStatus: StatusReporter;
+}
+
+let activeHeaderActionGroupController: HeaderActionGroupController | null = null;
 let headerActionStatusReporter: StatusReporter = () => undefined;
 
 function isBoolean(value: unknown): value is boolean {
@@ -329,19 +334,22 @@ export function mountHeaderActionGroup(target: HTMLElement, options: HeaderActio
   ensureMountOptions(options);
   headerActionStatusReporter = options.onStatus;
 
-  if (disposeHeaderActionGroup) {
-    disposeHeaderActionGroup();
-    disposeHeaderActionGroup = null;
+  if (activeHeaderActionGroupController) {
+    activeHeaderActionGroupController.dispose();
+    activeHeaderActionGroupController = null;
   }
 
   target.textContent = '';
 
-  disposeHeaderActionGroup = render(() => {
+  let syncAutoApplyController: ((enabled: boolean) => void) | null = null;
+  let syncHistoryController: ((canUndo: boolean, canRedo: boolean) => void) | null = null;
+
+  const dispose = render(() => {
     const [autoApplyEnabled, setAutoApplyEnabled] = createSignal(options.initialAutoApplyEnabled);
     const [canUndo, setCanUndo] = createSignal(options.initialCanUndo);
     const [canRedo, setCanRedo] = createSignal(options.initialCanRedo);
 
-    syncHeaderActionAutoApplyInternal = enabled => {
+    syncAutoApplyController = enabled => {
       if (!isBoolean(enabled)) {
         headerActionStatusReporter(
           t('header.status.invalidAutoApplySyncValue', { value: String(enabled) }),
@@ -352,7 +360,7 @@ export function mountHeaderActionGroup(target: HTMLElement, options: HeaderActio
       setAutoApplyEnabled(enabled);
     };
 
-    syncHeaderActionHistoryInternal = (nextCanUndo, nextCanRedo) => {
+    syncHistoryController = (nextCanUndo, nextCanRedo) => {
       if (!isBoolean(nextCanUndo) || !isBoolean(nextCanRedo)) {
         headerActionStatusReporter(
           t('header.status.invalidHistorySyncValue', {
@@ -396,31 +404,45 @@ export function mountHeaderActionGroup(target: HTMLElement, options: HeaderActio
       />
     );
   }, target);
+
+  if (!syncAutoApplyController || !syncHistoryController) {
+    dispose();
+    throw new Error('ヘッダーアクションの同期ハンドラ初期化に失敗しました。');
+  }
+
+  activeHeaderActionGroupController = {
+    dispose,
+    syncAutoApply: syncAutoApplyController,
+    syncHistory: syncHistoryController,
+    onStatus: options.onStatus,
+  };
 }
 
 export function syncHeaderActionAutoApplyState(enabled: boolean): void {
-  if (!syncHeaderActionAutoApplyInternal) {
+  const controller = activeHeaderActionGroupController;
+  if (!controller) {
     return;
   }
 
   if (!isBoolean(enabled)) {
-    headerActionStatusReporter(
+    controller.onStatus(
       t('header.status.invalidAutoApplySyncArg', { value: String(enabled) }),
       'error',
     );
     return;
   }
 
-  syncHeaderActionAutoApplyInternal(enabled);
+  controller.syncAutoApply(enabled);
 }
 
 export function syncHeaderActionHistoryState(canUndo: boolean, canRedo: boolean): void {
-  if (!syncHeaderActionHistoryInternal) {
+  const controller = activeHeaderActionGroupController;
+  if (!controller) {
     return;
   }
 
   if (!isBoolean(canUndo) || !isBoolean(canRedo)) {
-    headerActionStatusReporter(
+    controller.onStatus(
       t('header.status.invalidHistorySyncArg', {
         value: `canUndo=${String(canUndo)}, canRedo=${String(canRedo)}`,
       }),
@@ -429,5 +451,5 @@ export function syncHeaderActionHistoryState(canUndo: boolean, canRedo: boolean)
     return;
   }
 
-  syncHeaderActionHistoryInternal(canUndo, canRedo);
+  controller.syncHistory(canUndo, canRedo);
 }

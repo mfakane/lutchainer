@@ -1,22 +1,22 @@
 import type {
-  LightSettings,
-  MaterialSettings,
+    LightSettings,
+    MaterialSettings,
 } from '../pipeline/pipeline-model.ts';
 import type {
-  Color,
-  CustomParamModel,
-  LutModel,
-  ParamName,
-  StepModel,
-  StepParamContext,
-  StepRuntimeModel,
+    Color,
+    CustomParamModel,
+    LutModel,
+    ParamName,
+    StepModel,
+    StepParamContext,
+    StepRuntimeModel,
 } from './step-model.ts';
 import {
-  evaluateStepParam,
+    evaluateStepParam,
 } from './step-param-evaluators.ts';
 import {
-  composeColorFromSteps,
-  resolveStepRuntimeModels,
+    composeColorFromSteps,
+    resolveStepRuntimeModels,
 } from './step-runtime.ts';
 
 export interface DrawStepPreviewSphereCpuInput {
@@ -64,6 +64,17 @@ function isObject(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === 'object' && !Array.isArray(value);
 }
 
+function isCanvasLike(value: unknown): value is Pick<HTMLCanvasElement, 'width' | 'height' | 'getContext'> {
+  if (!isObject(value)) {
+    return false;
+  }
+
+  const candidate = value as Partial<Pick<HTMLCanvasElement, 'width' | 'height' | 'getContext'>>;
+  return Number.isFinite(candidate.width)
+    && Number.isFinite(candidate.height)
+    && typeof candidate.getContext === 'function';
+}
+
 function isValidMaterialSettings(value: unknown): value is MaterialSettings {
   if (!isObject(value)) {
     return false;
@@ -108,7 +119,7 @@ function assertValidInput(input: DrawStepPreviewSphereCpuInput): void {
     throw new Error('CPU preview 入力が不正です。');
   }
 
-  if (!(input.canvas instanceof HTMLCanvasElement)) {
+  if (!isCanvasLike(input.canvas)) {
     throw new Error('描画先キャンバスが不正です。');
   }
   if (!Number.isInteger(input.targetStepIndex) || input.targetStepIndex < 0) {
@@ -145,7 +156,7 @@ function assertValidParamPreviewInput(input: DrawParamPreviewSphereCpuInput): vo
   if (!input || typeof input !== 'object') {
     throw new Error('Param preview 入力が不正です。');
   }
-  if (!(input.canvas instanceof HTMLCanvasElement)) {
+  if (!isCanvasLike(input.canvas)) {
     throw new Error('描画先キャンバスが不正です。');
   }
   if (!Number.isInteger(input.pixelWidth) || input.pixelWidth <= 0

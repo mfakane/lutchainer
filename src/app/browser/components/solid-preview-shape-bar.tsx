@@ -3,8 +3,8 @@ import { render } from 'solid-js/web';
 import { t, useLanguage, type TranslationArgs, type TranslationKey } from '../i18n.ts';
 import { cx } from '../styles/cx.ts';
 import * as ui from '../styles/ui-primitives.css.ts';
-import * as styles from './solid-preview-shape-bar.css.ts';
 import { DropdownMenu } from './solid-dropdown-menu.tsx';
+import * as styles from './solid-preview-shape-bar.css.ts';
 
 type StatusKind = 'success' | 'error' | 'info';
 type StatusReporter = (message: string, kind?: StatusKind) => void;
@@ -35,9 +35,14 @@ const PREVIEW_SHAPES: Array<{ key: PreviewShapeType; label: string }> = [
   { key: 'torus', label: 'Torus' },
 ];
 
-let disposePreviewShapeBar: (() => void) | null = null;
-let syncPreviewShapeBarStateInternal: ((nextShape: PreviewShapeType) => void) | null = null;
-let syncPreviewWireframeStateInternal: ((enabled: boolean) => void) | null = null;
+interface PreviewShapeBarController {
+  dispose: () => void;
+  syncShape: (nextShape: PreviewShapeType) => void;
+  syncWireframe: (enabled: boolean) => void;
+  onStatus: StatusReporter;
+}
+
+let activePreviewShapeBarController: PreviewShapeBarController | null = null;
 let previewShapeStatusReporter: StatusReporter = () => undefined;
 
 function isValidPreviewShapeType(value: unknown): value is PreviewShapeType {
@@ -175,18 +180,21 @@ export function mountPreviewShapeBar(target: HTMLElement, options: PreviewShapeB
   ensureMountOptions(options);
   previewShapeStatusReporter = options.onStatus;
 
-  if (disposePreviewShapeBar) {
-    disposePreviewShapeBar();
-    disposePreviewShapeBar = null;
+  if (activePreviewShapeBarController) {
+    activePreviewShapeBarController.dispose();
+    activePreviewShapeBarController = null;
   }
 
   target.textContent = '';
 
-  disposePreviewShapeBar = render(() => {
+  let syncShapeController: ((nextShape: PreviewShapeType) => void) | null = null;
+  let syncWireframeController: ((enabled: boolean) => void) | null = null;
+
+  const dispose = render(() => {
     const [activeShape, setActiveShape] = createSignal<PreviewShapeType>(options.initialShape);
     const [wireframeEnabled, setWireframeEnabled] = createSignal<boolean>(options.initialWireframeEnabled);
 
-    syncPreviewShapeBarStateInternal = nextShape => {
+    syncShapeController = nextShape => {
       if (!isValidPreviewShapeType(nextShape)) {
         previewShapeStatusReporter(
           t('preview.status.invalidSyncValue', { value: String(nextShape) }),
@@ -198,7 +206,7 @@ export function mountPreviewShapeBar(target: HTMLElement, options: PreviewShapeB
       setActiveShape(nextShape);
     };
 
-    syncPreviewWireframeStateInternal = enabled => {
+    syncWireframeController = enabled => {
       if (typeof enabled !== 'boolean') {
         previewShapeStatusReporter(
           t('preview.status.invalidWireframeSyncValue', { value: String(enabled) }),
@@ -288,36 +296,50 @@ export function mountPreviewShapeBar(target: HTMLElement, options: PreviewShapeB
       />
     );
   }, target);
+
+  if (!syncShapeController || !syncWireframeController) {
+    dispose();
+    throw new Error('Shapeバーの同期ハンドラ初期化に失敗しました。');
+  }
+
+  activePreviewShapeBarController = {
+    dispose,
+    syncShape: syncShapeController,
+    syncWireframe: syncWireframeController,
+    onStatus: options.onStatus,
+  };
 }
 
 export function syncPreviewShapeBarState(nextShape: PreviewShapeType): void {
-  if (!syncPreviewShapeBarStateInternal) {
+  const controller = activePreviewShapeBarController;
+  if (!controller) {
     return;
   }
 
   if (!isValidPreviewShapeType(nextShape)) {
-    previewShapeStatusReporter(
+    controller.onStatus(
       t('preview.status.invalidSyncArg', { value: String(nextShape) }),
       'error',
     );
     return;
   }
 
-  syncPreviewShapeBarStateInternal(nextShape);
+  controller.syncShape(nextShape);
 }
 
 export function syncPreviewWireframeState(enabled: boolean): void {
-  if (!syncPreviewWireframeStateInternal) {
+  const controller = activePreviewShapeBarController;
+  if (!controller) {
     return;
   }
 
   if (typeof enabled !== 'boolean') {
-    previewShapeStatusReporter(
+    controller.onStatus(
       t('preview.status.invalidWireframeSyncArg', { value: String(enabled) }),
       'error',
     );
     return;
   }
 
-  syncPreviewWireframeStateInternal(enabled);
+  controller.syncWireframe(enabled);
 }

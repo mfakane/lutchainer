@@ -3,13 +3,13 @@ import type { SocketAxis, SocketDragState, SocketDropTarget } from '../../featur
 import * as pipelineView from '../../features/pipeline/pipeline-view.ts';
 import type { ParamRef, StepModel } from '../../features/step/step-model.ts';
 import {
-  resolveSocketDragPreviewColor,
-  resolveSocketDragPreviewEnd,
-  resolveSocketDragPreviewStart,
+    resolveSocketDragPreviewColor,
+    resolveSocketDragPreviewEnd,
+    resolveSocketDragPreviewStart,
 } from './interactions/socket-dnd.ts';
 import {
-  isValidSocketDragState,
-  isValidSocketDropTarget,
+    isValidSocketDragState,
+    isValidSocketDropTarget,
 } from './interactions/socket-validation.ts';
 
 export interface ConnectionLayerRenderOptions {
@@ -110,6 +110,102 @@ function assertValidSchedulerOptions(value: unknown): asserts value is Connectio
   }
 }
 
+function isValidConnectionColor(value: string): boolean {
+  return /^#[0-9A-Fa-f]{6}$/.test(value)
+    || /^hsl\(\s*(?:\d+(?:\.\d+)?)\s*,\s*(?:\d+(?:\.\d+)?)%\s*,\s*(?:\d+(?:\.\d+)?)%\s*\)$/.test(value);
+}
+
+function resolveConnectionClassName(extraClass: string | undefined): string {
+  const normalizedExtraClass = typeof extraClass === 'string' ? extraClass.trim() : '';
+  return normalizedExtraClass ? `connection-path ${normalizedExtraClass}` : 'connection-path';
+}
+
+function resolveConnectionStrokeColor(strokeColor: string | undefined): string {
+  const rawStrokeColor = typeof strokeColor === 'string' ? strokeColor.trim() : '';
+  return isValidConnectionColor(rawStrokeColor) ? rawStrokeColor : '';
+}
+
+function assertValidConnectionPathSpec(spec: pipelineView.ConnectionPathSpec, index: number): void {
+  if (!spec || typeof spec !== 'object') {
+    throw new Error(`ConnectionPathSpec at index ${index} must be an object.`);
+  }
+
+  if (typeof spec.key !== 'string' || spec.key.trim().length === 0) {
+    throw new Error(`ConnectionPathSpec key at index ${index} must be a non-empty string.`);
+  }
+
+  if (
+    !Number.isFinite(spec.start.x)
+    || !Number.isFinite(spec.start.y)
+    || !Number.isFinite(spec.end.x)
+    || !Number.isFinite(spec.end.y)
+  ) {
+    throw new Error(`ConnectionPathSpec coordinates at index ${index} must be finite numbers.`);
+  }
+
+  if (spec.options !== undefined && (spec.options === null || typeof spec.options !== 'object')) {
+    throw new Error(`ConnectionPathSpec options at index ${index} must be an object when provided.`);
+  }
+}
+
+function applyConnectionPathAttributes(
+  path: SVGPathElement,
+  spec: pipelineView.ConnectionPathSpec,
+): void {
+  path.setAttribute('class', resolveConnectionClassName(spec.options?.extraClass));
+  path.setAttribute('d', pipelineView.buildConnectionPath(spec.start.x, spec.start.y, spec.end.x, spec.end.y));
+
+  const strokeColor = resolveConnectionStrokeColor(spec.options?.strokeColor);
+  if (strokeColor) {
+    path.style.setProperty('--connection-color', strokeColor);
+  } else {
+    path.style.removeProperty('--connection-color');
+  }
+}
+
+function syncConnectionPaths(connectionLayerEl: SVGSVGElement, specs: pipelineView.ConnectionPathSpec[]): void {
+  const keyedExistingPaths = new Map<string, SVGPathElement>();
+
+  for (const path of Array.from(connectionLayerEl.querySelectorAll<SVGPathElement>('path.connection-path[data-connection-key]'))) {
+    const key = path.dataset.connectionKey?.trim() ?? '';
+    if (key.length === 0) {
+      path.remove();
+      continue;
+    }
+
+    if (keyedExistingPaths.has(key)) {
+      path.remove();
+      continue;
+    }
+
+    keyedExistingPaths.set(key, path);
+  }
+
+  for (const stalePath of Array.from(connectionLayerEl.querySelectorAll<SVGPathElement>('path.connection-path:not([data-connection-key])'))) {
+    stalePath.remove();
+  }
+
+  for (let index = 0; index < specs.length; index += 1) {
+    const spec = specs[index];
+    assertValidConnectionPathSpec(spec, index);
+
+    const key = spec.key.trim();
+    let path = keyedExistingPaths.get(key);
+    if (!path) {
+      path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    }
+
+    path.dataset.connectionKey = key;
+    applyConnectionPathAttributes(path, spec);
+    connectionLayerEl.appendChild(path);
+    keyedExistingPaths.delete(key);
+  }
+
+  for (const stalePath of keyedExistingPaths.values()) {
+    stalePath.remove();
+  }
+}
+
 function buildStepConnectionSpecs(
   pipelineWorkspaceEl: HTMLElement,
   workspaceRect: DOMRect,
@@ -202,7 +298,7 @@ export function renderConnectionLayer(options: ConnectionLayerRenderOptions): vo
     pathSpecs.push(previewSpec);
   }
 
-  pipelineView.syncConnectionPaths(options.connectionLayerEl, pathSpecs);
+  syncConnectionPaths(options.connectionLayerEl, pathSpecs);
 }
 
 export function createConnectionDrawScheduler(options: ConnectionDrawSchedulerOptions): ConnectionDrawScheduler {

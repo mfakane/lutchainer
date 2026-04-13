@@ -8,6 +8,7 @@ export interface ExportShaderZipResult {
 
 interface ShaderExportSystemOptions {
   getShaderBuildInput: () => ShaderBuildInput;
+  onDownloadZip: (zipData: Uint8Array, filename: string) => void | Promise<void>;
   toErrorMessage: (error: unknown) => string;
 }
 
@@ -30,6 +31,7 @@ function ensureOptions(options: unknown): asserts options is ShaderExportSystemO
 
   const candidate = options as Partial<ShaderExportSystemOptions>;
   ensureFunction(candidate.getShaderBuildInput, 'Shader export system options.getShaderBuildInput');
+  ensureFunction(candidate.onDownloadZip, 'Shader export system options.onDownloadZip');
   ensureFunction(candidate.toErrorMessage, 'Shader export system options.toErrorMessage');
 }
 
@@ -108,22 +110,7 @@ export function createShaderExportSystem(options: ShaderExportSystemOptions): Sh
         };
       }
 
-      const blob = new Blob(
-        [(zipData.buffer as ArrayBuffer).slice(zipData.byteOffset, zipData.byteOffset + zipData.byteLength)],
-        { type: 'application/zip' },
-      );
-      const downloadUrl = URL.createObjectURL(blob);
-
-      try {
-        const anchor = document.createElement('a');
-        anchor.href = downloadUrl;
-        anchor.download = buildShaderExportDownloadFilename();
-        document.body.appendChild(anchor);
-        anchor.click();
-        anchor.remove();
-      } finally {
-        URL.revokeObjectURL(downloadUrl);
-      }
+      await options.onDownloadZip(zipData, buildShaderExportDownloadFilename());
 
       return { ok: true };
     } catch (error) {
