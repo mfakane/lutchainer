@@ -1,11 +1,19 @@
 import { createHistoryShortcutHandler } from '../interactions/keyboard-history.ts';
-import { setupPipelineDndBindings } from './pipeline-dnd-bindings.ts';
+import {
+  setupPipelineDndBindingsWithDispose,
+  type PipelineDndBindingsDisposer,
+} from './pipeline-dnd-bindings.ts';
 
-type PipelineDndBindingsOptions = Parameters<typeof setupPipelineDndBindings>[0];
+type PipelineDndBindingsOptions = Parameters<typeof setupPipelineDndBindingsWithDispose>[0];
 
 interface EventTargetLike {
   addEventListener: (type: string, listener: EventListenerOrEventListenerObject, options?: AddEventListenerOptions | boolean) => void;
+  removeEventListener: (type: string, listener: EventListenerOrEventListenerObject, options?: EventListenerOptions | boolean) => void;
 }
+
+export type PipelineUiInteractionsDisposer = () => void;
+
+let disposePipelineUiInteractionsInternal: PipelineUiInteractionsDisposer | null = null;
 
 export interface SetupPipelineUiInteractionsOptions {
   dndBindings: PipelineDndBindingsOptions;
@@ -35,6 +43,7 @@ function ensureEventTargetLike(value: unknown, label: string): asserts value is 
 
   const eventTarget = value as Partial<EventTargetLike>;
   ensureFunction(eventTarget.addEventListener, `${label}.addEventListener`);
+  ensureFunction(eventTarget.removeEventListener, `${label}.removeEventListener`);
 }
 
 function ensureOptions(value: unknown): asserts value is SetupPipelineUiInteractionsOptions {
@@ -63,14 +72,18 @@ function ensureOptions(value: unknown): asserts value is SetupPipelineUiInteract
   }
 }
 
-export function setupPipelineUiInteractions(options: SetupPipelineUiInteractionsOptions): void {
+export function setupPipelineUiInteractions(options: SetupPipelineUiInteractionsOptions): PipelineUiInteractionsDisposer {
   ensureOptions(options);
 
-  setupPipelineDndBindings(options.dndBindings);
+  disposePipelineUiInteractionsInternal?.();
 
-  options.paramColumnEl.addEventListener('scroll', () => {
+  const disposeDndBindings: PipelineDndBindingsDisposer = setupPipelineDndBindingsWithDispose(options.dndBindings);
+
+  const handleParamColumnScroll = (): void => {
     options.onScheduleConnectionDraw();
-  });
+  };
+
+  options.paramColumnEl.addEventListener('scroll', handleParamColumnScroll);
 
   const windowTarget = options.windowTarget ?? window;
   ensureEventTargetLike(windowTarget, 'Pipeline UI interactions: resolved windowTarget');
@@ -80,12 +93,24 @@ export function setupPipelineUiInteractions(options: SetupPipelineUiInteractions
     onRedo: options.onRedoPipeline,
   });
 
-  windowTarget.addEventListener('keydown', event => {
+  const handleKeyDown = (event: Event): void => {
     historyShortcutHandler(event as KeyboardEvent);
-  });
+  };
+  windowTarget.addEventListener('keydown', handleKeyDown);
 
-  windowTarget.addEventListener('resize', () => {
+  const handleResize = (): void => {
     options.onScheduleConnectionDraw();
     options.onUpdateStepSwatches();
-  });
+  };
+  windowTarget.addEventListener('resize', handleResize);
+
+  const dispose: PipelineUiInteractionsDisposer = () => {
+    disposeDndBindings();
+    options.paramColumnEl.removeEventListener('scroll', handleParamColumnScroll);
+    windowTarget.removeEventListener('keydown', handleKeyDown);
+    windowTarget.removeEventListener('resize', handleResize);
+  };
+
+  disposePipelineUiInteractionsInternal = dispose;
+  return dispose;
 }

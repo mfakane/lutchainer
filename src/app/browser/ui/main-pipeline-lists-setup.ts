@@ -16,6 +16,7 @@ import {
 import {
   bindReorderDragHandlers,
   getLinearDropPlacement,
+  type DndBindingDisposer,
   type LinearDropCandidate,
   type LinearDropPlacement,
   type ReorderDragBinding,
@@ -30,6 +31,8 @@ interface CustomParamReorderDragState {
   overParamId: string | null;
   dropAfter: boolean;
 }
+
+let disposeCustomParamReorderBindings: DndBindingDisposer | null = null;
 
 export interface SetupMainPipelineListsOptions {
   paramNodeListEl: HTMLElement;
@@ -171,6 +174,8 @@ function setupCustomParamReorderBindings(options: {
   onMoveCustomParam: (paramId: string, targetParamId: string | null, after: boolean) => void;
   onStatus: StatusReporter;
 }): void {
+  disposeCustomParamReorderBindings?.();
+
   let customParamReorderDragState: CustomParamReorderDragState | null = null;
 
   const binding: ReorderDragBinding<string, CustomParamReorderDragState> = {
@@ -234,7 +239,7 @@ function setupCustomParamReorderBindings(options: {
     onInvalid: message => options.onStatus(message, 'error'),
   };
 
-  bindReorderDragHandlers(binding);
+  disposeCustomParamReorderBindings = bindReorderDragHandlers(binding);
 }
 
 export function setupMainPipelineLists(options: SetupMainPipelineListsOptions): void {

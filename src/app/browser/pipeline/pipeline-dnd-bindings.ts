@@ -1,15 +1,16 @@
-import {
-  bindPointerDragSources,
-  bindReorderDragHandlers,
-  createPointerDragState,
-} from '../interactions/dnd.ts';
-import type { ParamRef } from '../../../features/step/step-model.ts';
 import type {
-  LutReorderDragState,
-  SocketAxis,
-  SocketDragState,
-  StepReorderDragState,
+    LutReorderDragState,
+    SocketAxis,
+    SocketDragState,
+    StepReorderDragState,
 } from '../../../features/pipeline/pipeline-view.ts';
+import type { ParamRef } from '../../../features/step/step-model.ts';
+import {
+    bindPointerDragSources,
+    bindReorderDragHandlers,
+    createPointerDragState,
+    type DndBindingDisposer,
+} from '../interactions/dnd.ts';
 
 type StatusKind = 'success' | 'error' | 'info';
 type StatusReporter = (message: string, kind?: StatusKind) => void;
@@ -68,6 +69,8 @@ interface SetupPipelineDndBindingsOptions {
   stepReorder: SetupStepReorderBindingsOptions;
 }
 
+export type PipelineDndBindingsDisposer = DndBindingDisposer;
+
 type SocketDragStartSeed =
   | {
       mode: 'param';
@@ -80,6 +83,10 @@ type SocketDragStartSeed =
       stepId: string;
       axis: SocketAxis;
     };
+
+let disposeLutReorderBindings: DndBindingDisposer | null = null;
+let disposeStepReorderBindings: DndBindingDisposer | null = null;
+let disposeSocketPointerBindings: DndBindingDisposer | null = null;
 
 function isHTMLElement(value: unknown): value is HTMLElement {
   return value instanceof HTMLElement;
@@ -199,10 +206,32 @@ export function setupPipelineDndBindings(options: SetupPipelineDndBindingsOption
   setupStepReorderBindings(options.stepReorder);
 }
 
+export function disposePipelineDndBindings(): void {
+  disposeLutReorderBindings?.();
+  disposeLutReorderBindings = null;
+
+  disposeStepReorderBindings?.();
+  disposeStepReorderBindings = null;
+
+  disposeSocketPointerBindings?.();
+  disposeSocketPointerBindings = null;
+}
+
+export function setupPipelineDndBindingsWithDispose(
+  options: SetupPipelineDndBindingsOptions,
+): PipelineDndBindingsDisposer {
+  setupPipelineDndBindings(options);
+  return () => {
+    disposePipelineDndBindings();
+  };
+}
+
 export function setupLutReorderBindings(options: SetupLutReorderBindingsOptions): void {
   ensureSetupLutReorderBindingsOptions(options);
 
-  bindReorderDragHandlers({
+  disposeLutReorderBindings?.();
+
+  disposeLutReorderBindings = bindReorderDragHandlers({
     containerEl: options.lutStripListEl,
     resolveDragStart: eventTarget => {
       if (eventTarget.closest('[data-lut-remove="true"]')) {
@@ -250,7 +279,9 @@ export function setupLutReorderBindings(options: SetupLutReorderBindingsOptions)
 export function setupStepReorderBindings(options: SetupStepReorderBindingsOptions): void {
   ensureSetupStepReorderBindingsOptions(options);
 
-  bindReorderDragHandlers({
+  disposeStepReorderBindings?.();
+
+  disposeStepReorderBindings = bindReorderDragHandlers({
     containerEl: options.stepListEl,
     resolveDragStart: eventTarget => {
       const handle = eventTarget.closest<HTMLButtonElement>('[data-step-drag-handle="true"]');
@@ -298,7 +329,9 @@ export function setupStepReorderBindings(options: SetupStepReorderBindingsOption
 export function setupSocketPointerBindings(options: SetupSocketPointerBindingsOptions): void {
   ensureSetupSocketPointerBindingsOptions(options);
 
-  bindPointerDragSources<SocketDragStartSeed, SocketDragState>({
+  disposeSocketPointerBindings?.();
+
+  disposeSocketPointerBindings = bindPointerDragSources<SocketDragStartSeed, SocketDragState>({
     bindings: [
       {
         containerEl: options.paramNodeListEl,

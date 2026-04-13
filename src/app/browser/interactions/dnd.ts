@@ -59,6 +59,8 @@ export interface PointerDragSourceBindingOptions<TSeed extends object, TState ex
   onPointerEnd: (event: PointerEvent) => void;
 }
 
+export type DndBindingDisposer = () => void;
+
 function isFiniteCoord(value: unknown): value is number {
   return typeof value === 'number' && Number.isFinite(value);
 }
@@ -227,12 +229,12 @@ export function reorderItemsById<TItem, TId extends string | number>(
 
 export function bindReorderDragHandlers<TId extends string | number, TState extends { dropAfter: boolean }>(
   binding: ReorderDragBinding<TId, TState>,
-): void {
+): DndBindingDisposer {
   assertValidReorderDragBinding(binding);
 
   const transferId = (id: TId): string => binding.serializeId ? binding.serializeId(id) : String(id);
 
-  binding.containerEl.addEventListener('dragstart', event => {
+  const onDragStart = (event: DragEvent): void => {
     if (!isHtmlElement(event.target)) {
       event.preventDefault();
       return;
@@ -260,9 +262,9 @@ export function bindReorderDragHandlers<TId extends string | number, TState exte
     requestAnimationFrame(() => {
       binding.updateIndicators();
     });
-  });
+  };
 
-  binding.containerEl.addEventListener('dragover', event => {
+  const onDragOver = (event: DragEvent): void => {
     const dragState = binding.getDragState();
     if (!dragState) {
       return;
@@ -272,9 +274,9 @@ export function bindReorderDragHandlers<TId extends string | number, TState exte
     const placement = binding.getPlacement(event);
     binding.setDragState(binding.applyPlacement(dragState, placement));
     binding.updateIndicators();
-  });
+  };
 
-  binding.containerEl.addEventListener('drop', event => {
+  const onDrop = (event: DragEvent): void => {
     const dragState = binding.getDragState();
     if (!dragState) {
       return;
@@ -287,12 +289,24 @@ export function bindReorderDragHandlers<TId extends string | number, TState exte
     binding.clearDragState();
     binding.clearIndicators();
     binding.commitMove(draggedId, targetId, dropAfter);
-  });
+  };
 
-  binding.containerEl.addEventListener('dragend', () => {
+  const onDragEnd = (): void => {
     binding.clearDragState();
     binding.clearIndicators();
-  });
+  };
+
+  binding.containerEl.addEventListener('dragstart', onDragStart);
+  binding.containerEl.addEventListener('dragover', onDragOver);
+  binding.containerEl.addEventListener('drop', onDrop);
+  binding.containerEl.addEventListener('dragend', onDragEnd);
+
+  return () => {
+    binding.containerEl.removeEventListener('dragstart', onDragStart);
+    binding.containerEl.removeEventListener('dragover', onDragOver);
+    binding.containerEl.removeEventListener('drop', onDrop);
+    binding.containerEl.removeEventListener('dragend', onDragEnd);
+  };
 }
 
 export function createPointerDragState<TSeed extends object>(
@@ -353,14 +367,19 @@ export function updatePointerDragStateForMove<TState extends PointerDragStateBas
 
 export function bindPointerDragSources<TSeed extends object, TState extends PointerDragStateBase>(
   options: PointerDragSourceBindingOptions<TSeed, TState>,
-): void {
+): DndBindingDisposer {
   assertValidObject(options, 'pointer drag options');
   assertValidPointerDragOptions(options);
+
+  const pointerDownEntries: Array<{
+    containerEl: HTMLElement;
+    listener: (event: PointerEvent) => void;
+  }> = [];
 
   for (const binding of options.bindings) {
     assertValidPointerDragSourceBinding(binding);
 
-    binding.containerEl.addEventListener('pointerdown', event => {
+    const onPointerDown = (event: PointerEvent): void => {
       if (event.button !== 0 || !isHtmlElement(event.target)) {
         return;
       }
@@ -376,10 +395,26 @@ export function bindPointerDragSources<TSeed extends object, TState extends Poin
       }
 
       options.setDragState(options.createDragState(resolution.seed, event));
+    };
+
+    binding.containerEl.addEventListener('pointerdown', onPointerDown);
+    pointerDownEntries.push({
+      containerEl: binding.containerEl,
+      listener: onPointerDown,
     });
   }
 
   window.addEventListener('pointermove', options.onPointerMove);
   window.addEventListener('pointerup', options.onPointerEnd);
   window.addEventListener('pointercancel', options.onPointerEnd);
+
+  return () => {
+    for (const entry of pointerDownEntries) {
+      entry.containerEl.removeEventListener('pointerdown', entry.listener);
+    }
+
+    window.removeEventListener('pointermove', options.onPointerMove);
+    window.removeEventListener('pointerup', options.onPointerEnd);
+    window.removeEventListener('pointercancel', options.onPointerEnd);
+  };
 }

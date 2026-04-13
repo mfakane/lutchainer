@@ -1,38 +1,39 @@
-import { createEffect, createMemo, createSignal, type JSX } from 'solid-js';
+import { createEffect, createMemo, createSignal, on, onCleanup, type JSX } from 'solid-js';
 import {
-  MAX_RAMPS,
-  MAX_STOPS_PER_RAMP,
-  MIN_RAMPS,
-  type ColorRamp,
-  type ColorRamp2dLutData,
-  type ColorStop,
+    MAX_RAMPS,
+    MAX_STOPS_PER_RAMP,
+    MIN_RAMPS,
+    type ColorRamp,
+    type ColorRamp2dLutData,
+    type ColorStop,
 } from '../../../../features/lut-editor/lut-editor-model.ts';
 import { createLutFromColorRamp2d } from '../../../../features/lut-editor/lut-editor-painter.ts';
 import {
-  addRamp,
-  addStop,
-  moveRamp,
-  moveStop,
-  removeRamp,
-  removeStop,
-  renderColorRamp2dToPixels,
-  reorderRamps,
-  updateRamp,
-  updateStopAlpha,
-  updateStopColor,
+    addRamp,
+    addStop,
+    moveRamp,
+    moveStop,
+    removeRamp,
+    removeStop,
+    renderColorRamp2dToPixels,
+    reorderRamps,
+    updateRamp,
+    updateStopAlpha,
+    updateStopColor,
 } from '../../../../features/lut-editor/lut-editor-runtime.ts';
 import { colorToHex, parseHexColor, uid } from '../../../../features/pipeline/pipeline-model.ts';
 import { t, useLanguage, type TranslationArgs, type TranslationKey } from '../../i18n.ts';
 import { cx } from '../../styles/cx.ts';
 import * as ui from '../../styles/ui-primitives.css.ts';
+import { createPointerSessionManager } from './pointer-session.ts';
 import * as styles from './shared.css.ts';
 import {
-  DRAG_DELETE_THRESHOLD,
-  formatPositionPercent,
-  isValidPositionPercentDraft,
-  POSITION_PERCENT_STEP,
-  serializeRampData,
-  type LutEditorDialogContentOptions,
+    DRAG_DELETE_THRESHOLD,
+    formatPositionPercent,
+    isValidPositionPercentDraft,
+    POSITION_PERCENT_STEP,
+    serializeRampData,
+    type LutEditorDialogContentOptions,
 } from './shared.ts';
 import { LutEditorPreview } from './solid-lut-editor-preview.tsx';
 import { LutEditorRampSection } from './solid-lut-editor-ramp-section.tsx';
@@ -75,6 +76,7 @@ export function LutEditorDialogContent(props: { options: LutEditorDialogContentO
   let rampPositionInputRef: HTMLInputElement | undefined;
   let stopPositionInputRef: HTMLInputElement | undefined;
   let rampListDragOccurredRef = false;
+  const pointerSessionManager = createPointerSessionManager();
 
   props.syncApi.sync = (data, lutId) => {
     setRampData(data);
@@ -230,11 +232,16 @@ export function LutEditorDialogContent(props: { options: LutEditorDialogContentO
     });
   };
 
-  createEffect(() => {
-    rampData();
-    selectedRampId();
-    focusedStopId();
+  createEffect(on([rampData, selectedRampId, focusedStopId], () => {
     scheduleRedraw();
+  }));
+
+  onCleanup(() => {
+    if (rafPendingId !== null) {
+      cancelAnimationFrame(rafPendingId);
+      rafPendingId = null;
+    }
+    pointerSessionManager.cleanupPointerSession();
   });
 
   const isRampBoundary = (rampId: string): boolean => {
@@ -484,13 +491,10 @@ export function LutEditorDialogContent(props: { options: LutEditorDialogContentO
       }
     };
     const onUp = (): void => {
-      document.removeEventListener('pointermove', onMove);
-      document.removeEventListener('pointerup', onUp);
       setDraggingRampDeleteId(null);
       if (pendingDelete) handleRemoveRamp(rampId);
     };
-    document.addEventListener('pointermove', onMove);
-    document.addEventListener('pointerup', onUp);
+    pointerSessionManager.beginPointerSession(onMove, onUp);
   };
 
   const startStopDrag = (stopId: string, event: PointerEvent): void => {
@@ -515,13 +519,10 @@ export function LutEditorDialogContent(props: { options: LutEditorDialogContentO
       }
     };
     const onUp = (): void => {
-      document.removeEventListener('pointermove', onMove);
-      document.removeEventListener('pointerup', onUp);
       setDraggingStopDeleteId(null);
       if (pendingDelete) handleRemoveStop(stopId);
     };
-    document.addEventListener('pointermove', onMove);
-    document.addEventListener('pointerup', onUp);
+    pointerSessionManager.beginPointerSession(onMove, onUp);
   };
 
   const startPreviewStopDrag = (stopId: string, event: PointerEvent): void => {
@@ -535,12 +536,7 @@ export function LutEditorDialogContent(props: { options: LutEditorDialogContentO
       const ramp = selectedRamp();
       if (data && ramp) setRampData(updateRamp(data, moveStop(ramp, stopId, newPos)));
     };
-    const onUp = (): void => {
-      document.removeEventListener('pointermove', onMove);
-      document.removeEventListener('pointerup', onUp);
-    };
-    document.addEventListener('pointermove', onMove);
-    document.addEventListener('pointerup', onUp);
+    pointerSessionManager.beginPointerSession(onMove, () => undefined);
   };
 
   const handleRampStripPointerDown = (event: PointerEvent): void => {
@@ -635,8 +631,6 @@ export function LutEditorDialogContent(props: { options: LutEditorDialogContentO
     };
 
     const onUp = (): void => {
-      document.removeEventListener('pointermove', onMove);
-      document.removeEventListener('pointerup', onUp);
       if (dragStarted) {
         const dropIdx = rampListDropIdx();
         const data = rampData();
@@ -649,8 +643,7 @@ export function LutEditorDialogContent(props: { options: LutEditorDialogContentO
       }
     };
 
-    document.addEventListener('pointermove', onMove);
-    document.addEventListener('pointerup', onUp);
+    pointerSessionManager.beginPointerSession(onMove, onUp);
   };
 
   const showDropBefore = (idx: number): boolean => {
