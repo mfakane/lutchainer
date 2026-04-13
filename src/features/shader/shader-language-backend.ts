@@ -6,7 +6,7 @@ import type {
   ShaderLocalKey,
 } from '../step/step-model.ts';
 
-export type ShaderLanguage = 'glsl' | 'hlsl';
+export type ShaderLanguage = 'glsl' | 'hlsl' | 'mme';
 export type ShaderOutputKind = 'fragment' | 'previewFragment';
 
 export interface ShaderLanguageBackend {

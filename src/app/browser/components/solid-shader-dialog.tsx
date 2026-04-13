@@ -1,10 +1,10 @@
 import { For, createSignal } from 'solid-js';
 import { render } from 'solid-js/web';
 import {
-    getShaderGenerator,
-    type ShaderBuildInput,
-    type ShaderGenerator,
-    type ShaderLanguage,
+  getShaderGenerator,
+  type ShaderBuildInput,
+  type ShaderGenerator,
+  type ShaderLanguage,
 } from '../../../features/shader/shader-generator.ts';
 import { t, useLanguage, type TranslationArgs, type TranslationKey } from '../i18n.ts';
 import { cx } from '../styles/cx.ts';
@@ -32,7 +32,7 @@ interface ShaderDialogShellOptions {
 
 // --- Constants ---
 
-type ShaderCodeEntryId = 'glsl-fragment' | 'glsl-vertex' | 'hlsl-fragment';
+type ShaderCodeEntryId = 'glsl-fragment' | 'glsl-vertex' | 'hlsl-fragment' | 'mme-fragment';
 
 interface ShaderCodeEntry {
   id: ShaderCodeEntryId;
@@ -67,6 +67,13 @@ const SHADER_CODE_ENTRIES: readonly ShaderCodeEntry[] = [
     label: 'HLSL',
     stageLabel: 'HLSL',
     language: 'hlsl',
+    getSource: (generator, input) => generator.buildFragment(input),
+  },
+  {
+    id: 'mme-fragment',
+    label: 'MMEffect',
+    stageLabel: 'MMEffect',
+    language: 'mme',
     getSource: (generator, input) => generator.buildFragment(input),
   },
 ];

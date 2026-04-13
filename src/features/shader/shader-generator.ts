@@ -3,6 +3,7 @@ import type { CustomParamModel, LutModel, StepModel } from '../step/step-model.t
 import { GLSL_SHADER_GENERATOR } from './shader-glsl-generator.ts';
 import { HLSL_SHADER_GENERATOR } from './shader-hlsl-generator.ts';
 import type { ShaderLanguage } from './shader-language-backend.ts';
+import { MME_SHADER_GENERATOR } from './shader-mme-generator.ts';
 export type { ShaderLanguage } from './shader-language-backend.ts';
 
 export interface ShaderBuildInput {
@@ -37,6 +38,7 @@ export interface ShaderGenerator {
 const SHADER_GENERATORS: Record<ShaderLanguage, ShaderGenerator> = {
   glsl: GLSL_SHADER_GENERATOR,
   hlsl: HLSL_SHADER_GENERATOR,
+  mme: MME_SHADER_GENERATOR,
 };
 
 function isValidMaterialSettings(value: MaterialSettings): boolean {
@@ -69,7 +71,7 @@ export function assertValidShaderBuildInput(input: ShaderBuildInput): void {
 }
 
 export function listShaderGenerators(): ShaderGenerator[] {
-  return [SHADER_GENERATORS.glsl, SHADER_GENERATORS.hlsl];
+  return [SHADER_GENERATORS.glsl, SHADER_GENERATORS.hlsl, SHADER_GENERATORS.mme];
 }
 
 export function getShaderGenerator(language: ShaderLanguage): ShaderGenerator {
