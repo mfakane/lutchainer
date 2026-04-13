@@ -116,8 +116,8 @@ export const menu = style({
   zIndex: 30,
   border: `1px solid ${vars.color.controlBorder}`,
   borderRadius: '10px',
-  background: `color-mix(in srgb, ${vars.color.panel}, #000 8%)`,
-  boxShadow: '0 14px 28px rgba(0, 0, 0, 0.36)',
+  background: `color-mix(in srgb, ${vars.color.panel}, ${vars.color.bg} 8%)`,
+  boxShadow: `0 14px 28px color-mix(in srgb, ${vars.color.bg}, transparent 64%)`,
   padding: '6px',
 });
 
@@ -213,12 +213,12 @@ export const editableTextInput = style({
   selectors: {
     '&:hover': {
       borderColor: `color-mix(in srgb, ${vars.color.line}, ${vars.color.accent} 32%)`,
-      background: `color-mix(in srgb, ${vars.color.panel}, #000 10%)`,
+      background: `color-mix(in srgb, ${vars.color.panel}, ${vars.color.bg} 10%)`,
     },
     '&:focus': {
       outline: 'none',
       borderColor: vars.color.accent,
-      background: `color-mix(in srgb, ${vars.color.panel}, #000 6%)`,
+      background: `color-mix(in srgb, ${vars.color.panel}, ${vars.color.bg} 6%)`,
     },
   },
 });

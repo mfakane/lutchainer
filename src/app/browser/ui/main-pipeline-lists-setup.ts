@@ -1,25 +1,25 @@
 import type { MaterialSettings } from '../../../features/pipeline/pipeline-model.ts';
 import type { PipelineStateSnapshot } from '../../../features/pipeline/pipeline-state.ts';
-import type { AppTranslator } from '../../../shared/i18n/browser-translation-contract.ts';
 import type {
-  BlendOp,
-  ChannelName,
-  CustomParamModel,
-  LutModel,
-  StepModel,
+    BlendOp,
+    ChannelName,
+    CustomParamModel,
+    LutModel,
+    StepModel,
 } from '../../../features/step/step-model.ts';
+import type { AppTranslator } from '../../../shared/i18n/browser-translation-contract.ts';
 import {
-  mountLutStripList,
-  mountParamNodeList,
-  mountStepList,
+    mountLutStripList,
+    mountParamNodeList,
+    mountStepList,
 } from '../components/pipeline-lists/index.tsx';
 import {
-  bindReorderDragHandlers,
-  getLinearDropPlacement,
-  type DndBindingDisposer,
-  type LinearDropCandidate,
-  type LinearDropPlacement,
-  type ReorderDragBinding,
+    bindReorderDragHandlers,
+    getLinearDropPlacement,
+    type DndBindingDisposer,
+    type LinearDropCandidate,
+    type LinearDropPlacement,
+    type ReorderDragBinding,
 } from '../interactions/dnd.ts';
 import type { PipelinePresetKey } from './pipeline-presets.ts';
 

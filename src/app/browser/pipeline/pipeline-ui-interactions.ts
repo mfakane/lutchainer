@@ -1,7 +1,7 @@
 import { createHistoryShortcutHandler } from '../interactions/keyboard-history.ts';
 import {
-  setupPipelineDndBindingsWithDispose,
-  type PipelineDndBindingsDisposer,
+    setupPipelineDndBindingsWithDispose,
+    type PipelineDndBindingsDisposer,
 } from './pipeline-dnd-bindings.ts';
 
 type PipelineDndBindingsOptions = Parameters<typeof setupPipelineDndBindingsWithDispose>[0];

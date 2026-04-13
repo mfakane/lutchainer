@@ -11,7 +11,7 @@ export const statusLog = style({
   overflow: 'auto',
   whiteSpace: 'pre-wrap',
   wordBreak: 'break-word',
-  background: '#14171d',
+  background: vars.color.statusPanel,
 });
 
 export const statusTone = styleVariants({
@@ -19,10 +19,10 @@ export const statusTone = styleVariants({
     color: vars.color.ok,
   },
   error: {
-    color: '#ffb8aa',
-    background: '#261614',
+    color: `color-mix(in srgb, ${vars.color.warn}, ${vars.color.textStrong} 34%)`,
+    background: `color-mix(in srgb, ${vars.color.warn}, ${vars.color.bg} 86%)`,
   },
   info: {
-    color: '#9daec7',
+    color: `color-mix(in srgb, ${vars.color.muted}, ${vars.color.accent} 24%)`,
   },
 });

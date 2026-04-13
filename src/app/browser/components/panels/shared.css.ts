@@ -42,7 +42,7 @@ export const field = style({
   padding: '9px 10px',
   border: `1px solid ${vars.color.panelBorderStrong}`,
   borderRadius: '12px',
-  background: `color-mix(in srgb, ${vars.color.panel}, #000 4%)`,
+  background: `color-mix(in srgb, ${vars.color.panel}, ${vars.color.bg} 4%)`,
 });
 
 export const colorField = style({
@@ -89,7 +89,7 @@ export const lightToggleButton = style({
   selectors: {
     '&[aria-pressed="true"]': {
       borderColor: vars.color.accent,
-      color: '#d4e5ff',
+      color: `color-mix(in srgb, ${vars.color.textStrong}, ${vars.color.accent} 24%)`,
     },
   },
 });

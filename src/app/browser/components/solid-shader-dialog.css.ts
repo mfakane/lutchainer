@@ -38,7 +38,7 @@ export const tabs = style({
   padding: '3px',
   border: `1px solid ${vars.color.panelBorderStrong}`,
   borderRadius: '999px',
-  background: '#171b22',
+  background: vars.color.tabPillBg,
 });
 
 export const tab = style({
@@ -96,6 +96,6 @@ export const codeOutput = style({
   fontSize: '11px',
   lineHeight: 1.5,
   whiteSpace: 'pre',
-  color: '#dde7fb',
+  color: vars.color.codeText,
   userSelect: 'text',
 });

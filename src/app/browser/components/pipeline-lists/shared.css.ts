@@ -6,8 +6,11 @@ export const paramRoot = style({
   flexDirection: 'column',
   gap: '12px',
 });
+// Anchor class for step list globalStyle selectors.
 export const stepRoot = style({});
+// Anchor class for LUT strip globalStyle selectors.
 export const lutRoot = style({});
+// Anchor class for preview canvas globalStyle selectors.
 export const stepPreviewCanvas = style({});
 export const welcomeLinkButton = style({
   textDecoration: 'none',
@@ -32,7 +35,7 @@ export const customParamInput = style({
 
 export const socketButton = style({
   border: `1px solid ${vars.color.line}`,
-  background: `color-mix(in srgb, ${vars.color.panel}, #000 10%)`,
+  background: `color-mix(in srgb, ${vars.color.panel}, ${vars.color.bg} 10%)`,
   color: vars.color.text,
   cursor: 'pointer',
   transition: '120ms ease',
@@ -57,9 +60,9 @@ export const tooltip = style({
   gap: '6px',
   padding: '10px',
   borderRadius: '12px',
-  border: `1px solid color-mix(in srgb, ${vars.color.line}, #fff 12%)`,
-  background: `color-mix(in srgb, ${vars.color.panel}, #000 18%)`,
-  boxShadow: '0 12px 28px rgb(0 0 0 / 0.28)',
+  border: `1px solid color-mix(in srgb, ${vars.color.line}, ${vars.color.textStrong} 12%)`,
+  background: `color-mix(in srgb, ${vars.color.panel}, ${vars.color.bg} 18%)`,
+  boxShadow: `0 12px 28px color-mix(in srgb, ${vars.color.bg}, transparent 72%)`,
   zIndex: 20,
   pointerEvents: 'none',
 });
@@ -76,20 +79,20 @@ export const tooltipCanvas = style({
   height: '112px',
   display: 'block',
   borderRadius: '8px',
-  background: `radial-gradient(circle at 50% 42%, rgb(255 255 255 / 0.12), transparent 58%), color-mix(in srgb, ${vars.color.panel}, #000 32%)`,
+  background: `radial-gradient(circle at 50% 42%, color-mix(in srgb, ${vars.color.textStrong}, transparent 88%), transparent 58%), color-mix(in srgb, ${vars.color.panel}, ${vars.color.bg} 32%)`,
 });
 
 globalStyle(`${paramRoot} [data-param-group]`, {
   border: `1px solid ${vars.color.line}`,
   borderRadius: '14px',
   padding: '10px',
-  background: `color-mix(in srgb, ${vars.color.panel}, #000 12%)`,
+  background: `color-mix(in srgb, ${vars.color.panel}, ${vars.color.bg} 12%)`,
 });
 
 globalStyle(`${paramRoot} [data-param-group-tone="feedback"]`, {
-  borderColor: '#6f85a8',
-  background: `linear-gradient(180deg, rgba(122, 182, 255, 0.08), rgba(122, 182, 255, 0.02)), color-mix(in srgb, ${vars.color.panel}, #000 8%)`,
-  boxShadow: 'inset 0 0 0 1px rgba(122, 182, 255, 0.08)',
+  borderColor: vars.color.feedbackBorder,
+  background: `linear-gradient(180deg, color-mix(in srgb, ${vars.color.accent}, transparent 92%), color-mix(in srgb, ${vars.color.accent}, transparent 98%)), color-mix(in srgb, ${vars.color.panel}, ${vars.color.bg} 8%)`,
+  boxShadow: `inset 0 0 0 1px color-mix(in srgb, ${vars.color.accent}, transparent 92%)`,
 });
 
 globalStyle(`${paramRoot} [data-part="param-group-head"]`, {
@@ -117,9 +120,9 @@ globalStyle(`${paramRoot} [data-part="param-group-badge"]`, {
   height: '20px',
   padding: '0 8px',
   borderRadius: '999px',
-  border: '1px solid rgba(122, 182, 255, 0.35)',
-  background: 'rgba(122, 182, 255, 0.14)',
-  color: '#d5e6ff',
+  border: `1px solid ${vars.color.feedbackBadgeBorder}`,
+  background: vars.color.feedbackBadgeBg,
+  color: vars.color.feedbackBadgeText,
   fontSize: '10px',
   fontWeight: 700,
   letterSpacing: '0.04em',
@@ -146,7 +149,7 @@ globalStyle(`${paramRoot} [data-param-socket="true"]`, {
   justifyContent: 'center',
   gap: '3px',
   textAlign: 'left',
-  background: `color-mix(in srgb, ${vars.color.panel}, #000 10%)`,
+  background: `color-mix(in srgb, ${vars.color.panel}, ${vars.color.bg} 10%)`,
   border: `1px solid ${vars.color.line}`,
   borderRadius: '10px',
   padding: '10px 34px 10px 10px',
@@ -233,13 +236,13 @@ globalStyle(`${paramRoot} [data-part="socket-dot"], ${stepRoot} [data-part="sock
 });
 
 globalStyle(`${paramRoot} [data-param-socket="true"][data-socket-target="true"], ${stepRoot} [data-step-socket="true"][data-socket-target="true"]`, {
-  borderColor: '#e0ebff',
-  boxShadow: '0 0 0 3px rgba(122, 182, 255, 0.24)',
+  borderColor: vars.color.socketTargetBorder,
+  boxShadow: `0 0 0 3px ${vars.color.accentRingStrong}`,
 });
 
 globalStyle(`${paramRoot} [data-param-socket="true"][data-socket-source-active="true"], ${stepRoot} [data-step-socket="true"][data-socket-source-active="true"]`, {
   borderColor: vars.color.accent,
-  boxShadow: '0 0 0 3px rgba(122, 182, 255, 0.18)',
+  boxShadow: `0 0 0 3px ${vars.color.accentRing}`,
 });
 
 globalStyle(`${paramRoot} [data-part="param-name"]`, {
@@ -284,7 +287,7 @@ globalStyle(`${stepRoot} [data-step-empty="true"]`, {
   border: `1px solid ${vars.color.panelBorderStrong}`,
   borderRadius: '14px',
   padding: '18px',
-  background: `linear-gradient(180deg, color-mix(in srgb, ${vars.color.panel2}, #000 2%), color-mix(in srgb, ${vars.color.panel}, #000 10%))`,
+  background: `linear-gradient(180deg, color-mix(in srgb, ${vars.color.panel2}, ${vars.color.bg} 2%), color-mix(in srgb, ${vars.color.panel}, ${vars.color.bg} 10%))`,
   display: 'grid',
   gap: '14px',
 });
@@ -345,7 +348,7 @@ globalStyle(`${stepRoot} [data-step-item="true"]`, {
   border: `1px solid ${vars.color.line}`,
   borderRadius: '12px',
   padding: '8px',
-  background: `color-mix(in srgb, ${vars.color.panel2}, #000 5%)`,
+  background: `color-mix(in srgb, ${vars.color.panel2}, ${vars.color.bg} 5%)`,
 });
 
 globalStyle(`${stepRoot} [data-step-item="true"][data-muted="true"]`, {
@@ -427,7 +430,7 @@ globalStyle(`${stepRoot} [data-step-socket="true"]`, {
   gap: '4px',
   border: `1px solid ${vars.color.line}`,
   borderRadius: '10px',
-  background: `color-mix(in srgb, ${vars.color.panel}, #000 10%)`,
+  background: `color-mix(in srgb, ${vars.color.panel}, ${vars.color.bg} 10%)`,
 });
 
 globalStyle(`${stepRoot} [data-step-socket="true"] [data-part="socket-dot"]`, {
@@ -439,7 +442,7 @@ globalStyle(`${stepRoot} [data-part="step-socket-axis-label"]`, {
   fontSize: '10px',
   fontWeight: 700,
   letterSpacing: '0.08em',
-  color: '#adc0dd',
+  color: vars.color.stepSocketAxis,
 });
 
 globalStyle(`${stepRoot} [data-part="step-socket-param"]`, {
@@ -452,7 +455,7 @@ globalStyle(`${stepRoot} [data-part="step-core"]`, {
   border: `1px solid ${vars.color.panelBorderStrong}`,
   borderRadius: '10px',
   padding: '8px',
-  background: `color-mix(in srgb, ${vars.color.panel}, #000 8%)`,
+  background: `color-mix(in srgb, ${vars.color.panel}, ${vars.color.bg} 8%)`,
 });
 
 globalStyle(`${stepRoot} [data-part="lut-row"]`, {
@@ -507,8 +510,8 @@ globalStyle(`${stepRoot} [data-part="lut-crosshair"]::before`, {
   right: 0,
   top: 'var(--ch-y, 50%)',
   height: '1px',
-  borderTop: '1px dashed rgba(255, 255, 255, 0.5)',
-  background: 'rgba(0, 0, 0, 0.5)',
+  borderTop: `1px dashed ${vars.color.crosshairDash}`,
+  background: vars.color.crosshairShade,
 });
 
 globalStyle(`${stepRoot} [data-part="lut-crosshair"]::after`, {
@@ -516,8 +519,8 @@ globalStyle(`${stepRoot} [data-part="lut-crosshair"]::after`, {
   bottom: 0,
   left: 'var(--ch-x, 50%)',
   width: '1px',
-  borderLeft: '1px dashed rgba(255, 255, 255, 0.5)',
-  background: 'rgba(0, 0, 0, 0.5)',
+  borderLeft: `1px dashed ${vars.color.crosshairDash}`,
+  background: vars.color.crosshairShade,
 });
 
 globalStyle(`${stepRoot} [data-part="op-grid"]`, {
@@ -535,7 +538,7 @@ globalStyle(`${stepRoot} [data-part="op-item"]`, {
 globalStyle(`${stepRoot} [data-part="step-preview"]`, {
   border: `1px solid ${vars.color.panelBorderStrong}`,
   borderRadius: '10px',
-  background: `color-mix(in srgb, ${vars.color.bg}, #000 8%)`,
+  background: `color-mix(in srgb, ${vars.color.bg}, ${vars.color.bg3} 8%)`,
 });
 
 globalStyle(`${stepRoot} [data-part="preview-swatch"]`, {
@@ -614,7 +617,7 @@ globalStyle(`${lutRoot} [data-part="lut-meta"]`, {
   gridTemplateRows: 'auto auto',
   gap: '2px',
   padding: '5px 7px',
-  background: 'rgba(13, 18, 28, 0.72)',
+  background: `color-mix(in srgb, ${vars.color.bg}, transparent 28%)`,
   backdropFilter: 'blur(3px)',
 });
 

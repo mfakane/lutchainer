@@ -31,12 +31,12 @@ export const titleInput = style({
   selectors: {
     '&:hover': {
       borderColor: `color-mix(in srgb, ${vars.color.line}, ${vars.color.accent} 32%)`,
-      background: `color-mix(in srgb, ${vars.color.panel2}, #000 10%)`,
+      background: `color-mix(in srgb, ${vars.color.panel2}, ${vars.color.bg} 10%)`,
     },
     '&:focus': {
       outline: 'none',
       borderColor: vars.color.accent,
-      background: `color-mix(in srgb, ${vars.color.panel2}, #000 6%)`,
+      background: `color-mix(in srgb, ${vars.color.panel2}, ${vars.color.bg} 6%)`,
     },
   },
 });
@@ -70,6 +70,7 @@ export const canvasArea = style({
   gridTemplateRows: '256px 24px',
 });
 
+// Selector anchor for axis-swapped layout variants.
 export const axisSwapped = style({});
 
 export const canvasWrap = style({
@@ -124,7 +125,7 @@ export const rampKnob = style({
   height: '14px',
   borderRadius: '50%',
   background: vars.color.muted,
-  border: `2px solid color-mix(in srgb, ${vars.color.surfaceInset}, #000 30%)`,
+  border: `2px solid color-mix(in srgb, ${vars.color.surfaceInset}, ${vars.color.bg} 30%)`,
   transform: 'translateY(-50%)',
   cursor: 'ns-resize',
   touchAction: 'none',
@@ -154,7 +155,7 @@ export const removeRampButton = style({
 });
 
 export const pendingDeleteRamp = style({
-  background: '#f44',
+  background: vars.color.warn,
   opacity: 0.55,
   transform: 'translateY(-50%) scale(0.75)',
   cursor: 'no-drop',
@@ -184,7 +185,7 @@ export const stopKnob = style({
   width: '14px',
   height: '14px',
   borderRadius: '50%',
-  border: `2px solid color-mix(in srgb, ${vars.color.surfaceInset}, #000 30%)`,
+  border: `2px solid color-mix(in srgb, ${vars.color.surfaceInset}, ${vars.color.bg} 30%)`,
   transform: 'translateX(-50%)',
   cursor: 'ew-resize',
   touchAction: 'none',
@@ -207,7 +208,7 @@ export const focused = style({
 export const pendingDeleteStop = style({
   opacity: 0.55,
   transform: 'translateX(-50%) scale(0.75)',
-  borderColor: '#f44',
+  borderColor: vars.color.warn,
   cursor: 'no-drop',
   selectors: {
     [`${axisSwapped} &`]: {
@@ -287,14 +288,14 @@ export const rampRow = style({
   userSelect: 'none',
   selectors: {
     '&:hover': {
-      background: 'rgba(255, 255, 255, 0.05)',
+      background: `color-mix(in srgb, ${vars.color.textStrong}, transparent 95%)`,
     },
   },
 });
 
 export const rampRowSelected = style({
   borderColor: vars.color.accent,
-  background: 'rgba(122, 182, 255, 0.08)',
+  background: `color-mix(in srgb, ${vars.color.accent}, transparent 92%)`,
 });
 
 export const rampRowDragging = style({
@@ -306,7 +307,7 @@ export const rampSwatch = style({
   width: '48px',
   height: '14px',
   borderRadius: '3px',
-  border: '1px solid rgba(255, 255, 255, 0.1)',
+  border: `1px solid color-mix(in srgb, ${vars.color.textStrong}, transparent 90%)`,
   flexShrink: 0,
 });
 
@@ -352,7 +353,7 @@ export const previewStopKnob = style({
   width: '12px',
   height: '12px',
   borderRadius: '50%',
-  border: '2px solid rgba(0, 0, 0, 0.3)',
+  border: `2px solid color-mix(in srgb, ${vars.color.bg}, transparent 70%)`,
   transform: 'translateX(-50%)',
   cursor: 'ew-resize',
   touchAction: 'none',
