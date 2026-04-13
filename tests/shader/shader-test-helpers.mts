@@ -158,6 +158,34 @@ export function createShaderCoverageBuildInput(): ShaderBuildInput {
   return input;
 }
 
+export function createShaderCoverageBuildInputWithoutCustomParamRefs(): ShaderBuildInput {
+  const input = createShaderCoverageBuildInput();
+  input.steps = input.steps.map((step, index) => ({
+    ...step,
+    xParam: BUILTIN_PARAM_NAMES[index % BUILTIN_PARAM_NAMES.length],
+    yParam: BUILTIN_PARAM_NAMES[(index + 1) % BUILTIN_PARAM_NAMES.length],
+  }));
+  assertValidShaderBuildInput(input);
+  return input;
+}
+
+export function createShaderBuildInputsPerBlendMode(): ShaderBuildInput[] {
+  const base = createShaderCoverageBuildInput();
+  return base.steps.map(step => {
+    const input: ShaderBuildInput = {
+      steps: [{ ...step }],
+      luts: base.luts,
+      customParams: base.customParams,
+      materialSettings: {
+        ...base.materialSettings,
+        baseColor: [...base.materialSettings.baseColor],
+      },
+    };
+    assertValidShaderBuildInput(input);
+    return input;
+  });
+}
+
 export function generateShaderOutputs(input: ShaderBuildInput): {
   glsl: {
     fragment: string;

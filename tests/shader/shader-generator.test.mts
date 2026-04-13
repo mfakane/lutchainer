@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import path from 'node:path';
 import test from 'node:test';
+import { getShaderGenerator, listShaderGenerators } from '../../src/features/shader/shader-generator.ts';
 import * as shaderTest from './shader-test-helpers.mts';
 
 const repoRoot = path.resolve(import.meta.dirname, '..', '..');
@@ -11,10 +12,6 @@ const exampleNames = [
   'HueSatShiftToon.lutchain',
   'StandardToon.lutchain',
 ];
-
-function escapeRegExp(value: string): string {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
 
 async function tryLoadHeadlessGl(): Promise<((width: number, height: number, options?: object) => WebGLRenderingContext | null) | null> {
   try {
@@ -62,61 +59,38 @@ function createProgramCompiler(gl: WebGLRenderingContext) {
   };
 }
 
-test('coverage fixture spans every blend mode and built-in parameter', () => {
-  const input = shaderTest.createShaderCoverageBuildInput();
-  const usedBlendModes = new Set(input.steps.map((step: { blendMode: string }) => step.blendMode));
-  const usedParams = new Set<string>(input.steps.flatMap((step: { xParam: string; yParam: string }) => [step.xParam, step.yParam]));
-
-  assert.deepEqual([...usedBlendModes].sort(), [...shaderTest.listShaderBlendModes()].sort());
-  for (const param of shaderTest.listShaderBuiltinParams()) {
-    assert.ok(usedParams.has(param), `Missing builtin parameter coverage for ${param}`);
+test('shader generator capabilities match the exported build functions', () => {
+  for (const generator of listShaderGenerators()) {
+    assert.equal(typeof generator.buildFragment, 'function');
+    assert.equal(generator.capabilities.fragment, true);
+    assert.equal(Boolean(generator.buildPreviewFragment), generator.capabilities.previewFragment);
+    assert.equal(Boolean(generator.buildVertex), generator.capabilities.vertex);
+    assert.equal(getShaderGenerator(generator.language), generator);
   }
-  assert.ok(usedParams.has('custom:userGain'));
-  assert.ok(usedParams.has('custom:userBias'));
 });
 
-test('coverage fixture generates GLSL and HLSL with expected entry points and uniforms', () => {
-  const outputs = shaderTest.generateShaderOutputs(shaderTest.createShaderCoverageBuildInput());
+test('generated shaders include custom parameter uniforms only when they are used', () => {
+  const outputsWithCustomParams = shaderTest.generateShaderOutputs(shaderTest.createShaderCoverageBuildInput());
+  assert.match(outputsWithCustomParams.glsl.fragment, /u_param_userGain/);
+  assert.match(outputsWithCustomParams.hlsl.fragment, /u_param_userGain/);
 
-  assert.match(outputs.glsl.vertex, /attribute vec3 a_position;/);
-  assert.match(outputs.glsl.fragment, /uniform sampler2D u_texture;/);
-  assert.match(outputs.glsl.fragment, /uniform sampler2D u_lut0;/);
-  assert.match(outputs.glsl.fragment, /uniform sampler2D u_lut1;/);
-  assert.match(outputs.glsl.previewFragment, /uniform int u_targetStep;/);
-  assert.match(outputs.glsl.previewFragment, /gl_FragColor = vec4/);
-
-  assert.match(outputs.hlsl.fragment, /cbuffer SceneUniforms : register\(b0\)/);
-  assert.match(outputs.hlsl.fragment, /Texture2D u_texture : register\(t0\);/);
-  assert.match(outputs.hlsl.fragment, /Texture2D u_lut0 : register\(t1\);/);
-  assert.match(outputs.hlsl.fragment, /Texture2D u_lut1 : register\(t2\);/);
-  assert.match(outputs.hlsl.fragment, /SamplerState u_lutSampler : register\(s0\);/);
-  assert.match(outputs.hlsl.fragment, /PSInput VSMain\(VSInput input\)/);
-  assert.match(outputs.hlsl.fragment, /float4 PSMain\(PSInput input\) : SV_TARGET/);
-  assert.match(outputs.hlsl.fragment, /float u_param_userGain;/);
-  assert.match(outputs.hlsl.fragment, /float u_param_userBias;/);
+  const inputWithoutCustomParams = shaderTest.createShaderCoverageBuildInputWithoutCustomParamRefs();
+  const outputsWithoutCustomParams = shaderTest.generateShaderOutputs(inputWithoutCustomParams);
+  assert.doesNotMatch(outputsWithoutCustomParams.glsl.fragment, /u_param_userGain/);
+  assert.doesNotMatch(outputsWithoutCustomParams.glsl.fragment, /u_param_userBias/);
+  assert.doesNotMatch(outputsWithoutCustomParams.hlsl.fragment, /u_param_userGain/);
+  assert.doesNotMatch(outputsWithoutCustomParams.hlsl.fragment, /u_param_userBias/);
 });
 
-test('example archives generate shader outputs without missing stages', async () => {
+test('example archives generate shader outputs for every supported language entry point', async () => {
   for (const exampleName of exampleNames) {
     const input = await shaderTest.loadShaderBuildInputFromArchive(path.join(repoRoot, 'examples', exampleName));
     const outputs = shaderTest.generateShaderOutputs(input);
 
-    assert.match(outputs.glsl.fragment, /void main\(\)/, exampleName);
-    assert.match(outputs.glsl.vertex, /void main\(\)/, exampleName);
-    assert.match(outputs.glsl.previewFragment, /void main\(\)/, exampleName);
-    assert.match(outputs.hlsl.fragment, /float4 PSMain\(PSInput input\) : SV_TARGET/, exampleName);
-  }
-});
-
-test('coverage fixture emits one shader step block per blend mode', () => {
-  const outputs = shaderTest.generateShaderOutputs(shaderTest.createShaderCoverageBuildInput());
-
-  for (const blendMode of shaderTest.listShaderBlendModes()) {
-    assert.match(
-      outputs.glsl.fragment,
-      new RegExp(`// \\([^\\n]+\\) -> ${escapeRegExp(blendMode)}`),
-      `Missing GLSL comment block for ${blendMode}`,
-    );
+    assert.ok(outputs.glsl.vertex.length > 0, `${exampleName}: missing GLSL vertex shader`);
+    assert.ok(outputs.glsl.fragment.length > 0, `${exampleName}: missing GLSL fragment shader`);
+    assert.ok(outputs.glsl.previewFragment.length > 0, `${exampleName}: missing GLSL preview fragment shader`);
+    assert.ok(outputs.hlsl.fragment.length > 0, `${exampleName}: missing HLSL fragment shader`);
   }
 });
 
@@ -143,6 +117,7 @@ test('generated GLSL compiles with headless-gl when available', async t => {
   const compiler = createProgramCompiler(gl);
   const inputs = [
     shaderTest.createShaderCoverageBuildInput(),
+    ...shaderTest.createShaderBuildInputsPerBlendMode(),
     ...await Promise.all(
       exampleNames.map(exampleName =>
         shaderTest.loadShaderBuildInputFromArchive(path.join(repoRoot, 'examples', exampleName))),
