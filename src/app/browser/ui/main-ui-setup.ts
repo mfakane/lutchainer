@@ -1,6 +1,6 @@
 import type { LightSettings, MaterialSettings } from '../../../features/pipeline/pipeline-model.ts';
 import type { LutReorderDragState, SocketAxis, SocketDragState, StepReorderDragState } from '../../../features/pipeline/pipeline-view.ts';
-import type { ShaderBuildInput } from '../../../features/shader/shader-generator.ts';
+import type { ShaderBuildInput, ShaderLanguage } from '../../../features/shader/shader-generator.ts';
 import type { ParamRef } from '../../../features/step/step-model.ts';
 import {
     mountHeaderActionGroup,
@@ -39,7 +39,7 @@ interface MainUiPanelsOptions {
   getLightSettings: () => LightSettings;
   setLightSettings: (next: LightSettings) => void;
   getShaderBuildInput: () => ShaderBuildInput;
-  onExportShaderZip: () => void | Promise<void>;
+  onExportShaderZip: (language: ShaderLanguage) => void | Promise<void>;
   onUpdateStepSwatches: () => void;
   onUpdateShaderCodePanel: () => void;
   onScheduleApply: () => void;

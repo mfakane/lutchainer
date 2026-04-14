@@ -17,7 +17,7 @@ type StatusKind = 'success' | 'error' | 'info';
 
 interface ShaderDialogContentOptions {
   onClose: () => void;
-  onExport: () => void | Promise<void>;
+  onExport: (language: ShaderLanguage) => void | Promise<void>;
   onStatus: (message: string, kind?: StatusKind) => void;
 }
 
@@ -26,7 +26,7 @@ interface ShaderDialogShellOptions {
   openButtonEl: HTMLButtonElement;
   surfaceEl: Element;
   onBeforeOpen?: () => void;
-  onExport: () => void | Promise<void>;
+  onExport: (language: ShaderLanguage) => void | Promise<void>;
   onStatus: (message: string, kind?: StatusKind) => void;
 }
 
@@ -165,7 +165,7 @@ function ShaderDialogContent(props: {
 
   const handleExport = async () => {
     try {
-      await props.options.onExport();
+      await props.options.onExport(activeEntry().language);
     } catch (error) {
       const message = error instanceof Error ? error.message : tr('common.unknownError');
       props.options.onStatus(tr('shader.status.exportFailed', { message }), 'error');

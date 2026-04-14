@@ -1,6 +1,6 @@
 import * as pipelineModel from '../../../features/pipeline/pipeline-model.ts';
 import type { ExportShaderZipResult } from '../../../features/shader/shader-export-system.ts';
-import type { ShaderBuildInput } from '../../../features/shader/shader-generator.ts';
+import type { ShaderBuildInput, ShaderLanguage } from '../../../features/shader/shader-generator.ts';
 import type { AppTranslator } from '../../../shared/i18n/browser-translation-contract.ts';
 import {
   syncStatusPanelState,
@@ -28,7 +28,7 @@ interface CreateLightDirectionWorldGetterOptions {
 }
 
 interface ShaderExportSystemLike {
-  exportShaderZip: () => Promise<ExportShaderZipResult>;
+  exportShaderZip: (language: ShaderLanguage) => Promise<ExportShaderZipResult>;
 }
 
 interface CreateShaderExportHandlerOptions {
@@ -119,17 +119,17 @@ export function createStatusReporter(): MainStatusReporter {
 
 export function createShaderExportHandler(
   options: CreateShaderExportHandlerOptions,
-): () => Promise<void> {
+): (language: ShaderLanguage) => Promise<void> {
   assertShaderExportHandlerOptions(options);
 
-  return async (): Promise<void> => {
+  return async (language: ShaderLanguage): Promise<void> => {
     const shaderExportSystem = options.getShaderExportSystem();
     if (!shaderExportSystem) {
       options.onStatus(options.t('main.status.shaderExportNotInitialized'), 'error');
       return;
     }
 
-    const result = await shaderExportSystem.exportShaderZip();
+    const result = await shaderExportSystem.exportShaderZip(language);
     if (result.ok) {
       options.onStatus(options.t('shader.status.exportSuccess'), 'success');
       return;

@@ -1,5 +1,5 @@
 import { strToU8, zipSync } from 'fflate';
-import { listShaderGenerators, type ShaderBuildInput } from './shader-generator.ts';
+import { getShaderGenerator, type ShaderBuildInput, type ShaderLanguage } from './shader-generator.ts';
 
 export interface ExportShaderZipResult {
   ok: boolean;
@@ -13,7 +13,7 @@ interface ShaderExportSystemOptions {
 }
 
 interface ShaderExportSystem {
-  exportShaderZip: () => Promise<ExportShaderZipResult>;
+  exportShaderZip: (language: ShaderLanguage) => Promise<ExportShaderZipResult>;
 }
 
 const SHADER_EXPORT_DOWNLOAD_BASENAME = 'lutchainer-shader';
@@ -56,14 +56,19 @@ function pad2(value: number): string {
   return String(value).padStart(2, '0');
 }
 
-export function buildShaderExportDownloadFilename(now: Date = new Date()): string {
+function buildShaderExportLanguageLabel(language: ShaderLanguage): string {
+  return getShaderGenerator(language).displayName.replace(/[^a-z0-9]+/gi, '-').toLowerCase();
+}
+
+export function buildShaderExportDownloadFilename(language: ShaderLanguage, now: Date = new Date()): string {
   const yyyy = String(now.getFullYear());
   const mm = pad2(now.getMonth() + 1);
   const dd = pad2(now.getDate());
   const hh = pad2(now.getHours());
   const min = pad2(now.getMinutes());
   const ss = pad2(now.getSeconds());
-  return `${SHADER_EXPORT_DOWNLOAD_BASENAME}-${yyyy}${mm}${dd}-${hh}${min}${ss}.zip`;
+  const languageLabel = buildShaderExportLanguageLabel(language);
+  return `${SHADER_EXPORT_DOWNLOAD_BASENAME}-${languageLabel}-${yyyy}${mm}${dd}-${hh}${min}${ss}.zip`;
 }
 
 function canvasToPngBytes(canvas: HTMLCanvasElement): Promise<Uint8Array> {
@@ -81,13 +86,15 @@ function canvasToPngBytes(canvas: HTMLCanvasElement): Promise<Uint8Array> {
   });
 }
 
-export async function serializeShaderExportAsZip(input: ShaderBuildInput): Promise<Uint8Array> {
+export async function serializeShaderExportAsZip(
+  input: ShaderBuildInput,
+  language: ShaderLanguage,
+): Promise<Uint8Array> {
   const zipFiles: Record<string, Uint8Array> = {};
-  for (const generator of listShaderGenerators()) {
-    const files = generator.getExportFiles(input);
-    for (const [path, source] of Object.entries(files)) {
-      zipFiles[path] = strToU8(source);
-    }
+
+  const files = getShaderGenerator(language).getExportFiles(input);
+  for (const [path, source] of Object.entries(files)) {
+    zipFiles[path] = strToU8(source);
   }
 
   for (const lut of input.luts) {
@@ -100,9 +107,9 @@ export async function serializeShaderExportAsZip(input: ShaderBuildInput): Promi
 export function createShaderExportSystem(options: ShaderExportSystemOptions): ShaderExportSystem {
   ensureOptions(options);
 
-  const exportShaderZip = async (): Promise<ExportShaderZipResult> => {
+  const exportShaderZip = async (language: ShaderLanguage): Promise<ExportShaderZipResult> => {
     try {
-      const zipData = await serializeShaderExportAsZip(options.getShaderBuildInput());
+      const zipData = await serializeShaderExportAsZip(options.getShaderBuildInput(), language);
       if (!(zipData instanceof Uint8Array) || zipData.byteLength === 0) {
         return {
           ok: false,
@@ -110,7 +117,7 @@ export function createShaderExportSystem(options: ShaderExportSystemOptions): Sh
         };
       }
 
-      await options.onDownloadZip(zipData, buildShaderExportDownloadFilename());
+      await options.onDownloadZip(zipData, buildShaderExportDownloadFilename(language));
 
       return { ok: true };
     } catch (error) {

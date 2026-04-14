@@ -1,5 +1,5 @@
 import type { LightSettings, MaterialSettings } from '../../../features/pipeline/pipeline-model.ts';
-import type { ShaderBuildInput } from '../../../features/shader/shader-generator.ts';
+import type { ShaderBuildInput, ShaderLanguage } from '../../../features/shader/shader-generator.ts';
 import {
   mountLightPanel,
   mountMaterialPanel,
@@ -30,7 +30,7 @@ export interface SetupMainPanelsOptions {
   getLightSettings: () => LightSettings;
   setLightSettings: (nextSettings: LightSettings) => void;
   getShaderBuildInput: () => ShaderBuildInput;
-  onExportShaderZip: () => void | Promise<void>;
+  onExportShaderZip: (language: ShaderLanguage) => void | Promise<void>;
   onUpdateStepSwatches: () => void;
   onUpdateShaderCodePanel: () => void;
   onScheduleApply: () => void;

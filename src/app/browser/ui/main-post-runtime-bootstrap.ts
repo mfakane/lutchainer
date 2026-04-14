@@ -20,6 +20,7 @@ import type {
     LutModel,
     StepModel,
 } from '../../../features/step/step-model.ts';
+import type { ShaderLanguage } from '../../../features/shader/shader-generator.ts';
 import type { AppTranslator } from '../../../shared/i18n/browser-translation-contract.ts';
 import type {
     CameraOrbitState,
@@ -132,7 +133,7 @@ export interface BootstrapMainPostRuntimeOptions {
     customParams: import('../../../features/step/step-model.ts').CustomParamModel[];
     materialSettings: pipelineModel.MaterialSettings;
   };
-  onExportShaderZip: () => void | Promise<void>;
+  onExportShaderZip: (language: ShaderLanguage) => void | Promise<void>;
   onUpdateShaderCodePanel: () => void;
   getOrbitState: () => CameraOrbitState;
   setOrbitState: (nextState: CameraOrbitState) => void;
