@@ -13,16 +13,16 @@
       perSystem = { config, self', pkgs, system, ... }:
         let
           nodejs = pkgs.nodejs_22;
-          shaderRuntimeLibs = [
-            pkgs.stdenv.cc.cc
-            pkgs.libGL
-            pkgs.mesa
-            pkgs.libx11
-            pkgs.libxi
-            pkgs.libxext
-            pkgs.libxrandr
-            pkgs.libxdamage
-            pkgs.libxinerama
+          shaderRuntimeLibs = with pkgs; [
+            stdenv.cc.cc
+            libGL
+            mesa
+            libx11
+            libxi
+            libxext
+            libxrandr
+            libxdamage
+            libxinerama
           ];
           playwrightBrowserExecutable =
             if pkgs.stdenv.hostPlatform.isDarwin
@@ -36,21 +36,21 @@
           devShells.default = pkgs.mkShell {
             name = "lutchainer";
 
-            packages = [
+            packages = with pkgs; [
               nodejs
-              pkgs.esbuild   # CLI for bundling
-              pkgs.python3   # Required for Agent's Skills
-              pkgs.python3Packages.pyyaml
+              esbuild   # CLI for bundling
+              python3   # Required for Agent's Skills
+              python3Packages.pyyaml
 
               # Native dependencies for shader validation
-              pkgs.glslang
-              pkgs.directx-shader-compiler
+              glslang
+              directx-shader-compiler
 
               # Native dependencies for headless-gl
-              pkgs.pkg-config
-              pkgs.xorg-server
+              pkg-config
+              xorg-server
 
-              pkgs.playwright-driver.browsers
+              playwright-driver.browsers
             ];
 
             buildInputs = shaderRuntimeLibs;
