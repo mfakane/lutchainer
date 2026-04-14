@@ -164,12 +164,12 @@ function buildFragmentShader(input: ShaderBuildInput): string {
   const localDeclarations = buildShaderLocalDeclarations(requiredLocals, shaderLocalDeclarationOptions);
 
   return `${buildGeneratedShaderHeader('//')}
-${usedCustomParams.map(buildCustomParamDeclaration).join('\n')}
+${usedCustomParams ? usedCustomParams.map(buildCustomParamDeclaration).join('\n') + '\n' : ''}
 ${textureDecl}
 
 ${customUniformComments ? `${customUniformComments}\n` : ''}
-
-float FresnelStrength
+${requiredLocals.has('fresnel')
+      ? `float FresnelStrength
 <
   string UIName = "Fresnel Strength";
   string UIHelp = "フレネル反射の強さを調整します。0 でフレネル反射なし、1 で通常のフレネル反射の強さになります。";
@@ -185,8 +185,8 @@ float FresnelPower
   string UIWidget = "Slider";
   float UIMin = 0.01;
   float UIMax = 10;
-> = 2.0;
-
+> = 2.0;\n`
+    : ''}
 ////////////////////////////////////////////////////////////////////////////////
 // MikuMikuMoving Compatibility Layer
 ////////////////////////////////////////////////////////////////////////////////
