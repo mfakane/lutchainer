@@ -1,70 +1,3 @@
-:root {
-  --bg: #111111;
-  --bg-2: #222222;
-  --bg-3: #333333;
-  --panel: #202020;
-  --panel-2: #272727;
-  --text: #dde2ea;
-  --text-strong: #e1e8f8;
-  --muted: #9aa3b2;
-  --accent: #7ab6ff;
-  --accent-ink: #0c1420;
-  --control-border: #515151;
-  --control-bg: #1a1a1a;
-  --panel-border-strong: #464646;
-  --surface-inset: #171c25;
-  --line: #414141;
-  --resizer-line: #4b4b4b;
-  --resizer-active: #4b4b4b;
-  --remove-text: #f8c2b8;
-  --socket-border: #9bb6dd;
-  --socket-bg: #1b1b1b;
-  --scrollbar-thumb: #4a4a4a;
-  --scrollbar-thumb-hover: #5e5e5e;
-  --light-gizmo-main: #ffd17a;
-  --axis-x: #ff8d84;
-  --axis-y: #90ec8f;
-  --axis-z: #8dc4ff;
-  --warn: #ef8f7a;
-  --ok: #7adf9f;
-  --checker-a: #808080;
-  --checker-b: #666666;
-  --checker-size: 12px;
-}
-
-.checker-bg {
-  background-color: var(--checker-a);
-  background-image:
-    linear-gradient(45deg, var(--checker-b) 25%, transparent 25%, transparent 75%, var(--checker-b) 75%),
-    linear-gradient(45deg, var(--checker-b) 25%, transparent 25%, transparent 75%, var(--checker-b) 75%);
-  background-size: var(--checker-size) var(--checker-size);
-  background-position: 0 0, calc(var(--checker-size) / 2) calc(var(--checker-size) / 2);
-}
-
-*,
-*::before,
-*::after {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
-
-html,
-body {
-  height: 100%;
-  font-family: 'Avenir Next', 'Segoe UI', 'Hiragino Sans', sans-serif;
-  color: var(--text);
-  background:
-    radial-gradient(circle at 12% 15%, #252525 0%, transparent 38%),
-    radial-gradient(circle at 88% 82%, #444444 0%, transparent 42%),
-    var(--bg-3);
-}
-
-input[type="checkbox"],
-input[type="radio"] {
-  accent-color: var(--accent);
-}
-
 .app {
   display: flex;
   flex-direction: column;
@@ -123,58 +56,6 @@ input[type="radio"] {
   justify-content: flex-end;
 }
 
-.btn,
-button {
-  border: 1px solid var(--line);
-  background: var(--panel);
-  border-radius: 8px;
-  padding: 6px 11px;
-  font-size: 12px;
-  color: var(--text);
-  cursor: pointer;
-  transition: 120ms ease;
-}
-
-.btn:hover,
-button:hover {
-  border-color: var(--accent);
-  transform: translateY(-1px);
-}
-
-.btn:disabled,
-.btn:disabled:hover,
-button:disabled,
-button:disabled:hover {
-  opacity: 0.45;
-  cursor: not-allowed;
-  border-color: var(--line);
-  transform: none;
-}
-
-.btn-accent,
-.btn-submit,
-.btn-shape.active {
-  border-color: var(--accent);
-  background: var(--accent);
-  color: var(--accent-ink);
-  font-weight: 700;
-}
-
-.btn-secondary {
-  color: var(--muted);
-}
-
-.debug-toggle-btn {
-  min-width: 104px;
-}
-
-.debug-toggle-btn.active {
-  border-color: var(--warn);
-  background: color-mix(in srgb, var(--panel), var(--warn) 12%);
-  color: var(--remove-text);
-  font-weight: 700;
-}
-
 .main {
   display: flex;
   flex: 1;
@@ -212,14 +93,6 @@ button:disabled:hover {
 .preview-help {
   font-size: 11px;
   color: var(--muted);
-}
-
-.section-label {
-  font-size: 11px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--muted);
-  font-weight: 700;
 }
 
 .pipeline-workspace {
@@ -633,24 +506,6 @@ button:disabled:hover {
 
 .lut-editor-dialog-surface {
   height: min(80vh, 680px);
-}
-
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-::-webkit-scrollbar-thumb {
-  background: var(--scrollbar-thumb);
-  border-radius: 999px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: var(--scrollbar-thumb-hover);
 }
 
 @media (max-width: 1180px) {

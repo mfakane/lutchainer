@@ -7,13 +7,7 @@ import {
     type LutModel,
 } from '../../features/step/step-model.ts';
 import type { PipelineZipLutEntry } from '../../shared/lutchain/lutchain-archive.ts';
-
-function clamp01(value: number): number {
-  if (!Number.isFinite(value)) {
-    return 0;
-  }
-  return Math.max(0, Math.min(1, value));
-}
+import { clamp01 } from '../../shared/utils/color.ts';
 
 function uid(prefix = 'id'): string {
   return `${prefix}-${Math.random().toString(36).slice(2, 9)}`;

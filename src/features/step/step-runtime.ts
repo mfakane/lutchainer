@@ -18,15 +18,12 @@ import type {
 import {
   evaluateStepParam,
 } from './step-param-evaluators.ts';
+import { clamp01 } from '../../shared/utils/color.ts';
 
 export {
   sampleLutColorLinear,
   type LutColorSample
 };
-
-function clamp01(v: number): number {
-  return Math.max(0, Math.min(1, v));
-}
 
 function sanitizePreviewColor(color: Color): Color {
   const r = Number.isFinite(color[0]) ? clamp01(color[0]) : 0.5;

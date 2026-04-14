@@ -111,10 +111,6 @@ export function setSocketDropTargetState(nextState: SocketDropTarget | null): vo
   interactionState.socketDropTarget = nextState;
 }
 
-export function clearSocketDropTargetState(): void {
-  interactionState.socketDropTarget = null;
-}
-
 export function getStepReorderDragState(): StepReorderDragState | null {
   return interactionState.stepReorderDragState;
 }

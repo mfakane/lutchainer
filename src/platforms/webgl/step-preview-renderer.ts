@@ -1,5 +1,6 @@
 import { applyLutTextures } from './lut-texture-utils.ts';
 import type { Color, CustomParamModel } from '../../features/step/step-model.ts';
+import { clamp01 } from '../../shared/utils/color.ts';
 
 export interface StepPreviewShaderError {
   type: 'vertex' | 'fragment' | 'link' | 'input';
@@ -51,13 +52,6 @@ interface ProgramBindings {
   fresnelStrength: WebGLUniformLocation | null;
   fresnelPower: WebGLUniformLocation | null;
   lightDirection: WebGLUniformLocation | null;
-}
-
-function clamp01(value: number): number {
-  if (!Number.isFinite(value)) {
-    return 0;
-  }
-  return Math.max(0, Math.min(1, value));
 }
 
 function safePositiveNumber(value: number, fallback: number): number {

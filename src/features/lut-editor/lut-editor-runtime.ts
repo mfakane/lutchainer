@@ -1,4 +1,4 @@
-import { clamp01, uid } from '../pipeline/pipeline-model.ts';
+import { uid } from '../pipeline/pipeline-model.ts';
 import {
   LUT_EDITOR_DEFAULT_HEIGHT,
   LUT_EDITOR_DEFAULT_WIDTH,
@@ -10,6 +10,7 @@ import {
   type ColorRamp2dLutData,
   type ColorStop,
 } from './lut-editor-model.ts';
+import { clamp01 } from '../../shared/utils/color.ts';
 
 function lerp(a: number, b: number, t: number): number {
   return a + (b - a) * t;

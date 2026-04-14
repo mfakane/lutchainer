@@ -294,7 +294,6 @@ export interface TranslationParams {
 }
 
 export type TranslationKey = keyof TranslationSchema;
-export type TranslationParamKey = keyof TranslationParams;
 export type TranslationArgs<K extends TranslationKey> = SharedTranslationArgs<K, TranslationParams>;
 export type AppTranslator = SharedTranslator<TranslationKey, TranslationParams>;
 export type StaticTranslationKey = Extract<TranslationKey, `static.${string}`>;

@@ -1,5 +1,6 @@
 import type { ParamGroupDescriptionTranslationKey } from '../../shared/i18n/browser-translation-contract.ts';
 import { isRecord, parseNonEmptyText, type PipelineZipLutEntry } from '../../shared/lutchain/lutchain-archive.ts';
+import { clamp01, hsvToRgb } from '../../shared/utils/color.ts';
 import {
   LUT_EDITOR_DEFAULT_HEIGHT,
   LUT_EDITOR_DEFAULT_WIDTH,
@@ -14,7 +15,6 @@ import {
   parseCustomParamRef,
   type Color,
   type ColorWithAlpha,
-  type ColorWithHasChroma,
   type CustomParamModel,
   type LutModel,
   type ParamName,
@@ -350,70 +350,6 @@ function hasFiniteColor(value: ColorWithAlpha): boolean {
   if (!value.slice(0, 3).every(c => typeof c === 'number' && Number.isFinite(c))) return false;
   if (value.length === 4 && (typeof value[3] !== 'number' || !Number.isFinite(value[3]))) return false;
   return true;
-}
-
-export function clamp01(v: number): number {
-  return Math.max(0, Math.min(1, v));
-}
-
-export function rgbToHsv(c: Color): ColorWithHasChroma {
-  const r = c[0];
-  const g = c[1];
-  const b = c[2];
-  const maxValue = Math.max(r, g, b);
-  const minValue = Math.min(r, g, b);
-  const delta = maxValue - minValue;
-
-  let hue = 0.0;
-  if (delta > 1.0e-6) {
-    if (maxValue <= r) {
-      hue = ((g - b) / delta + (g < b ? 6.0 : 0.0)) / 6.0;
-    } else if (maxValue <= g) {
-      hue = ((b - r) / delta + 2.0) / 6.0;
-    } else if (maxValue <= b) {
-      hue = ((r - g) / delta + 4.0) / 6.0;
-    }
-  }
-
-  const saturation = maxValue <= 1.0e-6 ? 0.0 : delta / maxValue;
-  const value = maxValue;
-  const hasChroma = delta > 1.0e-6;
-  return [clamp01(hue), clamp01(saturation), clamp01(value), hasChroma];
-}
-
-export function hsvToRgb(c: ColorWithHasChroma): Color {
-  const saturation = clamp01(c[1]);
-  const value = clamp01(c[2]);
-  const hasChroma = c[3] ?? saturation > 1.0e-6;
-
-  if (saturation <= 1.0e-6 || !hasChroma) {
-    return [value, value, value];
-  }
-
-  const hue = c[0] - Math.floor(c[0]);
-  const cVal = value * saturation;
-  const x = cVal * (1.0 - Math.abs((hue * 6.0) % 2.0 - 1.0));
-  const m = value - cVal;
-  const cM = cVal + m;
-  const xM = x + m;
-
-  const sectorFloat = Math.floor(hue * 6.0);
-  const sector = sectorFloat % 6;
-
-  switch (sector) {
-    case 0:
-      return [cM, xM, m];
-    case 1:
-      return [xM, cM, m];
-    case 2:
-      return [m, cM, xM];
-    case 3:
-      return [m, xM, cM];
-    case 4:
-      return [xM, m, cM];
-    default:
-      return [cM, m, xM];
-  }
 }
 
 export function colorToHex(c: Color): string {

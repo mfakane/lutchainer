@@ -15,6 +15,7 @@ import {
   composeColorFromSteps,
   resolveStepRuntimeModels,
 } from './step-runtime.ts';
+import { clamp01 } from '../../shared/utils/color.ts';
 
 interface ResolveLutUvAtPixelInput {
   pixelX: number;
@@ -35,10 +36,6 @@ interface LutUvCoord {
 }
 
 const CAMERA_POSITION: readonly [number, number, number] = [0, 0, 3];
-
-function clamp01(v: number): number {
-  return Math.max(0, Math.min(1, v));
-}
 
 export function resolveLutUvAtPixel(input: ResolveLutUvAtPixelInput): LutUvCoord | null {
   const {

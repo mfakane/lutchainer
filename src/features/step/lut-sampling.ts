@@ -2,17 +2,11 @@ import type {
   Color,
   LutModel,
 } from './step-model.ts';
+import { clamp01 } from '../../shared/utils/color.ts';
 
 export interface LutColorSample {
   color: Color;
   alpha: number;
-}
-
-function clamp01(value: number): number {
-  if (!Number.isFinite(value)) {
-    return 0;
-  }
-  return Math.max(0, Math.min(1, value));
 }
 
 function isFiniteNumber(value: unknown): value is number {

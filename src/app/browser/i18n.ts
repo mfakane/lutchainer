@@ -635,11 +635,6 @@ export function setLanguage(language: unknown): Language {
   return language;
 }
 
-export function toggleLanguage(): Language {
-  const next: Language = getLanguage() === 'ja' ? 'en' : 'ja';
-  return setLanguage(next);
-}
-
 export function getLanguageLabel(language: unknown, displayLanguage: unknown = getLanguage()): string {
   ensureSupportedLanguage(language);
   ensureSupportedLanguage(displayLanguage);

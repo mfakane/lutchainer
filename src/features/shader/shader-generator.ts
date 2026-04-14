@@ -52,12 +52,6 @@ function isValidMaterialSettings(value: MaterialSettings): boolean {
     && Number.isFinite(value.fresnelPower);
 }
 
-export function assertValidStepPreviewInput(input: StepPreviewShaderBuildInput): void {
-  if (!input || !Array.isArray(input.steps) || !Array.isArray(input.luts) || !Array.isArray(input.customParams)) {
-    throw new Error('StepPreview shader 入力が不正です。');
-  }
-}
-
 export function assertValidShaderBuildInput(input: ShaderBuildInput): void {
   if (
     !input

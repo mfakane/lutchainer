@@ -70,6 +70,16 @@ globalStyle('html, body', {
   ].join(', '),
 });
 
+globalStyle('*, *::before, *::after', {
+  boxSizing: 'border-box',
+  margin: 0,
+  padding: 0,
+});
+
 globalStyle('button, input, select, textarea', {
   font: 'inherit',
+});
+
+globalStyle('input[type="checkbox"], input[type="radio"]', {
+  accentColor: vars.color.accent,
 });

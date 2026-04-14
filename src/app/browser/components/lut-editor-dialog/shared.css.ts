@@ -411,13 +411,6 @@ export const posInput = style({
   },
 });
 
-export const stopEditorActions = style({
-  display: 'flex',
-  gap: '8px',
-  alignItems: 'stretch',
-  flexWrap: 'wrap',
-});
-
 export const stopColorInput = style({
   width: '32px',
   height: '22px',

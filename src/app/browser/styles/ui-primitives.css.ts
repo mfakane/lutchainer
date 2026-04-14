@@ -19,6 +19,14 @@ export const sectionLabel = style({
   fontWeight: 700,
 });
 
+globalStyle('.section-label', {
+  fontSize: '11px',
+  letterSpacing: '0.08em',
+  textTransform: 'uppercase',
+  color: vars.color.muted,
+  fontWeight: 700,
+});
+
 export const buttonBase = style({
   border: `1px solid ${vars.color.line}`,
   background: vars.color.panel,
@@ -40,6 +48,29 @@ export const buttonBase = style({
       transform: 'none',
     },
   },
+});
+
+globalStyle('button', {
+  border: `1px solid ${vars.color.line}`,
+  background: vars.color.panel,
+  borderRadius: '8px',
+  padding: '6px 11px',
+  fontSize: '12px',
+  color: vars.color.text,
+  cursor: 'pointer',
+  transition: '120ms ease',
+});
+
+globalStyle('button:hover', {
+  borderColor: vars.color.accent,
+  transform: 'translateY(-1px)',
+});
+
+globalStyle('button:disabled, button:disabled:hover', {
+  opacity: 0.45,
+  cursor: 'not-allowed',
+  borderColor: vars.color.line,
+  transform: 'none',
 });
 
 export const secondaryButton = style({
@@ -225,10 +256,6 @@ export const editableTextInput = style({
 
 export const removeText = style({
   color: vars.color.removeText,
-});
-
-export const monoText = style({
-  fontFamily: vars.font.mono,
 });
 
 export const languageButton = style({

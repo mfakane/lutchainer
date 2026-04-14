@@ -127,10 +127,6 @@ export type ShaderLocalKey =
   | 'linearDepth'
   | 'texcoord';
 
-export interface ParamRequirementInfo {
-  requires: readonly ShaderLocalKey[];
-}
-
 export interface ParamEvaluator {
   requires: readonly ShaderLocalKey[];
   evaluate: (current: Color, context: StepParamContext) => number;

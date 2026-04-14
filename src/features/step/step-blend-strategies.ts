@@ -7,57 +7,7 @@ import {
   type ChannelName,
   type Color,
 } from './step-model.ts';
-
-function clamp01(v: number): number {
-  return Math.max(0, Math.min(1, v));
-}
-
-function rgbToHsv(c: Color): Color {
-  const r = c[0];
-  const g = c[1];
-  const b = c[2];
-  const max = Math.max(r, g, b);
-  const min = Math.min(r, g, b);
-  const d = max - min;
-
-  let h = 0;
-  if (d > 1e-6) {
-    if (max === r) h = ((g - b) / d + (g < b ? 6 : 0)) / 6;
-    else if (max === g) h = ((b - r) / d + 2) / 6;
-    else h = ((r - g) / d + 4) / 6;
-  }
-
-  const s = max <= 1e-6 ? 0 : d / max;
-  const v = max;
-  return [clamp01(h), clamp01(s), clamp01(v)];
-}
-
-function hsvToRgb(c: Color): Color {
-  const h = (c[0] % 1 + 1) % 1;
-  const s = clamp01(c[1]);
-  const v = clamp01(c[2]);
-
-  const i = Math.floor(h * 6);
-  const f = h * 6 - i;
-  const p = v * (1 - s);
-  const q = v * (1 - f * s);
-  const t = v * (1 - (1 - f) * s);
-
-  switch (i % 6) {
-    case 0:
-      return [v, t, p];
-    case 1:
-      return [q, v, p];
-    case 2:
-      return [p, v, t];
-    case 3:
-      return [p, q, v];
-    case 4:
-      return [t, p, v];
-    default:
-      return [v, p, q];
-  }
-}
+import { clamp01, hsvToRgb, rgbToHsv } from '../../shared/utils/color.ts';
 
 function applyBlend(cur: number, lut: number, op: BlendOp): number {
   switch (op) {
@@ -115,14 +65,6 @@ function emitTargetColorWithLerpHlsl(
     `float3 ${targetColorVar} = saturate(${targetExpr});`,
     ...emitColorLerpHlsl(targetColorVar, lutAlphaVar),
   ];
-}
-
-export function opExprGlsl(op: BlendOp, left: string, right: string): string | undefined {
-  return opExpr(op, left, right);
-}
-
-export function opExprHlsl(op: BlendOp, left: string, right: string): string | undefined {
-  return opExpr(op, left, right);
 }
 
 function opExpr(op: BlendOp, left: string, right: string): string | undefined {

@@ -6,30 +6,7 @@ import type {
   StepParamContext,
 } from './step-model.ts';
 import { parseCustomParamRef } from './step-model.ts';
-
-function clamp01(v: number): number {
-  return Math.max(0, Math.min(1, v));
-}
-
-function rgbToHsv(c: Color): Color {
-  const r = c[0];
-  const g = c[1];
-  const b = c[2];
-  const max = Math.max(r, g, b);
-  const min = Math.min(r, g, b);
-  const d = max - min;
-
-  let h = 0;
-  if (d > 1e-6) {
-    if (max === r) h = ((g - b) / d + (g < b ? 6 : 0)) / 6;
-    else if (max === g) h = ((b - r) / d + 2) / 6;
-    else h = ((r - g) / d + 4) / 6;
-  }
-
-  const s = max <= 1e-6 ? 0 : d / max;
-  const v = max;
-  return [clamp01(h), clamp01(s), clamp01(v)];
-}
+import { clamp01, rgbToHsv } from '../../shared/utils/color.ts';
 
 export const PARAM_EVALUATORS: Record<ParamName, ParamEvaluator> = {
   lightness: {
