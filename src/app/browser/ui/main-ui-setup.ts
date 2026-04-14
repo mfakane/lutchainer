@@ -3,8 +3,8 @@ import type { LutReorderDragState, SocketAxis, SocketDragState, StepReorderDragS
 import type { ShaderBuildInput } from '../../../features/shader/shader-generator.ts';
 import type { ParamRef } from '../../../features/step/step-model.ts';
 import {
-  mountHeaderActionGroup,
-  mountLanguageSwitcher,
+    mountHeaderActionGroup,
+    mountLanguageSwitcher,
 } from '../components/solid-header-actions.tsx';
 import type { PipelineDropIndicatorController } from '../pipeline/pipeline-drop-indicators.ts';
 import type { PipelineHeaderActionController } from '../pipeline/pipeline-header-actions-controller.ts';
@@ -20,14 +20,19 @@ type StatusReporter = (message: string, kind?: StatusKind) => void;
 
 type DomSelector = <T extends Element>(selector: string) => T;
 
-interface SetupMainUiOptions {
+interface MainUiShellOptions {
   select: DomSelector;
   pipelineHeaderActions: PipelineHeaderActionController;
   previewShapeController: PreviewShapeController;
   mainPreviewCapture: MainPreviewCaptureController;
+  isPreviewWireframeOverlayEnabled: () => boolean;
+  onStatus: StatusReporter;
+}
+
+interface MainUiPanelsOptions {
+  select: DomSelector;
   initialStatusMessage: string;
   initialStatusKind?: StatusKind;
-  isPreviewWireframeOverlayEnabled: () => boolean;
   lightGizmoLayerEl: SVGSVGElement;
   getMaterialSettings: () => MaterialSettings;
   setMaterialSettings: (next: MaterialSettings) => void;
@@ -38,6 +43,10 @@ interface SetupMainUiOptions {
   onUpdateStepSwatches: () => void;
   onUpdateShaderCodePanel: () => void;
   onScheduleApply: () => void;
+  onStatus: StatusReporter;
+}
+
+interface MainUiInteractionsOptions {
   paramNodeListEl: HTMLElement;
   stepListEl: HTMLElement;
   lutStripListEl: HTMLElement;
@@ -60,7 +69,14 @@ interface SetupMainUiOptions {
   onScheduleConnectionDraw: () => void;
   onUndoPipeline: () => void;
   onRedoPipeline: () => void;
+  onUpdateStepSwatches: () => void;
   onStatus: StatusReporter;
+}
+
+interface SetupMainUiOptions {
+  shell: MainUiShellOptions;
+  panels: MainUiPanelsOptions;
+  interactions: MainUiInteractionsOptions;
 }
 
 function ensureFunction(value: unknown, label: string): void {
@@ -87,21 +103,25 @@ function ensureObject(value: unknown, label: string): asserts value is Record<st
   }
 }
 
-function assertSetupMainUiOptions(options: SetupMainUiOptions): void {
-  ensureObject(options, 'Main UI setup options');
+function assertMainUiShellOptions(options: MainUiShellOptions): void {
+  ensureObject(options, 'Main UI shell options');
+  ensureFunction(options.select, 'Main UI shell select');
+  ensureObject(options.pipelineHeaderActions, 'Main UI shell pipelineHeaderActions');
+  ensureFunction(options.pipelineHeaderActions.buildMountOptions, 'Main UI shell pipelineHeaderActions.buildMountOptions');
+  ensureObject(options.previewShapeController, 'Main UI shell previewShapeController');
+  ensureFunction(options.previewShapeController.getCurrentShape, 'Main UI shell previewShapeController.getCurrentShape');
+  ensureFunction(options.previewShapeController.setActiveShape, 'Main UI shell previewShapeController.setActiveShape');
+  ensureFunction(options.previewShapeController.setWireframeOverlayEnabled, 'Main UI shell previewShapeController.setWireframeOverlayEnabled');
+  ensureObject(options.mainPreviewCapture, 'Main UI shell mainPreviewCapture');
+  ensureFunction(options.mainPreviewCapture.exportMainPreviewPng, 'Main UI shell mainPreviewCapture.exportMainPreviewPng');
+  ensureFunction(options.mainPreviewCapture.exportStepPreviewPng, 'Main UI shell mainPreviewCapture.exportStepPreviewPng');
+  ensureFunction(options.isPreviewWireframeOverlayEnabled, 'Main UI shell isPreviewWireframeOverlayEnabled');
+  ensureFunction(options.onStatus, 'Main UI shell onStatus');
+}
 
-  ensureFunction(options.select, 'Main UI setup select');
-  ensureObject(options.pipelineHeaderActions, 'Main UI setup pipelineHeaderActions');
-  ensureFunction(options.pipelineHeaderActions.buildMountOptions, 'Main UI setup pipelineHeaderActions.buildMountOptions');
-
-  ensureObject(options.previewShapeController, 'Main UI setup previewShapeController');
-  ensureFunction(options.previewShapeController.getCurrentShape, 'Main UI setup previewShapeController.getCurrentShape');
-  ensureFunction(options.previewShapeController.setActiveShape, 'Main UI setup previewShapeController.setActiveShape');
-  ensureFunction(options.previewShapeController.setWireframeOverlayEnabled, 'Main UI setup previewShapeController.setWireframeOverlayEnabled');
-
-  ensureObject(options.mainPreviewCapture, 'Main UI setup mainPreviewCapture');
-  ensureFunction(options.mainPreviewCapture.exportMainPreviewPng, 'Main UI setup mainPreviewCapture.exportMainPreviewPng');
-  ensureFunction(options.mainPreviewCapture.exportStepPreviewPng, 'Main UI setup mainPreviewCapture.exportStepPreviewPng');
+function assertMainUiPanelsOptions(options: MainUiPanelsOptions): void {
+  ensureObject(options, 'Main UI panels options');
+  ensureFunction(options.select, 'Main UI panels select');
   if (typeof options.initialStatusMessage !== 'string') {
     throw new Error('Main UI setup initialStatusMessage must be a string.');
   }
@@ -113,14 +133,7 @@ function assertSetupMainUiOptions(options: SetupMainUiOptions): void {
   ) {
     throw new Error('Main UI setup initialStatusKind must be a valid status kind.');
   }
-
   ensureSvgElement(options.lightGizmoLayerEl, 'Main UI setup lightGizmoLayerEl');
-  ensureHTMLElement(options.paramNodeListEl, 'Main UI setup paramNodeListEl');
-  ensureHTMLElement(options.stepListEl, 'Main UI setup stepListEl');
-  ensureHTMLElement(options.lutStripListEl, 'Main UI setup lutStripListEl');
-  ensureHTMLElement(options.paramColumnEl, 'Main UI setup paramColumnEl');
-
-  ensureFunction(options.isPreviewWireframeOverlayEnabled, 'Main UI setup isPreviewWireframeOverlayEnabled');
   ensureFunction(options.getMaterialSettings, 'Main UI setup getMaterialSettings');
   ensureFunction(options.setMaterialSettings, 'Main UI setup setMaterialSettings');
   ensureFunction(options.getLightSettings, 'Main UI setup getLightSettings');
@@ -130,6 +143,15 @@ function assertSetupMainUiOptions(options: SetupMainUiOptions): void {
   ensureFunction(options.onUpdateStepSwatches, 'Main UI setup onUpdateStepSwatches');
   ensureFunction(options.onUpdateShaderCodePanel, 'Main UI setup onUpdateShaderCodePanel');
   ensureFunction(options.onScheduleApply, 'Main UI setup onScheduleApply');
+  ensureFunction(options.onStatus, 'Main UI setup onStatus');
+}
+
+function assertMainUiInteractionsOptions(options: MainUiInteractionsOptions): void {
+  ensureObject(options, 'Main UI interactions options');
+  ensureHTMLElement(options.paramNodeListEl, 'Main UI setup paramNodeListEl');
+  ensureHTMLElement(options.stepListEl, 'Main UI setup stepListEl');
+  ensureHTMLElement(options.lutStripListEl, 'Main UI setup lutStripListEl');
+  ensureHTMLElement(options.paramColumnEl, 'Main UI setup paramColumnEl');
 
   ensureFunction(options.parseStepId, 'Main UI setup parseStepId');
   ensureFunction(options.parseLutId, 'Main UI setup parseLutId');
@@ -159,106 +181,114 @@ function assertSetupMainUiOptions(options: SetupMainUiOptions): void {
   ensureFunction(options.moveLutToPosition, 'Main UI setup moveLutToPosition');
   ensureFunction(options.moveStepToPosition, 'Main UI setup moveStepToPosition');
   ensureFunction(options.onScheduleConnectionDraw, 'Main UI setup onScheduleConnectionDraw');
+  ensureFunction(options.onUpdateStepSwatches, 'Main UI setup onUpdateStepSwatches');
   ensureFunction(options.onUndoPipeline, 'Main UI setup onUndoPipeline');
   ensureFunction(options.onRedoPipeline, 'Main UI setup onRedoPipeline');
   ensureFunction(options.onStatus, 'Main UI setup onStatus');
 }
 
+function assertSetupMainUiOptions(options: SetupMainUiOptions): void {
+  ensureObject(options, 'Main UI setup options');
+  assertMainUiShellOptions(options.shell);
+  assertMainUiPanelsOptions(options.panels);
+  assertMainUiInteractionsOptions(options.interactions);
+}
+
 export function setupMainUi(options: SetupMainUiOptions): void {
   assertSetupMainUiOptions(options);
 
-  mountLanguageSwitcher(options.select<HTMLElement>('#header-language-switcher'));
+  mountLanguageSwitcher(options.shell.select<HTMLElement>('#header-language-switcher'));
   mountHeaderActionGroup(
-    options.select<HTMLElement>('#header-action-group'),
-    options.pipelineHeaderActions.buildMountOptions(),
+    options.shell.select<HTMLElement>('#header-action-group'),
+    options.shell.pipelineHeaderActions.buildMountOptions(),
   );
 
   setupStepPreviewShapeUi({
-    target: options.select<HTMLElement>('#preview-shape-bar'),
-    initialShape: options.previewShapeController.getCurrentShape(),
-    isWireframeEnabled: options.isPreviewWireframeOverlayEnabled,
+    target: options.shell.select<HTMLElement>('#preview-shape-bar'),
+    initialShape: options.shell.previewShapeController.getCurrentShape(),
+    isWireframeEnabled: options.shell.isPreviewWireframeOverlayEnabled,
     onShapeChange: nextShape => {
-      options.previewShapeController.setActiveShape(nextShape);
+      options.shell.previewShapeController.setActiveShape(nextShape);
     },
     onWireframeChange: enabled => {
-      options.previewShapeController.setWireframeOverlayEnabled(enabled);
+      options.shell.previewShapeController.setWireframeOverlayEnabled(enabled);
     },
     onExportMainPreviewPng: async () => {
-      await options.mainPreviewCapture.exportMainPreviewPng();
+      await options.shell.mainPreviewCapture.exportMainPreviewPng();
     },
     onExportStepPreviewPng: async () => {
-      await options.mainPreviewCapture.exportStepPreviewPng();
+      await options.shell.mainPreviewCapture.exportStepPreviewPng();
     },
-    onStatus: options.onStatus,
+    onStatus: options.shell.onStatus,
   });
 
   setupMainPanels({
-    materialPanelEl: options.select<HTMLElement>('#material-panel'),
-    lightPanelEl: options.select<HTMLElement>('#light-panel'),
-    statusPanelEl: options.select<HTMLElement>('#statusbar'),
-    initialStatusMessage: options.initialStatusMessage,
-    initialStatusKind: options.initialStatusKind,
-    shaderDialogEl: options.select<HTMLDialogElement>('#shader-dialog'),
-    shaderOpenButtonEl: options.select<HTMLButtonElement>('#btn-open-shader-dialog'),
-    shaderSurfaceEl: options.select<Element>('.shader-dialog-surface'),
-    lightGizmoLayerEl: options.lightGizmoLayerEl,
-    getMaterialSettings: options.getMaterialSettings,
-    setMaterialSettings: options.setMaterialSettings,
-    getLightSettings: options.getLightSettings,
-    setLightSettings: options.setLightSettings,
-    getShaderBuildInput: options.getShaderBuildInput,
-    onExportShaderZip: options.onExportShaderZip,
-    onUpdateStepSwatches: options.onUpdateStepSwatches,
-    onUpdateShaderCodePanel: options.onUpdateShaderCodePanel,
-    onScheduleApply: options.onScheduleApply,
-    onStatus: options.onStatus,
+    materialPanelEl: options.panels.select<HTMLElement>('#material-panel'),
+    lightPanelEl: options.panels.select<HTMLElement>('#light-panel'),
+    statusPanelEl: options.panels.select<HTMLElement>('#statusbar'),
+    initialStatusMessage: options.panels.initialStatusMessage,
+    initialStatusKind: options.panels.initialStatusKind,
+    shaderDialogEl: options.panels.select<HTMLDialogElement>('#shader-dialog'),
+    shaderOpenButtonEl: options.panels.select<HTMLButtonElement>('#btn-open-shader-dialog'),
+    shaderSurfaceEl: options.panels.select<Element>('.shader-dialog-surface'),
+    lightGizmoLayerEl: options.panels.lightGizmoLayerEl,
+    getMaterialSettings: options.panels.getMaterialSettings,
+    setMaterialSettings: options.panels.setMaterialSettings,
+    getLightSettings: options.panels.getLightSettings,
+    setLightSettings: options.panels.setLightSettings,
+    getShaderBuildInput: options.panels.getShaderBuildInput,
+    onExportShaderZip: options.panels.onExportShaderZip,
+    onUpdateStepSwatches: options.panels.onUpdateStepSwatches,
+    onUpdateShaderCodePanel: options.panels.onUpdateShaderCodePanel,
+    onScheduleApply: options.panels.onScheduleApply,
+    onStatus: options.panels.onStatus,
   });
 
   setupPipelineUiInteractions({
     dndBindings: {
       lutReorder: {
-        lutStripListEl: options.lutStripListEl,
-        parseLutId: options.parseLutId,
-        getLutDropPlacement: options.pipelineDropIndicators.getLutDropPlacement,
-        getLutReorderDragState: options.getLutReorderDragState,
-        setLutReorderDragState: options.setLutReorderDragState,
-        clearLutReorderDragState: options.clearLutReorderDragState,
-        updateLutDropIndicators: options.pipelineDropIndicators.updateLutDropIndicators,
-        clearLutDropIndicators: options.pipelineDropIndicators.clearLutDropIndicators,
-        moveLutToPosition: options.moveLutToPosition,
-        onStatus: options.onStatus,
+        lutStripListEl: options.interactions.lutStripListEl,
+        parseLutId: options.interactions.parseLutId,
+        getLutDropPlacement: options.interactions.pipelineDropIndicators.getLutDropPlacement,
+        getLutReorderDragState: options.interactions.getLutReorderDragState,
+        setLutReorderDragState: options.interactions.setLutReorderDragState,
+        clearLutReorderDragState: options.interactions.clearLutReorderDragState,
+        updateLutDropIndicators: options.interactions.pipelineDropIndicators.updateLutDropIndicators,
+        clearLutDropIndicators: options.interactions.pipelineDropIndicators.clearLutDropIndicators,
+        moveLutToPosition: options.interactions.moveLutToPosition,
+        onStatus: options.interactions.onStatus,
       },
       socketPointer: {
-        paramNodeListEl: options.paramNodeListEl,
-        stepListEl: options.stepListEl,
-        parseStepId: options.parseStepId,
-        isValidParamName: options.isValidParamName,
-        isValidSocketAxis: options.isValidSocketAxis,
-        setSocketDragState: options.setSocketDragState,
-        handleSocketDragMove: options.pipelineSocketDnd.handleSocketDragMove,
-        handleSocketDragEnd: options.pipelineSocketDnd.handleSocketDragEnd,
-        onStatus: options.onStatus,
+        paramNodeListEl: options.interactions.paramNodeListEl,
+        stepListEl: options.interactions.stepListEl,
+        parseStepId: options.interactions.parseStepId,
+        isValidParamName: options.interactions.isValidParamName,
+        isValidSocketAxis: options.interactions.isValidSocketAxis,
+        setSocketDragState: options.interactions.setSocketDragState,
+        handleSocketDragMove: options.interactions.pipelineSocketDnd.handleSocketDragMove,
+        handleSocketDragEnd: options.interactions.pipelineSocketDnd.handleSocketDragEnd,
+        onStatus: options.interactions.onStatus,
       },
       stepReorder: {
-        stepListEl: options.stepListEl,
-        parseStepId: options.parseStepId,
-        getStepDropPlacement: options.pipelineDropIndicators.getStepDropPlacement,
-        getStepReorderDragState: options.getStepReorderDragState,
-        setStepReorderDragState: options.setStepReorderDragState,
-        clearStepReorderDragState: options.clearStepReorderDragState,
-        updateStepDropIndicators: options.pipelineDropIndicators.updateStepDropIndicators,
-        clearStepDropIndicators: options.pipelineDropIndicators.clearStepDropIndicators,
-        moveStepToPosition: options.moveStepToPosition,
-        onStatus: options.onStatus,
+        stepListEl: options.interactions.stepListEl,
+        parseStepId: options.interactions.parseStepId,
+        getStepDropPlacement: options.interactions.pipelineDropIndicators.getStepDropPlacement,
+        getStepReorderDragState: options.interactions.getStepReorderDragState,
+        setStepReorderDragState: options.interactions.setStepReorderDragState,
+        clearStepReorderDragState: options.interactions.clearStepReorderDragState,
+        updateStepDropIndicators: options.interactions.pipelineDropIndicators.updateStepDropIndicators,
+        clearStepDropIndicators: options.interactions.pipelineDropIndicators.clearStepDropIndicators,
+        moveStepToPosition: options.interactions.moveStepToPosition,
+        onStatus: options.interactions.onStatus,
       },
     },
-    stepListEl: options.stepListEl,
-    paramColumnEl: options.paramColumnEl,
-    onScheduleConnectionDraw: options.onScheduleConnectionDraw,
-    onUpdateStepSwatches: options.onUpdateStepSwatches,
-    onUndoPipeline: options.onUndoPipeline,
-    onRedoPipeline: options.onRedoPipeline,
+    stepListEl: options.interactions.stepListEl,
+    paramColumnEl: options.interactions.paramColumnEl,
+    onScheduleConnectionDraw: options.interactions.onScheduleConnectionDraw,
+    onUpdateStepSwatches: options.interactions.onUpdateStepSwatches,
+    onUndoPipeline: options.interactions.onUndoPipeline,
+    onRedoPipeline: options.interactions.onRedoPipeline,
   });
 
-  options.previewShapeController.setActiveShape('sphere');
+  options.shell.previewShapeController.setActiveShape('sphere');
 }

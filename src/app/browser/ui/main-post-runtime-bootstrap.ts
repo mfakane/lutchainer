@@ -1,83 +1,83 @@
 import { MAX_LUTS } from '../../../features/pipeline/pipeline-constants.ts';
 import type {
-  PipelineHistoryActionsController,
+    PipelineHistoryActionsController,
 } from '../../../features/pipeline/pipeline-history-actions.ts';
 import * as pipelineModel from '../../../features/pipeline/pipeline-model.ts';
 import {
-  getCustomParams as getPipelineCustomParams,
-  getLuts as getPipelineLuts,
-  getSteps as getPipelineSteps,
-  replacePipelineState,
-  setLuts as setPipelineLuts,
+    getCustomParams as getPipelineCustomParams,
+    getLuts as getPipelineLuts,
+    getSteps as getPipelineSteps,
+    replacePipelineState,
+    setLuts as setPipelineLuts,
 } from '../../../features/pipeline/pipeline-state.ts';
 import * as pipelineView from '../../../features/pipeline/pipeline-view.ts';
 import {
-  resolveLutUvAtPixel,
+    resolveLutUvAtPixel,
 } from '../../../features/step/step-lut-uv-resolver.ts';
 import type {
-  BlendOp,
-  ChannelName,
-  LutModel,
-  StepModel,
+    BlendOp,
+    ChannelName,
+    LutModel,
+    StepModel,
 } from '../../../features/step/step-model.ts';
+import type { AppTranslator } from '../../../shared/i18n/browser-translation-contract.ts';
 import type {
-  CameraOrbitState,
+    CameraOrbitState,
 } from '../interactions/layout-interactions.ts';
 import {
-  type PipelineApplyController,
+    type PipelineApplyController,
 } from '../pipeline/pipeline-apply.ts';
 import type {
-  PipelineDropIndicatorController,
+    PipelineDropIndicatorController,
 } from '../pipeline/pipeline-drop-indicators.ts';
 import type {
-  PipelineHeaderActionController,
+    PipelineHeaderActionController,
 } from '../pipeline/pipeline-header-actions-controller.ts';
 import type {
-  PipelineSocketDndController,
+    PipelineSocketDndController,
 } from '../pipeline/pipeline-socket-dnd-controller.ts';
 import type {
-  MainStepRenderingController,
+    MainStepRenderingController,
 } from '../step/main-step-rendering-controller.ts';
 import {
-  clearLutReorderDragState,
-  clearStepReorderDragState,
-  getLutReorderDragState,
-  getStepReorderDragState,
-  getSuppressClickUntil,
-  setLutReorderDragState,
-  setSocketDragState,
-  setStepReorderDragState,
+    clearLutReorderDragState,
+    clearStepReorderDragState,
+    getLutReorderDragState,
+    getStepReorderDragState,
+    getSuppressClickUntil,
+    setLutReorderDragState,
+    setSocketDragState,
+    setStepReorderDragState,
 } from './interaction-state.ts';
 import {
-  setupMainLayoutControls,
+    setupMainLayoutControls,
 } from './main-layout-controls-setup.ts';
 import {
-  setupMainLutEditorDialog,
+    setupMainLutEditorDialog,
 } from './main-lut-editor-dialog-setup.ts';
 import {
-  setupMainPipelineEditor,
+    setupMainPipelineEditor,
 } from './main-pipeline-editor-setup.ts';
 import type {
-  MainPreviewCaptureController,
+    MainPreviewCaptureController,
 } from './main-preview-capture-controller.ts';
 import type {
-  MainRenderPipeline,
+    MainRenderPipeline,
 } from './main-render-pipeline-setup.ts';
 import {
-  setupMainUi,
+    setupMainUi,
 } from './main-ui-setup.ts';
 import type {
-  PreviewShapeController,
+    PreviewShapeController,
 } from './preview-shape-controller.ts';
-import type { AppTranslator } from '../../../shared/i18n/browser-translation-contract.ts';
 import {
-  getLightSettings,
-  getMaterialSettings,
-  setLightSettings,
-  setMaterialSettings,
+    getLightSettings,
+    getMaterialSettings,
+    setLightSettings,
+    setMaterialSettings,
 } from './scene-state.ts';
 import {
-  isPreviewWireframeOverlayEnabled,
+    isPreviewWireframeOverlayEnabled,
 } from './ui-state.ts';
 
 type StatusKind = 'success' | 'error' | 'info';
@@ -330,46 +330,56 @@ export function bootstrapMainPostRuntime(options: BootstrapMainPostRuntimeOption
   });
 
   setupMainUi({
-    select: options.select,
-    pipelineHeaderActions: options.pipelineHeaderActions,
-    previewShapeController: options.previewShapeController,
-    mainPreviewCapture: options.mainPreviewCapture,
-    isPreviewWireframeOverlayEnabled,
-    lightGizmoLayerEl: options.lightGizmoLayerEl,
-    getMaterialSettings,
-    setMaterialSettings,
-    getLightSettings,
-    setLightSettings,
-    getShaderBuildInput: options.getShaderBuildInput,
-    onExportShaderZip: options.onExportShaderZip,
-    onUpdateStepSwatches: () => options.mainStepRendering.updateStepSwatches(),
-    onUpdateShaderCodePanel: options.onUpdateShaderCodePanel,
-    onScheduleApply: () => options.pipelineApply.scheduleApply(),
-    paramNodeListEl: options.paramNodeListEl,
-    stepListEl: options.stepListEl,
-    lutStripListEl: options.lutStripListEl,
-    paramColumnEl: options.paramColumnEl,
-    parseStepId: pipelineModel.parseStepId,
-    parseLutId: pipelineModel.parseLutId,
-    isValidParamName: pipelineModel.isValidParamName,
-    isValidSocketAxis: pipelineView.isValidSocketAxis,
-    pipelineDropIndicators: options.pipelineDropIndicators,
-    getLutReorderDragState,
-    setLutReorderDragState,
-    clearLutReorderDragState,
-    getStepReorderDragState,
-    setStepReorderDragState,
-    clearStepReorderDragState,
-    setSocketDragState,
-    pipelineSocketDnd: options.pipelineSocketDnd,
-    moveLutToPosition: options.pipelineCommands.moveLutToPosition,
-    moveStepToPosition: options.pipelineCommands.moveStepToPosition,
-    onScheduleConnectionDraw: options.onScheduleConnectionDraw,
-    onUndoPipeline: options.pipelineHistoryActions.undo,
-    onRedoPipeline: options.pipelineHistoryActions.redo,
-    onStatus: options.onStatus,
-    initialStatusMessage: options.t('main.status.initialPrompt'),
-    initialStatusKind: 'info',
+    shell: {
+      select: options.select,
+      pipelineHeaderActions: options.pipelineHeaderActions,
+      previewShapeController: options.previewShapeController,
+      mainPreviewCapture: options.mainPreviewCapture,
+      isPreviewWireframeOverlayEnabled,
+      onStatus: options.onStatus,
+    },
+    panels: {
+      select: options.select,
+      lightGizmoLayerEl: options.lightGizmoLayerEl,
+      getMaterialSettings,
+      setMaterialSettings,
+      getLightSettings,
+      setLightSettings,
+      getShaderBuildInput: options.getShaderBuildInput,
+      onExportShaderZip: options.onExportShaderZip,
+      onUpdateStepSwatches: () => options.mainStepRendering.updateStepSwatches(),
+      onUpdateShaderCodePanel: options.onUpdateShaderCodePanel,
+      onScheduleApply: () => options.pipelineApply.scheduleApply(),
+      onStatus: options.onStatus,
+      initialStatusMessage: options.t('main.status.initialPrompt'),
+      initialStatusKind: 'info',
+    },
+    interactions: {
+      paramNodeListEl: options.paramNodeListEl,
+      stepListEl: options.stepListEl,
+      lutStripListEl: options.lutStripListEl,
+      paramColumnEl: options.paramColumnEl,
+      parseStepId: pipelineModel.parseStepId,
+      parseLutId: pipelineModel.parseLutId,
+      isValidParamName: pipelineModel.isValidParamName,
+      isValidSocketAxis: pipelineView.isValidSocketAxis,
+      pipelineDropIndicators: options.pipelineDropIndicators,
+      getLutReorderDragState,
+      setLutReorderDragState,
+      clearLutReorderDragState,
+      getStepReorderDragState,
+      setStepReorderDragState,
+      clearStepReorderDragState,
+      setSocketDragState,
+      pipelineSocketDnd: options.pipelineSocketDnd,
+      moveLutToPosition: options.pipelineCommands.moveLutToPosition,
+      moveStepToPosition: options.pipelineCommands.moveStepToPosition,
+      onScheduleConnectionDraw: options.onScheduleConnectionDraw,
+      onUpdateStepSwatches: () => options.mainStepRendering.updateStepSwatches(),
+      onUndoPipeline: options.pipelineHistoryActions.undo,
+      onRedoPipeline: options.pipelineHistoryActions.redo,
+      onStatus: options.onStatus,
+    },
   });
 
   setupMainLayoutControls({
