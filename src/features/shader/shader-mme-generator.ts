@@ -166,6 +166,28 @@ ${textureDecl}
 
 ${customUniformComments ? `${customUniformComments}\n` : ''}
 
+float FresnelStrength
+<
+  string UIName = "Fresnel Strength";
+  string UIHelp = "フレネル反射の強さを調整します。0 でフレネル反射なし、1 で通常のフレネル反射の強さになります。";
+  string UIWidget = "Slider";
+  float UIMin = 0;
+  float UIMax = 1;
+> = 0.1;
+
+float FresnelPower
+<
+  string UIName = "Fresnel Power";
+  string UIHelp = "フレネル反射の鋭さを調整します。値が大きいほど、フレネル反射がより鋭くなります。";
+  string UIWidget = "Slider";
+  float UIMin = 0.01;
+  float UIMax = 10;
+> = 2.0;
+
+////////////////////////////////////////////////////////////////////////////////
+// MikuMikuMoving Compatibility Layer
+////////////////////////////////////////////////////////////////////////////////
+
 #ifdef MIKUMIKUMOVING
 
 int   voffset   : VERTEXINDEXOFFSET;
@@ -299,6 +321,10 @@ float4 Compat_GetSelfShadowUV(float4 Position, float4x4 WorldMatrix, float4x4 Li
 
 #endif
 
+////////////////////////////////////////////////////////////////////////////////
+// General Input Parameters
+////////////////////////////////////////////////////////////////////////////////
+
 // 座標変換行列
 float4x4 WorldViewProjMatrix : WORLDVIEWPROJECTION;
 float4x4 WorldMatrix         : WORLD;
@@ -321,24 +347,6 @@ float3   MaterialEmmisive  : EMISSIVE < string Object = "Geometry"; >;
 float3   MaterialSpecular  : SPECULAR < string Object = "Geometry"; >;
 float    SpecularPower     : SPECULARPOWER < string Object = "Geometry"; >;
 float4   MaterialToon      : TOONCOLOR;
-
-float FresnelStrength
-<
-  string UIName = "Fresnel Strength";
-  string UIHelp = "フレネル反射の強さを調整します。0 でフレネル反射なし、1 で通常のフレネル反射の強さになります。";
-  string UIWidget = "Slider";
-  float UIMin = 0;
-  float UIMax = 1;
-> = 0.1;
-
-float FresnelPower
-<
-  string UIName = "Fresnel Power";
-  string UIHelp = "フレネル反射の鋭さを調整します。値が大きいほど、フレネル反射がより鋭くなります。";
-  string UIWidget = "Slider";
-  float UIMin = 0.01;
-  float UIMax = 10;
-> = 2.0;
 
 bool     spadd;                    // スフィアマップ加算合成フラグ
 bool     usetoontexturemap = true; // Toon テクスチャフラグ
@@ -428,6 +436,8 @@ ${buildTextureDeclarations(
   }
 )}
 
+////////////////////////////////////////////////////////////////////////////////
+// Main Code
 ////////////////////////////////////////////////////////////////////////////////
 
 struct VS_OUTPUT
@@ -583,7 +593,23 @@ float4 Basic_PS(VS_OUTPUT IN, uniform bool useTexture, uniform bool useSphereMap
   return OutColor;
 }
 
-// Technique naming convention diagram
+////////////////////////////////////////////////////////////////////////////////
+// Technique Variations
+////////////////////////////////////////////////////////////////////////////////
+
+// TECHNIQUE NAMING CONVENTION
+// ---------------------------
+//
+// The technique names are composed of the following parts in order:
+//
+// 1. Base name: "Object"
+// 2. Optional "Tx" if UseTexture is true
+// 3. Optional "Sp" if UseSphereMap is true
+// 4. Optional "Tn" if UseToon is true
+// 5. Optional "Ss" if useSelfShadow is true
+//
+// In other words, the technique name is constructed as following pattern:
+//
 //                                 +-useSelfShadow---------------------+
 //                  +-useToon------|----------------+                  |
 //     Object       | ObjectTn     | ObjectTnSs     | ObjectSs         |
