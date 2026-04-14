@@ -25,6 +25,9 @@ import type {
     CameraOrbitState,
 } from '../interactions/layout-interactions.ts';
 import {
+    createPipelineFileDropController,
+} from '../pipeline/pipeline-file-drop-controller.ts';
+import {
     type PipelineApplyController,
 } from '../pipeline/pipeline-apply.ts';
 import type {
@@ -57,6 +60,7 @@ import {
 } from './main-lut-editor-dialog-setup.ts';
 import {
     setupMainPipelineEditor,
+    type MainPipelineEditorController,
 } from './main-pipeline-editor-setup.ts';
 import type {
     MainPreviewCaptureController,
@@ -203,6 +207,7 @@ function assertOptions(options: BootstrapMainPostRuntimeOptions): void {
 
   ensureObject(options.pipelineHeaderActions, 'Main post-runtime pipelineHeaderActions');
   ensureFunction(options.pipelineHeaderActions.buildMountOptions, 'Main post-runtime pipelineHeaderActions.buildMountOptions');
+  ensureFunction(options.pipelineHeaderActions.loadPipelineFile, 'Main post-runtime pipelineHeaderActions.loadPipelineFile');
 
   ensureObject(options.previewShapeController, 'Main post-runtime previewShapeController');
   ensureFunction(options.previewShapeController.getCurrentShape, 'Main post-runtime previewShapeController.getCurrentShape');
@@ -279,7 +284,7 @@ export function bootstrapMainPostRuntime(options: BootstrapMainPostRuntimeOption
     t: options.t,
   });
 
-  setupMainPipelineEditor({
+  const mainPipelineEditor: MainPipelineEditorController = setupMainPipelineEditor({
     paramNodeListEl: options.paramNodeListEl,
     stepListEl: options.stepListEl,
     lutStripListEl: options.lutStripListEl,
@@ -327,6 +332,14 @@ export function bootstrapMainPostRuntime(options: BootstrapMainPostRuntimeOption
     renderLutStrip: () => options.mainStepRendering.renderLutStrip(),
     onStatus: options.onStatus,
     t: options.t,
+  });
+
+  createPipelineFileDropController({
+    pipelineOverlayEl: options.select<HTMLElement>('#pipeline-file-drop-overlay'),
+    lutOverlayEl: options.select<HTMLElement>('#lut-file-drop-overlay'),
+    loadPipelineFile: options.pipelineHeaderActions.loadPipelineFile,
+    addLutFiles: mainPipelineEditor.addLutFiles,
+    isPipelineFile: pipelineModel.isZipLikeFile,
   });
 
   setupMainUi({

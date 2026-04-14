@@ -76,6 +76,8 @@ const TRANSLATIONS: Record<Language, TranslationSchema> = {
     'static.previewResizerAria': '3Dプレビュー表示の高さを調整',
     'static.pipelineFileDropTitle': '.lutchain をドロップ',
     'static.pipelineFileDropDescription': 'ここに保存済みパイプラインをドロップして読み込みます',
+    'static.lutFileDropTitle': '画像をドロップしてLUT追加',
+    'static.lutFileDropDescription': 'PNGやJPEGなどの画像をLUTライブラリへ追加します',
 
     'pipeline.paramGroup.lightingDerivedDesc': 'ライティングや視線から計算される値',
     'pipeline.paramGroup.feedbackRgbDesc': '前回stepの色をそのまま参照するフィードバック入力',
@@ -315,6 +317,8 @@ const TRANSLATIONS: Record<Language, TranslationSchema> = {
     'static.previewResizerAria': 'Adjust the 3D preview area height',
     'static.pipelineFileDropTitle': 'Drop a .lutchain file',
     'static.pipelineFileDropDescription': 'Drop a saved pipeline here to load it',
+    'static.lutFileDropTitle': 'Drop images to add LUTs',
+    'static.lutFileDropDescription': 'Add PNG, JPEG, and other image files to the LUT library',
 
     'pipeline.paramGroup.lightingDerivedDesc': 'Values derived from lighting and view direction',
     'pipeline.paramGroup.feedbackRgbDesc': 'Feedback input that reuses the previous step RGB values',

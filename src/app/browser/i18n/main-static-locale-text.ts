@@ -37,6 +37,16 @@ const STATIC_TRANSLATION_TARGETS: TranslationTarget[] = [
     key: 'static.pipelineFileDropDescription',
     attribute: 'textContent',
   },
+  {
+    selector: '#lut-file-drop-title',
+    key: 'static.lutFileDropTitle',
+    attribute: 'textContent',
+  },
+  {
+    selector: '#lut-file-drop-description',
+    key: 'static.lutFileDropDescription',
+    attribute: 'textContent',
+  },
 ];
 
 function ensureFunction(value: unknown, label: string): void {

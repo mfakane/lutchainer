@@ -1,5 +1,5 @@
-import { readFile } from 'node:fs/promises';
 import { expect, test } from '@playwright/test';
+import { readFile } from 'node:fs/promises';
 
 test.describe('Main UI smoke flows', () => {
   test.beforeEach(async ({ page }) => {
@@ -79,7 +79,7 @@ test.describe('Main UI smoke flows', () => {
       const nextDataTransfer = new DataTransfer();
       nextDataTransfer.items.add(
         new File([new Uint8Array(bytes)], 'HueShiftToon.lutchain', {
-          type: 'application/x-lutchain',
+          type: '', // The .lutchain extension is unlikely to have a registered MIME type, so use an empty string to simulate that scenario.
         }),
       );
       return nextDataTransfer;
@@ -87,14 +87,55 @@ test.describe('Main UI smoke flows', () => {
 
     const body = page.locator('body');
     const overlay = page.locator('#pipeline-file-drop-overlay');
+    const lutOverlay = page.locator('#lut-file-drop-overlay');
 
     await body.dispatchEvent('dragenter', { dataTransfer });
     await expect(overlay).toHaveAttribute('data-active', 'true');
+    await expect(lutOverlay).toHaveAttribute('data-active', 'false');
 
     await body.dispatchEvent('dragover', { dataTransfer });
     await body.dispatchEvent('drop', { dataTransfer });
 
     await expect(overlay).toHaveAttribute('data-active', 'false');
     await expect.poll(async () => page.locator('[data-step-item="true"]').count()).toBeGreaterThan(0);
+  });
+
+  test('dropping an image shows LUT overlay and adds it to the LUT library', async ({ page }) => {
+    const dataTransfer = await page.evaluateHandle(() => {
+      const canvas = document.createElement('canvas');
+      canvas.width = 4;
+      canvas.height = 4;
+      const context = canvas.getContext('2d');
+      if (!context) {
+        throw new Error('Failed to get 2D context');
+      }
+
+      context.fillStyle = '#ff0000';
+      context.fillRect(0, 0, 2, 4);
+      context.fillStyle = '#00ff00';
+      context.fillRect(2, 0, 2, 4);
+
+      const nextDataTransfer = new DataTransfer();
+      const dataUrl = canvas.toDataURL('image/png');
+      const base64 = dataUrl.split(',')[1] ?? '';
+      const bytes = Uint8Array.from(atob(base64), char => char.charCodeAt(0));
+      nextDataTransfer.items.add(new File([bytes], 'dropped-lut.png', { type: 'image/png' }));
+      return nextDataTransfer;
+    });
+
+    const body = page.locator('body');
+    const pipelineOverlay = page.locator('#pipeline-file-drop-overlay');
+    const lutOverlay = page.locator('#lut-file-drop-overlay');
+    const beforeCount = await page.locator('[data-lut-item="true"]').count();
+
+    await body.dispatchEvent('dragenter', { dataTransfer });
+    await expect(pipelineOverlay).toHaveAttribute('data-active', 'false');
+    await expect(lutOverlay).toHaveAttribute('data-active', 'true');
+
+    await body.dispatchEvent('dragover', { dataTransfer });
+    await body.dispatchEvent('drop', { dataTransfer });
+
+    await expect(lutOverlay).toHaveAttribute('data-active', 'false');
+    await expect.poll(async () => page.locator('[data-lut-item="true"]').count()).toBe(beforeCount + 1);
   });
 });

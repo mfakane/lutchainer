@@ -43,6 +43,8 @@ export interface TranslationSchema {
   'static.previewResizerAria': string;
   'static.pipelineFileDropTitle': string;
   'static.pipelineFileDropDescription': string;
+  'static.lutFileDropTitle': string;
+  'static.lutFileDropDescription': string;
   'pipeline.paramGroup.lightingDerivedDesc': string;
   'pipeline.paramGroup.feedbackRgbDesc': string;
   'pipeline.paramGroup.feedbackHsvDesc': string;

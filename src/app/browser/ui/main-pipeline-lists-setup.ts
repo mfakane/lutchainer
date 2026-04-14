@@ -34,6 +34,10 @@ interface CustomParamReorderDragState {
 
 let disposeCustomParamReorderBindings: DndBindingDisposer | null = null;
 
+export interface MainPipelineListsController {
+  addLutFiles: (files: File[]) => Promise<void>;
+}
+
 export interface SetupMainPipelineListsOptions {
   paramNodeListEl: HTMLElement;
   stepListEl: HTMLElement;
@@ -242,8 +246,48 @@ function setupCustomParamReorderBindings(options: {
   disposeCustomParamReorderBindings = bindReorderDragHandlers(binding);
 }
 
-export function setupMainPipelineLists(options: SetupMainPipelineListsOptions): void {
+export function setupMainPipelineLists(options: SetupMainPipelineListsOptions): MainPipelineListsController {
   ensureOptions(options);
+
+  const addLutFiles = async (files: File[]): Promise<void> => {
+    if (!Array.isArray(files) || files.some(file => !(file instanceof File))) {
+      options.onStatus(options.t('main.status.invalidLutAddInput'), 'error');
+      return;
+    }
+
+    const luts = options.getLuts();
+    const room = Math.max(0, options.maxLuts - luts.length);
+    if (room === 0) {
+      options.onStatus(options.t('main.status.maxLutLimit', { max: options.maxLuts }), 'error');
+      return;
+    }
+
+    const selected = files.slice(0, room);
+    const errors: string[] = [];
+    let added = 0;
+    const before = options.captureHistorySnapshot();
+
+    for (const file of selected) {
+      try {
+        const lut = await options.createLutFromFile(file);
+        luts.push(lut);
+        added += 1;
+      } catch (err) {
+        errors.push(err instanceof Error ? err.message : `${options.t('common.unknownError')}: ${file.name}`);
+      }
+    }
+
+    options.normalizeSteps();
+    options.commitHistorySnapshot(before);
+    options.renderSteps();
+    options.scheduleApply();
+
+    if (errors.length > 0) {
+      options.onStatus(errors.join('\n'), 'error');
+    } else {
+      options.onStatus(options.t('main.status.lutAdded', { count: added }), 'success');
+    }
+  };
 
   mountParamNodeList(options.paramNodeListEl, {
     getMaterialSettings: options.getMaterialSettings,
@@ -289,47 +333,13 @@ export function setupMainPipelineLists(options: SetupMainPipelineListsOptions): 
     onEditLut: options.onEditLut,
     onDuplicateLut: options.onDuplicateLut,
     onNewLut: options.onNewLut,
-    onAddLutFiles: async files => {
-      if (!Array.isArray(files) || files.some(file => !(file instanceof File))) {
-        options.onStatus(options.t('main.status.invalidLutAddInput'), 'error');
-        return;
-      }
-
-      const luts = options.getLuts();
-      const room = Math.max(0, options.maxLuts - luts.length);
-      if (room === 0) {
-        options.onStatus(options.t('main.status.maxLutLimit', { max: options.maxLuts }), 'error');
-        return;
-      }
-
-      const selected = files.slice(0, room);
-      const errors: string[] = [];
-      let added = 0;
-      const before = options.captureHistorySnapshot();
-
-      for (const file of selected) {
-        try {
-          const lut = await options.createLutFromFile(file);
-          luts.push(lut);
-          added += 1;
-        } catch (err) {
-          errors.push(err instanceof Error ? err.message : `${options.t('common.unknownError')}: ${file.name}`);
-        }
-      }
-
-      options.normalizeSteps();
-      options.commitHistorySnapshot(before);
-      options.renderSteps();
-      options.scheduleApply();
-
-      if (errors.length > 0) {
-        options.onStatus(errors.join('\n'), 'error');
-      } else {
-        options.onStatus(options.t('main.status.lutAdded', { count: added }), 'success');
-      }
-    },
+    onAddLutFiles: addLutFiles,
     onStatus: options.onStatus,
   });
 
   options.renderLutStrip();
+
+  return {
+    addLutFiles,
+  };
 }

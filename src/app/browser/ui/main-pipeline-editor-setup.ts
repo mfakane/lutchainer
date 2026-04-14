@@ -8,7 +8,7 @@ import type {
   LutModel,
   StepModel,
 } from '../../../features/step/step-model.ts';
-import { setupMainPipelineLists } from './main-pipeline-lists-setup.ts';
+import { setupMainPipelineLists, type MainPipelineListsController } from './main-pipeline-lists-setup.ts';
 import type { PipelinePresetKey } from './pipeline-presets.ts';
 
 type StatusKind = 'success' | 'error' | 'info';
@@ -62,6 +62,10 @@ export interface SetupMainPipelineEditorOptions {
   renderLutStrip: () => void;
   onStatus: StatusReporter;
   t: AppTranslator;
+}
+
+export interface MainPipelineEditorController {
+  addLutFiles: (files: File[]) => Promise<void>;
 }
 
 function ensureFunction(value: unknown, label: string): void {
@@ -140,11 +144,11 @@ function assertSetupMainPipelineEditorOptions(options: SetupMainPipelineEditorOp
   ensureFunction(options.t, 'Main pipeline editor t');
 }
 
-export function setupMainPipelineEditor(options: SetupMainPipelineEditorOptions): void {
+export function setupMainPipelineEditor(options: SetupMainPipelineEditorOptions): MainPipelineEditorController {
   assertSetupMainPipelineEditorOptions(options);
   let pendingCustomParamValueSnapshot: PipelineStateSnapshot | null = null;
 
-  setupMainPipelineLists({
+  const pipelineListsController: MainPipelineListsController = setupMainPipelineLists({
     paramNodeListEl: options.paramNodeListEl,
     stepListEl: options.stepListEl,
     lutStripListEl: options.lutStripListEl,
@@ -224,4 +228,8 @@ export function setupMainPipelineEditor(options: SetupMainPipelineEditorOptions)
     onStatus: options.onStatus,
     t: options.t,
   });
+
+  return {
+    addLutFiles: pipelineListsController.addLutFiles,
+  };
 }

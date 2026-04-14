@@ -62,9 +62,6 @@ import {
   type PipelineDropIndicatorController,
 } from './pipeline/pipeline-drop-indicators.ts';
 import {
-  createPipelineFileDropController,
-} from './pipeline/pipeline-file-drop-controller.ts';
-import {
   createPipelineHeaderActionController,
 } from './pipeline/pipeline-header-actions-controller.ts';
 import {
@@ -177,7 +174,6 @@ let stepPreviewSystem: ReturnType<typeof createStepPreviewSystem> | null = null;
 let pipelineIoSystem: ReturnType<typeof setupMainPipelineIoSystem> | null = null;
 let mainPreviewCapture: MainPreviewCaptureController;
 let mainPreviewDebugController: ReturnType<typeof createMainPreviewDebugController> | null = null;
-let pipelineFileDropOverlayEl: HTMLElement;
 
 const connectionDrawController = setupMainConnectionDrawController({
   getPipelineWorkspaceEl: () => pipelineWorkspaceEl,
@@ -395,7 +391,6 @@ window.addEventListener('DOMContentLoaded', () => {
     axisGizmoLabelZEl,
     paramColumnEl,
   } = resolveMainDomElements({ select: selectRequired }));
-  pipelineFileDropOverlayEl = selectRequired<HTMLElement>('#pipeline-file-drop-overlay');
 
   const canvas = selectRequired<HTMLCanvasElement>('#gl-canvas');
   ({
@@ -487,12 +482,6 @@ window.addEventListener('DOMContentLoaded', () => {
       downloadBlobAsFile(blob, filename);
     },
     toErrorMessage: pipelineModel.toErrorMessage,
-  });
-
-  createPipelineFileDropController({
-    overlayEl: pipelineFileDropOverlayEl,
-    loadPipelineFile: pipelineHeaderActions.loadPipelineFile,
-    isPipelineFile: pipelineModel.isZipLikeFile,
   });
 
   bootstrapMainPostRuntime({

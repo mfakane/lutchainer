@@ -432,6 +432,59 @@ globalStyle('.pipeline-file-drop-overlay-description', {
   color: vars.color.muted,
 });
 
+globalStyle('.lut-strip-panel', {
+  position: 'relative',
+});
+
+globalStyle('.lut-file-drop-overlay', {
+  position: 'absolute',
+  inset: '10px 12px 12px',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  padding: '16px',
+  borderRadius: '18px',
+  background: 'rgba(10, 16, 27, 0.72)',
+  backdropFilter: 'blur(4px)',
+  opacity: 0,
+  visibility: 'hidden',
+  pointerEvents: 'none',
+  transition: 'opacity 140ms ease, visibility 140ms ease',
+  zIndex: 4,
+});
+
+globalStyle('.lut-file-drop-overlay[data-active="true"]', {
+  opacity: 1,
+  visibility: 'visible',
+});
+
+globalStyle('.lut-file-drop-overlay-card', {
+  width: 'min(420px, 100%)',
+  borderRadius: '16px',
+  border: `1px solid color-mix(in srgb, ${vars.color.accent}, #fff 18%)`,
+  padding: '20px 22px',
+  textAlign: 'center',
+  background: 'linear-gradient(180deg, rgba(18, 28, 45, 0.94), rgba(12, 19, 31, 0.92))',
+  boxShadow: '0 18px 34px rgba(0, 0, 0, 0.28)',
+  outline: `2px dashed color-mix(in srgb, ${vars.color.accent}, #fff 24%)`,
+  outlineOffset: '-8px',
+});
+
+globalStyle('.lut-file-drop-overlay-title', {
+  fontFamily: vars.font.sans,
+  fontSize: '18px',
+  fontWeight: 700,
+  letterSpacing: '0.03em',
+  color: '#f5f8ff',
+});
+
+globalStyle('.lut-file-drop-overlay-description', {
+  marginTop: '8px',
+  fontSize: '13px',
+  lineHeight: 1.55,
+  color: vars.color.muted,
+});
+
 globalStyle('.shader-dialog-surface, .lut-editor-dialog-surface', {
   display: 'flex',
   flexDirection: 'column',
@@ -611,6 +664,15 @@ globalStyle('.lut-strip-panel', {
   '@media': {
     'screen and (max-width: 900px)': {
       padding: '10px',
+    },
+  },
+});
+
+globalStyle('.lut-file-drop-overlay', {
+  '@media': {
+    'screen and (max-width: 900px)': {
+      inset: '8px 10px 10px',
+      padding: '12px',
     },
   },
 });
