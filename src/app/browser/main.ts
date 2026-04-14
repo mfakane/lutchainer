@@ -70,6 +70,7 @@ import {
 import { createMainStepRenderingController } from './step/main-step-rendering-controller.ts';
 import { createStepPreviewSystem } from './step/step-preview-system.ts';
 import './styles/app-theme.css.ts';
+import './styles/app-shell.css.ts';
 import {
   clearSocketDragState,
   getLutReorderDragState,

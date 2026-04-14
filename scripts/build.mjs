@@ -15,10 +15,6 @@ const copyTargets = [
     destination: path.join(webDir, 'examples'),
   },
   {
-    source: path.resolve('styles.css'),
-    destination: path.join(webDir, 'styles.css'),
-  },
-  {
     source: path.resolve('index.html'),
     destination: path.join(webDir, 'index.html'),
   },
@@ -28,7 +24,6 @@ const legacyDistTargets = [
   path.join(distDir, 'bundle.js'),
   path.join(distDir, 'bundle.js.map'),
   path.join(distDir, 'index.html'),
-  path.join(distDir, 'styles.css'),
   path.join(distDir, 'examples'),
 ];
 
