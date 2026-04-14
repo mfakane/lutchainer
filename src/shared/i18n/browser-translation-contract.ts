@@ -41,6 +41,8 @@ export interface TranslationSchema {
   'static.pipelineHelp': string;
   'static.previewHelp': string;
   'static.previewResizerAria': string;
+  'static.pipelineFileDropTitle': string;
+  'static.pipelineFileDropDescription': string;
   'pipeline.paramGroup.lightingDerivedDesc': string;
   'pipeline.paramGroup.feedbackRgbDesc': string;
   'pipeline.paramGroup.feedbackHsvDesc': string;

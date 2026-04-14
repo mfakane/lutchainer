@@ -381,6 +381,57 @@ globalStyle('.shader-dialog::backdrop, .lut-editor-dialog::backdrop', {
   backdropFilter: 'blur(2px)',
 });
 
+globalStyle('.pipeline-file-drop-overlay', {
+  position: 'fixed',
+  inset: '14px',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  padding: '24px',
+  background: 'rgba(7, 10, 16, 0.3)',
+  backdropFilter: 'blur(6px)',
+  opacity: 0,
+  visibility: 'hidden',
+  pointerEvents: 'none',
+  transition: 'opacity 140ms ease, visibility 140ms ease',
+  zIndex: 120,
+});
+
+globalStyle('.pipeline-file-drop-overlay[data-active="true"]', {
+  opacity: 1,
+  visibility: 'visible',
+});
+
+globalStyle('.pipeline-file-drop-overlay-card', {
+  width: 'min(560px, calc(100vw - 48px))',
+  borderRadius: '22px',
+  border: `1px solid color-mix(in srgb, ${vars.color.accent}, #fff 18%)`,
+  padding: '28px 32px',
+  textAlign: 'center',
+  background: [
+    'radial-gradient(circle at top, rgba(122, 182, 255, 0.22), transparent 58%)',
+    'linear-gradient(180deg, rgba(9, 14, 24, 0.96), rgba(13, 20, 31, 0.92))',
+  ].join(', '),
+  boxShadow: '0 28px 60px rgba(0, 0, 0, 0.38)',
+  outline: `2px dashed color-mix(in srgb, ${vars.color.accent}, #fff 28%)`,
+  outlineOffset: '-10px',
+});
+
+globalStyle('.pipeline-file-drop-overlay-title', {
+  fontFamily: vars.font.sans,
+  fontSize: 'clamp(24px, 3.6vw, 34px)',
+  fontWeight: 700,
+  letterSpacing: '0.06em',
+  color: '#f5f8ff',
+});
+
+globalStyle('.pipeline-file-drop-overlay-description', {
+  marginTop: '10px',
+  fontSize: '14px',
+  lineHeight: 1.6,
+  color: vars.color.muted,
+});
+
 globalStyle('.shader-dialog-surface, .lut-editor-dialog-surface', {
   display: 'flex',
   flexDirection: 'column',
@@ -503,6 +554,25 @@ globalStyle('.shader-dialog', {
     'screen and (max-width: 900px)': {
       width: 'calc(100vw - 16px)',
       maxHeight: 'calc(100vh - 16px)',
+    },
+  },
+});
+
+globalStyle('.pipeline-file-drop-overlay', {
+  '@media': {
+    'screen and (max-width: 900px)': {
+      inset: '10px',
+      padding: '18px',
+    },
+  },
+});
+
+globalStyle('.pipeline-file-drop-overlay-card', {
+  '@media': {
+    'screen and (max-width: 900px)': {
+      width: '100%',
+      padding: '24px 20px',
+      borderRadius: '18px',
     },
   },
 });

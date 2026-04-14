@@ -27,6 +27,16 @@ const STATIC_TRANSLATION_TARGETS: TranslationTarget[] = [
     key: 'static.previewResizerAria',
     attribute: 'aria-label',
   },
+  {
+    selector: '#pipeline-file-drop-title',
+    key: 'static.pipelineFileDropTitle',
+    attribute: 'textContent',
+  },
+  {
+    selector: '#pipeline-file-drop-description',
+    key: 'static.pipelineFileDropDescription',
+    attribute: 'textContent',
+  },
 ];
 
 function ensureFunction(value: unknown, label: string): void {

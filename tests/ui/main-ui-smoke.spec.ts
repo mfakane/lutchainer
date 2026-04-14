@@ -1,3 +1,4 @@
+import { readFile } from 'node:fs/promises';
 import { expect, test } from '@playwright/test';
 
 test.describe('Main UI smoke flows', () => {
@@ -70,5 +71,30 @@ test.describe('Main UI smoke flows', () => {
     await expect
       .poll(async () => page.locator('[data-lut-item="true"]').first().getAttribute('data-lut-id'))
       .not.toBe(firstBefore);
+  });
+
+  test('dropping a .lutchain file shows overlay and loads the pipeline', async ({ page }) => {
+    const archiveBytes = await readFile(new URL('../../examples/HueShiftToon.lutchain', import.meta.url));
+    const dataTransfer = await page.evaluateHandle(({ bytes }) => {
+      const nextDataTransfer = new DataTransfer();
+      nextDataTransfer.items.add(
+        new File([new Uint8Array(bytes)], 'HueShiftToon.lutchain', {
+          type: 'application/x-lutchain',
+        }),
+      );
+      return nextDataTransfer;
+    }, { bytes: Array.from(archiveBytes) });
+
+    const body = page.locator('body');
+    const overlay = page.locator('#pipeline-file-drop-overlay');
+
+    await body.dispatchEvent('dragenter', { dataTransfer });
+    await expect(overlay).toHaveAttribute('data-active', 'true');
+
+    await body.dispatchEvent('dragover', { dataTransfer });
+    await body.dispatchEvent('drop', { dataTransfer });
+
+    await expect(overlay).toHaveAttribute('data-active', 'false');
+    await expect.poll(async () => page.locator('[data-step-item="true"]').count()).toBeGreaterThan(0);
   });
 });

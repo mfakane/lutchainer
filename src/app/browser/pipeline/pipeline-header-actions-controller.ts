@@ -48,6 +48,7 @@ export interface PipelineHeaderActionControllerOptions {
 
 export interface PipelineHeaderActionController {
   buildMountOptions: () => PipelineHeaderActionMountOptions;
+  loadPipelineFile: (file: File) => Promise<void>;
 }
 
 function ensureFunction(value: unknown, label: string): void {
@@ -252,5 +253,6 @@ export function createPipelineHeaderActionController(
 
   return {
     buildMountOptions,
+    loadPipelineFile: onPipelineFileSelected,
   };
 }

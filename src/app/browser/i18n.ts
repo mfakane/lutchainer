@@ -74,6 +74,8 @@ const TRANSLATIONS: Record<Language, TranslationSchema> = {
     'static.pipelineHelp': '左ノードを選択して、各StepのX/Yソケットへ接続',
     'static.previewHelp': 'ドラッグ: 回転 / ホイール: ズーム',
     'static.previewResizerAria': '3Dプレビュー表示の高さを調整',
+    'static.pipelineFileDropTitle': '.lutchain をドロップ',
+    'static.pipelineFileDropDescription': 'ここに保存済みパイプラインをドロップして読み込みます',
 
     'pipeline.paramGroup.lightingDerivedDesc': 'ライティングや視線から計算される値',
     'pipeline.paramGroup.feedbackRgbDesc': '前回stepの色をそのまま参照するフィードバック入力',
@@ -311,6 +313,8 @@ const TRANSLATIONS: Record<Language, TranslationSchema> = {
     'static.pipelineHelp': 'Select a left node and connect it to each Step X/Y socket',
     'static.previewHelp': 'Drag: Rotate / Wheel: Zoom',
     'static.previewResizerAria': 'Adjust the 3D preview area height',
+    'static.pipelineFileDropTitle': 'Drop a .lutchain file',
+    'static.pipelineFileDropDescription': 'Drop a saved pipeline here to load it',
 
     'pipeline.paramGroup.lightingDerivedDesc': 'Values derived from lighting and view direction',
     'pipeline.paramGroup.feedbackRgbDesc': 'Feedback input that reuses the previous step RGB values',
