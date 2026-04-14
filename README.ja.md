@@ -143,6 +143,24 @@ lutchainer lut list --json examples/Metallic.lutchain
 npm run typecheck
 ```
 
+ローカルのフル検証:
+
+```bash
+npm run typecheck
+npm test
+npm run test:ui
+```
+
+GitHub Actions workflow のローカル検証（`act` が必要）:
+
+```bash
+act -W .github/workflows/test.yml -j verify
+```
+
+UI変更を含む場合は [docs/ui-regression-checklist.md](docs/ui-regression-checklist.md) の手動確認も実施してください。
+
+大型リファクタ時の導入ルールは [docs/refactor-rollout.md](docs/refactor-rollout.md) を参照してください。
+
 ## Nixメモ
 
 `package-lock.json` を更新した場合は `flake.nix` の `npmDepsHash` を再生成してください。

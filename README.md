@@ -149,6 +149,24 @@ Type checking only:
 npm run typecheck
 ```
 
+Full local verification:
+
+```bash
+npm run typecheck
+npm test
+npm run test:ui
+```
+
+Local GitHub Actions verification (requires `act`):
+
+```bash
+act -W .github/workflows/test.yml -j verify
+```
+
+For UI-focused changes, also run the manual checklist in [docs/ui-regression-checklist.md](docs/ui-regression-checklist.md).
+
+Refactor rollout rules are documented in [docs/refactor-rollout.md](docs/refactor-rollout.md).
+
 ## Nix Notes
 
 When updating `package-lock.json`, regenerate `npmDepsHash` in `flake.nix`:

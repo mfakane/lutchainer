@@ -19,6 +19,8 @@
     "test:shader": "npm run build && node --test tests/shader/shader-generator.test.mts",
     "test:shader:strict": "npm run build && node --test tests/shader/strict-compilers.test.mts",
     "test:ui": "playwright test",
+    "test:ui:smoke": "playwright test tests/ui/main-ui-smoke.spec.ts",
+    "test:ui:sensitive": "playwright test tests/ui/list-scroll-and-connection-redraw.spec.ts",
     "test:ui:headed": "playwright test --headed",
     "test:ui:install": "playwright install --with-deps chromium",
     "test:watch": "node --watch --test tests/**/*.test.mts",
