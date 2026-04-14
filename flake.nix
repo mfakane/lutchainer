@@ -24,6 +24,12 @@
             pkgs.libxdamage
             pkgs.libxinerama
           ];
+          playwrightBrowserExecutable =
+            if pkgs.stdenv.hostPlatform.isDarwin
+            then "${pkgs.playwright-driver.browsers}/chromium-${chromium-rev}/chrome-mac/Chromium.app/Contents/MacOS/Chromium"
+            else "${pkgs.playwright-driver.browsers}/chromium-${chromium-rev}/chrome-linux64/chrome";
+          browsers = (builtins.fromJSON (builtins.readFile "${pkgs.playwright-driver}/browsers.json")).browsers;
+          chromium-rev = (builtins.head (builtins.filter (x: x.name == "chromium") browsers)).revision;
         in {
 
           # nix develop
@@ -43,6 +49,8 @@
               # Native dependencies for headless-gl
               pkgs.pkg-config
               pkgs.xorg-server
+
+              pkgs.playwright-driver.browsers
             ];
 
             buildInputs = shaderRuntimeLibs;
@@ -50,6 +58,11 @@
             LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath shaderRuntimeLibs;
 
             shellHook = ''
+              export PLAYWRIGHT_BROWSERS_PATH=${pkgs.playwright-driver.browsers}
+              export PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS=true
+              export PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=true
+              export PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH="${playwrightBrowserExecutable}"
+
               echo ""
               echo "  🐾  lutchainer dev shell (Node $(node --version))"
               echo ""
@@ -74,7 +87,7 @@
             nodejs = nodejs;
 
             # Regenerate with: nix run nixpkgs#prefetch-npm-deps -- package-lock.json
-            npmDepsHash = "sha256-/NZ2zarhc6Wo87R6isk2I6A/ChBKO/1kceyUOZf0lYM=";
+            npmDepsHash = "sha256-NnMk4ZqvrBQHDfxt7EwUjKNxoaWwrJFyM43hJdPzORI=";
 
             # Prevent esbuild from running during postinstall
             npmFlags = [ "--ignore-scripts" ];
@@ -112,4 +125,4 @@
 
         };
     };
-    }
+}

@@ -18,12 +18,16 @@
     "test:shared": "npm run build && node --test tests/shared/*.test.mts",
     "test:shader": "npm run build && node --test tests/shader/shader-generator.test.mts",
     "test:shader:strict": "npm run build && node --test tests/shader/strict-compilers.test.mts",
+    "test:ui": "playwright test",
+    "test:ui:headed": "playwright test --headed",
+    "test:ui:install": "playwright install --with-deps chromium",
     "test:watch": "node --watch --test tests/**/*.test.mts",
     "validate:lutchain-examples": "node tests/lutchain/validate-examples.mts",
     "typecheck": "tsc --build tsconfig.json --noEmit"
   },
   "devDependencies": {
-    "@types/node": "^25.5.2",
+    "@playwright/test": "^1.58.2",
+    "@types/node": "^25.6.0",
     "esbuild": "^0.20.0",
     "esbuild-plugin-solid": "^0.6.0",
     "gl": "^8.1.6",
