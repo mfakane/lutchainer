@@ -1,20 +1,20 @@
+import { buildGeneratedShaderHeader } from '../../shared/build-info.ts';
 import {
   resolveStepRuntimeModels,
 } from '../step/step-runtime.ts';
-import { buildGeneratedShaderHeader } from '../../shared/build-info.ts';
-import { HLSL_SHADER_BACKEND } from './shader-hlsl-backend.ts';
 import {
   buildCustomUniformComments,
   buildSampleBody,
   collectUsedCustomParams,
 } from './shader-generator-utils.ts';
-import { buildShaderLocalDeclarations } from './shader-local-decls.ts';
-import { buildShaderStepCode } from './shader-step-code.ts';
 import type {
   ShaderBuildInput,
   ShaderGenerator,
   ShaderGeneratorCapabilities,
 } from './shader-generator.ts';
+import { HLSL_SHADER_BACKEND } from './shader-hlsl-backend.ts';
+import { buildShaderLocalDeclarations, getRequiredShaderLocals, type BuildShaderLocalDeclarationOptions } from './shader-local-decls.ts';
+import { buildShaderStepCode } from './shader-step-code.ts';
 
 const HLSL_GENERATOR_CAPABILITIES: ShaderGeneratorCapabilities = {
   fragment: true,
@@ -94,11 +94,13 @@ function buildFragmentShader(input: ShaderBuildInput): string {
     backend: HLSL_SHADER_BACKEND,
     isPreview: false,
   });
-  const localDeclarations = buildShaderLocalDeclarations(stepModels, {
+  const shaderLocalDeclarationOptions: BuildShaderLocalDeclarationOptions = {
     backend: HLSL_SHADER_BACKEND,
     outputKind: 'fragment',
     material: input.materialSettings,
-  });
+  };
+  const requiredLocals = getRequiredShaderLocals(stepModels, shaderLocalDeclarationOptions);
+  const localDeclarations = buildShaderLocalDeclarations(requiredLocals, shaderLocalDeclarationOptions);
 
   return `${buildGeneratedShaderHeader('//')}
 cbuffer SceneUniforms : register(b0)

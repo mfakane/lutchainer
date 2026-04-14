@@ -4,8 +4,8 @@ import type {
   ShaderLocalKey,
   StepRuntimeModel,
 } from '../step/step-model.ts';
-import { PARAM_EVALUATORS } from '../step/step-param-evaluators.ts';
 import { parseCustomParamRef } from '../step/step-model.ts';
+import { PARAM_EVALUATORS } from '../step/step-param-evaluators.ts';
 import type { ShaderLanguageBackend, ShaderOutputKind } from './shader-language-backend.ts';
 
 const ALL_LOCAL_KEYS: readonly ShaderLocalKey[] = [
@@ -165,9 +165,19 @@ export interface BuildShaderLocalDeclarationOptions {
 }
 
 export function buildShaderLocalDeclarations(
-  stepModels: readonly StepRuntimeModel[],
+  requiredLocals: ReadonlySet<ShaderLocalKey>,
   options: BuildShaderLocalDeclarationOptions,
 ): string[] {
+  const sorted = topoSort(requiredLocals);
+  return sorted.flatMap(key => [
+    ...options.backend.emitLocalDeclaration(key, options.outputKind, options.material),
+  ]);
+}
+
+export function getRequiredShaderLocals(
+  stepModels: readonly StepRuntimeModel[],
+  options: BuildShaderLocalDeclarationOptions,
+): Set<ShaderLocalKey> {
   assertValidStepRuntimeModels(stepModels);
   if (!options || typeof options !== 'object' || !options.backend) {
     throw new Error('shader local declaration options が不正です。');
@@ -178,8 +188,5 @@ export function buildShaderLocalDeclarations(
 
   const usedParams = collectUsedParams(stepModels);
   const requiredLocals = collectRequiredLocals(usedParams);
-  const sorted = topoSort(requiredLocals);
-  return sorted.flatMap(key => [
-    ...options.backend.emitLocalDeclaration(key, options.outputKind, options.material),
-  ]);
+  return requiredLocals;
 }

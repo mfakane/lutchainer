@@ -12,7 +12,7 @@ import type {
   ShaderGenerator,
   ShaderGeneratorCapabilities,
 } from './shader-generator.ts';
-import { buildShaderLocalDeclarations } from './shader-local-decls.ts';
+import { buildShaderLocalDeclarations, getRequiredShaderLocals, type BuildShaderLocalDeclarationOptions } from './shader-local-decls.ts';
 import { MME_SHADER_BACKEND } from './shader-mme-backend.ts';
 import { buildShaderStepCode } from './shader-step-code.ts';
 
@@ -154,11 +154,14 @@ function buildFragmentShader(input: ShaderBuildInput): string {
     backend: MME_SHADER_BACKEND,
     isPreview: false,
   });
-  const localDeclarations = buildShaderLocalDeclarations(stepModels, {
+  const shaderLocalDeclarationOptions: BuildShaderLocalDeclarationOptions =
+  {
     backend: MME_SHADER_BACKEND,
     outputKind: 'fragment',
     material: input.materialSettings,
-  });
+  };
+  const requiredLocals = getRequiredShaderLocals(stepModels, shaderLocalDeclarationOptions);
+  const localDeclarations = buildShaderLocalDeclarations(requiredLocals, shaderLocalDeclarationOptions);
 
   return `${buildGeneratedShaderHeader('//')}
 ${usedCustomParams.map(buildCustomParamDeclaration).join('\n')}
