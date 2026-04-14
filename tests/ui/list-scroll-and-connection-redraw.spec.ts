@@ -176,8 +176,11 @@ test.describe('List scroll retention and connection redraw', () => {
     expect(initialMetrics.scrollHeight).toBeGreaterThan(initialMetrics.clientHeight + 24);
 
     await resetConnectionRedrawProbe(page);
-    await setScrollPosition(stepScrollRoot, { top: Math.min(initialMetrics.scrollHeight - initialMetrics.clientHeight, 420) });
-
+    const targetScrollTop = Math.min(initialMetrics.scrollHeight - initialMetrics.clientHeight, 420);
+    await setScrollPosition(stepScrollRoot, { top: targetScrollTop });
+    
+    // Wait for scroll position to stabilize
+    await expect.poll(async () => (await getScrollMetrics(stepScrollRoot)).scrollTop).toBe(targetScrollTop);
     await expect.poll(async () => await pathLocator.getAttribute('d')).not.toBe(initialPath);
     await expect.poll(async () => await getConnectionRedrawCount(page)).toBeGreaterThan(0);
 
@@ -188,6 +191,8 @@ test.describe('List scroll retention and connection redraw', () => {
     await visibleStep.getByRole('button', { name: 'Duplicate' }).click();
 
     await expect(stepItems).toHaveCount(19);
+    // Wait for DOM to stabilize before checking scroll position
+    await page.locator('[data-step-item="true"]').nth(0).waitFor({ state: 'attached' });
     await expect.poll(async () => await getConnectionRedrawCount(page)).toBeGreaterThan(0);
 
     const scrollAfterEdit = (await getScrollMetrics(stepScrollRoot)).scrollTop;
