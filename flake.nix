@@ -51,6 +51,7 @@
               xorg-server
 
               playwright-driver.browsers
+              act
             ];
 
             buildInputs = shaderRuntimeLibs;
