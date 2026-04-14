@@ -276,8 +276,7 @@ scripts/run_windows_blender.sh \
   blender_addon \
   examples/Metallic.lutchain \
   examples/HueShiftToon.lutchain \
-  examples/HueSatShiftToon.lutchain \
-  examples/StandardToon.lutchain
+  examples/HueSatShiftToon.lutchain
 ```
 
 `scripts/run_windows_blender.sh` should absorb WSL-to-Windows path conversion. `scripts/run_windows_blender_validation.ps1` may remain as a thin compatibility wrapper, but docs and automation should prefer the unified `invoke_windows_blender.ps1` path.
