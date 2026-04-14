@@ -1,5 +1,11 @@
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
+import { DEFAULT_MATERIAL_SETTINGS } from '../../src/features/pipeline/pipeline-model.ts';
+import {
+  assertValidShaderBuildInput,
+  getShaderGenerator,
+  type ShaderBuildInput,
+} from '../../src/features/shader/shader-generator.ts';
 import {
   BLEND_MODES,
   BUILTIN_PARAM_NAMES,
@@ -10,12 +16,6 @@ import {
   type ParamRef,
   type StepModel,
 } from '../../src/features/step/step-model.ts';
-import { DEFAULT_MATERIAL_SETTINGS } from '../../src/features/pipeline/pipeline-model.ts';
-import {
-  assertValidShaderBuildInput,
-  getShaderGenerator,
-  type ShaderBuildInput,
-} from '../../src/features/shader/shader-generator.ts';
 import {
   parsePipelineArchive,
   PIPELINE_ZIP_FILE_VERSION,
@@ -214,12 +214,4 @@ export function generateShaderOutputs(input: ShaderBuildInput): {
       fragment: hlslGenerator.buildFragment(input),
     },
   };
-}
-
-export function listShaderBlendModes(): string[] {
-  return BLEND_MODES.map(mode => mode.key);
-}
-
-export function listShaderBuiltinParams(): string[] {
-  return [...BUILTIN_PARAM_NAMES];
 }

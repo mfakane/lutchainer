@@ -4,11 +4,11 @@
  */
 
 import type {
-    Color,
-    CustomParamModel,
-    LutModel,
-    StepModel,
-    StepParamContext,
+  Color,
+  CustomParamModel,
+  LutModel,
+  StepModel,
+  StepParamContext,
 } from '../../src/features/step/step-model.ts';
 import { DEFAULT_OPS } from '../../src/features/step/step-model.ts';
 
@@ -201,15 +201,6 @@ export function createCustomParam(id: string, defaultValue = 0.5): CustomParamMo
     label: id.charAt(0).toUpperCase() + id.slice(1),
     defaultValue: Math.max(0, Math.min(1, defaultValue)),
   };
-}
-
-/**
- * Helper to compare colors with tolerance (for floating point errors).
- */
-export function colorEqual(a: Color, b: Color, tolerance = 1e-6): boolean {
-  return Math.abs(a[0] - b[0]) < tolerance
-    && Math.abs(a[1] - b[1]) < tolerance
-    && Math.abs(a[2] - b[2]) < tolerance;
 }
 
 /**

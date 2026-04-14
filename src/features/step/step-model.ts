@@ -35,7 +35,6 @@ export type ParamName =
 export type ParamRef = ParamName | `custom:${string}`;
 
 export type Color = [number, number, number];
-export type ColorWithHasChroma = [number, number, number, boolean?];
 export type ColorWithAlpha = [number, number, number, number?];
 export interface CustomParamModel {
   id: string;

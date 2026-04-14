@@ -8,7 +8,7 @@ export function clamp01(value: number): number {
   return Math.max(0, Math.min(1, value));
 }
 
-export function rgbToHsv(color: readonly [number, number, number]): Color3 {
+export function rgbToHsv(color: Readonly<Color3>): Color3 {
   const r = color[0];
   const g = color[1];
   const b = color[2];
@@ -31,9 +31,7 @@ export function rgbToHsv(color: readonly [number, number, number]): Color3 {
   return [clamp01(hue), clamp01(saturation), clamp01(maxValue)];
 }
 
-export function hsvToRgb(
-  color: readonly [number, number, number] | readonly [number, number, number, boolean?],
-): Color3 {
+export function hsvToRgb(color: Readonly<Color3WithChroma>): Color3 {
   const hue = ((color[0] % 1) + 1) % 1;
   const saturation = clamp01(color[1]);
   const value = clamp01(color[2]);

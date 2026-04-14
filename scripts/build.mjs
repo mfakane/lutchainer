@@ -20,13 +20,6 @@ const copyTargets = [
   },
 ];
 
-const legacyDistTargets = [
-  path.join(distDir, 'bundle.js'),
-  path.join(distDir, 'bundle.js.map'),
-  path.join(distDir, 'index.html'),
-  path.join(distDir, 'examples'),
-];
-
 function resolveBuildCommitId() {
   try {
     return childProcess.execSync('git rev-parse --short HEAD', {
@@ -42,10 +35,6 @@ function prepareOutputDirs() {
   fs.mkdirSync(distDir, { recursive: true });
   fs.mkdirSync(webDir, { recursive: true });
   fs.mkdirSync(cliDir, { recursive: true });
-
-  for (const target of legacyDistTargets) {
-    fs.rmSync(target, { recursive: true, force: true });
-  }
 }
 
 function copyBuildAssets() {
