@@ -18,6 +18,10 @@ export interface TranslationSchema {
   'header.save': string;
   'header.autoApply': string;
   'header.apply': string;
+  'header.export': string;
+  'header.exportMenuAria': string;
+  'header.downloadZip': string;
+  'header.exportShaderZip': string;
   'header.openCode': string;
   'header.resetInitial': string;
   'header.resetExamples': string;
@@ -148,6 +152,7 @@ export interface TranslationSchema {
   'shader.tabsAria': string;
   'shader.copy': string;
   'shader.export': string;
+  'shader.download': string;
   'shader.close': string;
   'shader.closeAria': string;
   'shader.meta': string;
@@ -258,6 +263,7 @@ export interface TranslationParams {
   'pipeline.lut.stats': { count: number; height: number; width: number; };
   'pipeline.lut.removeAria': { name: string; };
   'pipeline.lut.addFailed': { message: string; };
+  'header.exportShaderZip': { language: string; };
   'panel.rangeInputMissing': { label: string; };
   'panel.rangeInvalid': { label: string; };
   'panel.status.materialPresetInvalidValue': { value: string; };

@@ -22,7 +22,6 @@ export interface SetupMainPanelsOptions {
   initialStatusMessage: string;
   initialStatusKind?: StatusKind;
   shaderDialogEl: HTMLDialogElement;
-  shaderOpenButtonEl: HTMLButtonElement;
   shaderSurfaceEl: Element;
   lightGizmoLayerEl: SVGSVGElement;
   getMaterialSettings: () => MaterialSettings;
@@ -71,9 +70,6 @@ function ensureOptions(value: unknown): asserts value is SetupMainPanelsOptions 
   }
   if (!(options.shaderDialogEl instanceof HTMLDialogElement)) {
     throw new Error('Main panel setup: shaderDialogEl が不正です。');
-  }
-  if (!(options.shaderOpenButtonEl instanceof HTMLButtonElement)) {
-    throw new Error('Main panel setup: shaderOpenButtonEl が不正です。');
   }
   if (!(options.shaderSurfaceEl instanceof Element)) {
     throw new Error('Main panel setup: shaderSurfaceEl が不正です。');
@@ -135,7 +131,6 @@ export function setupMainPanels(options: SetupMainPanelsOptions): void {
 
   mountShaderDialogShell({
     dialogEl: options.shaderDialogEl,
-    openButtonEl: options.shaderOpenButtonEl,
     surfaceEl: options.shaderSurfaceEl,
     onBeforeOpen: options.onUpdateShaderCodePanel,
     onExport: options.onExportShaderZip,

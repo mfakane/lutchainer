@@ -9,6 +9,7 @@ import {
   type TranslationArgs,
   type TranslationKey,
 } from '../i18n.ts';
+import type { ShaderLanguage } from '../../../features/shader/shader-generator.ts';
 import { cx } from '../styles/cx.ts';
 import * as ui from '../styles/ui-primitives.css.ts';
 import type { PipelinePresetKey } from '../ui/pipeline-presets.ts';
@@ -31,6 +32,8 @@ interface HeaderActionGroupMountOptions {
   onApplyPipeline: () => void;
   onPipelineFileSelected: (file: File) => void | Promise<void>;
   onAutoApplyChange: (enabled: boolean) => void;
+  onOpenShaderDialog: () => void;
+  onExportShaderZip: (language: ShaderLanguage) => void | Promise<void>;
   onStatus: StatusReporter;
 }
 
@@ -45,6 +48,8 @@ interface HeaderActionGroupProps {
   onApplyPipeline: () => void;
   onPipelineFileSelected: (file: File) => void | Promise<void>;
   onAutoApplyChange: (enabled: boolean) => void;
+  onOpenShaderDialog: () => void;
+  onExportShaderZip: (language: ShaderLanguage) => void | Promise<void>;
   onStatus: StatusReporter;
 }
 
@@ -101,6 +106,12 @@ function ensureMountOptions(value: unknown): asserts value is HeaderActionGroupM
   }
   if (typeof options.onAutoApplyChange !== 'function') {
     throw new Error('ヘッダーアクションの自動反映コールバックが不正です。');
+  }
+  if (typeof options.onOpenShaderDialog !== 'function') {
+    throw new Error('ヘッダーアクションのコード表示コールバックが不正です。');
+  }
+  if (typeof options.onExportShaderZip !== 'function') {
+    throw new Error('ヘッダーアクションのシェーダエクスポートコールバックが不正です。');
   }
   if (typeof options.onStatus !== 'function') {
     throw new Error('ヘッダーアクションのステータス通知コールバックが不正です。');
@@ -193,6 +204,15 @@ function HeaderActionGroup(props: HeaderActionGroupProps): JSX.Element {
     props.onAutoApplyChange(input.checked);
   };
 
+  const handleExportShaderZip = async (language: ShaderLanguage): Promise<void> => {
+    try {
+      await props.onExportShaderZip(language);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : t('common.unknownError');
+      props.onStatus(t('shader.status.exportFailed', { message }), 'error');
+    }
+  };
+
   return (
     <>
       <button
@@ -269,7 +289,64 @@ function HeaderActionGroup(props: HeaderActionGroupProps): JSX.Element {
         {tr('header.autoApply')}
       </label>
       <button class={cx(ui.buttonBase, ui.secondaryButton)} id="btn-apply-pipeline" onClick={props.onApplyPipeline}>{tr('header.apply')}</button>
-      <button type="button" class={cx(ui.buttonBase, ui.submitButton, styles.shaderOpenButton)} id="btn-open-shader-dialog">{tr('header.openCode')}</button>
+      <DropdownMenu
+        wrapperClass={cx(ui.menuWrap, styles.shaderOpenButton)}
+        triggerClass={cx(ui.buttonBase, ui.submitButton)}
+        menuClass={ui.menu}
+        triggerAriaLabel={tr('header.exportMenuAria')}
+        triggerContent={<span>{tr('header.export')}</span>}
+        menuRole="menu"
+      >
+        {controls => (
+          <>
+            <button
+              type="button"
+              class={ui.menuItem}
+              role="menuitem"
+              onClick={() => {
+                controls.closeMenu();
+                props.onOpenShaderDialog();
+              }}
+            >
+              {tr('header.openCode')}
+            </button>
+            <div class={ui.menuHeader}>{tr('header.downloadZip')}</div>
+            <button
+              type="button"
+              class={ui.menuItem}
+              role="menuitem"
+              onClick={() => {
+                controls.closeMenu();
+                void handleExportShaderZip('glsl');
+              }}
+            >
+              {tr('header.exportShaderZip', { language: 'GLSL' })}
+            </button>
+            <button
+              type="button"
+              class={ui.menuItem}
+              role="menuitem"
+              onClick={() => {
+                controls.closeMenu();
+                void handleExportShaderZip('hlsl');
+              }}
+            >
+              {tr('header.exportShaderZip', { language: 'HLSL' })}
+            </button>
+            <button
+              type="button"
+              class={ui.menuItem}
+              role="menuitem"
+              onClick={() => {
+                controls.closeMenu();
+                void handleExportShaderZip('mme');
+              }}
+            >
+              {tr('header.exportShaderZip', { language: 'MMEffect' })}
+            </button>
+          </>
+        )}
+      </DropdownMenu>
     </>
   );
 }
@@ -400,6 +477,8 @@ export function mountHeaderActionGroup(target: HTMLElement, options: HeaderActio
         onApplyPipeline={options.onApplyPipeline}
         onPipelineFileSelected={options.onPipelineFileSelected}
         onAutoApplyChange={handleAutoApplyChange}
+        onOpenShaderDialog={options.onOpenShaderDialog}
+        onExportShaderZip={options.onExportShaderZip}
         onStatus={options.onStatus}
       />
     );

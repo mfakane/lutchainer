@@ -9,10 +9,12 @@ test.describe('Main UI smoke flows', () => {
   });
 
   test('shader dialog open, switch stage, and close', async ({ page }) => {
-    const openButton = page.locator('#btn-open-shader-dialog');
+    const exportButton = page.getByRole('button', { name: 'Open export menu' });
+    const openCodeItem = page.getByRole('menuitem', { name: 'Open Code' });
     const dialog = page.locator('#shader-dialog');
 
-    await openButton.click();
+    await exportButton.click();
+    await openCodeItem.click();
     await expect(dialog).toHaveJSProperty('open', true);
     await expect(page.locator('#shader-dialog-title')).toBeVisible();
 

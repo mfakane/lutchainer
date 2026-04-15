@@ -23,7 +23,6 @@ interface ShaderDialogContentOptions {
 
 interface ShaderDialogShellOptions {
   dialogEl: HTMLDialogElement;
-  openButtonEl: HTMLButtonElement;
   surfaceEl: Element;
   onBeforeOpen?: () => void;
   onExport: (language: ShaderLanguage) => void | Promise<void>;
@@ -73,12 +72,16 @@ const SHADER_CODE_ENTRIES: Record<ShaderCodeEntryId, ShaderCodeEntry> = {
   },
 };
 
-interface ShaderDialogController {
+interface ShaderDialogContentController {
   dispose: () => void;
   sync: (input: ShaderBuildInput, fragmentShader?: string) => void;
 }
 
-let activeShaderDialogController: ShaderDialogController | null = null;
+interface ShaderDialogShellController extends ShaderDialogContentController {
+  open: () => void;
+}
+
+let activeShaderDialogController: ShaderDialogShellController | null = null;
 
 function ensureShaderDialogShellOptions(value: unknown): asserts value is ShaderDialogShellOptions {
   if (!value || typeof value !== 'object') {
@@ -88,9 +91,6 @@ function ensureShaderDialogShellOptions(value: unknown): asserts value is Shader
   const options = value as Partial<ShaderDialogShellOptions>;
   if (!(options.dialogEl instanceof HTMLDialogElement)) {
     throw new Error('mountShaderDialogShell: dialogEl must be an HTMLDialogElement');
-  }
-  if (!(options.openButtonEl instanceof HTMLButtonElement)) {
-    throw new Error('mountShaderDialogShell: openButtonEl must be an HTMLButtonElement');
   }
   if (!(options.surfaceEl instanceof Element)) {
     throw new Error('mountShaderDialogShell: surfaceEl must be a DOM Element');
@@ -207,7 +207,7 @@ function ShaderDialogContent(props: {
             class={cx(ui.buttonBase, ui.submitButton)}
             onClick={() => void handleExport()}
           >
-            {tr('shader.export')}
+            {tr('shader.download')}
           </button>
           <button
             type="button"
@@ -230,7 +230,7 @@ function ShaderDialogContent(props: {
 function mountShaderDialogContent(
   el: Element,
   options: ShaderDialogContentOptions,
-): ShaderDialogController {
+): ShaderDialogContentController {
   if (!(el instanceof Element)) {
     throw new Error('mountShaderDialogContent: el must be a DOM Element');
   }
@@ -295,10 +295,6 @@ export function mountShaderDialogShell(options: ShaderDialogShellOptions): void 
     onStatus: options.onStatus,
   });
 
-  const onOpenClick = () => {
-    openShaderDialog();
-  };
-
   const onCancel = (event: Event) => {
     event.preventDefault();
     closeShaderDialog();
@@ -317,12 +313,10 @@ export function mountShaderDialogShell(options: ShaderDialogShellOptions): void 
     }
   };
 
-  options.openButtonEl.addEventListener('click', onOpenClick);
   options.dialogEl.addEventListener('cancel', onCancel);
   options.dialogEl.addEventListener('click', onDialogClick);
 
   const disposeShell = () => {
-    options.openButtonEl.removeEventListener('click', onOpenClick);
     options.dialogEl.removeEventListener('cancel', onCancel);
     options.dialogEl.removeEventListener('click', onDialogClick);
   };
@@ -332,8 +326,13 @@ export function mountShaderDialogShell(options: ShaderDialogShellOptions): void 
       disposeShell();
       contentController.dispose();
     },
+    open: openShaderDialog,
     sync: contentController.sync,
   };
+}
+
+export function openShaderDialog(): void {
+  activeShaderDialogController?.open();
 }
 
 export function syncShaderDialogState(

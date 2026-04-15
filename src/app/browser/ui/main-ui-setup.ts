@@ -3,9 +3,10 @@ import type { LutReorderDragState, SocketAxis, SocketDragState, StepReorderDragS
 import type { ShaderBuildInput, ShaderLanguage } from '../../../features/shader/shader-generator.ts';
 import type { ParamRef } from '../../../features/step/step-model.ts';
 import {
-    mountHeaderActionGroup,
-    mountLanguageSwitcher,
+  mountHeaderActionGroup,
+  mountLanguageSwitcher,
 } from '../components/solid-header-actions.tsx';
+import { openShaderDialog } from '../components/solid-shader-dialog.tsx';
 import type { PipelineDropIndicatorController } from '../pipeline/pipeline-drop-indicators.ts';
 import type { PipelineHeaderActionController } from '../pipeline/pipeline-header-actions-controller.ts';
 import type { PipelineSocketDndController } from '../pipeline/pipeline-socket-dnd-controller.ts';
@@ -26,6 +27,7 @@ interface MainUiShellOptions {
   previewShapeController: PreviewShapeController;
   mainPreviewCapture: MainPreviewCaptureController;
   isPreviewWireframeOverlayEnabled: () => boolean;
+  onExportShaderZip: (language: ShaderLanguage) => void | Promise<void>;
   onStatus: StatusReporter;
 }
 
@@ -116,6 +118,7 @@ function assertMainUiShellOptions(options: MainUiShellOptions): void {
   ensureFunction(options.mainPreviewCapture.exportMainPreviewPng, 'Main UI shell mainPreviewCapture.exportMainPreviewPng');
   ensureFunction(options.mainPreviewCapture.exportStepPreviewPng, 'Main UI shell mainPreviewCapture.exportStepPreviewPng');
   ensureFunction(options.isPreviewWireframeOverlayEnabled, 'Main UI shell isPreviewWireframeOverlayEnabled');
+  ensureFunction(options.onExportShaderZip, 'Main UI shell onExportShaderZip');
   ensureFunction(options.onStatus, 'Main UI shell onStatus');
 }
 
@@ -200,7 +203,13 @@ export function setupMainUi(options: SetupMainUiOptions): void {
   mountLanguageSwitcher(options.shell.select<HTMLElement>('#header-language-switcher'));
   mountHeaderActionGroup(
     options.shell.select<HTMLElement>('#header-action-group'),
-    options.shell.pipelineHeaderActions.buildMountOptions(),
+    {
+      ...options.shell.pipelineHeaderActions.buildMountOptions(),
+      onOpenShaderDialog: () => {
+        openShaderDialog();
+      },
+      onExportShaderZip: options.shell.onExportShaderZip,
+    },
   );
 
   setupStepPreviewShapeUi({
@@ -229,7 +238,6 @@ export function setupMainUi(options: SetupMainUiOptions): void {
     initialStatusMessage: options.panels.initialStatusMessage,
     initialStatusKind: options.panels.initialStatusKind,
     shaderDialogEl: options.panels.select<HTMLDialogElement>('#shader-dialog'),
-    shaderOpenButtonEl: options.panels.select<HTMLButtonElement>('#btn-open-shader-dialog'),
     shaderSurfaceEl: options.panels.select<Element>('.shader-dialog-surface'),
     lightGizmoLayerEl: options.panels.lightGizmoLayerEl,
     getMaterialSettings: options.panels.getMaterialSettings,

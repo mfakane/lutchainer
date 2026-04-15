@@ -350,6 +350,7 @@ export function bootstrapMainPostRuntime(options: BootstrapMainPostRuntimeOption
       previewShapeController: options.previewShapeController,
       mainPreviewCapture: options.mainPreviewCapture,
       isPreviewWireframeOverlayEnabled,
+      onExportShaderZip: options.onExportShaderZip,
       onStatus: options.onStatus,
     },
     panels: {

@@ -11,14 +11,13 @@ import type {
   TranslationSchema,
 } from '../../shared/i18n/browser-translation-contract.ts';
 export type {
-  AppTranslator as Translator,
   PanelPresetTranslationKey,
   ParamGroupDescriptionTranslationKey,
   StaticTranslationKey,
   TranslationArgs,
   TranslationKey,
   TranslationParams,
-  TranslationSchema,
+  TranslationSchema, AppTranslator as Translator
 } from '../../shared/i18n/browser-translation-contract.ts';
 
 export type Language = 'ja' | 'en';
@@ -50,7 +49,11 @@ const TRANSLATIONS: Record<Language, TranslationSchema> = {
     'header.save': '保存',
     'header.autoApply': '自動反映',
     'header.apply': '適用',
-    'header.openCode': 'コードを開く',
+    'header.export': 'Export',
+    'header.exportMenuAria': 'エクスポートメニューを開く',
+    'header.downloadZip': 'Download ZIP',
+    'header.exportShaderZip': '{language}',
+    'header.openCode': '生成されたシェーダを表示',
     'header.resetInitial': '新規作成',
     'header.resetExamples': 'Examples',
     'header.switchLanguage': '言語: {language}',
@@ -187,6 +190,7 @@ const TRANSLATIONS: Record<Language, TranslationSchema> = {
     'shader.tabsAria': 'Shader source selector',
     'shader.copy': 'コピー',
     'shader.export': 'エクスポート',
+    'shader.download': 'ダウンロード',
     'shader.close': '閉じる',
     'shader.closeAria': 'シェーダコードダイアログを閉じる',
     'shader.meta': '{stage} shader / {lines} 行',
@@ -291,7 +295,11 @@ const TRANSLATIONS: Record<Language, TranslationSchema> = {
     'header.save': 'Save',
     'header.autoApply': 'Auto Apply',
     'header.apply': 'Apply',
-    'header.openCode': 'Open Code',
+    'header.export': 'Export',
+    'header.exportMenuAria': 'Open export menu',
+    'header.downloadZip': 'Download ZIP',
+    'header.exportShaderZip': '{language}',
+    'header.openCode': 'Show generated shader',
     'header.resetInitial': 'New pipeline',
     'header.resetExamples': 'Examples',
     'header.switchLanguage': 'Language: {language}',
@@ -428,6 +436,7 @@ const TRANSLATIONS: Record<Language, TranslationSchema> = {
     'shader.tabsAria': 'Shader source selector',
     'shader.copy': 'Copy',
     'shader.export': 'Export',
+    'shader.download': 'Download',
     'shader.close': 'Close',
     'shader.closeAria': 'Close shader code dialog',
     'shader.meta': '{stage} shader / {lines} lines',
