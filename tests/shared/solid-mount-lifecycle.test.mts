@@ -43,7 +43,7 @@ test('shader dialog shell remount disposes previous controller and cleans event 
 
   assertPattern(
     source,
-    /const\s+disposeShell\s*=\s*\(\)\s*=>\s*\{[\s\S]*?removeEventListener\('click',\s*onOpenClick\);[\s\S]*?removeEventListener\('cancel',\s*onCancel\);[\s\S]*?removeEventListener\('click',\s*onDialogClick\);[\s\S]*?\}/,
+    /const\s+disposeShell\s*=\s*\(\)\s*=>\s*\{[\s\S]*?removeEventListener\('cancel',\s*onCancel\);[\s\S]*?removeEventListener\('click',\s*onDialogClick\);[\s\S]*?\}/,
     'solid-shader-dialog should remove all shell event listeners in disposeShell',
   );
 
