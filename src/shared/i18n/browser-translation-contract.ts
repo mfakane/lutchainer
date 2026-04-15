@@ -1,7 +1,7 @@
 import type {
   TranslationArgs as SharedTranslationArgs,
-  TranslationValues,
   Translator as SharedTranslator,
+  TranslationValues,
 } from './translator.ts';
 
 export interface TranslationSchema {
@@ -151,7 +151,6 @@ export interface TranslationSchema {
   'shader.help': string;
   'shader.tabsAria': string;
   'shader.copy': string;
-  'shader.export': string;
   'shader.download': string;
   'shader.close': string;
   'shader.closeAria': string;
