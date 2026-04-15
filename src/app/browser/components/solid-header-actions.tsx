@@ -22,32 +22,26 @@ type StatusReporter = (message: string, kind?: StatusKind) => void;
 const RESET_PRESETS: readonly PipelinePresetKey[] = ['StandardToon', 'HueShiftToon', 'HueSatShiftToon', 'Gradient', 'Plastic', 'Metallic'];
 
 interface HeaderActionGroupMountOptions {
-  initialAutoApplyEnabled: boolean;
   initialCanUndo: boolean;
   initialCanRedo: boolean;
   onUndoPipeline: () => void;
   onRedoPipeline: () => void;
   onResetPresetSelected: (preset: PipelinePresetKey) => void | Promise<void>;
   onSavePipeline: () => void | Promise<void>;
-  onApplyPipeline: () => void;
   onPipelineFileSelected: (file: File) => void | Promise<void>;
-  onAutoApplyChange: (enabled: boolean) => void;
   onOpenShaderDialog: () => void;
   onExportShaderZip: (language: ShaderLanguage) => void | Promise<void>;
   onStatus: StatusReporter;
 }
 
 interface HeaderActionGroupProps {
-  autoApplyEnabled: Accessor<boolean>;
   canUndo: Accessor<boolean>;
   canRedo: Accessor<boolean>;
   onUndoPipeline: () => void;
   onRedoPipeline: () => void;
   onResetPresetSelected: (preset: PipelinePresetKey) => void | Promise<void>;
   onSavePipeline: () => void | Promise<void>;
-  onApplyPipeline: () => void;
   onPipelineFileSelected: (file: File) => void | Promise<void>;
-  onAutoApplyChange: (enabled: boolean) => void;
   onOpenShaderDialog: () => void;
   onExportShaderZip: (language: ShaderLanguage) => void | Promise<void>;
   onStatus: StatusReporter;
@@ -55,7 +49,6 @@ interface HeaderActionGroupProps {
 
 interface HeaderActionGroupController {
   dispose: () => void;
-  syncAutoApply: (enabled: boolean) => void;
   syncHistory: (canUndo: boolean, canRedo: boolean) => void;
   onStatus: StatusReporter;
 }
@@ -77,9 +70,6 @@ function ensureMountOptions(value: unknown): asserts value is HeaderActionGroupM
   }
 
   const options = value as Partial<HeaderActionGroupMountOptions>;
-  if (!isBoolean(options.initialAutoApplyEnabled)) {
-    throw new Error('ヘッダーアクションの初期自動反映状態が不正です。');
-  }
   if (!isBoolean(options.initialCanUndo)) {
     throw new Error('ヘッダーアクションの初期Undo状態が不正です。');
   }
@@ -98,14 +88,8 @@ function ensureMountOptions(value: unknown): asserts value is HeaderActionGroupM
   if (typeof options.onSavePipeline !== 'function') {
     throw new Error('ヘッダーアクションの保存コールバックが不正です。');
   }
-  if (typeof options.onApplyPipeline !== 'function') {
-    throw new Error('ヘッダーアクションの適用コールバックが不正です。');
-  }
   if (typeof options.onPipelineFileSelected !== 'function') {
     throw new Error('ヘッダーアクションの読み込みコールバックが不正です。');
-  }
-  if (typeof options.onAutoApplyChange !== 'function') {
-    throw new Error('ヘッダーアクションの自動反映コールバックが不正です。');
   }
   if (typeof options.onOpenShaderDialog !== 'function') {
     throw new Error('ヘッダーアクションのコード表示コールバックが不正です。');
@@ -189,21 +173,6 @@ function HeaderActionGroup(props: HeaderActionGroupProps): JSX.Element {
     }
   };
 
-  const handleAutoApplyChange = (event: Event): void => {
-    const input = event.currentTarget as HTMLInputElement | null;
-    if (!input) {
-      props.onStatus(t('header.status.autoApplyCheckboxMissing'), 'error');
-      return;
-    }
-
-    if (!isBoolean(input.checked)) {
-      props.onStatus(t('header.status.autoApplyCheckboxInvalid'), 'error');
-      return;
-    }
-
-    props.onAutoApplyChange(input.checked);
-  };
-
   const handleExportShaderZip = async (language: ShaderLanguage): Promise<void> => {
     try {
       await props.onExportShaderZip(language);
@@ -279,16 +248,6 @@ function HeaderActionGroup(props: HeaderActionGroupProps): JSX.Element {
         hidden
         onChange={event => void handlePipelineFileInputChange(event)}
       />
-      <label class={styles.autoLabel}>
-        <input
-          type="checkbox"
-          id="chk-auto-apply"
-          checked={props.autoApplyEnabled()}
-          onChange={handleAutoApplyChange}
-        />
-        {tr('header.autoApply')}
-      </label>
-      <button class={cx(ui.buttonBase, ui.secondaryButton)} id="btn-apply-pipeline" onClick={props.onApplyPipeline}>{tr('header.apply')}</button>
       <DropdownMenu
         wrapperClass={cx(ui.menuWrap, styles.shaderOpenButton)}
         triggerClass={cx(ui.buttonBase, ui.submitButton)}
@@ -418,24 +377,11 @@ export function mountHeaderActionGroup(target: HTMLElement, options: HeaderActio
 
   target.textContent = '';
 
-  let syncAutoApplyController: ((enabled: boolean) => void) | null = null;
   let syncHistoryController: ((canUndo: boolean, canRedo: boolean) => void) | null = null;
 
   const dispose = render(() => {
-    const [autoApplyEnabled, setAutoApplyEnabled] = createSignal(options.initialAutoApplyEnabled);
     const [canUndo, setCanUndo] = createSignal(options.initialCanUndo);
     const [canRedo, setCanRedo] = createSignal(options.initialCanRedo);
-
-    syncAutoApplyController = enabled => {
-      if (!isBoolean(enabled)) {
-        headerActionStatusReporter(
-          t('header.status.invalidAutoApplySyncValue', { value: String(enabled) }),
-          'error',
-        );
-        return;
-      }
-      setAutoApplyEnabled(enabled);
-    };
 
     syncHistoryController = (nextCanUndo, nextCanRedo) => {
       if (!isBoolean(nextCanUndo) || !isBoolean(nextCanRedo)) {
@@ -452,31 +398,15 @@ export function mountHeaderActionGroup(target: HTMLElement, options: HeaderActio
       setCanRedo(nextCanRedo);
     };
 
-    const handleAutoApplyChange = (enabled: boolean): void => {
-      if (!isBoolean(enabled)) {
-        headerActionStatusReporter(
-          t('header.status.invalidAutoApplyInputValue', { value: String(enabled) }),
-          'error',
-        );
-        return;
-      }
-
-      setAutoApplyEnabled(enabled);
-      options.onAutoApplyChange(enabled);
-    };
-
     return (
       <HeaderActionGroup
-        autoApplyEnabled={autoApplyEnabled}
         canUndo={canUndo}
         canRedo={canRedo}
         onUndoPipeline={options.onUndoPipeline}
         onRedoPipeline={options.onRedoPipeline}
         onResetPresetSelected={options.onResetPresetSelected}
         onSavePipeline={options.onSavePipeline}
-        onApplyPipeline={options.onApplyPipeline}
         onPipelineFileSelected={options.onPipelineFileSelected}
-        onAutoApplyChange={handleAutoApplyChange}
         onOpenShaderDialog={options.onOpenShaderDialog}
         onExportShaderZip={options.onExportShaderZip}
         onStatus={options.onStatus}
@@ -484,34 +414,16 @@ export function mountHeaderActionGroup(target: HTMLElement, options: HeaderActio
     );
   }, target);
 
-  if (!syncAutoApplyController || !syncHistoryController) {
+  if (!syncHistoryController) {
     dispose();
     throw new Error('ヘッダーアクションの同期ハンドラ初期化に失敗しました。');
   }
 
   activeHeaderActionGroupController = {
     dispose,
-    syncAutoApply: syncAutoApplyController,
     syncHistory: syncHistoryController,
     onStatus: options.onStatus,
   };
-}
-
-export function syncHeaderActionAutoApplyState(enabled: boolean): void {
-  const controller = activeHeaderActionGroupController;
-  if (!controller) {
-    return;
-  }
-
-  if (!isBoolean(enabled)) {
-    controller.onStatus(
-      t('header.status.invalidAutoApplySyncArg', { value: String(enabled) }),
-      'error',
-    );
-    return;
-  }
-
-  controller.syncAutoApply(enabled);
 }
 
 export function syncHeaderActionHistoryState(canUndo: boolean, canRedo: boolean): void {

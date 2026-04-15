@@ -1,6 +1,6 @@
+import type { AppTranslator } from '../../shared/i18n/browser-translation-contract.ts';
 import type { LoadedPipelineData } from './pipeline-model.ts';
 import type { PipelineStateSnapshot } from './pipeline-state.ts';
-import type { AppTranslator } from '../../shared/i18n/browser-translation-contract.ts';
 
 type StatusKind = 'success' | 'error' | 'info';
 type StatusReporter = (message: string, kind?: StatusKind) => void;
@@ -65,6 +65,6 @@ export function applyLoadedPipelineState(options: ApplyLoadedPipelineOptions): v
   options.clearHistory();
   options.renderSteps();
   options.cancelPendingApply();
-  options.onStatus(options.t('main.status.pipelineLoadedApplying'), 'info');
+  options.onStatus(options.t('main.status.pipelineLoaded'), 'info');
   options.applyNow();
 }

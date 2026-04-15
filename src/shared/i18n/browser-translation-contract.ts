@@ -16,8 +16,6 @@ export interface TranslationSchema {
   'header.redoAria': string;
   'header.load': string;
   'header.save': string;
-  'header.autoApply': string;
-  'header.apply': string;
   'header.export': string;
   'header.exportMenuAria': string;
   'header.downloadZip': string;
@@ -33,12 +31,7 @@ export interface TranslationSchema {
   'header.status.invalidSelectedFile': string;
   'header.status.emptyFile': string;
   'header.status.pipelineLoadFailed': string;
-  'header.status.autoApplyCheckboxMissing': string;
-  'header.status.autoApplyCheckboxInvalid': string;
-  'header.status.invalidAutoApplySyncValue': string;
   'header.status.invalidHistorySyncValue': string;
-  'header.status.invalidAutoApplyInputValue': string;
-  'header.status.invalidAutoApplySyncArg': string;
   'header.status.invalidHistorySyncArg': string;
   'header.status.invalidLanguageSelection': string;
   'header.status.languageChanged': string;
@@ -160,7 +153,7 @@ export interface TranslationSchema {
   'shader.status.copyFailed': string;
   'shader.status.exportSuccess': string;
   'shader.status.exportFailed': string;
-  'main.status.pipelineLoadedApplying': string;
+  'main.status.pipelineLoaded': string;
   'main.status.stepPreviewNotInitialized': string;
   'main.status.stepPreviewCpuMode': string;
   'main.status.stepPreviewWebglDrawFailed': string;
@@ -187,7 +180,6 @@ export interface TranslationSchema {
   'main.status.stepOrderUpdated': string;
   'main.status.moveLutNotFound': string;
   'main.status.lutOrderUpdated': string;
-  'main.status.applySuccess': string;
   'main.status.resetStepChain': string;
   'main.status.pipelineIoNotInitialized': string;
   'main.status.shaderExportNotInitialized': string;
@@ -197,7 +189,6 @@ export interface TranslationSchema {
   'main.status.invalidLutAddInput': string;
   'main.status.maxLutLimit': string;
   'main.status.lutAdded': string;
-  'main.status.initialPrompt': string;
   'lutEditor.title': string;
   'lutEditor.apply': string;
   'lutEditor.cancel': string;
@@ -244,10 +235,7 @@ export interface TranslationParams {
   'header.switchLanguage': { language: string; };
   'header.status.pipelineSaveFailed': { message: string; };
   'header.status.pipelineLoadFailed': { message: string; };
-  'header.status.invalidAutoApplySyncValue': { value: string; };
   'header.status.invalidHistorySyncValue': { value: string; };
-  'header.status.invalidAutoApplyInputValue': { value: string; };
-  'header.status.invalidAutoApplySyncArg': { value: string; };
   'header.status.invalidHistorySyncArg': { value: string; };
   'header.status.invalidLanguageSelection': { value: string; };
   'header.status.languageChanged': { language: string; };
@@ -291,7 +279,6 @@ export interface TranslationParams {
   'main.status.lutRemoved': { name: string; };
   'main.status.lutDuplicated': { name: string; };
   'main.status.moveStepNotFound': { stepId: string; };
-  'main.status.applySuccess': { luts: number; steps: number; };
   'main.status.pipelineSaveFailed': { message: string; };
   'main.status.pipelineLoadFailed': { message: string; };
   'main.status.maxLutLimit': { max: number; };

@@ -16,32 +16,24 @@ interface PipelineIoSystemLike {
 }
 
 export interface PipelineHeaderActionMountOptions {
-  initialAutoApplyEnabled: boolean;
   initialCanUndo: boolean;
   initialCanRedo: boolean;
   onUndoPipeline: () => void;
   onRedoPipeline: () => void;
   onResetPresetSelected: (preset: PipelinePresetKey) => void | Promise<void>;
   onSavePipeline: () => void | Promise<void>;
-  onApplyPipeline: () => void;
   onPipelineFileSelected: (file: File) => void | Promise<void>;
-  onAutoApplyChange: (enabled: boolean) => void;
   onStatus: StatusReporter;
 }
 
 export interface PipelineHeaderActionControllerOptions {
-  isAutoApplyEnabled: () => boolean;
   canUndo: () => boolean;
   canRedo: () => boolean;
   onUndoPipeline: () => void;
   onRedoPipeline: () => void;
   onResetPipelineState: () => void;
-  onApplyPipeline: () => void;
   onApplyLoadedPipeline: (loaded: LoadedPipelineData) => void;
   getPipelineIoSystem: () => PipelineIoSystemLike | null;
-  setAutoApplyEnabled: (enabled: boolean) => void;
-  syncAutoApplyState: (enabled: boolean) => void;
-  scheduleApply: () => void;
   onStatus: StatusReporter;
   t: AppTranslator;
 }
@@ -77,18 +69,13 @@ function ensureOptions(value: unknown): asserts value is PipelineHeaderActionCon
   }
 
   const options = value as Partial<PipelineHeaderActionControllerOptions>;
-  ensureFunction(options.isAutoApplyEnabled, 'PipelineHeaderActionController: isAutoApplyEnabled');
   ensureFunction(options.canUndo, 'PipelineHeaderActionController: canUndo');
   ensureFunction(options.canRedo, 'PipelineHeaderActionController: canRedo');
   ensureFunction(options.onUndoPipeline, 'PipelineHeaderActionController: onUndoPipeline');
   ensureFunction(options.onRedoPipeline, 'PipelineHeaderActionController: onRedoPipeline');
   ensureFunction(options.onResetPipelineState, 'PipelineHeaderActionController: onResetPipelineState');
-  ensureFunction(options.onApplyPipeline, 'PipelineHeaderActionController: onApplyPipeline');
   ensureFunction(options.onApplyLoadedPipeline, 'PipelineHeaderActionController: onApplyLoadedPipeline');
   ensureFunction(options.getPipelineIoSystem, 'PipelineHeaderActionController: getPipelineIoSystem');
-  ensureFunction(options.setAutoApplyEnabled, 'PipelineHeaderActionController: setAutoApplyEnabled');
-  ensureFunction(options.syncAutoApplyState, 'PipelineHeaderActionController: syncAutoApplyState');
-  ensureFunction(options.scheduleApply, 'PipelineHeaderActionController: scheduleApply');
   ensureFunction(options.onStatus, 'PipelineHeaderActionController: onStatus');
   ensureFunction(options.t, 'PipelineHeaderActionController: t');
 }
@@ -175,10 +162,6 @@ export function createPipelineHeaderActionController(
     );
   };
 
-  const onApplyPipeline = (): void => {
-    options.onApplyPipeline();
-  };
-
   const onPipelineFileSelected = async (file: File): Promise<void> => {
     if (!isFile(file)) {
       options.onStatus(
@@ -210,43 +193,21 @@ export function createPipelineHeaderActionController(
     options.onApplyLoadedPipeline(result.loaded);
   };
 
-  const onAutoApplyChange = (enabled: boolean): void => {
-    if (typeof enabled !== 'boolean') {
-      options.onStatus('自動反映の値が不正です。', 'error');
-      return;
-    }
-
-    options.setAutoApplyEnabled(enabled);
-
-    const autoApplyEnabled = options.isAutoApplyEnabled();
-    ensureBoolean(autoApplyEnabled, 'PipelineHeaderActionController: isAutoApplyEnabled() の戻り値');
-
-    options.syncAutoApplyState(autoApplyEnabled);
-    if (autoApplyEnabled) {
-      options.scheduleApply();
-    }
-  };
-
   const buildMountOptions = (): PipelineHeaderActionMountOptions => {
-    const initialAutoApplyEnabled = options.isAutoApplyEnabled();
     const initialCanUndo = options.canUndo();
     const initialCanRedo = options.canRedo();
 
-    ensureBoolean(initialAutoApplyEnabled, 'PipelineHeaderActionController: initialAutoApplyEnabled');
     ensureBoolean(initialCanUndo, 'PipelineHeaderActionController: initialCanUndo');
     ensureBoolean(initialCanRedo, 'PipelineHeaderActionController: initialCanRedo');
 
     return {
-      initialAutoApplyEnabled,
       initialCanUndo,
       initialCanRedo,
       onUndoPipeline,
       onRedoPipeline,
       onResetPresetSelected,
       onSavePipeline,
-      onApplyPipeline,
       onPipelineFileSelected,
-      onAutoApplyChange,
       onStatus: options.onStatus,
     };
   };

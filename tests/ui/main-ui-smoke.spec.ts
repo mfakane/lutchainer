@@ -30,22 +30,10 @@ test.describe('Main UI smoke flows', () => {
     await expect(dialog).toHaveJSProperty('open', false);
   });
 
-  test('auto apply can be toggled from header', async ({ page }) => {
-    const autoApply = page.locator('#chk-auto-apply');
-    await expect(autoApply).toBeVisible();
-
-    const before = await autoApply.isChecked();
-    if (before) {
-      await autoApply.uncheck();
-      await expect(autoApply).not.toBeChecked();
-      await autoApply.check();
-      await expect(autoApply).toBeChecked();
-    } else {
-      await autoApply.check();
-      await expect(autoApply).toBeChecked();
-      await autoApply.uncheck();
-      await expect(autoApply).not.toBeChecked();
-    }
+  test('header does not expose manual apply controls', async ({ page }) => {
+    await expect(page.locator('#chk-auto-apply')).toHaveCount(0);
+    await expect(page.locator('#btn-apply-pipeline')).toHaveCount(0);
+    await expect(page.locator('#statusbar')).toHaveText('');
   });
 
   test('preview shape buttons are clickable', async ({ page }) => {

@@ -22,7 +22,6 @@ type StatusReporter = (message: string, kind?: StatusKind) => void;
 export interface MainPreviewRuntimeSetupOptions {
   canvas: HTMLCanvasElement;
   getShaderBuildInput: () => ShaderBuildInput;
-  isAutoApplyEnabled: () => boolean;
   onUpdateShaderCodePanel: (frag: string) => void;
   onStatus: StatusReporter;
   t: AppTranslator;
@@ -72,7 +71,6 @@ function ensureOptions(value: unknown): asserts value is MainPreviewRuntimeSetup
   }
 
   ensureFunction(options.getShaderBuildInput, 'Main preview runtime setup: getShaderBuildInput');
-  ensureFunction(options.isAutoApplyEnabled, 'Main preview runtime setup: isAutoApplyEnabled');
   ensureFunction(options.onUpdateShaderCodePanel, 'Main preview runtime setup: onUpdateShaderCodePanel');
   ensureFunction(options.onStatus, 'Main preview runtime setup: onStatus');
   ensureFunction(options.t, 'Main preview runtime setup: t');
@@ -102,10 +100,8 @@ export function setupMainPreviewRuntime(options: MainPreviewRuntimeSetupOptions)
   const pipelineApply = createPipelineApplyController({
     getShaderBuildInput: options.getShaderBuildInput,
     renderer,
-    isAutoApplyEnabled: options.isAutoApplyEnabled,
     onUpdateShaderCodePanel: options.onUpdateShaderCodePanel,
     onStatus: options.onStatus,
-    t: options.t,
   });
 
   const previewShapeController = createPreviewShapeController({

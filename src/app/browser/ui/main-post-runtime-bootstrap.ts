@@ -366,7 +366,7 @@ export function bootstrapMainPostRuntime(options: BootstrapMainPostRuntimeOption
       onUpdateShaderCodePanel: options.onUpdateShaderCodePanel,
       onScheduleApply: () => options.pipelineApply.scheduleApply(),
       onStatus: options.onStatus,
-      initialStatusMessage: options.t('main.status.initialPrompt'),
+      initialStatusMessage: '',
       initialStatusKind: 'info',
     },
     interactions: {

@@ -36,7 +36,6 @@ import {
 } from '../../platforms/browser/preview-export.ts';
 import type { StepPreviewRenderer } from '../../platforms/webgl/step-preview-renderer.ts';
 import {
-  syncHeaderActionAutoApplyState,
   syncHeaderActionHistoryState,
 } from './components/solid-header-actions.tsx';
 import {
@@ -110,9 +109,7 @@ import {
   setMaterialSettings,
 } from './ui/scene-state.ts';
 import {
-  isAutoApplyEnabled,
   isPreviewWireframeOverlayEnabled,
-  setAutoApplyEnabled,
   setPreviewWireframeOverlayEnabled,
 } from './ui/ui-state.ts';
 
@@ -312,7 +309,6 @@ pipelineSocketDnd = setupMainPipelineSocketDnd({
 });
 
 const pipelineHeaderActions = createPipelineHeaderActionController({
-  isAutoApplyEnabled,
   canUndo: () => pipelineHistory.canUndo(),
   canRedo: () => pipelineHistory.canRedo(),
   onUndoPipeline: () => {
@@ -332,9 +328,6 @@ const pipelineHeaderActions = createPipelineHeaderActionController({
     pipelineApply.cancelPending();
     pipelineApply.applyNow();
   },
-  onApplyPipeline: () => {
-    pipelineApply.applyNow();
-  },
   onApplyLoadedPipeline: loaded => {
     applyLoadedPipelineState({
       loaded,
@@ -348,9 +341,6 @@ const pipelineHeaderActions = createPipelineHeaderActionController({
     });
   },
   getPipelineIoSystem: () => pipelineIoSystem,
-  setAutoApplyEnabled,
-  syncAutoApplyState: syncHeaderActionAutoApplyState,
-  scheduleApply: () => pipelineApply.scheduleApply(),
   onStatus: showStatus,
   t,
 });
@@ -411,7 +401,6 @@ window.addEventListener('DOMContentLoaded', () => {
     previewRuntime: {
       canvas,
       getShaderBuildInput,
-      isAutoApplyEnabled,
       onUpdateShaderCodePanel: frag => updateShaderCodePanel(frag),
       onStatus: showStatus,
       t,
