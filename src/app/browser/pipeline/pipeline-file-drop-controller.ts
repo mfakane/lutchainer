@@ -1,9 +1,12 @@
+import { INTERNAL_REORDER_DRAG_MIME_TYPE } from '../interactions/dnd.ts';
+
 interface PipelineFileDropControllerOptions {
   pipelineOverlayEl: HTMLElement;
   lutOverlayEl: HTMLElement;
   loadPipelineFile: (file: File) => Promise<void>;
   addLutFiles: (files: File[]) => Promise<void>;
   isPipelineFile: (file: File) => boolean;
+  isInternalDragActive?: () => boolean;
 }
 
 export interface PipelineFileDropController {
@@ -35,6 +38,9 @@ function assertOptions(options: PipelineFileDropControllerOptions): void {
   ensureFunction(options.loadPipelineFile, 'Pipeline file drop controller loadPipelineFile');
   ensureFunction(options.addLutFiles, 'Pipeline file drop controller addLutFiles');
   ensureFunction(options.isPipelineFile, 'Pipeline file drop controller isPipelineFile');
+  if (options.isInternalDragActive !== undefined) {
+    ensureFunction(options.isInternalDragActive, 'Pipeline file drop controller isInternalDragActive');
+  }
 }
 
 function isFileDrag(dataTransfer: DataTransfer | null): boolean {
@@ -43,6 +49,14 @@ function isFileDrag(dataTransfer: DataTransfer | null): boolean {
   }
 
   return Array.from(dataTransfer.types).includes('Files');
+}
+
+function isInternalReorderDrag(dataTransfer: DataTransfer | null): boolean {
+  if (!dataTransfer) {
+    return false;
+  }
+
+  return Array.from(dataTransfer.types).includes(INTERNAL_REORDER_DRAG_MIME_TYPE);
 }
 
 function isImageFilename(filename: string | undefined): boolean {
@@ -164,7 +178,15 @@ export function createPipelineFileDropController(
     syncOverlayState(options.lutOverlayEl, kind === 'lut-images');
   };
 
+  const shouldIgnoreDrag = (dataTransfer: DataTransfer | null): boolean =>
+    isInternalReorderDrag(dataTransfer) || options.isInternalDragActive?.() === true;
+
   const handleDragEnter = (event: DragEvent): void => {
+    if (shouldIgnoreDrag(event.dataTransfer)) {
+      hideOverlays();
+      return;
+    }
+
     const kind = resolveDraggedFileKind(event.dataTransfer, options.isPipelineFile);
     if (kind === null) {
       return;
@@ -176,6 +198,11 @@ export function createPipelineFileDropController(
   };
 
   const handleDragOver = (event: DragEvent): void => {
+    if (shouldIgnoreDrag(event.dataTransfer)) {
+      hideOverlays();
+      return;
+    }
+
     const kind = resolveDraggedFileKind(event.dataTransfer, options.isPipelineFile);
     if (kind === null) {
       return;
@@ -189,6 +216,11 @@ export function createPipelineFileDropController(
   };
 
   const handleDragLeave = (event: DragEvent): void => {
+    if (shouldIgnoreDrag(event.dataTransfer)) {
+      hideOverlays();
+      return;
+    }
+
     if (!isFileDrag(event.dataTransfer)) {
       return;
     }
@@ -201,6 +233,11 @@ export function createPipelineFileDropController(
   };
 
   const handleDrop = (event: DragEvent): void => {
+    if (shouldIgnoreDrag(event.dataTransfer)) {
+      hideOverlays();
+      return;
+    }
+
     const kind = resolveDraggedFileKind(event.dataTransfer, options.isPipelineFile);
     if (kind === null) {
       return;

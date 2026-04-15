@@ -52,6 +52,8 @@ test.describe('Main UI smoke flows', () => {
 
   test('lut strip supports drag reorder when at least two LUTs exist', async ({ page }) => {
     const lutItems = page.locator('[data-lut-item="true"]');
+    const pipelineOverlay = page.locator('#pipeline-file-drop-overlay');
+    const lutOverlay = page.locator('#lut-file-drop-overlay');
     const count = await lutItems.count();
     test.skip(count < 2, 'LUT reorder test requires at least two LUT items.');
 
@@ -61,6 +63,8 @@ test.describe('Main UI smoke flows', () => {
     await expect
       .poll(async () => page.locator('[data-lut-item="true"]').first().getAttribute('data-lut-id'))
       .not.toBe(firstBefore);
+    await expect(pipelineOverlay).toHaveAttribute('data-active', 'false');
+    await expect(lutOverlay).toHaveAttribute('data-active', 'false');
   });
 
   test('dropping a .lutchain file shows overlay and loads the pipeline', async ({ page }) => {

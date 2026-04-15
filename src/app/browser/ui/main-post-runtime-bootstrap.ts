@@ -341,6 +341,7 @@ export function bootstrapMainPostRuntime(options: BootstrapMainPostRuntimeOption
     loadPipelineFile: options.pipelineHeaderActions.loadPipelineFile,
     addLutFiles: mainPipelineEditor.addLutFiles,
     isPipelineFile: pipelineModel.isZipLikeFile,
+    isInternalDragActive: () => getLutReorderDragState() !== null || getStepReorderDragState() !== null,
   });
 
   setupMainUi({

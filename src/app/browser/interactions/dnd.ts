@@ -61,6 +61,8 @@ export interface PointerDragSourceBindingOptions<TSeed extends object, TState ex
 
 export type DndBindingDisposer = () => void;
 
+export const INTERNAL_REORDER_DRAG_MIME_TYPE = 'application/x-lutchainer-reorder-drag';
+
 function isFiniteCoord(value: unknown): value is number {
   return typeof value === 'number' && Number.isFinite(value);
 }
@@ -202,6 +204,7 @@ export function bindReorderDragHandlers<TId extends string | number, TState exte
 
     if (event.dataTransfer) {
       event.dataTransfer.effectAllowed = 'move';
+      event.dataTransfer.setData(INTERNAL_REORDER_DRAG_MIME_TYPE, 'true');
       event.dataTransfer.setData('text/plain', resolution.transferText ?? transferId(resolution.id));
     }
 
