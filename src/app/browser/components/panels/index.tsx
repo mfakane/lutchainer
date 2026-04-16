@@ -1,7 +1,6 @@
-import { createSignal } from 'solid-js';
-import { render } from 'solid-js/web';
 import * as pipelineModel from '../../../../features/pipeline/pipeline-model.ts';
 import { t } from '../../i18n.ts';
+import { mountSvelteHost, type SvelteHostElement } from '../custom-element-host.ts';
 import {
   cloneLightSettings,
   cloneMaterialSettings,
@@ -13,8 +12,8 @@ import {
   type MaterialPanelMountOptions,
   type StatusReporter,
 } from './shared.ts';
-import { LightPanel } from './solid-light-panel.tsx';
-import { MaterialPanel } from './solid-material-panel.tsx';
+import './svelte-light-panel.svelte';
+import './svelte-material-panel.svelte';
 export {
   mountStatusPanel,
   syncStatusPanelState,
@@ -23,10 +22,12 @@ export {
 let disposeMaterialPanel: (() => void) | null = null;
 let syncMaterialPanelInternal: ((nextSettings: pipelineModel.MaterialSettings) => void) | null = null;
 let materialStatusReporter: StatusReporter = () => undefined;
+let materialPanelHost: SvelteHostElement<Record<string, unknown>> | null = null;
 
 let disposeLightPanel: (() => void) | null = null;
 let syncLightPanelInternal: ((nextSettings: pipelineModel.LightSettings) => void) | null = null;
 let lightStatusReporter: StatusReporter = () => undefined;
+let lightPanelHost: SvelteHostElement<Record<string, unknown>> | null = null;
 
 export function mountMaterialPanel(target: HTMLElement, options: MaterialPanelMountOptions): void {
   if (!(target instanceof HTMLElement)) {
@@ -42,32 +43,38 @@ export function mountMaterialPanel(target: HTMLElement, options: MaterialPanelMo
   }
 
   const initialSettings = cloneMaterialSettings(options.initialSettings);
-  target.textContent = '';
+  materialPanelHost?.destroyHost();
+  materialPanelHost = mountSvelteHost({
+    tagName: 'lut-material-panel',
+    target,
+    props: {
+      settings: initialSettings,
+      commitSettings: (nextSettings: pipelineModel.MaterialSettings): void => {
+        if (!isValidMaterialSettings(nextSettings)) {
+          materialStatusReporter(t('panel.status.materialUpdateInvalid'), 'error');
+          return;
+        }
 
-  disposeMaterialPanel = render(() => {
-    const [settings, setSettings] = createSignal(initialSettings);
+        const cloned = cloneMaterialSettings(nextSettings);
+        materialPanelHost?.setHostProps({ settings: cloned });
+        options.onSettingsChange(cloned);
+      },
+      onStatus: options.onStatus,
+    },
+  });
 
-    syncMaterialPanelInternal = nextSettings => {
-      if (!isValidMaterialSettings(nextSettings)) {
-        materialStatusReporter(t('panel.status.materialSyncInvalid'), 'error');
-        return;
-      }
-      setSettings(cloneMaterialSettings(nextSettings));
-    };
+  syncMaterialPanelInternal = nextSettings => {
+    if (!isValidMaterialSettings(nextSettings)) {
+      materialStatusReporter(t('panel.status.materialSyncInvalid'), 'error');
+      return;
+    }
+    materialPanelHost?.setHostProps({ settings: cloneMaterialSettings(nextSettings) });
+  };
 
-    const commitSettings = (nextSettings: pipelineModel.MaterialSettings): void => {
-      if (!isValidMaterialSettings(nextSettings)) {
-        materialStatusReporter(t('panel.status.materialUpdateInvalid'), 'error');
-        return;
-      }
-
-      const cloned = cloneMaterialSettings(nextSettings);
-      setSettings(cloned);
-      options.onSettingsChange(cloned);
-    };
-
-    return <MaterialPanel settings={settings} commitSettings={commitSettings} onStatus={options.onStatus} />;
-  }, target);
+  disposeMaterialPanel = () => {
+    materialPanelHost?.destroyHost();
+    materialPanelHost = null;
+  };
 }
 
 export function mountLightPanel(target: HTMLElement, options: LightPanelMountOptions): void {
@@ -84,32 +91,38 @@ export function mountLightPanel(target: HTMLElement, options: LightPanelMountOpt
   }
 
   const initialSettings = cloneLightSettings(options.initialSettings);
-  target.textContent = '';
+  lightPanelHost?.destroyHost();
+  lightPanelHost = mountSvelteHost({
+    tagName: 'lut-light-panel',
+    target,
+    props: {
+      settings: initialSettings,
+      commitSettings: (nextSettings: pipelineModel.LightSettings): void => {
+        if (!isValidLightSettings(nextSettings)) {
+          lightStatusReporter(t('panel.status.lightUpdateInvalid'), 'error');
+          return;
+        }
 
-  disposeLightPanel = render(() => {
-    const [settings, setSettings] = createSignal(initialSettings);
+        const cloned = cloneLightSettings(nextSettings);
+        lightPanelHost?.setHostProps({ settings: cloned });
+        options.onSettingsChange(cloned);
+      },
+      onStatus: options.onStatus,
+    },
+  });
 
-    syncLightPanelInternal = nextSettings => {
-      if (!isValidLightSettings(nextSettings)) {
-        lightStatusReporter(t('panel.status.lightSyncInvalid'), 'error');
-        return;
-      }
-      setSettings(cloneLightSettings(nextSettings));
-    };
+  syncLightPanelInternal = nextSettings => {
+    if (!isValidLightSettings(nextSettings)) {
+      lightStatusReporter(t('panel.status.lightSyncInvalid'), 'error');
+      return;
+    }
+    lightPanelHost?.setHostProps({ settings: cloneLightSettings(nextSettings) });
+  };
 
-    const commitSettings = (nextSettings: pipelineModel.LightSettings): void => {
-      if (!isValidLightSettings(nextSettings)) {
-        lightStatusReporter(t('panel.status.lightUpdateInvalid'), 'error');
-        return;
-      }
-
-      const cloned = cloneLightSettings(nextSettings);
-      setSettings(cloned);
-      options.onSettingsChange(cloned);
-    };
-
-    return <LightPanel settings={settings} commitSettings={commitSettings} onStatus={options.onStatus} />;
-  }, target);
+  disposeLightPanel = () => {
+    lightPanelHost?.destroyHost();
+    lightPanelHost = null;
+  };
 }
 
 export function syncMaterialPanelState(nextSettings: pipelineModel.MaterialSettings): void {
