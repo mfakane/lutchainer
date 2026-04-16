@@ -10,14 +10,12 @@ import {
   isValidMaterialSettings,
   type LightPanelMountOptions,
   type MaterialPanelMountOptions,
+  type StatusKind,
   type StatusReporter,
 } from './shared.ts';
 import './svelte-light-panel.svelte';
 import './svelte-material-panel.svelte';
-export {
-  mountStatusPanel,
-  syncStatusPanelState,
-} from './solid-status-panel.tsx';
+import './svelte-status-panel.svelte';
 
 let disposeMaterialPanel: (() => void) | null = null;
 let syncMaterialPanelInternal: ((nextSettings: pipelineModel.MaterialSettings) => void) | null = null;
@@ -28,6 +26,19 @@ let disposeLightPanel: (() => void) | null = null;
 let syncLightPanelInternal: ((nextSettings: pipelineModel.LightSettings) => void) | null = null;
 let lightStatusReporter: StatusReporter = () => undefined;
 let lightPanelHost: SvelteHostElement<Record<string, unknown>> | null = null;
+
+interface StatusState {
+  message: string;
+  kind: StatusKind;
+}
+
+interface StatusPanelMountOptions {
+  initialMessage?: string;
+  initialKind?: StatusKind;
+}
+
+let disposeStatusPanel: (() => void) | null = null;
+let syncStatusPanelInternal: ((nextState: StatusState) => void) | null = null;
 
 export function mountMaterialPanel(target: HTMLElement, options: MaterialPanelMountOptions): void {
   if (!(target instanceof HTMLElement)) {
@@ -141,4 +152,84 @@ export function syncLightPanelState(nextSettings: pipelineModel.LightSettings): 
   }
 
   syncLightPanelInternal?.(nextSettings);
+}
+
+function isValidStatusKind(value: unknown): value is StatusKind {
+  return value === 'success' || value === 'error' || value === 'info';
+}
+
+function isValidStatusMessage(value: unknown): value is string {
+  return typeof value === 'string';
+}
+
+function assertValidStatusState(value: unknown): asserts value is StatusState {
+  if (!value || typeof value !== 'object') {
+    throw new Error('Status state must be an object.');
+  }
+
+  const candidate = value as Partial<StatusState>;
+  if (!isValidStatusMessage(candidate.message)) {
+    throw new Error('Status message must be a string.');
+  }
+
+  if (!isValidStatusKind(candidate.kind)) {
+    throw new Error(`Invalid status kind: ${String(candidate.kind)}`);
+  }
+}
+
+function normalizeInitialStatusState(options: StatusPanelMountOptions | undefined): StatusState {
+  const message = options?.initialMessage;
+  const kind = options?.initialKind;
+
+  if (message !== undefined && !isValidStatusMessage(message)) {
+    throw new Error('initialMessage must be a string when provided.');
+  }
+
+  if (kind !== undefined && !isValidStatusKind(kind)) {
+    throw new Error(`Invalid initialKind: ${String(kind)}`);
+  }
+
+  return {
+    message: message ?? '',
+    kind: kind ?? 'info',
+  };
+}
+
+export function mountStatusPanel(target: HTMLElement, options?: StatusPanelMountOptions): void {
+  if (!(target instanceof HTMLElement)) {
+    throw new Error('mountStatusPanel: target must be an HTMLElement.');
+  }
+
+  const initialState = normalizeInitialStatusState(options);
+
+  if (disposeStatusPanel) {
+    disposeStatusPanel();
+    disposeStatusPanel = null;
+  }
+
+  const statusHost = mountSvelteHost({
+    tagName: 'lut-status-panel',
+    target,
+    props: {
+      message: initialState.message,
+      kind: initialState.kind,
+    },
+  });
+
+  syncStatusPanelInternal = nextState => {
+    assertValidStatusState(nextState);
+    statusHost.setHostProps({
+      message: nextState.message,
+      kind: nextState.kind,
+    });
+  };
+
+  disposeStatusPanel = () => {
+    statusHost.destroyHost();
+  };
+}
+
+export function syncStatusPanelState(nextState: StatusState): void {
+  assertValidStatusState(nextState);
+  syncStatusPanelInternal?.(nextState);
 }
