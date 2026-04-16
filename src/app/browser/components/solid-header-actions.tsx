@@ -1,42 +1,16 @@
-import { createSignal, type Accessor, type JSX } from 'solid-js';
-import { render } from 'solid-js/web';
-import {
-  getLanguageLabel,
-  setLanguage,
-  t,
-  useLanguage,
-  type Language,
-  type TranslationArgs,
-  type TranslationKey,
-} from '../i18n.ts';
 import type { ShaderLanguage } from '../../../features/shader/shader-generator.ts';
-import { cx } from '../styles/cx.ts';
-import * as ui from '../styles/ui-primitives.css.ts';
+import { t, type Language } from '../i18n.ts';
 import type { PipelinePresetKey } from '../ui/pipeline-presets.ts';
-import { DropdownMenu } from './solid-dropdown-menu.tsx';
-import * as styles from './solid-header-actions.css.ts';
+import { mountSvelteHost } from './custom-element-host.ts';
+import './svelte-header-action-group.svelte';
+import './svelte-language-switcher.svelte';
 
 type StatusKind = 'success' | 'error' | 'info';
 type StatusReporter = (message: string, kind?: StatusKind) => void;
 
-const RESET_PRESETS: readonly PipelinePresetKey[] = ['StandardToon', 'HueShiftToon', 'HueSatShiftToon', 'Gradient', 'Plastic', 'Metallic'];
-
 interface HeaderActionGroupMountOptions {
   initialCanUndo: boolean;
   initialCanRedo: boolean;
-  onUndoPipeline: () => void;
-  onRedoPipeline: () => void;
-  onResetPresetSelected: (preset: PipelinePresetKey) => void | Promise<void>;
-  onSavePipeline: () => void | Promise<void>;
-  onPipelineFileSelected: (file: File) => void | Promise<void>;
-  onOpenShaderDialog: () => void;
-  onExportShaderZip: (language: ShaderLanguage) => void | Promise<void>;
-  onStatus: StatusReporter;
-}
-
-interface HeaderActionGroupProps {
-  canUndo: Accessor<boolean>;
-  canRedo: Accessor<boolean>;
   onUndoPipeline: () => void;
   onRedoPipeline: () => void;
   onResetPresetSelected: (preset: PipelinePresetKey) => void | Promise<void>;
@@ -52,6 +26,9 @@ interface HeaderActionGroupController {
   syncHistory: (canUndo: boolean, canRedo: boolean) => void;
   onStatus: StatusReporter;
 }
+
+const LANGUAGE_SWITCHER_TAG = 'lut-language-switcher';
+const HEADER_ACTION_GROUP_TAG = 'lut-header-action-group';
 
 let activeHeaderActionGroupController: HeaderActionGroupController | null = null;
 let headerActionStatusReporter: StatusReporter = () => undefined;
@@ -102,264 +79,18 @@ function ensureMountOptions(value: unknown): asserts value is HeaderActionGroupM
   }
 }
 
-function HeaderActionGroup(props: HeaderActionGroupProps): JSX.Element {
-  let pipelineFileInputRef: HTMLInputElement | null = null;
-  const language = useLanguage();
-
-  function tr<K extends TranslationKey>(key: K, ...args: TranslationArgs<K>): string {
-    language();
-    return t(key, ...args);
-  }
-
-  const openPipelineFilePicker = (): void => {
-    if (!pipelineFileInputRef) {
-      props.onStatus(t('header.status.missingPipelineFileInput'), 'error');
-      return;
-    }
-
-    pipelineFileInputRef.click();
-  };
-
-  const handleSavePipeline = async (): Promise<void> => {
-    try {
-      await props.onSavePipeline();
-    } catch (error) {
-      const message = error instanceof Error ? error.message : t('common.unknownError');
-      props.onStatus(t('header.status.pipelineSaveFailed', { message }), 'error');
-    }
-  };
-
-  const handleResetPresetSelect = async (preset: PipelinePresetKey): Promise<void> => {
-    try {
-      await props.onResetPresetSelected(preset);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : t('common.unknownError');
-      props.onStatus(t('header.status.pipelineLoadFailed', { message }), 'error');
-    }
-  };
-
-  const handlePipelineFileInputChange = async (event: Event): Promise<void> => {
-    const input = event.currentTarget as HTMLInputElement | null;
-    if (!input) {
-      props.onStatus(t('header.status.pipelineInputMissing'), 'error');
-      return;
-    }
-
-    const file = input.files?.[0];
-    if (!file) {
-      input.value = '';
-      return;
-    }
-
-    if (!(file instanceof File)) {
-      props.onStatus(t('header.status.invalidSelectedFile'), 'error');
-      input.value = '';
-      return;
-    }
-
-    if (!Number.isFinite(file.size) || file.size <= 0) {
-      props.onStatus(t('header.status.emptyFile'), 'error');
-      input.value = '';
-      return;
-    }
-
-    try {
-      await props.onPipelineFileSelected(file);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : t('common.unknownError');
-      props.onStatus(t('header.status.pipelineLoadFailed', { message }), 'error');
-    } finally {
-      input.value = '';
-    }
-  };
-
-  const handleExportShaderZip = async (language: ShaderLanguage): Promise<void> => {
-    try {
-      await props.onExportShaderZip(language);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : t('common.unknownError');
-      props.onStatus(t('shader.status.exportFailed', { message }), 'error');
-    }
-  };
-
-  return (
-    <>
-      <button
-        class={cx(ui.buttonBase, ui.secondaryButton)}
-        id="btn-undo-pipeline"
-        aria-label={tr('header.undoAria')}
-        disabled={!props.canUndo()}
-        onClick={props.onUndoPipeline}
-      >{tr('header.undo')}</button>
-      <button
-        class={cx(ui.buttonBase, ui.secondaryButton)}
-        id="btn-redo-pipeline"
-        aria-label={tr('header.redoAria')}
-        disabled={!props.canRedo()}
-        onClick={props.onRedoPipeline}
-      >{tr('header.redo')}</button>
-      <DropdownMenu
-        wrapperClass={ui.menuWrap}
-        triggerClass={cx(ui.buttonBase, ui.secondaryButton)}
-        menuClass={ui.menu}
-        triggerAriaLabel={tr('header.reset')}
-        triggerContent={<span>{tr('header.reset')}</span>}
-        menuRole="menu"
-      >
-        {controls => (
-          <>
-            <button
-              type="button"
-              class={ui.menuItem}
-              role="menuitem"
-              onClick={() => {
-                controls.closeMenu();
-                void handleResetPresetSelect('Initial');
-              }}
-            >
-              {tr('header.resetInitial')}
-            </button>
-            <div class={ui.menuHeader}>{tr('header.resetExamples')}</div>
-            {RESET_PRESETS.map(preset => (
-              <button
-                type="button"
-                class={ui.menuItem}
-                role="menuitem"
-                onClick={() => {
-                  controls.closeMenu();
-                  void handleResetPresetSelect(preset);
-                }}
-              >
-                {preset}
-              </button>
-            ))}
-          </>
-        )}
-      </DropdownMenu>
-      <button class={cx(ui.buttonBase, ui.secondaryButton)} id="btn-load-pipeline" onClick={openPipelineFilePicker}>{tr('header.load')}</button>
-      <button class={cx(ui.buttonBase, ui.secondaryButton)} id="btn-save-pipeline" onClick={() => void handleSavePipeline()}>{tr('header.save')}</button>
-      <input
-        ref={element => {
-          pipelineFileInputRef = element;
-        }}
-        type="file"
-        id="pipeline-file-input"
-        accept=".lutchain,application/x-lutchain"
-        hidden
-        onChange={event => void handlePipelineFileInputChange(event)}
-      />
-      <DropdownMenu
-        wrapperClass={cx(ui.menuWrap, styles.shaderOpenButton)}
-        triggerClass={cx(ui.buttonBase, ui.submitButton)}
-        menuClass={ui.menu}
-        triggerAriaLabel={tr('header.exportMenuAria')}
-        triggerContent={<span>{tr('header.export')}</span>}
-        menuRole="menu"
-      >
-        {controls => (
-          <>
-            <button
-              type="button"
-              class={ui.menuItem}
-              role="menuitem"
-              onClick={() => {
-                controls.closeMenu();
-                props.onOpenShaderDialog();
-              }}
-            >
-              {tr('header.openCode')}
-            </button>
-            <div class={ui.menuHeader}>{tr('header.downloadZip')}</div>
-            <button
-              type="button"
-              class={ui.menuItem}
-              role="menuitem"
-              onClick={() => {
-                controls.closeMenu();
-                void handleExportShaderZip('glsl');
-              }}
-            >
-              {tr('header.exportShaderZip', { language: 'GLSL' })}
-            </button>
-            <button
-              type="button"
-              class={ui.menuItem}
-              role="menuitem"
-              onClick={() => {
-                controls.closeMenu();
-                void handleExportShaderZip('hlsl');
-              }}
-            >
-              {tr('header.exportShaderZip', { language: 'HLSL' })}
-            </button>
-            <button
-              type="button"
-              class={ui.menuItem}
-              role="menuitem"
-              onClick={() => {
-                controls.closeMenu();
-                void handleExportShaderZip('mme');
-              }}
-            >
-              {tr('header.exportShaderZip', { language: 'MMEffect' })}
-            </button>
-          </>
-        )}
-      </DropdownMenu>
-    </>
-  );
-}
-
-let disposeLanguageSwitcher: (() => void) | null = null;
-
 export function mountLanguageSwitcher(target: HTMLElement): void {
   if (!(target instanceof HTMLElement)) {
     throw new Error('言語スイッチャーの描画先要素が不正です。');
   }
 
-  if (disposeLanguageSwitcher) {
-    disposeLanguageSwitcher();
-    disposeLanguageSwitcher = null;
-  }
-
-  target.textContent = '';
-
-  disposeLanguageSwitcher = render(() => {
-    const language = useLanguage();
-    function tr<K extends TranslationKey>(key: K, ...args: TranslationArgs<K>): string {
-      language();
-      return t(key, ...args);
-    }
-    const isLanguageActive = (candidate: Language): boolean => language() === candidate;
-    const handleLanguageSelect = (value: unknown): void => {
-      if (!isLanguage(value)) {
-        headerActionStatusReporter(t('header.status.invalidLanguageSelection', { value: String(value) }), 'error');
-        return;
-      }
-      if (isLanguageActive(value)) return;
-      setLanguage(value);
-    };
-    return (
-      <div class={styles.languageSwitcher} role="group" aria-label={tr('header.languageGroupAria')}>
-        <button
-          type="button"
-          class={cx(ui.buttonBase, ui.secondaryButton, ui.languageButton, isLanguageActive('en') && ui.activeAccent)}
-          id="btn-set-language-en"
-          aria-label={tr('language.switchAria', { language: getLanguageLabel('en') })}
-          aria-pressed={isLanguageActive('en') ? 'true' : 'false'}
-          onClick={() => handleLanguageSelect('en')}
-        >en</button>
-        <button
-          type="button"
-          class={cx(ui.buttonBase, ui.secondaryButton, ui.languageButton, isLanguageActive('ja') && ui.activeAccent)}
-          id="btn-set-language-ja"
-          aria-label={tr('language.switchAria', { language: getLanguageLabel('ja') })}
-          aria-pressed={isLanguageActive('ja') ? 'true' : 'false'}
-          onClick={() => handleLanguageSelect('ja')}
-        >ja</button>
-      </div>
-    );
-  }, target);
+  mountSvelteHost({
+    tagName: LANGUAGE_SWITCHER_TAG,
+    target,
+    props: {
+      onStatus: headerActionStatusReporter,
+    },
+  });
 }
 
 export function mountHeaderActionGroup(target: HTMLElement, options: HeaderActionGroupMountOptions): void {
@@ -375,53 +106,38 @@ export function mountHeaderActionGroup(target: HTMLElement, options: HeaderActio
     activeHeaderActionGroupController = null;
   }
 
-  target.textContent = '';
+  const host = mountSvelteHost({
+    tagName: HEADER_ACTION_GROUP_TAG,
+    target,
+    props: {
+      canUndo: options.initialCanUndo,
+      canRedo: options.initialCanRedo,
+      onUndoPipeline: options.onUndoPipeline,
+      onRedoPipeline: options.onRedoPipeline,
+      onResetPresetSelected: options.onResetPresetSelected,
+      onSavePipeline: options.onSavePipeline,
+      onPipelineFileSelected: options.onPipelineFileSelected,
+      onOpenShaderDialog: options.onOpenShaderDialog,
+      onExportShaderZip: options.onExportShaderZip,
+      onStatus: options.onStatus,
+    },
+  });
 
-  let syncHistoryController: ((canUndo: boolean, canRedo: boolean) => void) | null = null;
-
-  const dispose = render(() => {
-    const [canUndo, setCanUndo] = createSignal(options.initialCanUndo);
-    const [canRedo, setCanRedo] = createSignal(options.initialCanRedo);
-
-    syncHistoryController = (nextCanUndo, nextCanRedo) => {
-      if (!isBoolean(nextCanUndo) || !isBoolean(nextCanRedo)) {
+  activeHeaderActionGroupController = {
+    dispose: () => host.destroyHost(),
+    syncHistory: (canUndo, canRedo) => {
+      if (!isBoolean(canUndo) || !isBoolean(canRedo)) {
         headerActionStatusReporter(
           t('header.status.invalidHistorySyncValue', {
-            value: `canUndo=${String(nextCanUndo)}, canRedo=${String(nextCanRedo)}`,
+            value: `canUndo=${String(canUndo)}, canRedo=${String(canRedo)}`,
           }),
           'error',
         );
         return;
       }
 
-      setCanUndo(nextCanUndo);
-      setCanRedo(nextCanRedo);
-    };
-
-    return (
-      <HeaderActionGroup
-        canUndo={canUndo}
-        canRedo={canRedo}
-        onUndoPipeline={options.onUndoPipeline}
-        onRedoPipeline={options.onRedoPipeline}
-        onResetPresetSelected={options.onResetPresetSelected}
-        onSavePipeline={options.onSavePipeline}
-        onPipelineFileSelected={options.onPipelineFileSelected}
-        onOpenShaderDialog={options.onOpenShaderDialog}
-        onExportShaderZip={options.onExportShaderZip}
-        onStatus={options.onStatus}
-      />
-    );
-  }, target);
-
-  if (!syncHistoryController) {
-    dispose();
-    throw new Error('ヘッダーアクションの同期ハンドラ初期化に失敗しました。');
-  }
-
-  activeHeaderActionGroupController = {
-    dispose,
-    syncHistory: syncHistoryController,
+      host.setHostProps({ canUndo, canRedo });
+    },
     onStatus: options.onStatus,
   };
 }

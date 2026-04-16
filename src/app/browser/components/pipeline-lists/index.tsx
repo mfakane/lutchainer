@@ -16,8 +16,9 @@ import {
   type StatusReporter,
   type StepListMountOptions,
 } from './shared.ts';
-import { LutStripList } from './solid-lut-strip-list.tsx';
-import { ParamNodeList } from './solid-param-node-list.tsx';
+import { mountSvelteHost, type SvelteHostElement } from '../custom-element-host.ts';
+import './svelte-lut-strip-list.svelte';
+import './svelte-param-node-list.svelte';
 import { StepList } from './solid-step-list.tsx';
 
 let disposeParamNodeList: (() => void) | null = null;
@@ -31,6 +32,8 @@ let syncLutStripListInternal: ((luts: LutModel[], steps: StepModel[]) => void) |
 let paramNodeListStatusReporter: StatusReporter = () => undefined;
 let stepListStatusReporter: StatusReporter = () => undefined;
 let lutStripStatusReporter: StatusReporter = () => undefined;
+let paramNodeHost: SvelteHostElement<Record<string, unknown>> | null = null;
+let lutStripHost: SvelteHostElement<Record<string, unknown>> | null = null;
 
 export function mountParamNodeList(target: HTMLElement, options: ParamNodeListMountOptions): void {
   if (!(target instanceof HTMLElement)) {
@@ -45,30 +48,34 @@ export function mountParamNodeList(target: HTMLElement, options: ParamNodeListMo
     disposeParamNodeList = null;
   }
 
-  target.textContent = '';
-  disposeParamNodeList = render(() => {
-    const [customParams, setCustomParams] = createSignal<CustomParamModel[]>(cloneCustomParamArray(options.customParams));
-    syncParamNodeListInternal = nextCustomParams => {
-      if (!Array.isArray(nextCustomParams) || nextCustomParams.some(customParam => !isValidCustomParamModel(customParam))) {
-        paramNodeListStatusReporter('Paramノードリストの同期Custom Param配列が不正です。', 'error');
-        return;
-      }
-      setCustomParams(cloneCustomParamArray(nextCustomParams));
-    };
-
-    return (
-      <ParamNodeList
-        getMaterialSettings={options.getMaterialSettings}
-        customParams={customParams}
-        onAddCustomParam={options.onAddCustomParam}
-        onRenameCustomParam={options.onRenameCustomParam}
-        onSetCustomParamValue={options.onSetCustomParamValue}
-        onCommitCustomParamValueChange={options.onCommitCustomParamValueChange}
-        onRemoveCustomParam={options.onRemoveCustomParam}
-        onStatus={options.onStatus}
-      />
-    );
-  }, target);
+  paramNodeHost?.destroyHost();
+  paramNodeHost = mountSvelteHost({
+    tagName: 'lut-param-node-list',
+    target,
+    props: {
+      getMaterialSettings: options.getMaterialSettings,
+      customParams: cloneCustomParamArray(options.customParams),
+      onAddCustomParam: options.onAddCustomParam,
+      onRenameCustomParam: options.onRenameCustomParam,
+      onSetCustomParamValue: options.onSetCustomParamValue,
+      onCommitCustomParamValueChange: options.onCommitCustomParamValueChange,
+      onRemoveCustomParam: options.onRemoveCustomParam,
+      onStatus: options.onStatus,
+    },
+  });
+  disposeParamNodeList = () => {
+    paramNodeHost?.destroyHost();
+    paramNodeHost = null;
+  };
+  syncParamNodeListInternal = nextCustomParams => {
+    if (!Array.isArray(nextCustomParams) || nextCustomParams.some(customParam => !isValidCustomParamModel(customParam))) {
+      paramNodeListStatusReporter('Paramノードリストの同期Custom Param配列が不正です。', 'error');
+      return;
+    }
+    paramNodeHost?.setHostProps({
+      customParams: cloneCustomParamArray(nextCustomParams),
+    });
+  };
 }
 
 export function mountStepList(target: HTMLElement, options: StepListMountOptions): void {
@@ -146,38 +153,41 @@ export function mountLutStripList(target: HTMLElement, options: LutStripListMoun
     disposeLutStripList = null;
   }
 
-  target.textContent = '';
-  disposeLutStripList = render(() => {
-    const [luts, setLuts] = createSignal<LutModel[]>(cloneLutArray(options.luts));
-    const [steps, setSteps] = createSignal<StepModel[]>(cloneStepArray(options.steps));
+  lutStripHost?.destroyHost();
+  lutStripHost = mountSvelteHost({
+    tagName: 'lut-lut-strip-list',
+    target,
+    props: {
+      luts: cloneLutArray(options.luts),
+      steps: cloneStepArray(options.steps),
+      onRemoveLut: options.onRemoveLut,
+      onAddLutFiles: options.onAddLutFiles,
+      onEditLut: options.onEditLut,
+      onDuplicateLut: options.onDuplicateLut,
+      onNewLut: options.onNewLut,
+      onStatus: options.onStatus,
+    },
+  });
+  disposeLutStripList = () => {
+    lutStripHost?.destroyHost();
+    lutStripHost = null;
+  };
 
-    syncLutStripListInternal = (nextLuts, nextSteps) => {
-      if (!Array.isArray(nextLuts) || nextLuts.some(lut => !isValidLutModel(lut))) {
-        lutStripStatusReporter('LUTストリップの同期LUT配列が不正です。', 'error');
-        return;
-      }
-      if (!Array.isArray(nextSteps) || nextSteps.some(step => !isValidStepModel(step))) {
-        lutStripStatusReporter('LUTストリップの同期Step配列が不正です。', 'error');
-        return;
-      }
+  syncLutStripListInternal = (nextLuts, nextSteps) => {
+    if (!Array.isArray(nextLuts) || nextLuts.some(lut => !isValidLutModel(lut))) {
+      lutStripStatusReporter('LUTストリップの同期LUT配列が不正です。', 'error');
+      return;
+    }
+    if (!Array.isArray(nextSteps) || nextSteps.some(step => !isValidStepModel(step))) {
+      lutStripStatusReporter('LUTストリップの同期Step配列が不正です。', 'error');
+      return;
+    }
 
-      setLuts(cloneLutArray(nextLuts));
-      setSteps(cloneStepArray(nextSteps));
-    };
-
-    return (
-      <LutStripList
-        luts={luts}
-        steps={steps}
-        onRemoveLut={options.onRemoveLut}
-        onAddLutFiles={options.onAddLutFiles}
-        onEditLut={options.onEditLut}
-        onDuplicateLut={options.onDuplicateLut}
-        onNewLut={options.onNewLut}
-        onStatus={options.onStatus}
-      />
-    );
-  }, target);
+    lutStripHost?.setHostProps({
+      luts: cloneLutArray(nextLuts),
+      steps: cloneStepArray(nextSteps),
+    });
+  };
 }
 
 export function syncStepListState(steps: StepModel[], luts: LutModel[], customParams: CustomParamModel[]): void {

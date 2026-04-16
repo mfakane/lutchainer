@@ -60,6 +60,8 @@ function buildGeometry(type: PreviewShapeType) {
     case 'cube': return createCube(1.6);
     case 'torus': return createTorus(0.65, 0.28, 48, 24);
   }
+
+  throw new Error(`Unknown preview shape type: ${String(type)}`);
 }
 
 export function createPreviewShapeController(options: PreviewShapeControllerOptions): PreviewShapeController {

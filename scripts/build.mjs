@@ -1,6 +1,7 @@
 import esbuild from 'esbuild';
 import { vanillaExtractPlugin } from '@vanilla-extract/esbuild-plugin';
 import { solidPlugin } from 'esbuild-plugin-solid';
+import { compile } from 'svelte/compiler';
 import childProcess from 'child_process';
 import fs from 'fs';
 import path from 'path';
@@ -13,6 +14,14 @@ const copyTargets = [
   {
     source: path.resolve('examples'),
     destination: path.join(webDir, 'examples'),
+  },
+  {
+    source: path.resolve('src/app/browser/styles/app-theme.css'),
+    destination: path.join(webDir, 'app-theme.css'),
+  },
+  {
+    source: path.resolve('src/app/browser/styles/ui-primitives.css'),
+    destination: path.join(webDir, 'ui-primitives.css'),
   },
   {
     source: path.resolve('index.html'),
@@ -43,6 +52,10 @@ function copyBuildAssets() {
   for (const target of copyTargets) {
     if (path.basename(target.source) === 'index.html') {
       const indexHtml = fs.readFileSync(target.source, 'utf8')
+        .replace(
+          '<link rel="stylesheet" href="bundle.css" />',
+          '<link rel="stylesheet" href="app-theme.css" />\n  <link rel="stylesheet" href="ui-primitives.css" />\n  <link rel="stylesheet" href="bundle.css" />',
+        )
         .replace(/src="dist\/bundle\.js"/g, 'src="bundle.js"');
       fs.writeFileSync(target.destination, indexHtml);
       continue;
@@ -107,6 +120,37 @@ const copyBuildAssetsPlugin = {
   },
 };
 
+const sveltePlugin = {
+  name: 'svelte-compiler',
+  setup(build) {
+    build.onLoad({ filter: /\.svelte$/ }, async (args) => {
+      const source = await fs.promises.readFile(args.path, 'utf8');
+      const result = compile(source, {
+        filename: args.path,
+        generate: 'client',
+        css: 'injected',
+        dev: watchMode,
+        customElement: true,
+        compatibility: {
+          componentApi: 4,
+        },
+      });
+
+      if (Array.isArray(result.warnings) && result.warnings.length > 0) {
+        for (const warning of result.warnings) {
+          console.warn(`[svelte] ${warning.message}`);
+        }
+      }
+
+      return {
+        contents: result.js.code,
+        loader: 'js',
+        resolveDir: path.dirname(args.path),
+      };
+    });
+  },
+};
+
 const buildCommitId = resolveBuildCommitId();
 
 const buildOptions = {
@@ -124,7 +168,7 @@ const buildOptions = {
   define: {
     __BUILD_COMMIT_ID__: JSON.stringify(buildCommitId),
   },
-  plugins: [typeScriptExtensionPlugin, vanillaExtractPlugin(), copyBuildAssetsPlugin, solidPlugin({ dev: watchMode })],
+  plugins: [typeScriptExtensionPlugin, sveltePlugin, vanillaExtractPlugin(), copyBuildAssetsPlugin, solidPlugin({ dev: watchMode })],
 };
 
 const cliBuildOptions = {

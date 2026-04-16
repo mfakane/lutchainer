@@ -1,0 +1,18 @@
+:root {
+  --color-bg: #111111;
+  --color-panel: #202020;
+  --color-panel-2: #272727;
+  --color-text: #dde2ea;
+  --color-text-strong: #e1e8f8;
+  --color-muted: #9aa3b2;
+  --color-accent: #7ab6ff;
+  --color-accent-ink: #0c1420;
+  --color-line: #414141;
+  --color-control-border: #515151;
+  --color-control-bg: #1a1a1a;
+  --color-panel-border-strong: #464646;
+  --color-surface-inset: #171c25;
+  --color-danger-text: #f8c2b8;
+  --color-danger-border: #8b5a54;
+  --color-danger-bg: #5c241e;
+}

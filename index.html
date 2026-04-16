@@ -14,9 +14,9 @@
         <div class="header-title">LUT<span>Chainer</span></div>
         <div class="header-build-commit" id="header-build-commit" hidden></div>
       </div>
-      <div id="header-language-switcher"></div>
+      <lut-language-switcher id="header-language-switcher"></lut-language-switcher>
 
-      <div class="action-group" id="header-action-group"></div>
+      <lut-header-action-group class="action-group" id="header-action-group"></lut-header-action-group>
     </header>
 
     <div class="main">
@@ -31,7 +31,7 @@
 
           <aside class="param-column">
             <div class="section-label">Parameters</div>
-            <div class="param-node-list" id="param-node-list"></div>
+            <lut-param-node-list class="param-node-list" id="param-node-list"></lut-param-node-list>
           </aside>
 
           <div class="step-column" id="step-column">
@@ -42,7 +42,7 @@
           <div class="lut-strip-head">
             <div class="section-label">LUT Library</div>
           </div>
-          <div class="lut-strip-list" id="lut-strip-list" aria-live="polite"></div>
+          <lut-lut-strip-list class="lut-strip-list" id="lut-strip-list" aria-live="polite"></lut-lut-strip-list>
           <div
             class="lut-file-drop-overlay"
             id="lut-file-drop-overlay"
@@ -94,7 +94,7 @@
             </svg>
           </div>
 
-          <div class="preview-shape-bar" id="preview-shape-bar"></div>
+          <lut-preview-shape-bar class="preview-shape-bar" id="preview-shape-bar"></lut-preview-shape-bar>
         </section>
 
         <div
