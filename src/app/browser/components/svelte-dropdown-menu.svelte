@@ -19,6 +19,7 @@
   let menuEl: HTMLDivElement | null = null;
   let menuPlacement: 'down' | 'up' = 'down';
   let floatingStyle = '';
+  let portalHost: HTMLElement | null = null;
 
   function portal(node: HTMLElement) {
     if (!floating || typeof document === 'undefined') {
@@ -29,12 +30,14 @@
       };
     }
 
-    document.body.appendChild(node);
+    portalHost = wrapperEl?.closest('dialog') ?? document.body;
+    portalHost.appendChild(node);
     return {
       destroy() {
         if (node.parentNode) {
           node.parentNode.removeChild(node);
         }
+        portalHost = null;
       },
     };
   }
@@ -159,7 +162,7 @@
       return;
     }
 
-    if (wrapperEl?.contains(target)) {
+    if (wrapperEl?.contains(target) || menuEl?.contains(target)) {
       return;
     }
 

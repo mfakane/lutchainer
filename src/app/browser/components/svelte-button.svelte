@@ -1,6 +1,14 @@
 <script lang="ts">
   export let type: 'button' | 'submit' | 'reset' = 'button';
-  export let variant: 'default' | 'secondary' | 'submit' | 'destructive' | 'menu-trigger' | 'menu-item' = 'default';
+  export let variant:
+    | 'default'
+    | 'secondary'
+    | 'submit'
+    | 'destructive'
+    | 'menu-trigger'
+    | 'menu-item'
+    | 'remove'
+    | 'remove-small' = 'default';
   export let active = false;
   export let disabled = false;
   export let className = '';
@@ -87,6 +95,17 @@
     border-color: var(--color-danger-border);
     background: color-mix(in srgb, var(--color-panel), var(--color-danger-bg) 28%);
     color: var(--color-danger-text);
+  }
+
+  .button-remove,
+  .button-remove-small {
+    background: transparent;
+    color: var(--color-danger-text);
+  }
+
+  .button-remove-small {
+    font-size: 10px;
+    padding: 3px 7px;
   }
 
   .button-menu-trigger {
