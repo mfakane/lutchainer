@@ -50,7 +50,7 @@ interface MainUiPanelsOptions {
 
 interface MainUiInteractionsOptions {
   paramNodeListEl: HTMLElement;
-  stepListEl: HTMLElement;
+  getStepListEl: () => HTMLElement;
   lutStripListEl: HTMLElement;
   paramColumnEl: HTMLElement;
   parseStepId: (value: string | undefined) => string | null;
@@ -152,7 +152,7 @@ function assertMainUiPanelsOptions(options: MainUiPanelsOptions): void {
 function assertMainUiInteractionsOptions(options: MainUiInteractionsOptions): void {
   ensureObject(options, 'Main UI interactions options');
   ensureHTMLElement(options.paramNodeListEl, 'Main UI setup paramNodeListEl');
-  ensureHTMLElement(options.stepListEl, 'Main UI setup stepListEl');
+  ensureFunction(options.getStepListEl, 'Main UI setup getStepListEl');
   ensureHTMLElement(options.lutStripListEl, 'Main UI setup lutStripListEl');
   ensureHTMLElement(options.paramColumnEl, 'Main UI setup paramColumnEl');
 
@@ -268,7 +268,7 @@ export function setupMainUi(options: SetupMainUiOptions): void {
       },
       socketPointer: {
         paramNodeListEl: options.interactions.paramNodeListEl,
-        stepListEl: options.interactions.stepListEl,
+        getStepListEl: options.interactions.getStepListEl,
         parseStepId: options.interactions.parseStepId,
         isValidParamName: options.interactions.isValidParamName,
         isValidSocketAxis: options.interactions.isValidSocketAxis,
@@ -278,7 +278,7 @@ export function setupMainUi(options: SetupMainUiOptions): void {
         onStatus: options.interactions.onStatus,
       },
       stepReorder: {
-        stepListEl: options.interactions.stepListEl,
+        getStepListEl: options.interactions.getStepListEl,
         parseStepId: options.interactions.parseStepId,
         getStepDropPlacement: options.interactions.pipelineDropIndicators.getStepDropPlacement,
         getStepReorderDragState: options.interactions.getStepReorderDragState,
@@ -290,7 +290,7 @@ export function setupMainUi(options: SetupMainUiOptions): void {
         onStatus: options.interactions.onStatus,
       },
     },
-    stepListEl: options.interactions.stepListEl,
+    getStepListEl: options.interactions.getStepListEl,
     paramColumnEl: options.interactions.paramColumnEl,
     onScheduleConnectionDraw: options.interactions.onScheduleConnectionDraw,
     onUpdateStepSwatches: options.interactions.onUpdateStepSwatches,

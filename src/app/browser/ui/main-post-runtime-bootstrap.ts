@@ -114,6 +114,7 @@ export interface BootstrapMainPostRuntimeOptions {
   canvas: HTMLCanvasElement;
   paramNodeListEl: HTMLElement;
   stepListEl: HTMLElement;
+  getStepListEl: () => HTMLElement;
   lutStripListEl: HTMLElement;
   paramColumnEl: HTMLElement;
   lightGizmoLayerEl: SVGSVGElement;
@@ -193,6 +194,7 @@ function assertOptions(options: BootstrapMainPostRuntimeOptions): void {
   }
   ensureHTMLElement(options.paramNodeListEl, 'Main post-runtime paramNodeListEl');
   ensureHTMLElement(options.stepListEl, 'Main post-runtime stepListEl');
+  ensureFunction(options.getStepListEl, 'Main post-runtime getStepListEl');
   ensureHTMLElement(options.lutStripListEl, 'Main post-runtime lutStripListEl');
   ensureHTMLElement(options.paramColumnEl, 'Main post-runtime paramColumnEl');
   ensureSvgElement(options.lightGizmoLayerEl, 'Main post-runtime lightGizmoLayerEl');
@@ -372,7 +374,7 @@ export function bootstrapMainPostRuntime(options: BootstrapMainPostRuntimeOption
     },
     interactions: {
       paramNodeListEl: options.paramNodeListEl,
-      stepListEl: options.stepListEl,
+      getStepListEl: options.getStepListEl,
       lutStripListEl: options.lutStripListEl,
       paramColumnEl: options.paramColumnEl,
       parseStepId: pipelineModel.parseStepId,

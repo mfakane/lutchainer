@@ -25,7 +25,7 @@ export interface PipelineDropIndicatorController {
 }
 
 export interface PipelineDropIndicatorControllerOptions {
-  stepListEl: HTMLElement;
+  getStepListEl: () => HTMLElement;
   lutStripListEl: HTMLElement;
   parseStepId: (value: string | undefined) => string | null;
   getStepReorderDragState: () => StepReorderDragState | null;
@@ -54,9 +54,7 @@ function ensureOptions(value: unknown): asserts value is PipelineDropIndicatorCo
   }
 
   const options = value as Partial<PipelineDropIndicatorControllerOptions>;
-  if (!isHTMLElement(options.stepListEl)) {
-    throw new Error('PipelineDropIndicatorController: stepListEl が不正です。');
-  }
+  ensureFunction(options.getStepListEl, 'PipelineDropIndicatorController: getStepListEl');
   if (!isHTMLElement(options.lutStripListEl)) {
     throw new Error('PipelineDropIndicatorController: lutStripListEl が不正です。');
   }
@@ -70,21 +68,29 @@ export function createPipelineDropIndicatorController(
   options: PipelineDropIndicatorControllerOptions,
 ): PipelineDropIndicatorController {
   ensureOptions(options);
+  const resolveStepListEl = (): HTMLElement => {
+    const stepListEl = options.getStepListEl();
+    if (!(stepListEl instanceof HTMLElement)) {
+      throw new Error('PipelineDropIndicatorController: resolved stepListEl が不正です。');
+    }
+    return stepListEl;
+  };
 
   const clearStepDropIndicators = (): void => {
-    pipelineView.clearStepDropIndicators(options.stepListEl);
+    pipelineView.clearStepDropIndicators(resolveStepListEl());
   };
 
   const updateStepDropIndicators = (): void => {
-    pipelineView.updateStepDropIndicators(options.stepListEl, options.getStepReorderDragState());
+    pipelineView.updateStepDropIndicators(resolveStepListEl(), options.getStepReorderDragState());
   };
 
   const getStepDropPlacement = (clientY: number): StepDropPlacement => {
     ensureFiniteNumber(clientY, 'Step ドロップ位置(clientY)');
 
     const stepReorderDragState = options.getStepReorderDragState();
+    const stepListEl = resolveStepListEl();
     const placement = getReorderPlacementFromElements({
-      elements: Array.from(options.stepListEl.querySelectorAll<HTMLElement>('[data-step-item="true"]')),
+      elements: Array.from(stepListEl.querySelectorAll<HTMLElement>('[data-step-item="true"]')),
       getElementItemId: element => options.parseStepId(element.dataset.stepId),
       excludeId: stepReorderDragState?.stepId ?? null,
       axis: 'vertical',

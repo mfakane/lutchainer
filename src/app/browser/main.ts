@@ -38,6 +38,7 @@ import type { StepPreviewRenderer } from '../../platforms/webgl/step-preview-ren
 import {
   syncHeaderActionHistoryState,
 } from './components/solid-header-actions.tsx';
+import { getMountedStepListElement } from './components/pipeline-lists/index.tsx';
 import {
   syncPreviewShapeBarState,
   syncPreviewWireframeState,
@@ -184,6 +185,15 @@ const scheduleConnectionDraw = (): void => {
   connectionDrawController.scheduleConnectionDraw();
 };
 
+const getCurrentStepListElement = (): HTMLElement => {
+  const mountedStepListEl = getMountedStepListElement();
+  if (mountedStepListEl instanceof HTMLElement) {
+    return mountedStepListEl;
+  }
+
+  return stepListEl;
+};
+
 const pipelineHistory = createPipelineHistoryController({
   historyLimit: PIPELINE_HISTORY_LIMIT,
   captureSnapshot: () => ({
@@ -247,7 +257,7 @@ const pipelineHistoryActions = createPipelineHistoryActionsController({
 });
 
 const mainStepRendering = createMainStepRenderingController({
-  getStepListElement: () => stepListEl,
+  getStepListElement: getCurrentStepListElement,
   getSteps: getPipelineSteps,
   getLuts: getPipelineLuts,
   getCustomParams: getPipelineCustomParams,
@@ -393,7 +403,7 @@ window.addEventListener('DOMContentLoaded', () => {
     pipelineIoSystem,
     mainRenderPipeline,
   } = bootstrapMainRuntime({
-    stepListEl,
+    getStepListEl: getCurrentStepListElement,
     lutStripListEl,
     parseStepId,
     getStepReorderDragState,
@@ -478,6 +488,7 @@ window.addEventListener('DOMContentLoaded', () => {
     canvas,
     paramNodeListEl,
     stepListEl,
+    getStepListEl: getCurrentStepListElement,
     lutStripListEl,
     paramColumnEl,
     lightGizmoLayerEl,

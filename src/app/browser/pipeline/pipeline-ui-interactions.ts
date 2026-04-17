@@ -17,7 +17,7 @@ let disposePipelineUiInteractionsInternal: PipelineUiInteractionsDisposer | null
 
 export interface SetupPipelineUiInteractionsOptions {
   dndBindings: PipelineDndBindingsOptions;
-  stepListEl: HTMLElement;
+  getStepListEl: () => HTMLElement;
   paramColumnEl: HTMLElement;
   onScheduleConnectionDraw: () => void;
   onUpdateStepSwatches: () => void;
@@ -55,9 +55,7 @@ function ensureOptions(value: unknown): asserts value is SetupPipelineUiInteract
   if (!options.dndBindings || typeof options.dndBindings !== 'object') {
     throw new Error('Pipeline UI interactions: dndBindings が不正です。');
   }
-  if (!isHTMLElement(options.stepListEl)) {
-    throw new Error('Pipeline UI interactions: stepListEl が不正です。');
-  }
+  ensureFunction(options.getStepListEl, 'Pipeline UI interactions: getStepListEl');
   if (!isHTMLElement(options.paramColumnEl)) {
     throw new Error('Pipeline UI interactions: paramColumnEl が不正です。');
   }

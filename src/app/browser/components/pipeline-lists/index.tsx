@@ -34,8 +34,17 @@ let paramNodeHost: SvelteHostElement<Record<string, unknown>> | null = null;
 let stepListHost: SvelteHostElement<Record<string, unknown>> | null = null;
 let lutStripHost: SvelteHostElement<Record<string, unknown>> | null = null;
 
+export function getMountedStepListElement(): HTMLElement | null {
+  if (stepListHost instanceof HTMLElement) {
+    return stepListHost;
+  }
+
+  const fallback = document.querySelector<HTMLElement>('#step-column');
+  return fallback instanceof HTMLElement ? fallback : null;
+}
+
 function getStepListScrollRoot(): HTMLElement | null {
-  return stepListHost?.querySelector('.step-root') ?? null;
+  return getMountedStepListElement()?.querySelector('.step-root') ?? null;
 }
 
 function captureStepListScrollSnapshot(): { top: number; left: number } {

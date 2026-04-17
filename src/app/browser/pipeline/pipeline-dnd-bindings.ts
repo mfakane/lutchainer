@@ -39,7 +39,7 @@ interface SetupLutReorderBindingsOptions {
 }
 
 interface SetupStepReorderBindingsOptions {
-  stepListEl: HTMLElement;
+  getStepListEl: () => HTMLElement;
   parseStepId: (value: string | undefined) => string | null;
   getStepDropPlacement: (clientY: number) => StepDropPlacement;
   getStepReorderDragState: () => StepReorderDragState | null;
@@ -53,7 +53,7 @@ interface SetupStepReorderBindingsOptions {
 
 interface SetupSocketPointerBindingsOptions {
   paramNodeListEl: HTMLElement;
-  stepListEl: HTMLElement;
+  getStepListEl: () => HTMLElement;
   parseStepId: (value: string | undefined) => string | null;
   isValidParamName: (value: string) => value is ParamRef;
   isValidSocketAxis: (value: string) => value is SocketAxis;
@@ -151,9 +151,7 @@ function ensureSetupStepReorderBindingsOptions(value: unknown): asserts value is
   }
 
   const options = value as Partial<SetupStepReorderBindingsOptions>;
-  if (!isHTMLElement(options.stepListEl)) {
-    throw new Error('Step reorder D&D: stepListEl が不正です。');
-  }
+  ensureFunction(options.getStepListEl, 'Step reorder D&D: getStepListEl');
 
   ensureFunction(options.parseStepId, 'Step reorder D&D: parseStepId');
   ensureFunction(options.getStepDropPlacement, 'Step reorder D&D: getStepDropPlacement');
@@ -175,9 +173,7 @@ function ensureSetupSocketPointerBindingsOptions(value: unknown): asserts value 
   if (!isHTMLElement(options.paramNodeListEl)) {
     throw new Error('Socket pointer D&D: paramNodeListEl が不正です。');
   }
-  if (!isHTMLElement(options.stepListEl)) {
-    throw new Error('Socket pointer D&D: stepListEl が不正です。');
-  }
+  ensureFunction(options.getStepListEl, 'Socket pointer D&D: getStepListEl');
 
   ensureFunction(options.parseStepId, 'Socket pointer D&D: parseStepId');
   ensureFunction(options.isValidParamName, 'Socket pointer D&D: isValidParamName');
@@ -278,11 +274,15 @@ export function setupLutReorderBindings(options: SetupLutReorderBindingsOptions)
 
 export function setupStepReorderBindings(options: SetupStepReorderBindingsOptions): void {
   ensureSetupStepReorderBindingsOptions(options);
+  const stepListEl = options.getStepListEl();
+  if (!(stepListEl instanceof HTMLElement)) {
+    throw new Error('Step reorder D&D: resolved stepListEl が不正です。');
+  }
 
   disposeStepReorderBindings?.();
 
   disposeStepReorderBindings = bindReorderDragHandlers({
-    containerEl: options.stepListEl,
+    containerEl: stepListEl,
     resolveDragStart: eventTarget => {
       const handle = eventTarget.closest<HTMLButtonElement>('[data-step-drag-handle="true"]');
       if (!handle) {
@@ -328,6 +328,10 @@ export function setupStepReorderBindings(options: SetupStepReorderBindingsOption
 
 export function setupSocketPointerBindings(options: SetupSocketPointerBindingsOptions): void {
   ensureSetupSocketPointerBindingsOptions(options);
+  const stepListEl = options.getStepListEl();
+  if (!(stepListEl instanceof HTMLElement)) {
+    throw new Error('Socket pointer D&D: resolved stepListEl が不正です。');
+  }
 
   disposeSocketPointerBindings?.();
 
@@ -366,7 +370,7 @@ export function setupSocketPointerBindings(options: SetupSocketPointerBindingsOp
         },
       },
       {
-        containerEl: options.stepListEl,
+        containerEl: stepListEl,
         resolvePointerDown: eventTarget => {
           const target = eventTarget.closest<HTMLButtonElement>('[data-step-socket="true"]');
           if (!target) {

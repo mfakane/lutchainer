@@ -56,7 +56,7 @@ interface GizmoAxisElements {
 }
 
 export interface MainRuntimeBootstrapOptions {
-  stepListEl: HTMLElement;
+  getStepListEl: () => HTMLElement;
   lutStripListEl: HTMLElement;
   parseStepId: (value: string | undefined) => string | null;
   getStepReorderDragState: () => StepReorderDragState | null;
@@ -135,7 +135,7 @@ function ensureAxisElements(value: unknown): asserts value is GizmoAxisElements 
 function assertOptions(options: MainRuntimeBootstrapOptions): void {
   ensureObject(options, 'Main runtime bootstrap options');
 
-  ensureHtmlElement(options.stepListEl, 'Main runtime bootstrap stepListEl');
+  ensureFunction(options.getStepListEl, 'Main runtime bootstrap getStepListEl');
   ensureHtmlElement(options.lutStripListEl, 'Main runtime bootstrap lutStripListEl');
 
   ensureFunction(options.parseStepId, 'Main runtime bootstrap parseStepId');
@@ -166,7 +166,7 @@ export function bootstrapMainRuntime(
   assertOptions(options);
 
   const pipelineDropIndicators = createPipelineDropIndicatorController({
-    stepListEl: options.stepListEl,
+    getStepListEl: options.getStepListEl,
     lutStripListEl: options.lutStripListEl,
     parseStepId: options.parseStepId,
     getStepReorderDragState: options.getStepReorderDragState,

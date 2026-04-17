@@ -207,12 +207,12 @@
     flex-wrap: wrap;
   }
 
-  :global(.step-action-button) {
+  :global(button.button.step-action-button) {
     padding: 4px 8px;
     font-size: 11px;
   }
 
-  :global(.step-remove-button) {
+  :global(button.button.step-action-button.step-remove-button) {
     color: var(--color-danger-text);
   }
 </style>

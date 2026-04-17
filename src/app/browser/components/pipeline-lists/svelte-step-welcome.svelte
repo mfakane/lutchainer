@@ -33,10 +33,10 @@
     <Button variant="secondary" handlePress={onOpenPipelineFilePicker}>
       {tr('pipeline.welcome.load')}
     </Button>
-    <a class="button button-secondary welcome-link-button" href={GITHUB_URL} target="_blank" rel="noreferrer">
+    <a class="welcome-link-button" href={GITHUB_URL} target="_blank" rel="noreferrer">
       {tr('pipeline.welcome.github')}
     </a>
-    <a class="button button-secondary welcome-link-button" href={BLENDER_ADDON_URL} target="_blank" rel="noreferrer">
+    <a class="welcome-link-button" href={BLENDER_ADDON_URL} target="_blank" rel="noreferrer">
       {tr('pipeline.welcome.blenderAddon')}
     </a>
   </div>
@@ -120,10 +120,26 @@
   }
 
   .welcome-link-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--color-line);
+    background: var(--color-panel);
+    border-radius: 8px;
+    padding: 6px 11px;
+    font-size: 12px;
+    color: var(--color-muted);
     text-decoration: none;
+    cursor: pointer;
+    transition: 120ms ease;
   }
 
-  :global(.welcome-example-button) {
+  .welcome-link-button:hover {
+    border-color: var(--color-accent);
+    transform: translateY(-1px);
+  }
+
+  :global(button.button.welcome-example-button) {
     padding: 4px 8px;
     font-size: 11px;
   }
