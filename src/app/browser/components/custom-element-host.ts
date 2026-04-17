@@ -42,12 +42,15 @@ function scheduleHostPropsReplay<Props extends Record<string, unknown>>(
 function ensureHostTarget<Props extends Record<string, unknown>>(
   target: HTMLElement,
   tagName: string,
+  replayProps: boolean,
 ): SvelteHostElement<Props> {
   if (target.tagName.toLowerCase() === tagName.toLowerCase()) {
     const element = target as SvelteHostElement<Props>;
     element.setHostProps ??= function setHostProps(props: Partial<Props>): void {
       applyHostProps(this, props);
-      scheduleHostPropsReplay(this, props);
+      if (replayProps) {
+        scheduleHostPropsReplay(this, props);
+      }
     };
     element.destroyHost ??= () => undefined;
     return element;
@@ -61,7 +64,9 @@ function ensureHostTarget<Props extends Record<string, unknown>>(
   replacement.className = target.className;
   replacement.setHostProps = function setHostProps(props: Partial<Props>): void {
     applyHostProps(this, props);
-    scheduleHostPropsReplay(this, props);
+    if (replayProps) {
+      scheduleHostPropsReplay(this, props);
+    }
   };
   replacement.destroyHost = () => undefined;
   target.replaceWith(replacement);
@@ -72,8 +77,9 @@ export function mountSvelteHost<Props extends Record<string, unknown>>(options: 
   tagName: string;
   target: HTMLElement;
   props: Props;
+  replayProps?: boolean;
 }): SvelteHostElement<Props> {
-  const host = ensureHostTarget(options.target, options.tagName);
+  const host = ensureHostTarget(options.target, options.tagName, options.replayProps ?? true);
   upgradeHostElement(host, options.tagName);
   host.setHostProps(options.props);
   return host;

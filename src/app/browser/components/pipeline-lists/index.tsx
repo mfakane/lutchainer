@@ -1,6 +1,4 @@
-import { createSignal } from 'solid-js';
-import { render } from 'solid-js/web';
-import type { CustomParamModel, LutModel, StepModel } from '../../../../features/step/step-model.ts';
+import type { BlendOp, ChannelName, CustomParamModel, LutModel, StepModel } from '../../../../features/step/step-model.ts';
 import {
   cloneCustomParamArray,
   cloneLutArray,
@@ -19,7 +17,7 @@ import {
 import { mountSvelteHost, type SvelteHostElement } from '../custom-element-host.ts';
 import './svelte-lut-strip-list.svelte';
 import './svelte-param-node-list.svelte';
-import { StepList } from './solid-step-list.tsx';
+import './svelte-step-list.svelte';
 
 let disposeParamNodeList: (() => void) | null = null;
 let disposeStepList: (() => void) | null = null;
@@ -33,7 +31,24 @@ let paramNodeListStatusReporter: StatusReporter = () => undefined;
 let stepListStatusReporter: StatusReporter = () => undefined;
 let lutStripStatusReporter: StatusReporter = () => undefined;
 let paramNodeHost: SvelteHostElement<Record<string, unknown>> | null = null;
+let stepListHost: SvelteHostElement<Record<string, unknown>> | null = null;
 let lutStripHost: SvelteHostElement<Record<string, unknown>> | null = null;
+
+function getStepListScrollRoot(): HTMLElement | null {
+  return stepListHost?.querySelector('.step-root') ?? null;
+}
+
+function captureStepListScrollSnapshot(): { top: number; left: number } {
+  const scrollRoot = getStepListScrollRoot();
+  if (!(scrollRoot instanceof HTMLElement)) {
+    return { top: 0, left: 0 };
+  }
+
+  return {
+    top: scrollRoot.scrollTop,
+    left: scrollRoot.scrollLeft,
+  };
+}
 
 export function mountParamNodeList(target: HTMLElement, options: ParamNodeListMountOptions): void {
   if (!(target instanceof HTMLElement)) {
@@ -91,53 +106,118 @@ export function mountStepList(target: HTMLElement, options: StepListMountOptions
     disposeStepList = null;
   }
 
-  target.textContent = '';
-  disposeStepList = render(() => {
-    const [steps, setSteps] = createSignal<StepModel[]>(cloneStepArray(options.steps));
-    const [luts, setLuts] = createSignal<LutModel[]>(cloneLutArray(options.luts));
-    const [customParams, setCustomParams] = createSignal<CustomParamModel[]>(cloneCustomParamArray(options.customParams));
+  stepListHost?.destroyHost();
+  let preservedScrollTop = 0;
+  let preservedScrollLeft = 0;
+  let restoreNonce = 0;
+  let hasPendingMutationSnapshot = false;
+  let deferredZeroCaptureTimer: number | null = null;
 
-    syncStepListInternal = (nextSteps, nextLuts, nextCustomParams) => {
-      if (!Array.isArray(nextSteps) || nextSteps.some(step => !isValidStepModel(step))) {
-        stepListStatusReporter('Stepリストの同期Step配列が不正です。', 'error');
-        return;
-      }
-      if (!Array.isArray(nextLuts) || nextLuts.some(lut => !isValidLutModel(lut))) {
-        stepListStatusReporter('Stepリストの同期LUT配列が不正です。', 'error');
-        return;
-      }
-      if (!Array.isArray(nextCustomParams) || nextCustomParams.some(customParam => !isValidCustomParamModel(customParam))) {
-        stepListStatusReporter('Stepリストの同期Custom Param配列が不正です。', 'error');
-        return;
-      }
+  const syncPreservedScroll = (top: number, left: number): void => {
+    preservedScrollTop = top;
+    preservedScrollLeft = left;
+  };
+  const clearDeferredZeroCapture = (): void => {
+    if (deferredZeroCaptureTimer === null) {
+      return;
+    }
+    window.clearTimeout(deferredZeroCaptureTimer);
+    deferredZeroCaptureTimer = null;
+  };
+  const captureBeforeMutation = (): void => {
+    clearDeferredZeroCapture();
+    if (preservedScrollTop === 0 && preservedScrollLeft === 0) {
+      const snapshot = captureStepListScrollSnapshot();
+      syncPreservedScroll(snapshot.top, snapshot.left);
+    }
+    hasPendingMutationSnapshot = true;
+  };
+  const wrapMutation = <Args extends unknown[]>(callback: (...args: Args) => void) => (...args: Args): void => {
+    captureBeforeMutation();
+    callback(...args);
+  };
 
-      setSteps(cloneStepArray(nextSteps));
-      setLuts(cloneLutArray(nextLuts));
-      setCustomParams(cloneCustomParamArray(nextCustomParams));
-    };
+  stepListHost = mountSvelteHost({
+    tagName: 'lut-step-list',
+    target,
+    replayProps: false,
+    props: {
+      preservedScrollTop,
+      preservedScrollLeft,
+      restoreNonce,
+      steps: cloneStepArray(options.steps),
+      luts: cloneLutArray(options.luts),
+      customParams: cloneCustomParamArray(options.customParams),
+      onCaptureScroll: (top: number, left: number) => {
+        if (hasPendingMutationSnapshot) {
+          return;
+        }
+        const shouldDeferZeroCapture = (top === 0 && preservedScrollTop > 0) || (left === 0 && preservedScrollLeft > 0);
+        if (shouldDeferZeroCapture) {
+          clearDeferredZeroCapture();
+          deferredZeroCaptureTimer = window.setTimeout(() => {
+            deferredZeroCaptureTimer = null;
+            if (hasPendingMutationSnapshot) {
+              return;
+            }
+            syncPreservedScroll(top, left);
+          }, 120);
+          return;
+        }
+        clearDeferredZeroCapture();
+        syncPreservedScroll(top, left);
+      },
+      onAddStep: wrapMutation(options.onAddStep),
+      onDuplicateStep: wrapMutation(options.onDuplicateStep),
+      onRemoveStep: wrapMutation(options.onRemoveStep),
+      onStepMuteChange: wrapMutation(options.onStepMuteChange),
+      onStepLabelChange: wrapMutation(options.onStepLabelChange),
+      onStepLutChange: wrapMutation(options.onStepLutChange),
+      onStepBlendModeChange: wrapMutation(options.onStepBlendModeChange),
+      onStepOpChange: wrapMutation(options.onStepOpChange),
+      shouldSuppressClick: options.shouldSuppressClick,
+      onOpenPipelineFilePicker: options.onOpenPipelineFilePicker,
+      onLoadExample: options.onLoadExample,
+      onScheduleConnectionDraw: options.onScheduleConnectionDraw,
+      computeLutUv: options.computeLutUv,
+      onStatus: options.onStatus,
+    },
+  });
+  disposeStepList = () => {
+    stepListHost?.destroyHost();
+    stepListHost = null;
+  };
 
-    return (
-      <StepList
-        steps={steps}
-        luts={luts}
-        customParams={customParams}
-        onAddStep={options.onAddStep}
-        onDuplicateStep={options.onDuplicateStep}
-        onRemoveStep={options.onRemoveStep}
-        onStepMuteChange={options.onStepMuteChange}
-        onStepLabelChange={options.onStepLabelChange}
-        onStepLutChange={options.onStepLutChange}
-        onStepBlendModeChange={options.onStepBlendModeChange}
-        onStepOpChange={options.onStepOpChange}
-        shouldSuppressClick={options.shouldSuppressClick}
-        onOpenPipelineFilePicker={options.onOpenPipelineFilePicker}
-        onLoadExample={options.onLoadExample}
-        onScheduleConnectionDraw={options.onScheduleConnectionDraw}
-        computeLutUv={options.computeLutUv}
-        onStatus={options.onStatus}
-      />
-    );
-  }, target);
+  syncStepListInternal = (nextSteps, nextLuts, nextCustomParams) => {
+    if (!Array.isArray(nextSteps) || nextSteps.some(step => !isValidStepModel(step))) {
+      stepListStatusReporter('Stepリストの同期Step配列が不正です。', 'error');
+      return;
+    }
+    if (!Array.isArray(nextLuts) || nextLuts.some(lut => !isValidLutModel(lut))) {
+      stepListStatusReporter('Stepリストの同期LUT配列が不正です。', 'error');
+      return;
+    }
+    if (!Array.isArray(nextCustomParams) || nextCustomParams.some(customParam => !isValidCustomParamModel(customParam))) {
+      stepListStatusReporter('Stepリストの同期Custom Param配列が不正です。', 'error');
+      return;
+    }
+
+    if (!hasPendingMutationSnapshot) {
+      const snapshot = captureStepListScrollSnapshot();
+      syncPreservedScroll(snapshot.top, snapshot.left);
+    }
+    clearDeferredZeroCapture();
+    restoreNonce += 1;
+    stepListHost?.setHostProps({
+      preservedScrollTop,
+      preservedScrollLeft,
+      restoreNonce,
+      steps: cloneStepArray(nextSteps),
+      luts: cloneLutArray(nextLuts),
+      customParams: cloneCustomParamArray(nextCustomParams),
+    });
+    hasPendingMutationSnapshot = false;
+  };
 }
 
 export function mountLutStripList(target: HTMLElement, options: LutStripListMountOptions): void {

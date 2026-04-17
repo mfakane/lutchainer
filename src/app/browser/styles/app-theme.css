@@ -1,5 +1,7 @@
 :root {
   --color-bg: #111111;
+  --color-bg2: #222222;
+  --color-bg3: #333333;
   --color-panel: #202020;
   --color-panel-2: #272727;
   --color-text: #dde2ea;
@@ -15,4 +17,16 @@
   --color-danger-text: #f8c2b8;
   --color-danger-border: #8b5a54;
   --color-danger-bg: #5c241e;
+  --color-socket-border: #9bb6dd;
+  --color-socket-bg: #1b1b1b;
+  --color-warn: #ef8f7a;
+  --color-checker-a: #808080;
+  --color-checker-b: #666666;
+  --color-socket-target-border: #e0ebff;
+  --color-accent-ring-strong: rgba(122, 182, 255, 0.24);
+  --color-accent-ring: rgba(122, 182, 255, 0.18);
+  --color-step-socket-axis: #adc0dd;
+  --color-crosshair-dash: rgba(255, 255, 255, 0.5);
+  --color-crosshair-shade: rgba(0, 0, 0, 0.5);
+  --size-checker: 12px;
 }
