@@ -15,12 +15,10 @@ import {
 } from '../components/pipeline-lists/index.tsx';
 import {
     bindReorderDragHandlers,
-    getLinearDropPlacement,
     type DndBindingDisposer,
-    type LinearDropCandidate,
-    type LinearDropPlacement,
     type ReorderDragBinding,
 } from '../interactions/dnd.ts';
+import { getReorderPlacementFromElements } from '../interactions/reorder-list.ts';
 import type { PipelinePresetKey } from './pipeline-presets.ts';
 
 type StatusKind = 'success' | 'error' | 'info';
@@ -208,22 +206,13 @@ function setupCustomParamReorderBindings(options: {
     },
     getPlacement: event => {
       const dragState = customParamReorderDragState;
-      const candidates: LinearDropCandidate<string>[] = [];
-
-      for (const item of Array.from(options.paramNodeListEl.querySelectorAll<HTMLElement>('[data-custom-param-item="true"]'))) {
-        const paramId = item.dataset.paramId;
-        if (!paramId || paramId === dragState?.paramId) {
-          continue;
-        }
-
-        const rect = item.getBoundingClientRect();
-        candidates.push({
-          id: paramId,
-          midpoint: rect.top + rect.height * 0.5,
-        });
-      }
-
-      const placement: LinearDropPlacement<string> = getLinearDropPlacement(candidates, event.clientY);
+      const placement = getReorderPlacementFromElements({
+        elements: Array.from(options.paramNodeListEl.querySelectorAll<HTMLElement>('[data-custom-param-item="true"]')),
+        getElementItemId: element => element.dataset.paramId ?? null,
+        excludeId: dragState?.paramId ?? null,
+        axis: 'vertical',
+        pointerCoord: event.clientY,
+      });
       return { targetId: placement.targetId, after: placement.after };
     },
     applyPlacement: (dragState, placement) => ({

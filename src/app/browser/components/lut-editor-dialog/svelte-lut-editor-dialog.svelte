@@ -3,43 +3,43 @@
 <script lang="ts">
   import { createEventDispatcher, onDestroy } from 'svelte';
   import {
-    MAX_RAMPS,
-    MAX_STOPS_PER_RAMP,
-    MIN_RAMPS,
-    type ColorRamp,
-    type ColorRamp2dLutData,
-    type ColorStop,
+      MAX_RAMPS,
+      MAX_STOPS_PER_RAMP,
+      MIN_RAMPS,
+      type ColorRamp,
+      type ColorRamp2dLutData,
+      type ColorStop,
   } from '../../../../features/lut-editor/lut-editor-model.ts';
   import { createLutFromColorRamp2d } from '../../../../features/lut-editor/lut-editor-painter.ts';
   import {
-    addRamp,
-    addStop,
-    moveRamp,
-    moveStop,
-    removeRamp,
-    removeStop,
-    renderColorRamp2dToPixels,
-    reorderRamps,
-    updateRamp,
-    updateStopAlpha,
-    updateStopColor,
+      addRamp,
+      addStop,
+      moveRamp,
+      moveStop,
+      removeRamp,
+      removeStop,
+      renderColorRamp2dToPixels,
+      reorderRamps,
+      updateRamp,
+      updateStopAlpha,
+      updateStopColor,
   } from '../../../../features/lut-editor/lut-editor-runtime.ts';
-  import { parseHexColor, uid, colorToHex } from '../../../../features/pipeline/pipeline-model.ts';
+  import { colorToHex, parseHexColor, uid } from '../../../../features/pipeline/pipeline-model.ts';
   import type { LutModel } from '../../../../features/step/step-model.ts';
   import { getLanguage, subscribeLanguageChange, t } from '../../i18n.ts';
-  import { createPointerSessionManager } from './pointer-session.ts';
-  import { createPointerReorderListController, syncReorderDropIndicators } from './use-reorder-list.ts';
-  import {
-    DRAG_DELETE_THRESHOLD,
-    POSITION_PERCENT_STEP,
-    formatPositionPercent,
-    isValidPositionPercentDraft,
-    serializeRampData,
-  } from './shared.ts';
+  import { createPointerReorderListController, syncReorderDropIndicators } from '../../interactions/reorder-list.ts';
   import Button from '../svelte-button.svelte';
   import PreviewPane from './lut-editor-preview-pane.svelte';
   import RampSection from './lut-editor-ramp-section.svelte';
   import StopSection from './lut-editor-stop-section.svelte';
+  import { createPointerSessionManager } from './pointer-session.ts';
+  import {
+      DRAG_DELETE_THRESHOLD,
+      POSITION_PERCENT_STEP,
+      formatPositionPercent,
+      isValidPositionPercentDraft,
+      serializeRampData,
+  } from './shared.ts';
 
   export let rampData: ColorRamp2dLutData | null = null;
   export let lutId: string | null = null;
@@ -675,6 +675,7 @@
     getItems: () => editorRampData?.ramps ?? [],
     queryCandidateElements: () => Array.from(document.querySelectorAll<HTMLElement>('.ramp-list .ramp-row[data-ramp-id]')),
     getElementItemId: element => element.dataset.rampId ?? null,
+    axis: 'vertical',
     getPointerCoord: event => event.clientY,
     setDraggingIndex: index => {
       draggingRampListIdx = index;

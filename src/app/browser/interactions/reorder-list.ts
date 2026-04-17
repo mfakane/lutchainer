@@ -1,4 +1,6 @@
-import { getLinearDropPlacement, type LinearDropCandidate } from '../../interactions/dnd.ts';
+import { getLinearDropPlacement, type LinearDropCandidate, type LinearDropPlacement } from './dnd.ts';
+
+export type ReorderAxis = 'vertical' | 'horizontal';
 
 export interface ReorderListItem<TId extends string> {
   id: TId;
@@ -9,6 +11,7 @@ export interface CreatePointerReorderListOptions<TId extends string> {
   getItems: () => readonly ReorderListItem<TId>[];
   queryCandidateElements: () => HTMLElement[];
   getElementItemId: (element: HTMLElement) => TId | null;
+  axis: ReorderAxis;
   getPointerCoord: (event: PointerEvent) => number;
   setDraggingIndex: (index: number | null) => void;
   setDropTarget: (targetId: TId | null, after: boolean) => void;
@@ -19,6 +22,38 @@ export interface CreatePointerReorderListOptions<TId extends string> {
 export interface PointerReorderListController<TId extends string> {
   startDrag: (itemIndex: number, event: PointerEvent) => void;
   shouldSuppressClick: () => boolean;
+}
+
+export function collectReorderCandidates<TId extends string>(options: {
+  elements: HTMLElement[];
+  getElementItemId: (element: HTMLElement) => TId | null;
+  excludeId: TId | null;
+  axis: ReorderAxis;
+}): LinearDropCandidate<TId>[] {
+  return options.elements.flatMap(element => {
+    const itemId = options.getElementItemId(element);
+    if (!itemId || itemId === options.excludeId) {
+      return [];
+    }
+
+    const rect = element.getBoundingClientRect();
+    const midpoint = options.axis === 'horizontal'
+      ? rect.left + rect.width * 0.5
+      : rect.top + rect.height * 0.5;
+
+    return [{ id: itemId, midpoint }];
+  });
+}
+
+export function getReorderPlacementFromElements<TId extends string>(options: {
+  elements: HTMLElement[];
+  getElementItemId: (element: HTMLElement) => TId | null;
+  excludeId: TId | null;
+  axis: ReorderAxis;
+  pointerCoord: number;
+}): LinearDropPlacement<TId> {
+  const candidates = collectReorderCandidates(options);
+  return getLinearDropPlacement(candidates, options.pointerCoord);
 }
 
 export function syncReorderDropIndicators<TId extends string>(options: {
@@ -71,16 +106,13 @@ export function createPointerReorderListController<TId extends string>(
         return;
       }
 
-      const dragCandidates: LinearDropCandidate<TId>[] = options.queryCandidateElements().flatMap(element => {
-        const itemId = options.getElementItemId(element);
-        if (!itemId || itemId === draggedItem.id) {
-          return [];
-        }
-        const rect = element.getBoundingClientRect();
-        return [{ id: itemId, midpoint: rect.top + rect.height * 0.5 }];
+      const placement = getReorderPlacementFromElements({
+        elements: options.queryCandidateElements(),
+        getElementItemId: options.getElementItemId,
+        excludeId: draggedItem.id,
+        axis: options.axis,
+        pointerCoord: options.getPointerCoord(moveEvent),
       });
-
-      const placement = getLinearDropPlacement(dragCandidates, options.getPointerCoord(moveEvent));
       lastDropTargetId = placement.targetId;
       lastDropAfter = placement.after;
       options.setDropTarget(placement.targetId, placement.after);

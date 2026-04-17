@@ -1,7 +1,4 @@
-import {
-  getLinearDropPlacement,
-  type LinearDropCandidate,
-} from '../interactions/dnd.ts';
+import { getReorderPlacementFromElements } from '../interactions/reorder-list.ts';
 import * as pipelineView from '../../../features/pipeline/pipeline-view.ts';
 import type {
   LutReorderDragState,
@@ -86,22 +83,13 @@ export function createPipelineDropIndicatorController(
     ensureFiniteNumber(clientY, 'Step ドロップ位置(clientY)');
 
     const stepReorderDragState = options.getStepReorderDragState();
-    const candidates: LinearDropCandidate<string>[] = [];
-
-    for (const item of Array.from(options.stepListEl.querySelectorAll<HTMLElement>('[data-step-item="true"]'))) {
-      const itemStepId = options.parseStepId(item.dataset.stepId);
-      if (itemStepId === null || itemStepId === stepReorderDragState?.stepId) {
-        continue;
-      }
-
-      const rect = item.getBoundingClientRect();
-      candidates.push({
-        id: itemStepId,
-        midpoint: rect.top + rect.height * 0.5,
-      });
-    }
-
-    const placement = getLinearDropPlacement(candidates, clientY);
+    const placement = getReorderPlacementFromElements({
+      elements: Array.from(options.stepListEl.querySelectorAll<HTMLElement>('[data-step-item="true"]')),
+      getElementItemId: element => options.parseStepId(element.dataset.stepId),
+      excludeId: stepReorderDragState?.stepId ?? null,
+      axis: 'vertical',
+      pointerCoord: clientY,
+    });
     return { stepId: placement.targetId, after: placement.after };
   };
 
@@ -117,22 +105,13 @@ export function createPipelineDropIndicatorController(
     ensureFiniteNumber(clientX, 'LUT ドロップ位置(clientX)');
 
     const lutReorderDragState = options.getLutReorderDragState();
-    const candidates: LinearDropCandidate<string>[] = [];
-
-    for (const item of Array.from(options.lutStripListEl.querySelectorAll<HTMLElement>('[data-lut-item="true"]'))) {
-      const lutId = item.dataset.lutId;
-      if (!lutId || lutId === lutReorderDragState?.lutId) {
-        continue;
-      }
-
-      const rect = item.getBoundingClientRect();
-      candidates.push({
-        id: lutId,
-        midpoint: rect.left + rect.width * 0.5,
-      });
-    }
-
-    const placement = getLinearDropPlacement(candidates, clientX);
+    const placement = getReorderPlacementFromElements({
+      elements: Array.from(options.lutStripListEl.querySelectorAll<HTMLElement>('[data-lut-item="true"]')),
+      getElementItemId: element => element.dataset.lutId ?? null,
+      excludeId: lutReorderDragState?.lutId ?? null,
+      axis: 'horizontal',
+      pointerCoord: clientX,
+    });
     return { lutId: placement.targetId, after: placement.after };
   };
 
