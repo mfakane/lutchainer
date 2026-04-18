@@ -122,7 +122,7 @@
       {tr('pipeline.step.duplicate')}
     </Button>
     <Button
-      className="step-action-button step-remove-button"
+      variant="destructive"
       blurOnPress={true}
       handleMouseDown={event => {
         onCaptureScroll();

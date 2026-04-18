@@ -246,7 +246,7 @@
               })}
             />
             <Button
-              variant="destructive"
+              variant="destructive-small"
               className="custom-param-remove"
               handlePress={() => dispatch('remove-custom-param', { paramId: customParam.id })}
             >

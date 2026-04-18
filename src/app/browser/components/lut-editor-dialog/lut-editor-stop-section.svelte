@@ -90,7 +90,7 @@
         {addStopLabel}
       </Button>
       {#if focusedStop && !isStopBoundary(focusedStop.id)}
-        <Button variant="remove" handlePress={() => onRemoveStop(focusedStop.id)}>
+        <Button variant="destructive" handlePress={() => onRemoveStop(focusedStop.id)}>
           {removeStopLabel}
         </Button>
       {/if}

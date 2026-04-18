@@ -101,7 +101,7 @@
         <div class="ramp-swatch" style={rampSwatchStyle(ramp)}></div>
         <span class="ramp-position-text">{rampPositionLabel}: {formatPositionPercent(ramp.position)}%</span>
         {#if canRemoveRamp(ramp.id)}
-          <Button variant="remove-small" handlePress={() => onRemoveRamp(ramp.id)}>
+          <Button variant="destructive-small" handlePress={() => onRemoveRamp(ramp.id)}>
             {removeRampLabel}
           </Button>
         {/if}
