@@ -72,8 +72,6 @@
   let draggingRampDeleteId = $state<string | null>(null);
   let draggingStopDeleteId = $state<string | null>(null);
   let draggingRampListIdx = $state<number | null>(null);
-  let rampListDropTargetId = $state<string | null>(null);
-  let rampListDropAfter = $state(false);
   let rafPendingId = $state<number | null>(null);
   let previewRevision = $state(0);
   let previousSyncKey = $state('');
@@ -115,8 +113,6 @@
     draggingRampDeleteId = null;
     draggingStopDeleteId = null;
     draggingRampListIdx = null;
-    rampListDropTargetId = null;
-    rampListDropAfter = false;
     previewRevision += 1;
   });
 
@@ -710,8 +706,6 @@
       draggingRampListIdx = index;
     },
     setDropTarget: (targetId, after) => {
-      rampListDropTargetId = targetId;
-      rampListDropAfter = after;
       syncReorderDropIndicators({
         elements: Array.from(document.querySelectorAll<HTMLElement>('.ramp-list .ramp-row[data-ramp-id]')),
         getElementItemId: element => element.dataset.rampId ?? null,
@@ -791,7 +785,6 @@
       onStopStripPointerDown={handleStopStripPointerDown}
       onRampKnobPointerDown={startRampDrag}
       onStopKnobPointerDown={startStopDrag}
-      onPreviewStopPointerDown={startPreviewStopDrag}
       onAxisSwapChange={nextAxisSwap => {
         if (editorRampData) {
           setNextRampData({ ...editorRampData, axisSwap: nextAxisSwap });

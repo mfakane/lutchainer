@@ -1,6 +1,5 @@
 import { type ParamRef } from '../../../features/step/step-model.ts';
 import {
-  isValidSocketAxis,
   type LutReorderDragState,
   type SocketAxis,
   type StepReorderDragState,

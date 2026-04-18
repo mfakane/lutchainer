@@ -19,7 +19,7 @@ export interface CreatePointerReorderListOptions<TId extends string> {
   moveThreshold?: number;
 }
 
-export interface PointerReorderListController<TId extends string> {
+export interface PointerReorderListController {
   startDrag: (itemIndex: number, event: PointerEvent) => void;
   shouldSuppressClick: () => boolean;
 }
@@ -74,7 +74,7 @@ export function syncReorderDropIndicators<TId extends string>(options: {
 
 export function createPointerReorderListController<TId extends string>(
   options: CreatePointerReorderListOptions<TId>,
-): PointerReorderListController<TId> {
+): PointerReorderListController {
   let suppressClick = false;
   let lastDropTargetId: TId | null = null;
   let lastDropAfter = false;

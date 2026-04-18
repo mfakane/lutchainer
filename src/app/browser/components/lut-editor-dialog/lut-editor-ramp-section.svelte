@@ -120,7 +120,8 @@
 
   <div class="ramp-list">
     {#each ramps as ramp, index}
-      <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+      <!-- svelte-ignore a11y_click_events_have_key_events -->
+      <!-- svelte-ignore a11y_no_static_element_interactions -->
       <div
         data-ramp-id={ramp.id}
         class={`ramp-row ${selectedRampId === ramp.id ? 'ramp-row-selected' : ''} ${draggingRampListIdx === index ? 'ramp-row-dragging' : ''}`.trim()}

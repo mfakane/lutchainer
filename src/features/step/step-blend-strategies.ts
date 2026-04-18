@@ -37,51 +37,6 @@ function blendWithLutAlpha(current: Color, target: Color, lutAlpha: number): Col
   ];
 }
 
-function emitColorLerpGlsl(targetColorVar: string, lutAlphaVar: string): string[] {
-  return [`color = mix(color, ${targetColorVar}, clamp(${lutAlphaVar}, 0.0, 1.0));`];
-}
-
-function emitColorLerpHlsl(targetColorVar: string, lutAlphaVar: string): string[] {
-  return [`color = lerp(color, ${targetColorVar}, saturate(${lutAlphaVar}));`];
-}
-
-function emitTargetColorWithLerpGlsl(
-  targetColorVar: string,
-  targetExpr: string,
-  lutAlphaVar: string,
-): string[] {
-  return [
-    `vec3 ${targetColorVar} = clamp(${targetExpr}, 0.0, 1.0);`,
-    ...emitColorLerpGlsl(targetColorVar, lutAlphaVar),
-  ];
-}
-
-function emitTargetColorWithLerpHlsl(
-  targetColorVar: string,
-  targetExpr: string,
-  lutAlphaVar: string,
-): string[] {
-  return [
-    `float3 ${targetColorVar} = saturate(${targetExpr});`,
-    ...emitColorLerpHlsl(targetColorVar, lutAlphaVar),
-  ];
-}
-
-function opExpr(op: BlendOp, left: string, right: string): string | undefined {
-  switch (op) {
-    case 'none':
-      return undefined;
-    case 'replace':
-      return right;
-    case 'add':
-      return `(${left} + ${right})`;
-    case 'subtract':
-      return `(${left} - ${right})`;
-    case 'multiply':
-      return `(${left} * ${right})`;
-  }
-}
-
 function applyHsvLayerColor(
   current: Color,
   lutColor: Color,
@@ -96,44 +51,6 @@ function applyHsvLayerColor(
   if (useSaturation) mixed[1] = hsvLut[1];
   if (useValue) mixed[2] = hsvLut[2];
   return hsvToRgb([clamp01(mixed[0]), clamp01(mixed[1]), clamp01(mixed[2])]);
-}
-
-function emitHsvLayerGlsl(
-  lutColorVar: string,
-  hsvCurVar: string,
-  hsvLutVar: string,
-  targetColorVar: string,
-  lutAlphaVar: string,
-  useHue: boolean,
-  useSaturation: boolean,
-  useValue: boolean,
-): string[] {
-  const lines = [`vec4 ${hsvCurVar} = rgb2hsv(color);`, `vec4 ${hsvLutVar} = rgb2hsv(${lutColorVar});`];
-  if (useHue) lines.push(`${hsvCurVar}.x = ${hsvLutVar}.x;`);
-  if (useSaturation) lines.push(`${hsvCurVar}.y = ${hsvLutVar}.y;`);
-  if (useValue) lines.push(`${hsvCurVar}.z = ${hsvLutVar}.z;`);
-  lines.push(`vec3 ${targetColorVar} = clamp(hsv2rgb(${hsvCurVar}), 0.0, 1.0);`);
-  lines.push(...emitColorLerpGlsl(targetColorVar, lutAlphaVar));
-  return lines;
-}
-
-function emitHsvLayerHlsl(
-  lutColorVar: string,
-  hsvCurVar: string,
-  hsvLutVar: string,
-  targetColorVar: string,
-  lutAlphaVar: string,
-  useHue: boolean,
-  useSaturation: boolean,
-  useValue: boolean,
-): string[] {
-  const lines = [`float4 ${hsvCurVar} = RgbToHsv(color);`, `float4 ${hsvLutVar} = RgbToHsv(${lutColorVar});`];
-  if (useHue) lines.push(`${hsvCurVar}.x = ${hsvLutVar}.x;`);
-  if (useSaturation) lines.push(`${hsvCurVar}.y = ${hsvLutVar}.y;`);
-  if (useValue) lines.push(`${hsvCurVar}.z = ${hsvLutVar}.z;`);
-  lines.push(`float3 ${targetColorVar} = saturate(HsvToRgb(${hsvCurVar}));`);
-  lines.push(...emitColorLerpHlsl(targetColorVar, lutAlphaVar));
-  return lines;
 }
 
 export const BLEND_MODE_STRATEGIES: Record<BlendMode, BlendModeStrategy> = {

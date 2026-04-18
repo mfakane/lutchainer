@@ -659,15 +659,12 @@ export const t: AppTranslator = <K extends TranslationKey>(key: K, ...args: Tran
   return formatTemplate(template, args[0]);
 };
 
-export function subscribeLanguageChange(listener: unknown): () => void {
+export function subscribeLanguageChange(listener: LanguageChangeListener): () => void {
   if (typeof listener !== 'function') {
     throw new Error('subscribeLanguageChange: listener must be a function.');
   }
 
-  const typedListener = listener as LanguageChangeListener;
-  languageListeners.add(typedListener);
+  languageListeners.add(listener);
 
-  return () => {
-    languageListeners.delete(typedListener);
-  };
+  return () => languageListeners.delete(listener);
 }

@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { colorToHex } from '../../../../features/pipeline/pipeline-model.ts';
   import type { ColorRamp, ColorRamp2dLutData } from '../../../../features/lut-editor/lut-editor-model.ts';
+  import { colorToHex } from '../../../../features/pipeline/pipeline-model.ts';
 
   let {
     editorRampData = null,
@@ -63,7 +63,8 @@
 
 <div class="preview-col">
   <div class={`canvas-area ${editorRampData?.axisSwap ? 'axis-swapped' : ''}`}>
-    <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+    <!-- svelte-ignore a11y_click_events_have_key_events -->
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
     <div class="canvas-wrap ui-checker-bg" onclick={event => onCanvasClick(event, previewCanvasRef)}>
       <canvas
         bind:this={previewCanvasRef}

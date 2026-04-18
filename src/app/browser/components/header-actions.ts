@@ -1,5 +1,5 @@
 import type { ShaderLanguage } from '../../../features/shader/shader-generator.ts';
-import { t, type Language } from '../i18n.ts';
+import { t } from '../i18n.ts';
 import type { PipelinePresetKey } from '../ui/pipeline-presets.ts';
 
 type StatusKind = 'success' | 'error' | 'info';
@@ -33,10 +33,6 @@ let headerActionStatusReporter: StatusReporter = () => undefined;
 
 function isBoolean(value: unknown): value is boolean {
   return typeof value === 'boolean';
-}
-
-function isLanguage(value: unknown): value is Language {
-  return value === 'ja' || value === 'en';
 }
 
 function ensureMountOptions(value: unknown): asserts value is HeaderActionGroupMountOptions {
