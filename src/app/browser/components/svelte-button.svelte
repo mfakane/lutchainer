@@ -1,36 +1,44 @@
 <script lang="ts">
-    import type { AriaAttributes } from "svelte/elements";
+  import type { AriaAttributes } from "svelte/elements";
 
-  export let type: 'button' | 'submit' | 'reset' = 'button';
-  export let variant:
-    | 'default'
-    | 'secondary'
-    | 'submit'
-    | 'destructive'
-    | 'destructive-small'
-    | 'menu-trigger'
-    | 'menu-item' = 'default';
+  type ButtonVariant =
+    | "default"
+    | "secondary"
+    | "submit"
+    | "destructive"
+    | "small"
+    | "menu-trigger"
+    | "menu-item";
+
+  export let type: "button" | "submit" | "reset" = "button";
+  export let variant: ButtonVariant | ButtonVariant[] = "default";
   export let active = false;
   export let disabled = false;
-  export let className = '';
+  export let className = "";
   export let id: string | undefined = undefined;
   export let element: HTMLButtonElement | null = null;
   export let role: string | undefined = undefined;
-  export let ariaLabel: AriaAttributes['aria-label'] = undefined;
-  export let ariaPressed: AriaAttributes['aria-pressed'] = undefined;
-  export let ariaHaspopup: AriaAttributes['aria-haspopup'] = undefined;
-  export let ariaExpanded: AriaAttributes['aria-expanded'] = undefined;
+  export let ariaLabel: AriaAttributes["aria-label"] = undefined;
+  export let ariaPressed: AriaAttributes["aria-pressed"] = undefined;
+  export let ariaHaspopup: AriaAttributes["aria-haspopup"] = undefined;
+  export let ariaExpanded: AriaAttributes["aria-expanded"] = undefined;
   export let handlePress: (() => void) | undefined = undefined;
-  export let handleKeyPress: ((event: KeyboardEvent) => void) | undefined = undefined;
-  export let handleMouseDown: ((event: MouseEvent) => void) | undefined = undefined;
+  export let handleKeyPress: ((event: KeyboardEvent) => void) | undefined =
+    undefined;
+  export let handleMouseDown: ((event: MouseEvent) => void) | undefined =
+    undefined;
   export let blurOnPress = false;
 
+  const variantClass = (v: ButtonVariant) => v === "default" ? "button" : `button-${v}`;
+
   $: classes = [
-    'button',
-    variant !== 'default' ? `button-${variant}` : '',
-    active ? 'button-active' : '',
+    "button",
+    (Array.isArray(variant) ? variant : [variant]).map(variantClass).join(" "),
+    active ? "button-active" : "",
     className,
-  ].filter(Boolean).join(' ');
+  ]
+    .filter(Boolean)
+    .join(" ");
 </script>
 
 <button
@@ -92,13 +100,12 @@
     font-weight: 700;
   }
 
-  .button-destructive,
-  .button-destructive-small {
+  .button-destructive {
     background: transparent;
     color: var(--color-danger-text);
   }
 
-  .button-destructive-small {
+  .button-small {
     font-size: 10px;
     padding: 3px 7px;
   }
