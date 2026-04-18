@@ -92,7 +92,6 @@
   </div>
   <div data-part="step-actions">
     <Button
-      className="step-action-button"
       active={step.muted}
       ariaPressed={step.muted ? 'true' : 'false'}
       blurOnPress={true}
@@ -108,7 +107,6 @@
       {step.muted ? tr('pipeline.step.unmute') : tr('pipeline.step.mute')}
     </Button>
     <Button
-      className="step-action-button"
       blurOnPress={true}
       handleMouseDown={event => {
         onCaptureScroll();
@@ -201,14 +199,5 @@
     justify-content: flex-end;
     gap: 6px;
     flex-wrap: wrap;
-  }
-
-  :global(button.button.step-action-button) {
-    padding: 4px 8px;
-    font-size: 11px;
-  }
-
-  :global(button.button.step-action-button.step-remove-button) {
-    color: var(--color-danger-text);
   }
 </style>

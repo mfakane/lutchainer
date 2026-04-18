@@ -515,12 +515,6 @@
     color: var(--color-text-strong);
   }
 
-  :global(.custom-param-remove) {
-    justify-self: end;
-    padding: 4px 8px;
-    font-size: 11px;
-  }
-
   :global(.add-param-button) {
     width: 100%;
     justify-content: center;
