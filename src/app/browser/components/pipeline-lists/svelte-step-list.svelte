@@ -11,7 +11,7 @@
 
   type StatusKind = 'success' | 'error' | 'info';
 
-  let {
+  const {
     steps = [],
     luts = [],
     customParams = [],

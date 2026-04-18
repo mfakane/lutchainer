@@ -2,7 +2,7 @@
   import type { ColorRamp, ColorRamp2dLutData } from '../../../../features/lut-editor/lut-editor-model.ts';
   import { colorToHex } from '../../../../features/pipeline/pipeline-model.ts';
 
-  let {
+  const {
     editorRampData = null,
     selectedRampId = null,
     focusedStopId = null,
@@ -81,7 +81,7 @@
       title={rampRailHint}
       onpointerdown={event => onRampStripPointerDown(event, rampKnobStripRef)}
     >
-      {#each editorRampData?.ramps ?? [] as ramp}
+      {#each editorRampData?.ramps ?? [] as ramp (ramp.id)}
         <!-- svelte-ignore a11y_no_static_element_interactions -->
         <div
           class={`ramp-knob ${selectedRampId === ramp.id ? 'selected' : ''} ${isRampBoundary(ramp.id) ? 'boundary' : ''} ${draggingRampDeleteId === ramp.id ? 'pending-delete-ramp' : ''}`.trim()}
@@ -103,7 +103,7 @@
       title={stopRailHint}
       onpointerdown={event => onStopStripPointerDown(event, stopKnobStripRef)}
     >
-      {#each selectedRamp?.stops ?? [] as stop}
+      {#each selectedRamp?.stops ?? [] as stop (stop.id)}
         <!-- svelte-ignore a11y_no_static_element_interactions -->
         <div
           class={`stop-knob ${focusedStopId === stop.id ? 'focused' : ''} ${isStopBoundary(stop.id) ? 'boundary' : ''} ${draggingStopDeleteId === stop.id ? 'pending-delete-stop' : ''}`.trim()}

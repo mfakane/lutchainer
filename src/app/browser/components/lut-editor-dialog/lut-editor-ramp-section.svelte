@@ -4,7 +4,7 @@
   import DropdownMenu from '../svelte-dropdown-menu.svelte';
   import { formatPositionPercent, scheduleSelectAllTextIfFocused } from './shared.ts';
 
-  let {
+  const {
     ramps = [],
     selectedRamp = null,
     selectedRampId = null,
@@ -119,7 +119,7 @@
   </div>
 
   <div class="ramp-list">
-    {#each ramps as ramp, index}
+    {#each ramps as ramp, index (ramp.id)}
       <!-- svelte-ignore a11y_click_events_have_key_events -->
       <!-- svelte-ignore a11y_no_static_element_interactions -->
       <div

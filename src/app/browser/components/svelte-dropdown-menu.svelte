@@ -3,7 +3,7 @@
   import { tick } from 'svelte';
   import Button from './svelte-button.svelte';
 
-  let {
+  const {
     wrapperClass = '',
     menuClass = '',
     triggerAriaLabel = '',

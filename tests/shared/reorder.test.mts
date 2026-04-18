@@ -249,7 +249,7 @@ test('Reorder - sequential moves are composable', () => {
 
 test('Reorder - stressed: alternating before/after moves', () => {
   let items = createItems('a', 'b', 'c', 'd', 'e');
-  let originalCount = items.length;
+  const originalCount = items.length;
 
   // Alternating pattern
   let result = reorderItemsById(items, 'd', 'a', false, getId);

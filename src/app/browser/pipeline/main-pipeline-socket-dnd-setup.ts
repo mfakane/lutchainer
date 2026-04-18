@@ -4,7 +4,7 @@ import {
   type PipelineSocketDndControllerOptions,
 } from './pipeline-socket-dnd-controller.ts';
 
-export interface SetupMainPipelineSocketDndOptions extends Omit<PipelineSocketDndControllerOptions, 'setUserSelect'> {}
+export type SetupMainPipelineSocketDndOptions = Omit<PipelineSocketDndControllerOptions, 'setUserSelect'>;
 
 function ensureFunction(value: unknown, label: string): void {
   if (typeof value !== 'function') {

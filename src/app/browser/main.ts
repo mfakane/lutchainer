@@ -65,9 +65,6 @@ import {
 import {
   createPipelineHeaderActionController,
 } from './pipeline/pipeline-header-actions-controller.ts';
-import {
-  type PipelineSocketDndController,
-} from './pipeline/pipeline-socket-dnd-controller.ts';
 import { createMainStepRenderingController } from './step/main-step-rendering-controller.ts';
 import { createStepPreviewSystem } from './step/step-preview-system.ts';
 import {
@@ -131,7 +128,6 @@ const resolveSocketDropTargetForDrag = createSocketDropTargetResolver({
 
 let pipelineApply: PipelineApplyController;
 let pipelineDropIndicators: PipelineDropIndicatorController;
-let pipelineSocketDnd: PipelineSocketDndController;
 let previewShapeController: PreviewShapeController;
 let stepPreviewRenderer: StepPreviewRenderer | null = null;
 let shaderExportSystem: ReturnType<typeof createShaderExportSystem> | null = null;
@@ -302,7 +298,7 @@ const pipelineCommands = createPipelineCommandController({
   t,
 });
 
-pipelineSocketDnd = setupMainPipelineSocketDnd({
+const pipelineSocketDnd = setupMainPipelineSocketDnd({
   getSocketDragState,
   setSocketDragState,
   clearSocketDragState,

@@ -35,7 +35,7 @@ function createTestController(options?: {
   let currentSnapshot = options?.initialSnapshot ?? createTestSnapshot();
   let captureCount = 0;
   let restoreCount = 0;
-  let historyStateChanges: Array<{ canUndo: boolean; canRedo: boolean }> = [];
+  const historyStateChanges: Array<{ canUndo: boolean; canRedo: boolean }> = [];
 
   const controller = createPipelineHistoryController({
     historyLimit: options?.historyLimit ?? 50,

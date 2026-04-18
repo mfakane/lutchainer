@@ -24,7 +24,7 @@ export interface PipelineStepEntry {
   ops?: PipelineStepOpsEntry;
 }
 
-export interface PipelineCustomParamEntry extends CustomParamModel {}
+export type PipelineCustomParamEntry = CustomParamModel;
 
 export interface PipelineZipLutEntry {
   id: string;

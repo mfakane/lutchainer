@@ -5,7 +5,7 @@
 
   type StatusKind = 'success' | 'error' | 'info';
 
-  let {
+  const {
     step,
     stepIndex,
     tr,

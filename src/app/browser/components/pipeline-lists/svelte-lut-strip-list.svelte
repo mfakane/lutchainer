@@ -9,7 +9,7 @@
 
   type StatusKind = 'success' | 'error' | 'info';
 
-  let {
+  const {
     luts = [],
     steps = [],
     canEditLut = false,
@@ -189,7 +189,7 @@
   }}
 >
   {#if luts.length > 0}
-    {#each luts as lut}
+    {#each luts as lut (lut.id)}
       <article data-lut-item="true" draggable={true} data-lut-id={lut.id}>
         <div data-part="lut-thumb-wrap">
           <img data-part="lut-thumb" src={lut.thumbUrl} alt={`${lut.name} thumbnail`} loading="lazy" />

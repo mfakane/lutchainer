@@ -10,7 +10,7 @@
 
   type StatusKind = 'success' | 'error' | 'info';
 
-  let {
+  const {
     settings = cloneMaterialSettings(pipelineModel.DEFAULT_MATERIAL_SETTINGS),
   }: {
     settings?: pipelineModel.MaterialSettings;
@@ -120,7 +120,7 @@
       {/snippet}
       {#snippet children(closeMenu)}
         <div class="ui-menu-header">{tr('panel.materialPreset')}</div>
-        {#each MATERIAL_PRESETS as preset}
+        {#each MATERIAL_PRESETS as preset (preset.labelKey)}
           <button
             type="button"
             class="ui-menu-item"
@@ -147,7 +147,7 @@
       <input class="color-input" type="color" id="mat-base-color" value={baseColorHex} oninput={handleBaseColorInput} />
     </label>
 
-    {#each pipelineModel.MATERIAL_RANGE_BINDINGS as binding}
+    {#each pipelineModel.MATERIAL_RANGE_BINDINGS as binding (binding.key)}
       <label class="field">
         <span class="label-row">
           <span class="label-text">{binding.label}</span>

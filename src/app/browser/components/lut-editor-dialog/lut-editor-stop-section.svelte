@@ -4,8 +4,9 @@
   import Button from '../svelte-button.svelte';
   import DropdownMenu from '../svelte-dropdown-menu.svelte';
   import { formatPositionPercent, scheduleSelectAllTextIfFocused } from './shared.ts';
+  import { SvelteMap } from 'svelte/reactivity';
 
-  let {
+  const {
     selectedRamp = null,
     focusedStop = null,
     stopPositionDraft = '',
@@ -77,8 +78,8 @@
   function computeStopKnobPlacements(
     ramp: ColorRamp | null,
     bar: HTMLDivElement | null,
-  ): Map<string, 'below' | 'above'> {
-    const placements = new Map<string, 'below' | 'above'>();
+  ): SvelteMap<string, 'below' | 'above'> {
+    const placements = new SvelteMap<string, 'below' | 'above'>();
     if (!ramp) {
       return placements;
     }
@@ -172,7 +173,7 @@
   {#if selectedRamp}
     <div class="stop-preview-area">
       <div bind:this={stopPreviewBarRef} class="stop-preview" style={rampSwatchStyle(selectedRamp)}>
-        {#each selectedRamp.stops as stop}
+        {#each selectedRamp.stops as stop (stop.id)}
           <!-- svelte-ignore a11y_no_static_element_interactions -->
           <div
             class={`preview-stop-knob ${(stopKnobPlacementMap.get(stop.id) ?? 'below') === 'above' ? 'above' : ''} ${focusedStop?.id === stop.id ? 'focused' : ''} ${isStopBoundary(stop.id) ? 'boundary' : ''}`.trim()}

@@ -53,7 +53,7 @@
     },
   };
 
-  let {
+  const {
     buildInput = null,
     fragmentShader = undefined,
   }: {
@@ -135,7 +135,7 @@
       <div class="shader-help-text">{tr('shader.help')}</div>
     </div>
     <div class="shader-tabs" aria-label={tr('shader.tabsAria')}>
-      {#each Object.entries(SHADER_CODE_ENTRIES) as [id, entry]}
+      {#each Object.entries(SHADER_CODE_ENTRIES) as [id, entry] (id)}
         <button
           type="button"
           class={`shader-tab ${activeEntryId === id ? 'shader-tab-active' : 'shader-tab-inactive'}`}

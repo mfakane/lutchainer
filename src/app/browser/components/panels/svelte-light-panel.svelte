@@ -10,7 +10,7 @@
 
   type StatusKind = 'success' | 'error' | 'info';
 
-  let {
+  const {
     settings = cloneLightSettings(pipelineModel.DEFAULT_LIGHT_SETTINGS),
   }: {
     settings?: pipelineModel.LightSettings;
@@ -144,7 +144,7 @@
         {/snippet}
         {#snippet children(closeMenu)}
           <div class="ui-menu-header">{tr('panel.lightPreset')}</div>
-          {#each LIGHT_PRESETS as preset}
+          {#each LIGHT_PRESETS as preset (preset.labelKey)}
             <button
               type="button"
               class="ui-menu-item"
@@ -180,7 +180,7 @@
       <input class="color-input" type="color" id="light-ambient-color" value={ambientColorHex} oninput={event => handleColorInput(event, 'ambient')} />
     </label>
 
-    {#each pipelineModel.LIGHT_RANGE_BINDINGS as binding}
+    {#each pipelineModel.LIGHT_RANGE_BINDINGS as binding (binding.key)}
       <label class="field">
         <span class="label-row">
           <span class="label-text">{binding.label}</span>

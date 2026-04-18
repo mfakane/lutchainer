@@ -3,7 +3,7 @@
 <script lang="ts">
   type StatusKind = 'success' | 'error' | 'info';
 
-  let {
+  const {
     message = '',
     kind = 'info',
   }: {

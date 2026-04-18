@@ -19,7 +19,7 @@
     'Metallic',
   ];
 
-  let {
+  const {
     canUndo = false,
     canRedo = false,
   }: {
@@ -149,7 +149,7 @@
       {tr('header.resetInitial')}
     </button>
     <div class="ui-menu-header">{tr('header.resetExamples')}</div>
-    {#each RESET_PRESETS as preset}
+    {#each RESET_PRESETS as preset (preset)}
       <button
         type="button"
         class="ui-menu-item"

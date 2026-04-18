@@ -37,7 +37,7 @@ export async function createStaticServer(options: StaticServerOptions): Promise<
   const port = options.port ?? 8000;
   const rootDir = path.resolve(options.rootDir);
 
-  const server = http.createServer((req: any, res: any) => {
+  const server = http.createServer((req, res) => {
     const requestPath = normalizeRequestPath(req.url ?? '/');
     const filePath = path.join(rootDir, requestPath);
     if (!filePath.startsWith(rootDir)) {
@@ -46,7 +46,7 @@ export async function createStaticServer(options: StaticServerOptions): Promise<
       return;
     }
 
-    fs.readFile(filePath, (error: any, data: any) => {
+    fs.readFile(filePath, (error, data) => {
       if (error) {
         res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
         res.end('Not found');
@@ -71,7 +71,7 @@ export async function createStaticServer(options: StaticServerOptions): Promise<
 
   return {
     close: async () => await new Promise<void>((resolve, reject) => {
-      server.close((error: any) => {
+      server.close((error) => {
         if (error) {
           reject(error);
           return;

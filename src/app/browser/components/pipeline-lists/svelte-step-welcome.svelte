@@ -9,7 +9,7 @@
   const GITHUB_URL = 'https://github.com/mfakane/lutchainer';
   const BLENDER_ADDON_URL = 'https://github.com/mfakane/lutchainer/releases';
 
-  let {
+  const {
     tr,
     onOpenPipelineFilePicker = () => undefined,
     onLoadExample = () => undefined,
@@ -51,7 +51,7 @@
   <div data-part="welcome-examples">
     <div data-part="welcome-section-title">{tr('pipeline.welcome.examplesTitle')}</div>
     <div data-part="welcome-example-list">
-      {#each WELCOME_EXAMPLES as example}
+      {#each WELCOME_EXAMPLES as example (example)}
         <Button className="welcome-example-button" handlePress={() => void handleLoadExample(example)}>
           {example}
         </Button>

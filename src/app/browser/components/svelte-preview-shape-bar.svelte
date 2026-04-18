@@ -91,7 +91,7 @@
 {#key language}
 <div class="section-label">{tr('preview.shapeLabel')}</div>
 <div class="preview-shape-group">
-  {#each PREVIEW_SHAPES as shape}
+  {#each PREVIEW_SHAPES as shape (shape.key)}
     <Button
       type="button"
       active={activeShape === shape.key}

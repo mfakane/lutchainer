@@ -13,7 +13,7 @@
   type StatusKind = 'success' | 'error' | 'info';
   type PreviewState = { param: ParamRef; left: number; top: number };
 
-  let {
+  const {
     materialSettings = pipelineModel.DEFAULT_MATERIAL_SETTINGS,
     customParams = [],
   }: {
@@ -171,7 +171,7 @@
 
 {#key language}
 <div class="param-root">
-  {#each pipelineModel.PARAM_GROUPS as group}
+  {#each pipelineModel.PARAM_GROUPS as group (group.key)}
     <section data-param-group={group.key} data-param-group-tone={group.tone}>
       <header data-part="param-group-head">
         <div data-part="param-group-title-row">
@@ -184,7 +184,7 @@
       </header>
 
       <div data-part="param-group-nodes">
-        {#each group.params as paramName}
+        {#each group.params as paramName (paramName)}
           {@const param = pipelineModel.getParamDef(paramName)}
           <button
             type="button"
@@ -217,7 +217,7 @@
     </header>
 
     <div data-part="param-group-nodes">
-      {#each customParams as customParam}
+      {#each customParams as customParam (customParam.id)}
         <div
           class="custom-param-item"
           data-param-id={customParam.id}

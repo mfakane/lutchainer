@@ -8,7 +8,7 @@
 
   type StatusKind = 'success' | 'error' | 'info';
 
-  let {
+  const {
     step,
     stepIndex,
     luts = [],
@@ -159,7 +159,7 @@
       <label data-part="lut-select-field">
         <span data-part="lut-select-label">{tr('pipeline.step.lut')}</span>
         <select class="control-select" data-step-id={step.id} onchange={handleLutChange}>
-          {#each luts as lutOpt}
+          {#each luts as lutOpt (lutOpt.id)}
             <option value={lutOpt.id} selected={lutOpt.id === step.lutId}>{lutOpt.name}</option>
           {/each}
         </select>
@@ -182,7 +182,7 @@
       <label data-part="step-mode-field">
         <span data-part="op-label">{tr('pipeline.step.blendMode')}</span>
         <select class="control-select" data-step-id={step.id} value={step.blendMode} onchange={handleBlendModeChange}>
-          {#each BLEND_MODES as mode}
+          {#each BLEND_MODES as mode (mode.key)}
             <option value={mode.key}>{mode.label}</option>
           {/each}
         </select>
@@ -191,7 +191,7 @@
 
     {#if getCustomChannelsForBlendMode(step.blendMode).length > 0}
       <div data-part="op-grid">
-        {#each getCustomChannelsForBlendMode(step.blendMode) as channel}
+        {#each getCustomChannelsForBlendMode(step.blendMode) as channel (channel)}
           <label data-part="op-item">
             <span data-part="op-label">{channel.toUpperCase()}</span>
             <select
@@ -201,7 +201,7 @@
               value={step.ops[channel]}
               onchange={event => handleOpChange(channel, event)}
             >
-              {#each getSelectableBlendOpsForChannel(step.blendMode) as op}
+              {#each getSelectableBlendOpsForChannel(step.blendMode) as op (op)}
                 <option value={op}>{op}</option>
               {/each}
             </select>

@@ -41,7 +41,7 @@
       serializeRampData,
   } from './shared.ts';
 
-  let {
+  const {
     rampData = null,
     lutId = null,
   }: {
