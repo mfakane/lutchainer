@@ -22,6 +22,10 @@ const copyTargets = [
     source: path.resolve('src/app/browser/index.html'),
     destination: path.join(webDir, 'index.html'),
   },
+  {
+    source: path.resolve('src/app/browser/_headers'),
+    destination: path.join(webDir, '_headers'),
+  }
 ];
 
 function resolveBuildCommitId() {
@@ -47,8 +51,14 @@ function copyBuildAssets() {
   for (const target of copyTargets) {
     if (path.basename(target.source) === 'index.html') {
       const indexHtml = fs.readFileSync(target.source, 'utf8')
-        .replace(/src="dist\/bundle\.js"/g, 'src="bundle.js"');
+        .replace(/src="dist\/bundle\.js"/g, `src="bundle.js?v=${buildCommitId}"`)
+        .replace(/href="(styles\/.*?\.css)"/g, `href="$1?v=${buildCommitId}"`);
       fs.writeFileSync(target.destination, indexHtml);
+      continue;
+    } else if (path.basename(target.source) === '_headers') {
+      const headersContent = fs.readFileSync(target.source, 'utf8')
+        .replace(/__BUILD_COMMIT_ID__/g, buildCommitId);
+      fs.writeFileSync(target.destination, headersContent);
       continue;
     }
 

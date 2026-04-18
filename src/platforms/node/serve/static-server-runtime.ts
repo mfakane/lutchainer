@@ -19,7 +19,7 @@ const CONTENT_TYPES: Record<string, string> = {
 };
 
 function normalizeRequestPath(urlPath: string): string {
-  const decoded = decodeURIComponent(urlPath);
+  const decoded = decodeURIComponent(urlPath).replace(/\?.*$/, '');
   const normalized = path.normalize(decoded).replace(/^(\.\.(\/|\\|$))+/, '');
   if (normalized === '.' || normalized === path.sep) {
     return 'index.html';
