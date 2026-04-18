@@ -52,14 +52,14 @@
   aria-pressed={ariaPressed}
   aria-haspopup={ariaHaspopup}
   aria-expanded={ariaExpanded}
-  on:mousedown={event => handleMouseDown?.(event)}
-  on:click={event => {
+  on:mousedown={(event) => handleMouseDown?.(event)}
+  on:click={(event) => {
     if (blurOnPress && event.currentTarget instanceof HTMLButtonElement) {
       event.currentTarget.blur();
     }
     handlePress?.();
   }}
-  on:keydown={event => handleKeyPress?.(event)}
+  on:keydown={(event) => handleKeyPress?.(event)}
 >
   <slot />
 </button>
@@ -145,11 +145,19 @@
   }
 
   .button-menu-item:hover {
-    background: color-mix(in srgb, var(--color-panel-2), var(--color-accent) 16%);
+    background: color-mix(
+      in srgb,
+      var(--color-panel-2),
+      var(--color-accent) 16%
+    );
   }
 
   .button-menu-item:active {
-    background: color-mix(in srgb, var(--color-panel-2), var(--color-accent) 24%);
+    background: color-mix(
+      in srgb,
+      var(--color-panel-2),
+      var(--color-accent) 24%
+    );
   }
 
   .button-menu-item:focus-visible {
