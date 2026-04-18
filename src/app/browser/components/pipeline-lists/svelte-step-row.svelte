@@ -32,6 +32,8 @@
     | undefined = undefined;
   export let onStatus: (message: string, kind?: StatusKind) => void = () => undefined;
 
+  let crosshairUv: { u: number; v: number } | null = null;
+
   function resolveLut(lutId: string): LutModel | null {
     return luts.find(item => item.id === lutId) ?? luts[0] ?? null;
   }
@@ -147,6 +149,14 @@
 
       <div data-part="lut-thumb-wrap">
         <img class="checker-bg" data-part="lut-thumb" src={resolveLut(step.lutId)?.thumbUrl ?? ''} alt="LUT thumbnail" />
+        {#if crosshairUv}
+          <div
+            class="lut-thumb-crosshair"
+            aria-hidden="true"
+            style={`--ch-x: ${crosshairUv.u * 100}%; --ch-y: ${crosshairUv.v * 100}%`}
+          >
+          </div>
+        {/if}
       </div>
     </div>
 
@@ -188,6 +198,9 @@
     {stepIndex}
     ariaLabel={tr('pipeline.step.previewAria', { index: stepIndex + 1 })}
     {computeLutUv}
+    onCrosshairUvChange={uv => {
+      crosshairUv = uv;
+    }}
   />
 </article>
 
@@ -302,6 +315,8 @@
     width: 72px;
     height: 72px;
     flex-shrink: 0;
+    overflow: hidden;
+    border-radius: 8px;
   }
 
   .checker-bg {
@@ -319,6 +334,34 @@
     aspect-ratio: 1 / 1;
     object-fit: cover;
     border: 1px solid var(--color-panel-border-strong);
+  }
+
+  .lut-thumb-crosshair {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+
+  .lut-thumb-crosshair::before {
+    position: absolute;
+    content: '';
+    left: 0;
+    right: 0;
+    top: var(--ch-y);
+    height: 1px;
+    border-top: 1px dashed var(--color-crosshair-dash);
+    background: var(--color-crosshair-shade);
+  }
+
+  .lut-thumb-crosshair::after {
+    position: absolute;
+    content: '';
+    top: 0;
+    bottom: 0;
+    left: var(--ch-x);
+    width: 1px;
+    border-left: 1px dashed var(--color-crosshair-dash);
+    background: var(--color-crosshair-shade);
   }
 
   [data-part="op-grid"] {

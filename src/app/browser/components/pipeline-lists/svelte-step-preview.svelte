@@ -11,8 +11,11 @@
         canvasHeight: number,
       ) => { u: number; v: number } | null)
     | undefined = undefined;
+  export let onCrosshairUvChange: (uv: { u: number; v: number } | null) => void = () => undefined;
 
   let crosshairUv: { u: number; v: number } | null = null;
+
+  $: onCrosshairUvChange(crosshairUv);
 
   function handlePreviewMouseMove(event: MouseEvent): void {
     if (!computeLutUv) {
