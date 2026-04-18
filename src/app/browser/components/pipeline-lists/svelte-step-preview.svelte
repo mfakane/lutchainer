@@ -1,8 +1,15 @@
 <script lang="ts">
-  export let stepId: string;
-  export let stepIndex: number;
-  export let ariaLabel: string;
-  export let computeLutUv:
+  let {
+    stepId,
+    stepIndex,
+    ariaLabel,
+    computeLutUv = undefined,
+    onCrosshairUvChange = () => undefined,
+  }: {
+    stepId: string;
+    stepIndex: number;
+    ariaLabel: string;
+    computeLutUv?:
     | ((
         stepIndex: number,
         pixelX: number,
@@ -10,12 +17,15 @@
         canvasWidth: number,
         canvasHeight: number,
       ) => { u: number; v: number } | null)
-    | undefined = undefined;
-  export let onCrosshairUvChange: (uv: { u: number; v: number } | null) => void = () => undefined;
+    | undefined;
+    onCrosshairUvChange?: (uv: { u: number; v: number } | null) => void;
+  } = $props();
 
-  let crosshairUv: { u: number; v: number } | null = null;
+  let crosshairUv = $state<{ u: number; v: number } | null>(null);
 
-  $: onCrosshairUvChange(crosshairUv);
+  $effect(() => {
+    onCrosshairUvChange(crosshairUv);
+  });
 
   function handlePreviewMouseMove(event: MouseEvent): void {
     if (!computeLutUv) {
@@ -48,8 +58,8 @@
     data-step-id={stepId}
     data-preview="after"
     aria-label={ariaLabel}
-    on:mousemove={handlePreviewMouseMove}
-    on:mouseleave={() => {
+    onmousemove={handlePreviewMouseMove}
+    onmouseleave={() => {
       crosshairUv = null;
     }}
   ></canvas>

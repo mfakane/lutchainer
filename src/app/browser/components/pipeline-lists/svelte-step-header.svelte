@@ -5,15 +5,27 @@
 
   type StatusKind = 'success' | 'error' | 'info';
 
-  export let step: StepModel;
-  export let stepIndex: number;
-  export let tr: (key: TranslationKey, values?: Record<string, string | number>) => string;
-  export let onCaptureScroll: () => void = () => undefined;
-  export let onStepMuteChange: (stepId: string, muted: boolean) => void = () => undefined;
-  export let onDuplicateStep: (stepId: string) => void = () => undefined;
-  export let onRemoveStep: (stepId: string) => void = () => undefined;
-  export let onStepLabelChange: (stepId: string, label: string | null) => void = () => undefined;
-  export let onStatus: (message: string, kind?: StatusKind) => void = () => undefined;
+  let {
+    step,
+    stepIndex,
+    tr,
+    onCaptureScroll = () => undefined,
+    onStepMuteChange = () => undefined,
+    onDuplicateStep = () => undefined,
+    onRemoveStep = () => undefined,
+    onStepLabelChange = () => undefined,
+    onStatus = () => undefined,
+  }: {
+    step: StepModel;
+    stepIndex: number;
+    tr: (key: TranslationKey, values?: Record<string, string | number>) => string;
+    onCaptureScroll?: () => void;
+    onStepMuteChange?: (stepId: string, muted: boolean) => void;
+    onDuplicateStep?: (stepId: string) => void;
+    onRemoveStep?: (stepId: string) => void;
+    onStepLabelChange?: (stepId: string, label: string | null) => void;
+    onStatus?: (message: string, kind?: StatusKind) => void;
+  } = $props();
 
   function resolveStepLabel(): string {
     const customLabel = typeof step.label === 'string' ? step.label.trim() : '';
@@ -69,8 +81,8 @@
       value={resolveStepLabel()}
       maxlength={MAX_STEP_LABEL_LENGTH}
       aria-label={tr('pipeline.step.titleAria', { index: stepIndex + 1 })}
-      on:blur={event => commitStepLabel(event.currentTarget as HTMLInputElement | null)}
-      on:keydown={event => {
+      onblur={event => commitStepLabel(event.currentTarget as HTMLInputElement | null)}
+      onkeydown={event => {
         const input = event.currentTarget as HTMLInputElement | null;
         if (!input) {
           onStatus(tr('pipeline.status.stepLabelInputMissing'), 'error');

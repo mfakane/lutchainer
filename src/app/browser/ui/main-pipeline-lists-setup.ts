@@ -32,6 +32,10 @@ interface CustomParamReorderDragState {
 }
 
 let disposeCustomParamReorderBindings: DndBindingDisposer | null = null;
+// Ignore tiny scroll jitter and layout settling when deciding whether a scroll moved
+// "meaningfully backwards". A full row is much taller than this, so 24px only catches
+// genuine user scrolls rather than transient DOM reflow noise around mutations.
+const STEP_LIST_BACKWARD_SCROLL_THRESHOLD_PX = 24;
 
 export interface MainPipelineListsController {
   addLutFiles: (files: File[]) => Promise<void>;
@@ -490,16 +494,17 @@ export function setupMainPipelineLists(options: SetupMainPipelineListsOptions): 
   stepListEl.addEventListener('schedule-connection-draw', () => {
     if (!hasPendingMutationSnapshot) {
       const snapshot = captureStepListScrollSnapshot();
-      const shouldDeferZeroCapture = (snapshot.top === 0 && preservedScrollTop > 0)
-        || (snapshot.left === 0 && preservedScrollLeft > 0);
-      if (shouldDeferZeroCapture) {
+      const shouldDeferBackwardCapture = (snapshot.top + STEP_LIST_BACKWARD_SCROLL_THRESHOLD_PX < preservedScrollTop)
+        || (snapshot.left + STEP_LIST_BACKWARD_SCROLL_THRESHOLD_PX < preservedScrollLeft);
+      if (shouldDeferBackwardCapture) {
         clearDeferredZeroCapture();
         deferredZeroCaptureTimer = window.setTimeout(() => {
           deferredZeroCaptureTimer = null;
           if (hasPendingMutationSnapshot) {
             return;
           }
-          syncPreservedScroll(snapshot.top, snapshot.left);
+          const settledSnapshot = captureStepListScrollSnapshot();
+          syncPreservedScroll(settledSnapshot.top, settledSnapshot.left);
         }, 120);
       } else {
         clearDeferredZeroCapture();

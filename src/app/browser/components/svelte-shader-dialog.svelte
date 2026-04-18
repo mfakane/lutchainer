@@ -53,16 +53,21 @@
     },
   };
 
-  export let buildInput: ShaderBuildInput | null = null;
-  export let fragmentShader: string | undefined = undefined;
+  let {
+    buildInput = null,
+    fragmentShader = undefined,
+  }: {
+    buildInput?: ShaderBuildInput | null;
+    fragmentShader?: string | undefined;
+  } = $props();
   const dispatch = createEventDispatcher<{
     'request-close': undefined;
     'export-shader': { language: ShaderLanguage };
     'status-message': { message: string; kind?: StatusKind };
   }>();
 
-  let language = getLanguage();
-  let activeEntryId: ShaderCodeEntryId = 'glsl-fragment';
+  let language = $state(getLanguage());
+  let activeEntryId = $state<ShaderCodeEntryId>('glsl-fragment');
 
   const disposeLanguageSync = subscribeLanguageChange(nextLanguage => {
     language = nextLanguage;
@@ -136,7 +141,7 @@
           class={`shader-tab ${activeEntryId === id ? 'shader-tab-active' : 'shader-tab-inactive'}`}
           data-shader-stage={id}
           aria-pressed={activeEntryId === id ? 'true' : 'false'}
-          on:click={() => {
+          onclick={() => {
             activeEntryId = id as ShaderCodeEntryId;
           }}
         >

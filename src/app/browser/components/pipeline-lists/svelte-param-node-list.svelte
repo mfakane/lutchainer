@@ -13,8 +13,13 @@
   type StatusKind = 'success' | 'error' | 'info';
   type PreviewState = { param: ParamRef; left: number; top: number };
 
-  export let materialSettings: MaterialSettings = pipelineModel.DEFAULT_MATERIAL_SETTINGS;
-  export let customParams: CustomParamModel[] = [];
+  let {
+    materialSettings = pipelineModel.DEFAULT_MATERIAL_SETTINGS,
+    customParams = [],
+  }: {
+    materialSettings?: MaterialSettings;
+    customParams?: CustomParamModel[];
+  } = $props();
   const dispatch = createEventDispatcher<{
     'add-custom-param': undefined;
     'rename-custom-param': { paramId: string; label: string };
@@ -24,9 +29,9 @@
     'status-message': { message: string; kind?: StatusKind };
   }>();
 
-  let language = getLanguage();
-  let previewState: PreviewState | null = null;
-  let previewCanvas: HTMLCanvasElement | null = null;
+  let language = $state(getLanguage());
+  let previewState = $state<PreviewState | null>(null);
+  let previewCanvas = $state<HTMLCanvasElement | null>(null);
   const disposeLanguageSync = subscribeLanguageChange((nextLanguage: ReturnType<typeof getLanguage>) => {
     language = nextLanguage;
   });
@@ -162,7 +167,7 @@
   });
 </script>
 
-<svelte:window on:scroll={syncActivePreviewPosition} on:resize={syncActivePreviewPosition} />
+<svelte:window onscroll={syncActivePreviewPosition} onresize={syncActivePreviewPosition} />
 
 {#key language}
 <div class="param-root">
@@ -189,10 +194,10 @@
             title={isPreviewTarget(param.key) ? undefined : tr('pipeline.param.connectTitle', { label: param.label })}
             aria-label={tr('pipeline.param.connectTitle', { label: param.label })}
             aria-describedby={isPreviewTarget(param.key) ? `param-preview-${param.key}` : undefined}
-            on:mouseenter={event => void showPreview(param.key, event.currentTarget)}
-            on:mouseleave={hidePreview}
-            on:focus={event => void showPreview(param.key, event.currentTarget)}
-            on:blur={hidePreview}
+            onmouseenter={event => void showPreview(param.key, event.currentTarget)}
+            onmouseleave={hidePreview}
+            onfocus={event => void showPreview(param.key, event.currentTarget)}
+            onblur={hidePreview}
           >
             <span data-part="socket-dot" aria-hidden="true"></span>
             <span data-part="param-name">{param.label}</span>
@@ -231,7 +236,7 @@
               data-custom-param-handle="true"
               draggable={true}
               aria-label={`Reorder ${customParam.label}`}
-              on:pointerdown={event => event.stopPropagation()}
+              onpointerdown={event => event.stopPropagation()}
             >
               <span data-part="custom-param-grip" aria-hidden="true"></span>
             </button>
@@ -241,7 +246,7 @@
               value={customParam.label}
               maxlength={pipelineModel.MAX_CUSTOM_PARAM_LABEL_LENGTH}
               aria-label={`Custom param label ${customParam.id}`}
-              on:blur={event => dispatch('rename-custom-param', {
+              onblur={event => dispatch('rename-custom-param', {
                 paramId: customParam.id,
                 label: event.currentTarget.value,
               })}
@@ -266,9 +271,9 @@
               max="1"
               step="0.01"
               value={String(customParam.defaultValue)}
-              on:input={event => handleValueSliderInput(customParam.id, event)}
-              on:change={() => dispatch('commit-custom-param-value-change')}
-              on:wheel={event => handleValueSliderWheel(customParam, event)}
+              oninput={event => handleValueSliderInput(customParam.id, event)}
+              onchange={() => dispatch('commit-custom-param-value-change')}
+              onwheel={event => handleValueSliderWheel(customParam, event)}
             />
             <span data-part="custom-param-value">{customParam.defaultValue.toFixed(2)}</span>
           </div>

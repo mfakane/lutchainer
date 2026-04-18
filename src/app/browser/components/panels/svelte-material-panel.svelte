@@ -10,13 +10,17 @@
 
   type StatusKind = 'success' | 'error' | 'info';
 
-  export let settings: pipelineModel.MaterialSettings = cloneMaterialSettings(pipelineModel.DEFAULT_MATERIAL_SETTINGS);
+  let {
+    settings = cloneMaterialSettings(pipelineModel.DEFAULT_MATERIAL_SETTINGS),
+  }: {
+    settings?: pipelineModel.MaterialSettings;
+  } = $props();
   const dispatch = createEventDispatcher<{
     'settings-change': { settings: pipelineModel.MaterialSettings };
     'status-message': { message: string; kind?: StatusKind };
   }>();
 
-  let language = getLanguage();
+  let language = $state(getLanguage());
   const disposeLanguageSync = subscribeLanguageChange(nextLanguage => {
     language = nextLanguage;
   });
@@ -93,7 +97,7 @@
     return true;
   }
 
-  $: baseColorHex = pipelineModel.colorToHex(settings.baseColor);
+  const baseColorHex = $derived(pipelineModel.colorToHex(settings.baseColor));
 </script>
 
 {#key language}
@@ -111,15 +115,17 @@
       menuRole="menu"
       triggerVariant="menu-trigger"
     >
-      <span slot="trigger" class="ui-symbol-kebab">...</span>
-      <svelte:fragment let:closeMenu>
+      {#snippet trigger()}
+        <span class="ui-symbol-kebab">...</span>
+      {/snippet}
+      {#snippet children(closeMenu)}
         <div class="ui-menu-header">{tr('panel.materialPreset')}</div>
         {#each MATERIAL_PRESETS as preset}
           <button
             type="button"
             class="ui-menu-item"
             role="menuitem"
-            on:click={() => {
+            onclick={() => {
               if (applyMaterialPreset(preset)) {
                 closeMenu();
               }
@@ -128,7 +134,7 @@
             {tr(preset.labelKey)}
           </button>
         {/each}
-      </svelte:fragment>
+      {/snippet}
     </DropdownMenu>
   </div>
 
@@ -138,7 +144,7 @@
         <span class="label-text">{tr('panel.baseColor')}</span>
         <span class="value-text" id="mat-base-color-value">{baseColorHex}</span>
       </span>
-      <input class="color-input" type="color" id="mat-base-color" value={baseColorHex} on:input={handleBaseColorInput} />
+      <input class="color-input" type="color" id="mat-base-color" value={baseColorHex} oninput={handleBaseColorInput} />
     </label>
 
     {#each pipelineModel.MATERIAL_RANGE_BINDINGS as binding}
@@ -155,9 +161,9 @@
           max={String(binding.max)}
           step={getMaterialRangeStep(binding.key)}
           value={String(settings[binding.key])}
-          on:input={event => handleRangeInput(event, binding)}
-          on:change={event => handleRangeInput(event, binding)}
-          on:wheel={event => handleMaterialRangeWheel(event, binding)}
+          oninput={event => handleRangeInput(event, binding)}
+          onchange={event => handleRangeInput(event, binding)}
+          onwheel={event => handleMaterialRangeWheel(event, binding)}
         />
       </label>
     {/each}

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import type { Snippet } from "svelte";
   import type { AriaAttributes } from "svelte/elements";
 
   type ButtonVariant =
@@ -10,35 +11,54 @@
     | "menu-trigger"
     | "menu-item";
 
-  export let type: "button" | "submit" | "reset" = "button";
-  export let variant: ButtonVariant | ButtonVariant[] = "default";
-  export let active = false;
-  export let disabled = false;
-  export let className = "";
-  export let id: string | undefined = undefined;
-  export let element: HTMLButtonElement | null = null;
-  export let role: string | undefined = undefined;
-  export let ariaLabel: AriaAttributes["aria-label"] = undefined;
-  export let ariaPressed: AriaAttributes["aria-pressed"] = undefined;
-  export let ariaHaspopup: AriaAttributes["aria-haspopup"] = undefined;
-  export let ariaExpanded: AriaAttributes["aria-expanded"] = undefined;
-  export let handlePress: (() => void) | undefined = undefined;
-  export let handleKeyPress: ((event: KeyboardEvent) => void) | undefined =
-    undefined;
-  export let handleMouseDown: ((event: MouseEvent) => void) | undefined =
-    undefined;
-  export let blurOnPress = false;
+  let {
+    type = "button",
+    variant = "default",
+    active = false,
+    disabled = false,
+    className = "",
+    id = undefined,
+    element = $bindable<HTMLButtonElement | null>(null),
+    role = undefined,
+    ariaLabel = undefined,
+    ariaPressed = undefined,
+    ariaHaspopup = undefined,
+    ariaExpanded = undefined,
+    handlePress = undefined,
+    handleKeyPress = undefined,
+    handleMouseDown = undefined,
+    blurOnPress = false,
+    children,
+  }: {
+    type?: "button" | "submit" | "reset";
+    variant?: ButtonVariant | ButtonVariant[];
+    active?: boolean;
+    disabled?: boolean;
+    className?: string;
+    id?: string | undefined;
+    element?: HTMLButtonElement | null;
+    role?: string | undefined;
+    ariaLabel?: AriaAttributes["aria-label"];
+    ariaPressed?: AriaAttributes["aria-pressed"];
+    ariaHaspopup?: AriaAttributes["aria-haspopup"];
+    ariaExpanded?: AriaAttributes["aria-expanded"];
+    handlePress?: (() => void) | undefined;
+    handleKeyPress?: ((event: KeyboardEvent) => void) | undefined;
+    handleMouseDown?: ((event: MouseEvent) => void) | undefined;
+    blurOnPress?: boolean;
+    children?: Snippet;
+  } = $props();
 
   const variantClass = (v: ButtonVariant) => v === "default" ? "button" : `button-${v}`;
 
-  $: classes = [
+  const classes = $derived([
     "button",
     (Array.isArray(variant) ? variant : [variant]).map(variantClass).join(" "),
     active ? "button-active" : "",
     className,
   ]
     .filter(Boolean)
-    .join(" ");
+    .join(" "));
 </script>
 
 <button
@@ -52,16 +72,16 @@
   aria-pressed={ariaPressed}
   aria-haspopup={ariaHaspopup}
   aria-expanded={ariaExpanded}
-  on:mousedown={(event) => handleMouseDown?.(event)}
-  on:click={(event) => {
+  onmousedown={(event) => handleMouseDown?.(event)}
+  onclick={(event) => {
     if (blurOnPress && event.currentTarget instanceof HTMLButtonElement) {
       event.currentTarget.blur();
     }
     handlePress?.();
   }}
-  on:keydown={(event) => handleKeyPress?.(event)}
+  onkeydown={(event) => handleKeyPress?.(event)}
 >
-  <slot />
+  {@render children?.()}
 </button>
 
 <style>

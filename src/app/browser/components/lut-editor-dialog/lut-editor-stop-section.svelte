@@ -5,42 +5,74 @@
   import DropdownMenu from '../svelte-dropdown-menu.svelte';
   import { formatPositionPercent, scheduleSelectAllTextIfFocused } from './shared.ts';
 
-  export let selectedRamp: ColorRamp | null = null;
-  export let focusedStop: ColorStop | null = null;
-  export let stopPositionDraft = '';
-  export let editingStopPositionId: string | null = null;
-  export let stopEditorLabel = '';
-  export let addStopLabel = '';
-  export let removeStopLabel = '';
-  export let duplicateStopLabel = '';
-  export let invertStopLabel = '';
-  export let stopMenuAriaLabel = '';
-  export let stopColorLabel = '';
-  export let stopPositionLabel = '';
-  export let alphaLabel = '';
-  export let noStopSelectedLabel = '';
-  export let maxStopsReached = false;
-  export let isStopBoundary: (stopId: string) => boolean = () => false;
-  export let onAddStop: () => void = () => undefined;
-  export let onRemoveStop: (stopId: string) => void = () => undefined;
-  export let onDuplicateFocusedStop: () => void = () => undefined;
-  export let onInvertFocusedStop: () => void = () => undefined;
-  export let onSelectStop: (stopId: string) => void = () => undefined;
-  export let onPreviewStopPointerDown:
-    (stopId: string, event: PointerEvent, barEl: HTMLDivElement | null) => void = () => undefined;
-  export let onStopColorInput: (stopId: string, value: string) => void = () => undefined;
-  export let onBeginStopPositionEdit: (stopId: string, currentDraft: string) => void = () => undefined;
-  export let onStopPositionInput: (stopId: string, nextDraft: string) => void = () => undefined;
-  export let onCommitStopPosition: (stopId: string) => void = () => undefined;
-  export let onCancelStopPositionEdit: (currentDraft: string) => void = () => undefined;
-  export let onStopPositionWheel: (stopId: string, currentPosition: number, event: WheelEvent) => void = () => undefined;
-  export let onStopAlphaInput: (stopId: string, value: string) => void = () => undefined;
-  export let onStopAlphaWheel: (stopId: string, currentAlpha: number, event: WheelEvent) => void = () => undefined;
+  let {
+    selectedRamp = null,
+    focusedStop = null,
+    stopPositionDraft = '',
+    editingStopPositionId = null,
+    stopEditorLabel = '',
+    addStopLabel = '',
+    removeStopLabel = '',
+    duplicateStopLabel = '',
+    invertStopLabel = '',
+    stopMenuAriaLabel = '',
+    stopColorLabel = '',
+    stopPositionLabel = '',
+    alphaLabel = '',
+    noStopSelectedLabel = '',
+    maxStopsReached = false,
+    isStopBoundary = () => false,
+    onAddStop = () => undefined,
+    onRemoveStop = () => undefined,
+    onDuplicateFocusedStop = () => undefined,
+    onInvertFocusedStop = () => undefined,
+    onSelectStop = () => undefined,
+    onPreviewStopPointerDown = () => undefined,
+    onStopColorInput = () => undefined,
+    onBeginStopPositionEdit = () => undefined,
+    onStopPositionInput = () => undefined,
+    onCommitStopPosition = () => undefined,
+    onCancelStopPositionEdit = () => undefined,
+    onStopPositionWheel = () => undefined,
+    onStopAlphaInput = () => undefined,
+    onStopAlphaWheel = () => undefined,
+  }: {
+    selectedRamp?: ColorRamp | null;
+    focusedStop?: ColorStop | null;
+    stopPositionDraft?: string;
+    editingStopPositionId?: string | null;
+    stopEditorLabel?: string;
+    addStopLabel?: string;
+    removeStopLabel?: string;
+    duplicateStopLabel?: string;
+    invertStopLabel?: string;
+    stopMenuAriaLabel?: string;
+    stopColorLabel?: string;
+    stopPositionLabel?: string;
+    alphaLabel?: string;
+    noStopSelectedLabel?: string;
+    maxStopsReached?: boolean;
+    isStopBoundary?: (stopId: string) => boolean;
+    onAddStop?: () => void;
+    onRemoveStop?: (stopId: string) => void;
+    onDuplicateFocusedStop?: () => void;
+    onInvertFocusedStop?: () => void;
+    onSelectStop?: (stopId: string) => void;
+    onPreviewStopPointerDown?: (stopId: string, event: PointerEvent, barEl: HTMLDivElement | null) => void;
+    onStopColorInput?: (stopId: string, value: string) => void;
+    onBeginStopPositionEdit?: (stopId: string, currentDraft: string) => void;
+    onStopPositionInput?: (stopId: string, nextDraft: string) => void;
+    onCommitStopPosition?: (stopId: string) => void;
+    onCancelStopPositionEdit?: (currentDraft: string) => void;
+    onStopPositionWheel?: (stopId: string, currentPosition: number, event: WheelEvent) => void;
+    onStopAlphaInput?: (stopId: string, value: string) => void;
+    onStopAlphaWheel?: (stopId: string, currentAlpha: number, event: WheelEvent) => void;
+  } = $props();
 
-  let stopPositionInputRef: HTMLInputElement | null = null;
-  let stopPreviewBarRef: HTMLDivElement | null = null;
+  let stopPositionInputRef = $state<HTMLInputElement | null>(null);
+  let stopPreviewBarRef = $state<HTMLDivElement | null>(null);
 
-  $: stopKnobPlacementMap = computeStopKnobPlacements(selectedRamp, stopPreviewBarRef);
+  const stopKnobPlacementMap = $derived(computeStopKnobPlacements(selectedRamp, stopPreviewBarRef));
 
   function computeStopKnobPlacements(
     ramp: ColorRamp | null,
@@ -104,14 +136,16 @@
           menuRole="menu"
           floating={true}
         >
-          <span slot="trigger" class="ui-symbol-kebab">...</span>
-          <svelte:fragment slot="default" let:closeMenu>
+          {#snippet trigger()}
+            <span class="ui-symbol-kebab">...</span>
+          {/snippet}
+          {#snippet children(closeMenu)}
             <button
               type="button"
               class="ui-menu-item"
               role="menuitem"
               disabled={maxStopsReached}
-              on:click={() => {
+              onclick={() => {
                 closeMenu();
                 onDuplicateFocusedStop();
               }}
@@ -122,14 +156,14 @@
               type="button"
               class="ui-menu-item"
               role="menuitem"
-              on:click={() => {
+              onclick={() => {
                 closeMenu();
                 onInvertFocusedStop();
               }}
             >
               {invertStopLabel}
             </button>
-          </svelte:fragment>
+          {/snippet}
         </DropdownMenu>
       {/if}
     </div>
@@ -143,7 +177,9 @@
           <div
             class={`preview-stop-knob ${(stopKnobPlacementMap.get(stop.id) ?? 'below') === 'above' ? 'above' : ''} ${focusedStop?.id === stop.id ? 'focused' : ''} ${isStopBoundary(stop.id) ? 'boundary' : ''}`.trim()}
             style={`left:${stop.position * 100}%;background-color:${colorToHex(stop.color)}`}
-            on:pointerdown|preventDefault|stopPropagation={event => {
+            onpointerdown={event => {
+              event.preventDefault();
+              event.stopPropagation();
               onSelectStop(stop.id);
               onPreviewStopPointerDown(stop.id, event, stopPreviewBarRef);
             }}
@@ -162,7 +198,7 @@
           type="color"
           class="stop-color-input"
           value={colorToHex(focusedStop.color)}
-          on:input={event => onStopColorInput(focusedStop.id, (event.currentTarget as HTMLInputElement).value)}
+          oninput={event => onStopColorInput(focusedStop.id, (event.currentTarget as HTMLInputElement).value)}
         />
       </div>
 
@@ -175,13 +211,13 @@
           inputmode="decimal"
           class="pos-input"
           value={editingStopPositionId === focusedStop.id ? stopPositionDraft : formatPositionPercent(focusedStop.position)}
-          on:focus={() => {
+          onfocus={() => {
             onBeginStopPositionEdit(focusedStop.id, formatPositionPercent(focusedStop.position));
             scheduleSelectAllTextIfFocused(stopPositionInputRef ?? undefined);
           }}
-          on:input={event => onStopPositionInput(focusedStop.id, (event.currentTarget as HTMLInputElement).value)}
-          on:blur={() => onCommitStopPosition(focusedStop.id)}
-          on:keydown={event => {
+          oninput={event => onStopPositionInput(focusedStop.id, (event.currentTarget as HTMLInputElement).value)}
+          onblur={() => onCommitStopPosition(focusedStop.id)}
+          onkeydown={event => {
             if (event.key === 'Enter') {
               (event.currentTarget as HTMLInputElement).blur();
             } else if (event.key === 'Escape') {
@@ -189,7 +225,7 @@
               (event.currentTarget as HTMLInputElement).blur();
             }
           }}
-          on:wheel={event => onStopPositionWheel(focusedStop.id, focusedStop.position, event)}
+          onwheel={event => onStopPositionWheel(focusedStop.id, focusedStop.position, event)}
         />
         <span class="editor-unit">%</span>
       </div>
@@ -203,8 +239,8 @@
           min="0"
           max="100"
           value={Math.round(focusedStop.alpha * 100)}
-          on:input={event => onStopAlphaInput(focusedStop.id, (event.currentTarget as HTMLInputElement).value)}
-          on:wheel={event => onStopAlphaWheel(focusedStop.id, focusedStop.alpha, event)}
+          oninput={event => onStopAlphaInput(focusedStop.id, (event.currentTarget as HTMLInputElement).value)}
+          onwheel={event => onStopAlphaWheel(focusedStop.id, focusedStop.alpha, event)}
         />
         <span class="editor-unit">{Math.round(focusedStop.alpha * 100)}%</span>
       </div>

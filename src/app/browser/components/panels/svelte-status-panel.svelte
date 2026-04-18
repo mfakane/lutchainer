@@ -3,8 +3,13 @@
 <script lang="ts">
   type StatusKind = 'success' | 'error' | 'info';
 
-  export let message = '';
-  export let kind: StatusKind = 'info';
+  let {
+    message = '',
+    kind = 'info',
+  }: {
+    message?: string;
+    kind?: StatusKind;
+  } = $props();
 </script>
 
 <div class={`status-log status-${kind}`}>{message}</div>

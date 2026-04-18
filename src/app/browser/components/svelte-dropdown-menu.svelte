@@ -1,25 +1,43 @@
 <script lang="ts">
+  import type { Snippet } from 'svelte';
   import { tick } from 'svelte';
   import Button from './svelte-button.svelte';
 
-  export let wrapperClass = '';
-  export let menuClass = '';
-  export let triggerAriaLabel = '';
-  export let menuRole: 'menu' | 'listbox' | 'dialog' | 'tree' | 'grid' = 'menu';
-  export let triggerText = '';
-  export let triggerVariant: 'default' | 'secondary' | 'submit' | 'destructive' | 'menu-trigger' = 'default';
-  export let triggerClassName = '';
-  export let floating = false;
-  export let onOpen: (() => void) | undefined = undefined;
-  export let onClose: (() => void) | undefined = undefined;
+  let {
+    wrapperClass = '',
+    menuClass = '',
+    triggerAriaLabel = '',
+    menuRole = 'menu',
+    triggerText = '',
+    triggerVariant = 'default',
+    triggerClassName = '',
+    floating = false,
+    onOpen = undefined,
+    onClose = undefined,
+    trigger = undefined,
+    children = undefined,
+  }: {
+    wrapperClass?: string;
+    menuClass?: string;
+    triggerAriaLabel?: string;
+    menuRole?: 'menu' | 'listbox' | 'dialog' | 'tree' | 'grid';
+    triggerText?: string;
+    triggerVariant?: 'default' | 'secondary' | 'submit' | 'destructive' | 'menu-trigger';
+    triggerClassName?: string;
+    floating?: boolean;
+    onOpen?: (() => void) | undefined;
+    onClose?: (() => void) | undefined;
+    trigger?: Snippet;
+    children?: Snippet<[() => void]>;
+  } = $props();
 
-  let isOpen = false;
-  let wrapperEl: HTMLDivElement | null = null;
-  let triggerEl: HTMLButtonElement | null = null;
-  let menuEl: HTMLDivElement | null = null;
-  let menuPlacement: 'down' | 'up' = 'down';
-  let floatingStyle = '';
-  let portalHost: HTMLElement | null = null;
+  let isOpen = $state(false);
+  let wrapperEl = $state<HTMLDivElement | null>(null);
+  let triggerEl = $state<HTMLButtonElement | null>(null);
+  let menuEl = $state<HTMLDivElement | null>(null);
+  let menuPlacement = $state<'down' | 'up'>('down');
+  let floatingStyle = $state('');
+  let portalHost = $state<HTMLElement | null>(null);
 
   function portal(node: HTMLElement) {
     if (!floating || typeof document === 'undefined') {
@@ -222,26 +240,30 @@
     }
   }
 
-  $: if (typeof window !== 'undefined') {
-    window.removeEventListener('pointerdown', handleGlobalPointerDown);
-    window.removeEventListener('keydown', handleGlobalKeyDown);
-    if (isOpen) {
-      window.addEventListener('pointerdown', handleGlobalPointerDown);
-      window.addEventListener('keydown', handleGlobalKeyDown);
-      window.addEventListener('resize', updateMenuPlacement);
-      window.addEventListener('scroll', updateMenuPlacement, true);
-      queueMicrotask(() => focusBoundary('first'));
-      queueMicrotask(() => {
-        void updateMenuPlacement();
-      });
-    } else {
+  $effect(() => {
+    if (typeof window === 'undefined' || !isOpen) {
+      return;
+    }
+
+    window.addEventListener('pointerdown', handleGlobalPointerDown);
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    window.addEventListener('resize', updateMenuPlacement);
+    window.addEventListener('scroll', updateMenuPlacement, true);
+    queueMicrotask(() => focusBoundary('first'));
+    queueMicrotask(() => {
+      void updateMenuPlacement();
+    });
+
+    return () => {
+      window.removeEventListener('pointerdown', handleGlobalPointerDown);
+      window.removeEventListener('keydown', handleGlobalKeyDown);
       window.removeEventListener('resize', updateMenuPlacement);
       window.removeEventListener('scroll', updateMenuPlacement, true);
-    }
-  }
+    };
+  });
 </script>
 
-<svelte:window on:beforeunload={closeMenu} />
+<svelte:window onbeforeunload={closeMenu} />
 
 <div class={wrapperClass} bind:this={wrapperEl}>
   <Button
@@ -256,7 +278,11 @@
     handlePress={toggleMenu}
     handleKeyPress={handleTriggerKeyDown}
   >
-    <slot name="trigger">{triggerText || '･･･'}</slot>
+    {#if trigger}
+      {@render trigger()}
+    {:else}
+      {triggerText || '･･･'}
+    {/if}
   </Button>
   {#if isOpen}
     <div
@@ -265,10 +291,12 @@
       class={`${menuClass} ${menuPlacement === 'up' ? 'ui-menu-open-up' : 'ui-menu-open-down'}`.trim()}
       role={menuRole}
       style={floating ? floatingStyle : undefined}
-      on:pointerdown|stopPropagation
-      on:keydown={handleMenuKeyDown}
+      onpointerdown={(event) => {
+        event.stopPropagation();
+      }}
+      onkeydown={handleMenuKeyDown}
     >
-      <slot {closeMenu} />
+      {@render children?.(closeMenu)}
     </div>
   {/if}
 </div>

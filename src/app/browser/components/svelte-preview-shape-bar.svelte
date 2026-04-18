@@ -17,8 +17,13 @@
     { key: 'torus', label: 'Torus' },
   ];
 
-  export let activeShape: PreviewShapeType = 'sphere';
-  export let wireframeEnabled = false;
+  let {
+    activeShape = 'sphere',
+    wireframeEnabled = false,
+  }: {
+    activeShape?: PreviewShapeType;
+    wireframeEnabled?: boolean;
+  } = $props();
   const dispatch = createEventDispatcher<{
     'preview-shape-change': { shape: PreviewShapeType };
     'preview-wireframe-change': { enabled: boolean };
@@ -27,7 +32,7 @@
     'status-message': { message: string; kind?: StatusKind };
   }>();
 
-  let language = getLanguage();
+  let language = $state(getLanguage());
   const disposeLanguageSync = subscribeLanguageChange(nextLanguage => {
     language = nextLanguage;
   });
@@ -37,9 +42,9 @@
     return values ? t(key, values as never) : t(key);
   }
 
-  $: wireframeLabel = tr('preview.menuWireframeToggle', {
+  const wireframeLabel = $derived(tr('preview.menuWireframeToggle', {
     state: wireframeEnabled ? tr('common.on') : tr('common.off'),
-  });
+  }));
 
   function isValidPreviewShapeType(value: unknown): value is PreviewShapeType {
     return value === 'sphere' || value === 'cube' || value === 'torus';
@@ -103,13 +108,15 @@
   menuRole="menu"
   triggerVariant="menu-trigger"
 >
-  <span slot="trigger" class="ui-symbol-kebab">･･･</span>
-  <svelte:fragment let:closeMenu>
+  {#snippet trigger()}
+    <span class="ui-symbol-kebab">...</span>
+  {/snippet}
+  {#snippet children(closeMenu)}
     <button
       type="button"
       class="ui-menu-item"
       role="menuitem"
-      on:click={() => {
+      onclick={() => {
         closeMenu();
         void handleSelectActionMenu('toggle-wireframe');
       }}
@@ -120,7 +127,7 @@
       type="button"
       class="ui-menu-item"
       role="menuitem"
-      on:click={() => {
+      onclick={() => {
         closeMenu();
         void handleSelectActionMenu('export-main-preview');
       }}
@@ -131,14 +138,14 @@
       type="button"
       class="ui-menu-item"
       role="menuitem"
-      on:click={() => {
+      onclick={() => {
         closeMenu();
         void handleSelectActionMenu('export-step-preview');
       }}
     >
       {tr('preview.menuExportStepPng')}
     </button>
-  </svelte:fragment>
+  {/snippet}
 </DropdownMenu>
 {/key}
 

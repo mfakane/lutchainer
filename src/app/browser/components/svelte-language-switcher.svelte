@@ -10,7 +10,7 @@
     'status-message': { message: string; kind?: 'success' | 'error' | 'info' };
   }>();
 
-  let language: Language = getLanguage();
+  let language = $state<Language>(getLanguage());
   const disposeLanguageSync = subscribeLanguageChange(nextLanguage => {
     language = nextLanguage;
   });

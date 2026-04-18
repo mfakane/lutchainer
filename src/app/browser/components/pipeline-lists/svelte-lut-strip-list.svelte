@@ -1,7 +1,7 @@
 <svelte:options customElement={{ tag: 'lut-lut-strip-list', shadow: 'none' }} />
 
 <script lang="ts">
-  import { afterUpdate, createEventDispatcher, onDestroy } from 'svelte';
+  import { createEventDispatcher, onDestroy } from 'svelte';
   import type { LutModel, StepModel } from '../../../../features/step/step-model.ts';
   import { getLanguage, subscribeLanguageChange, t } from '../../i18n.ts';
   import Button from '../svelte-button.svelte';
@@ -9,11 +9,19 @@
 
   type StatusKind = 'success' | 'error' | 'info';
 
-  export let luts: LutModel[] = [];
-  export let steps: StepModel[] = [];
-  export let canEditLut = false;
-  export let canDuplicateLut = false;
-  export let canCreateNewLut = false;
+  let {
+    luts = [],
+    steps = [],
+    canEditLut = false,
+    canDuplicateLut = false,
+    canCreateNewLut = false,
+  }: {
+    luts?: LutModel[];
+    steps?: StepModel[];
+    canEditLut?: boolean;
+    canDuplicateLut?: boolean;
+    canCreateNewLut?: boolean;
+  } = $props();
   const dispatch = createEventDispatcher<{
     'remove-lut': { lutId: string };
     'add-lut-files': { files: File[] };
@@ -23,10 +31,10 @@
     'status-message': { message: string; kind?: StatusKind };
   }>();
 
-  let language = getLanguage();
-  let fileInputRef: HTMLInputElement | null = null;
-  let scrollRoot: HTMLDivElement | null = null;
-  let frozenScrollLeft: number | null = null;
+  let language = $state(getLanguage());
+  let fileInputRef = $state<HTMLInputElement | null>(null);
+  let scrollRoot = $state<HTMLDivElement | null>(null);
+  let frozenScrollLeft = $state<number | null>(null);
   const scrollState = {
     savedLeft: 0,
     restoring: false,
@@ -136,7 +144,10 @@
     disposeLanguageSync();
   });
 
-  afterUpdate(() => {
+  const structureKey = $derived(`${luts.map(lut => lut.id).join(',')}|${steps.map(step => step.id).join(',')}|${Number(canEditLut)}|${Number(canDuplicateLut)}|${Number(canCreateNewLut)}`);
+
+  $effect(() => {
+    structureKey;
     if (!scrollRoot) {
       return;
     }
@@ -170,7 +181,7 @@
 <div
   class="lut-root"
   bind:this={scrollRoot}
-  on:scroll={() => {
+  onscroll={() => {
     if (!scrollRoot || scrollState.restoring || frozenScrollLeft !== null) {
       return;
     }
@@ -198,13 +209,15 @@
                 onOpen={freezeScrollPosition}
                 onClose={handleMenuClose}
               >
-                <span slot="trigger" class="ui-symbol-kebab">...</span>
-                <svelte:fragment let:closeMenu>
+                {#snippet trigger()}
+                  <span class="ui-symbol-kebab">...</span>
+                {/snippet}
+                {#snippet children(closeMenu)}
                   <button
                     type="button"
                     class="ui-menu-item"
                     role="menuitem"
-                    on:click={() => {
+                    onclick={() => {
                       withPreservedScroll(() => {
                         closeMenu();
                         dispatch('edit-lut', { lutId: lut.id });
@@ -217,7 +230,7 @@
                     type="button"
                     class="ui-menu-item"
                     role="menuitem"
-                    on:click={() => {
+                    onclick={() => {
                       withPreservedScroll(() => {
                         closeMenu();
                         dispatch('duplicate-lut', { lutId: lut.id });
@@ -230,7 +243,7 @@
                     type="button"
                     class="ui-menu-item lut-remove-menu-item"
                     role="menuitem"
-                    on:click={() => {
+                    onclick={() => {
                       withPreservedScroll(() => {
                         closeMenu();
                         handleRemoveLut(lut.id);
@@ -239,7 +252,7 @@
                   >
                     {tr('pipeline.step.remove')}
                   </button>
-                </svelte:fragment>
+                {/snippet}
               </DropdownMenu>
             {:else}
               <Button
@@ -262,17 +275,17 @@
           type="button"
           data-part="lut-add-new"
           aria-label={tr('lutEditor.newLutAria')}
-          on:click={() => dispatch('new-lut')}
+          onclick={() => dispatch('new-lut')}
         >
           {tr('lutEditor.newLut')}
         </button>
-        <button type="button" data-part="lut-add-browse" aria-label={tr('pipeline.lut.browseAria')} on:click={openFilePicker}>
+        <button type="button" data-part="lut-add-browse" aria-label={tr('pipeline.lut.browseAria')} onclick={openFilePicker}>
           {tr('pipeline.lut.browse')}
         </button>
       </div>
     {:else}
       <div data-part="lut-add-item" title={tr('pipeline.lut.add')}>
-        <button type="button" data-part="lut-add-browse" class="single-action" on:click={openFilePicker}>
+        <button type="button" data-part="lut-add-browse" class="single-action" onclick={openFilePicker}>
           {tr('pipeline.lut.add')}
         </button>
       </div>
@@ -287,7 +300,7 @@
     accept="image/*"
     multiple
     hidden
-    on:change={event => void handleFileInputChange(event)}
+    onchange={event => void handleFileInputChange(event)}
   />
 </div>
 {/key}

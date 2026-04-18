@@ -10,13 +10,17 @@
 
   type StatusKind = 'success' | 'error' | 'info';
 
-  export let settings: pipelineModel.LightSettings = cloneLightSettings(pipelineModel.DEFAULT_LIGHT_SETTINGS);
+  let {
+    settings = cloneLightSettings(pipelineModel.DEFAULT_LIGHT_SETTINGS),
+  }: {
+    settings?: pipelineModel.LightSettings;
+  } = $props();
   const dispatch = createEventDispatcher<{
     'settings-change': { settings: pipelineModel.LightSettings };
     'status-message': { message: string; kind?: StatusKind };
   }>();
 
-  let language = getLanguage();
+  let language = $state(getLanguage());
   const disposeLanguageSync = subscribeLanguageChange(nextLanguage => {
     language = nextLanguage;
   });
@@ -105,8 +109,8 @@
     return true;
   }
 
-  $: lightColorHex = pipelineModel.colorToHex(settings.lightColor);
-  $: ambientColorHex = pipelineModel.colorToHex(settings.ambientColor);
+  const lightColorHex = $derived(pipelineModel.colorToHex(settings.lightColor));
+  const ambientColorHex = $derived(pipelineModel.colorToHex(settings.ambientColor));
 </script>
 
 {#key language}
@@ -122,7 +126,7 @@
         class="guide-button"
         id="btn-toggle-light-gizmo"
         aria-pressed={settings.showGizmo ? 'true' : 'false'}
-        on:click={toggleGizmo}
+        onclick={toggleGizmo}
       >
         {tr('panel.guide')}
       </button>
@@ -135,15 +139,17 @@
         menuRole="menu"
         triggerVariant="menu-trigger"
       >
-        <span slot="trigger" class="ui-symbol-kebab">...</span>
-        <svelte:fragment let:closeMenu>
+        {#snippet trigger()}
+          <span class="ui-symbol-kebab">...</span>
+        {/snippet}
+        {#snippet children(closeMenu)}
           <div class="ui-menu-header">{tr('panel.lightPreset')}</div>
           {#each LIGHT_PRESETS as preset}
             <button
               type="button"
               class="ui-menu-item"
               role="menuitem"
-              on:click={() => {
+              onclick={() => {
                 if (applyLightPreset(preset)) {
                   closeMenu();
                 }
@@ -152,7 +158,7 @@
               {tr(preset.labelKey)}
             </button>
           {/each}
-        </svelte:fragment>
+        {/snippet}
       </DropdownMenu>
     </div>
   </div>
@@ -163,7 +169,7 @@
         <span class="label-text">{tr('panel.lightColor')}</span>
         <span class="value-text" id="light-color-value">{lightColorHex}</span>
       </span>
-      <input class="color-input" type="color" id="light-color" value={lightColorHex} on:input={event => handleColorInput(event, 'light')} />
+      <input class="color-input" type="color" id="light-color" value={lightColorHex} oninput={event => handleColorInput(event, 'light')} />
     </label>
 
     <label class="field color-field">
@@ -171,7 +177,7 @@
         <span class="label-text">{tr('panel.ambientColor')}</span>
         <span class="value-text" id="light-ambient-color-value">{ambientColorHex}</span>
       </span>
-      <input class="color-input" type="color" id="light-ambient-color" value={ambientColorHex} on:input={event => handleColorInput(event, 'ambient')} />
+      <input class="color-input" type="color" id="light-ambient-color" value={ambientColorHex} oninput={event => handleColorInput(event, 'ambient')} />
     </label>
 
     {#each pipelineModel.LIGHT_RANGE_BINDINGS as binding}
@@ -194,9 +200,9 @@
           max={String(binding.max)}
           step={getLightRangeStep(binding)}
           value={String(settings[binding.key])}
-          on:input={event => handleRangeInput(event, binding)}
-          on:change={event => handleRangeInput(event, binding)}
-          on:wheel={event => handleLightRangeWheel(event, binding)}
+          oninput={event => handleRangeInput(event, binding)}
+          onchange={event => handleRangeInput(event, binding)}
+          onwheel={event => handleLightRangeWheel(event, binding)}
         />
       </label>
     {/each}

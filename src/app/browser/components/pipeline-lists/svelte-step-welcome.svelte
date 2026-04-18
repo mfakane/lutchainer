@@ -9,10 +9,17 @@
   const GITHUB_URL = 'https://github.com/mfakane/lutchainer';
   const BLENDER_ADDON_URL = 'https://github.com/mfakane/lutchainer/releases';
 
-  export let tr: (key: Parameters<typeof t>[0], values?: Record<string, string | number>) => string;
-  export let onOpenPipelineFilePicker: () => void = () => undefined;
-  export let onLoadExample: (example: PipelinePresetKey) => void | Promise<void> = () => undefined;
-  export let onStatus: (message: string, kind?: StatusKind) => void = () => undefined;
+  let {
+    tr,
+    onOpenPipelineFilePicker = () => undefined,
+    onLoadExample = () => undefined,
+    onStatus = () => undefined,
+  }: {
+    tr: (key: Parameters<typeof t>[0], values?: Record<string, string | number>) => string;
+    onOpenPipelineFilePicker?: () => void;
+    onLoadExample?: (example: PipelinePresetKey) => void | Promise<void>;
+    onStatus?: (message: string, kind?: StatusKind) => void;
+  } = $props();
 
   async function handleLoadExample(example: PipelinePresetKey): Promise<void> {
     try {

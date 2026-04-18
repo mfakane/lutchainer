@@ -8,20 +8,37 @@
 
   type StatusKind = 'success' | 'error' | 'info';
 
-  export let step: StepModel;
-  export let stepIndex: number;
-  export let luts: LutModel[] = [];
-  export let customParams: CustomParamModel[] = [];
-  export let tr: (key: TranslationKey, values?: Record<string, string | number>) => string;
-  export let onCaptureScroll: () => void = () => undefined;
-  export let onStepMuteChange: (stepId: string, muted: boolean) => void = () => undefined;
-  export let onDuplicateStep: (stepId: string) => void = () => undefined;
-  export let onRemoveStep: (stepId: string) => void = () => undefined;
-  export let onStepLabelChange: (stepId: string, label: string | null) => void = () => undefined;
-  export let onStepLutChange: (stepId: string, lutId: string) => void = () => undefined;
-  export let onStepBlendModeChange: (stepId: string, blendMode: StepModel['blendMode']) => void = () => undefined;
-  export let onStepOpChange: (stepId: string, channel: ChannelName, op: BlendOp) => void = () => undefined;
-  export let computeLutUv:
+  let {
+    step,
+    stepIndex,
+    luts = [],
+    customParams = [],
+    tr,
+    onCaptureScroll = () => undefined,
+    onStepMuteChange = () => undefined,
+    onDuplicateStep = () => undefined,
+    onRemoveStep = () => undefined,
+    onStepLabelChange = () => undefined,
+    onStepLutChange = () => undefined,
+    onStepBlendModeChange = () => undefined,
+    onStepOpChange = () => undefined,
+    computeLutUv = undefined,
+    onStatus = () => undefined,
+  }: {
+    step: StepModel;
+    stepIndex: number;
+    luts?: LutModel[];
+    customParams?: CustomParamModel[];
+    tr: (key: TranslationKey, values?: Record<string, string | number>) => string;
+    onCaptureScroll?: () => void;
+    onStepMuteChange?: (stepId: string, muted: boolean) => void;
+    onDuplicateStep?: (stepId: string) => void;
+    onRemoveStep?: (stepId: string) => void;
+    onStepLabelChange?: (stepId: string, label: string | null) => void;
+    onStepLutChange?: (stepId: string, lutId: string) => void;
+    onStepBlendModeChange?: (stepId: string, blendMode: StepModel['blendMode']) => void;
+    onStepOpChange?: (stepId: string, channel: ChannelName, op: BlendOp) => void;
+    computeLutUv?:
     | ((
         stepIndex: number,
         pixelX: number,
@@ -29,10 +46,11 @@
         canvasWidth: number,
         canvasHeight: number,
       ) => { u: number; v: number } | null)
-    | undefined = undefined;
-  export let onStatus: (message: string, kind?: StatusKind) => void = () => undefined;
+    | undefined;
+    onStatus?: (message: string, kind?: StatusKind) => void;
+  } = $props();
 
-  let crosshairUv: { u: number; v: number } | null = null;
+  let crosshairUv = $state<{ u: number; v: number } | null>(null);
 
   function resolveLut(lutId: string): LutModel | null {
     return luts.find(item => item.id === lutId) ?? luts[0] ?? null;
@@ -140,7 +158,7 @@
     <div data-part="lut-row">
       <label data-part="lut-select-field">
         <span data-part="lut-select-label">{tr('pipeline.step.lut')}</span>
-        <select class="control-select" data-step-id={step.id} on:change={handleLutChange}>
+        <select class="control-select" data-step-id={step.id} onchange={handleLutChange}>
           {#each luts as lutOpt}
             <option value={lutOpt.id} selected={lutOpt.id === step.lutId}>{lutOpt.name}</option>
           {/each}
@@ -163,7 +181,7 @@
     <div>
       <label data-part="step-mode-field">
         <span data-part="op-label">{tr('pipeline.step.blendMode')}</span>
-        <select class="control-select" data-step-id={step.id} value={step.blendMode} on:change={handleBlendModeChange}>
+        <select class="control-select" data-step-id={step.id} value={step.blendMode} onchange={handleBlendModeChange}>
           {#each BLEND_MODES as mode}
             <option value={mode.key}>{mode.label}</option>
           {/each}
@@ -181,7 +199,7 @@
               data-step-id={step.id}
               data-channel={channel}
               value={step.ops[channel]}
-              on:change={event => handleOpChange(channel, event)}
+              onchange={event => handleOpChange(channel, event)}
             >
               {#each getSelectableBlendOpsForChannel(step.blendMode) as op}
                 <option value={op}>{op}</option>

@@ -19,8 +19,13 @@
     'Metallic',
   ];
 
-  export let canUndo = false;
-  export let canRedo = false;
+  let {
+    canUndo = false,
+    canRedo = false,
+  }: {
+    canUndo?: boolean;
+    canRedo?: boolean;
+  } = $props();
   const dispatch = createEventDispatcher<{
     'undo-pipeline': undefined;
     'redo-pipeline': undefined;
@@ -32,8 +37,8 @@
     'status-message': { message: string; kind?: StatusKind };
   }>();
 
-  let pipelineFileInputRef: HTMLInputElement | null = null;
-  let language = getLanguage();
+  let pipelineFileInputRef = $state<HTMLInputElement | null>(null);
+  let language = $state(getLanguage());
   const disposeLanguageSync = subscribeLanguageChange(nextLanguage => {
     language = nextLanguage;
   });
@@ -131,12 +136,12 @@
   triggerText={tr('header.reset')}
   triggerVariant="secondary"
 >
-  <svelte:fragment let:closeMenu>
+  {#snippet children(closeMenu)}
     <button
       type="button"
       class="ui-menu-item"
       role="menuitem"
-      on:click={() => {
+      onclick={() => {
         closeMenu();
         handleResetPresetSelect('Initial');
       }}
@@ -149,7 +154,7 @@
         type="button"
         class="ui-menu-item"
         role="menuitem"
-        on:click={() => {
+        onclick={() => {
           closeMenu();
           handleResetPresetSelect(preset);
         }}
@@ -157,7 +162,7 @@
         {preset}
       </button>
     {/each}
-  </svelte:fragment>
+  {/snippet}
 </DropdownMenu>
 
 <Button variant="secondary" id="btn-load-pipeline" handlePress={openPipelineFilePicker}>
@@ -173,7 +178,7 @@
   id="pipeline-file-input"
   accept=".lutchain,application/x-lutchain"
   hidden
-  on:change={handlePipelineFileInputChange}
+  onchange={handlePipelineFileInputChange}
 />
 
 <DropdownMenu
@@ -184,12 +189,12 @@
   triggerText={tr('header.export')}
   triggerVariant="submit"
 >
-  <svelte:fragment let:closeMenu>
+  {#snippet children(closeMenu)}
     <button
       type="button"
       class="ui-menu-item"
       role="menuitem"
-      on:click={() => {
+      onclick={() => {
         closeMenu();
         dispatch('open-shader-dialog');
       }}
@@ -201,7 +206,7 @@
       type="button"
       class="ui-menu-item"
       role="menuitem"
-      on:click={() => {
+      onclick={() => {
         closeMenu();
         handleExportShaderZip('glsl');
       }}
@@ -212,7 +217,7 @@
       type="button"
       class="ui-menu-item"
       role="menuitem"
-      on:click={() => {
+      onclick={() => {
         closeMenu();
         handleExportShaderZip('hlsl');
       }}
@@ -223,13 +228,13 @@
       type="button"
       class="ui-menu-item"
       role="menuitem"
-      on:click={() => {
+      onclick={() => {
         closeMenu();
         handleExportShaderZip('mme');
       }}
     >
       {tr('header.exportShaderZip', { language: 'MMEffect' })}
     </button>
-  </svelte:fragment>
+  {/snippet}
 </DropdownMenu>
 {/key}

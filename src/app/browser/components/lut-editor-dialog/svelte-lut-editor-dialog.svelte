@@ -41,8 +41,13 @@
       serializeRampData,
   } from './shared.ts';
 
-  export let rampData: ColorRamp2dLutData | null = null;
-  export let lutId: string | null = null;
+  let {
+    rampData = null,
+    lutId = null,
+  }: {
+    rampData?: ColorRamp2dLutData | null;
+    lutId?: string | null;
+  } = $props();
 
   const dispatch = createEventDispatcher<{
     dirtychange: boolean;
@@ -50,28 +55,30 @@
     'request-close': undefined;
   }>();
 
-  let language = getLanguage();
+  let language = $state(getLanguage());
   const disposeLanguageSync = subscribeLanguageChange(nextLanguage => {
     language = nextLanguage;
   });
 
-  let previewCanvasRef: HTMLCanvasElement | null = null;
-  let editingLutId: string | null = null;
-  let selectedRampId: string | null = null;
-  let focusedStopId: string | null = null;
-  let initialSerializedRampData = '';
-  let editingRampPositionId: string | null = null;
-  let rampPositionDraft = '';
-  let editingStopPositionId: string | null = null;
-  let stopPositionDraft = '';
-  let draggingRampDeleteId: string | null = null;
-  let draggingStopDeleteId: string | null = null;
-  let draggingRampListIdx: number | null = null;
-  let rampListDropTargetId: string | null = null;
-  let rampListDropAfter = false;
-  let rafPendingId: number | null = null;
-  let previousSyncKey = '';
-  let editorRampData: ColorRamp2dLutData | null = null;
+  let previewCanvasRef = $state<HTMLCanvasElement | null>(null);
+  let editingLutId = $state<string | null>(null);
+  let selectedRampId = $state<string | null>(null);
+  let focusedStopId = $state<string | null>(null);
+  let initialSerializedRampData = $state('');
+  let editingRampPositionId = $state<string | null>(null);
+  let rampPositionDraft = $state('');
+  let editingStopPositionId = $state<string | null>(null);
+  let stopPositionDraft = $state('');
+  let draggingRampDeleteId = $state<string | null>(null);
+  let draggingStopDeleteId = $state<string | null>(null);
+  let draggingRampListIdx = $state<number | null>(null);
+  let rampListDropTargetId = $state<string | null>(null);
+  let rampListDropAfter = $state(false);
+  let rafPendingId = $state<number | null>(null);
+  let previewRevision = $state(0);
+  let previousSyncKey = $state('');
+  let lastDispatchedDirty = $state<boolean | null>(null);
+  let editorRampData = $state.raw<ColorRamp2dLutData | null>(null);
 
   const pointerSessionManager = createPointerSessionManager();
 
@@ -89,8 +96,12 @@
     return values ? t(key, values as never) : t(key);
   }
 
-  $: syncKey = `${lutId ?? '__new__'}::${serializeRampData(rampData)}`;
-  $: if (syncKey !== previousSyncKey) {
+  const syncKey = $derived(`${lutId ?? '__new__'}::${serializeRampData(rampData)}`);
+  $effect(() => {
+    if (syncKey === previousSyncKey) {
+      return;
+    }
+
     previousSyncKey = syncKey;
     editingLutId = lutId;
     editorRampData = rampData;
@@ -106,24 +117,34 @@
     draggingRampListIdx = null;
     rampListDropTargetId = null;
     rampListDropAfter = false;
-  }
+    previewRevision += 1;
+  });
 
-  $: selectedRamp = editorRampData && selectedRampId
+  const selectedRamp = $derived(editorRampData && selectedRampId
     ? editorRampData.ramps.find(ramp => ramp.id === selectedRampId) ?? null
-    : null;
+    : null);
 
-  $: focusedStop = selectedRamp && focusedStopId
+  const focusedStop = $derived(selectedRamp && focusedStopId
     ? selectedRamp.stops.find(stop => stop.id === focusedStopId) ?? null
-    : null;
+    : null);
 
-  $: isDirty = serializeRampData(editorRampData) !== initialSerializedRampData;
-  $: dispatch('dirtychange', isDirty);
+  const isDirty = $derived(serializeRampData(editorRampData) !== initialSerializedRampData);
+  $effect(() => {
+    if (isDirty === lastDispatchedDirty) {
+      return;
+    }
+    lastDispatchedDirty = isDirty;
+    dispatch('dirtychange', isDirty);
+  });
 
-  $: if (!selectedRamp) {
-    focusedStopId = null;
-    editingRampPositionId = null;
-    rampPositionDraft = '';
-  } else {
+  $effect(() => {
+    if (!selectedRamp) {
+      focusedStopId = null;
+      editingRampPositionId = null;
+      rampPositionDraft = '';
+      return;
+    }
+
     if (editingRampPositionId !== selectedRamp.id) {
       rampPositionDraft = formatPositionPercent(selectedRamp.position);
     }
@@ -131,21 +152,30 @@
     if (!focusedStopId || !selectedRamp.stops.some(stop => stop.id === focusedStopId)) {
       focusedStopId = selectedRamp.stops[0]?.id ?? null;
     }
-  }
+  });
 
-  $: if (!focusedStop) {
-    editingStopPositionId = null;
-    stopPositionDraft = '';
-  } else if (editingStopPositionId !== focusedStop.id) {
-    stopPositionDraft = formatPositionPercent(focusedStop.position);
-  }
+  $effect(() => {
+    if (!focusedStop) {
+      editingStopPositionId = null;
+      stopPositionDraft = '';
+      return;
+    }
 
-  $: {
-    editorRampData;
-    selectedRampId;
-    focusedStopId;
+    if (editingStopPositionId !== focusedStop.id) {
+      stopPositionDraft = formatPositionPercent(focusedStop.position);
+    }
+  });
+
+  $effect(() => {
+    previewRevision;
+    previewCanvasRef;
+    editorRampData?.axisSwap;
+    editorRampData?.width;
+    editorRampData?.height;
+    selectedRamp?.position;
+    focusedStop?.position;
     scheduleRedraw();
-  }
+  });
 
   function handlePreviewCanvasRef(element: HTMLCanvasElement | null): void {
     previewCanvasRef = element;
@@ -216,6 +246,7 @@
 
   function setNextRampData(nextData: ColorRamp2dLutData): void {
     editorRampData = nextData;
+    previewRevision += 1;
   }
 
   function isRampBoundary(rampId: string): boolean {
@@ -723,7 +754,7 @@
       type="text"
       class="title-input"
       value={editorRampData?.name ?? ''}
-      on:input={event => {
+      oninput={event => {
         const name = (event.currentTarget as HTMLInputElement).value;
         if (editorRampData) {
           setNextRampData({ ...editorRampData, name });

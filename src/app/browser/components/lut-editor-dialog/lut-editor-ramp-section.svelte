@@ -4,36 +4,67 @@
   import DropdownMenu from '../svelte-dropdown-menu.svelte';
   import { formatPositionPercent, scheduleSelectAllTextIfFocused } from './shared.ts';
 
-  export let ramps: readonly ColorRamp[] = [];
-  export let selectedRamp: ColorRamp | null = null;
-  export let selectedRampId: string | null = null;
-  export let editingRampPositionId: string | null = null;
-  export let rampPositionDraft = '';
-  export let draggingRampListIdx: number | null = null;
-  export let rampListLabel = '';
-  export let addRampLabel = '';
-  export let duplicateRampLabel = '';
-  export let invertRampLabel = '';
-  export let removeRampLabel = '';
-  export let rampPositionLabel = '';
-  export let rampMenuAriaLabel = '';
-  export let maxRampsReached = false;
-  export let canRemoveRamp: (rampId: string) => boolean = () => false;
-  export let rampSwatchStyle: (ramp: ColorRamp) => string = () => '';
-  export let onAddRamp: () => void = () => undefined;
-  export let onSelectRamp: (rampId: string) => void = () => undefined;
-  export let onStartRampListDrag: (rampIndex: number, event: PointerEvent) => void = () => undefined;
-  export let onRemoveRamp: (rampId: string) => void = () => undefined;
-  export let onDuplicateSelectedRamp: () => void = () => undefined;
-  export let onInvertSelectedRamp: () => void = () => undefined;
-  export let onBeginRampPositionEdit: (rampId: string, currentDraft: string) => void = () => undefined;
-  export let onRampPositionInput: (rampId: string, nextDraft: string) => void = () => undefined;
-  export let onCommitRampPosition: (rampId: string) => void = () => undefined;
-  export let onCancelRampPositionEdit: (currentDraft: string) => void = () => undefined;
-  export let onRampPositionWheel: (rampId: string, currentPosition: number, event: WheelEvent) => void = () => undefined;
-  export let shouldSuppressRampClick: () => boolean = () => false;
+  let {
+    ramps = [],
+    selectedRamp = null,
+    selectedRampId = null,
+    editingRampPositionId = null,
+    rampPositionDraft = '',
+    draggingRampListIdx = null,
+    rampListLabel = '',
+    addRampLabel = '',
+    duplicateRampLabel = '',
+    invertRampLabel = '',
+    removeRampLabel = '',
+    rampPositionLabel = '',
+    rampMenuAriaLabel = '',
+    maxRampsReached = false,
+    canRemoveRamp = () => false,
+    rampSwatchStyle = () => '',
+    onAddRamp = () => undefined,
+    onSelectRamp = () => undefined,
+    onStartRampListDrag = () => undefined,
+    onRemoveRamp = () => undefined,
+    onDuplicateSelectedRamp = () => undefined,
+    onInvertSelectedRamp = () => undefined,
+    onBeginRampPositionEdit = () => undefined,
+    onRampPositionInput = () => undefined,
+    onCommitRampPosition = () => undefined,
+    onCancelRampPositionEdit = () => undefined,
+    onRampPositionWheel = () => undefined,
+    shouldSuppressRampClick = () => false,
+  }: {
+    ramps?: readonly ColorRamp[];
+    selectedRamp?: ColorRamp | null;
+    selectedRampId?: string | null;
+    editingRampPositionId?: string | null;
+    rampPositionDraft?: string;
+    draggingRampListIdx?: number | null;
+    rampListLabel?: string;
+    addRampLabel?: string;
+    duplicateRampLabel?: string;
+    invertRampLabel?: string;
+    removeRampLabel?: string;
+    rampPositionLabel?: string;
+    rampMenuAriaLabel?: string;
+    maxRampsReached?: boolean;
+    canRemoveRamp?: (rampId: string) => boolean;
+    rampSwatchStyle?: (ramp: ColorRamp) => string;
+    onAddRamp?: () => void;
+    onSelectRamp?: (rampId: string) => void;
+    onStartRampListDrag?: (rampIndex: number, event: PointerEvent) => void;
+    onRemoveRamp?: (rampId: string) => void;
+    onDuplicateSelectedRamp?: () => void;
+    onInvertSelectedRamp?: () => void;
+    onBeginRampPositionEdit?: (rampId: string, currentDraft: string) => void;
+    onRampPositionInput?: (rampId: string, nextDraft: string) => void;
+    onCommitRampPosition?: (rampId: string) => void;
+    onCancelRampPositionEdit?: (currentDraft: string) => void;
+    onRampPositionWheel?: (rampId: string, currentPosition: number, event: WheelEvent) => void;
+    shouldSuppressRampClick?: () => boolean;
+  } = $props();
 
-  let rampPositionInputRef: HTMLInputElement | null = null;
+  let rampPositionInputRef = $state<HTMLInputElement | null>(null);
 
 </script>
 
@@ -54,14 +85,16 @@
           menuRole="menu"
           floating={true}
         >
-          <span slot="trigger" class="ui-symbol-kebab">...</span>
-          <svelte:fragment slot="default" let:closeMenu>
+          {#snippet trigger()}
+            <span class="ui-symbol-kebab">...</span>
+          {/snippet}
+          {#snippet children(closeMenu)}
             <button
               type="button"
               class="ui-menu-item"
               role="menuitem"
               disabled={maxRampsReached}
-              on:click={() => {
+              onclick={() => {
                 closeMenu();
                 onDuplicateSelectedRamp();
               }}
@@ -72,14 +105,14 @@
               type="button"
               class="ui-menu-item"
               role="menuitem"
-              on:click={() => {
+              onclick={() => {
                 closeMenu();
                 onInvertSelectedRamp();
               }}
             >
               {invertRampLabel}
             </button>
-          </svelte:fragment>
+          {/snippet}
         </DropdownMenu>
       {/if}
     </div>
@@ -91,8 +124,8 @@
       <div
         data-ramp-id={ramp.id}
         class={`ramp-row ${selectedRampId === ramp.id ? 'ramp-row-selected' : ''} ${draggingRampListIdx === index ? 'ramp-row-dragging' : ''}`.trim()}
-        on:pointerdown={event => onStartRampListDrag(index, event)}
-        on:click={() => {
+        onpointerdown={event => onStartRampListDrag(index, event)}
+        onclick={() => {
           if (!shouldSuppressRampClick()) {
             onSelectRamp(ramp.id);
           }
@@ -119,13 +152,13 @@
         inputmode="decimal"
         class="pos-input"
         value={editingRampPositionId === selectedRamp.id ? rampPositionDraft : formatPositionPercent(selectedRamp.position)}
-        on:focus={() => {
+        onfocus={() => {
           onBeginRampPositionEdit(selectedRamp.id, formatPositionPercent(selectedRamp.position));
           scheduleSelectAllTextIfFocused(rampPositionInputRef ?? undefined);
         }}
-        on:input={event => onRampPositionInput(selectedRamp.id, (event.currentTarget as HTMLInputElement).value)}
-        on:blur={() => onCommitRampPosition(selectedRamp.id)}
-        on:keydown={event => {
+        oninput={event => onRampPositionInput(selectedRamp.id, (event.currentTarget as HTMLInputElement).value)}
+        onblur={() => onCommitRampPosition(selectedRamp.id)}
+        onkeydown={event => {
           if (event.key === 'Enter') {
             (event.currentTarget as HTMLInputElement).blur();
           } else if (event.key === 'Escape') {
@@ -133,7 +166,7 @@
             (event.currentTarget as HTMLInputElement).blur();
           }
         }}
-        on:wheel={event => onRampPositionWheel(selectedRamp.id, selectedRamp.position, event)}
+        onwheel={event => onRampPositionWheel(selectedRamp.id, selectedRamp.position, event)}
       />
       <span class="editor-unit">%</span>
     </div>

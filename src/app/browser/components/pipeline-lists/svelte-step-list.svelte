@@ -1,7 +1,7 @@
 <svelte:options customElement={{ tag: 'lut-step-list', shadow: 'none' }} />
 
 <script lang="ts">
-  import { afterUpdate, beforeUpdate, createEventDispatcher, onDestroy } from 'svelte';
+  import { createEventDispatcher, onDestroy } from 'svelte';
   import type { BlendOp, ChannelName, CustomParamModel, LutModel, StepModel } from '../../../../features/step/step-model.ts';
   import { getLanguage, subscribeLanguageChange, t } from '../../i18n.ts';
   import type { PipelinePresetKey } from '../../ui/pipeline-presets.ts';
@@ -11,13 +11,22 @@
 
   type StatusKind = 'success' | 'error' | 'info';
 
-  export let steps: StepModel[] = [];
-  export let luts: LutModel[] = [];
-  export let customParams: CustomParamModel[] = [];
-  export let preservedScrollTop = 0;
-  export let preservedScrollLeft = 0;
-  export let restoreNonce = 0;
-  export let computeLutUv:
+  let {
+    steps = [],
+    luts = [],
+    customParams = [],
+    preservedScrollTop = 0,
+    preservedScrollLeft = 0,
+    restoreNonce = 0,
+    computeLutUv = undefined,
+  }: {
+    steps?: StepModel[];
+    luts?: LutModel[];
+    customParams?: CustomParamModel[];
+    preservedScrollTop?: number;
+    preservedScrollLeft?: number;
+    restoreNonce?: number;
+    computeLutUv?:
     | ((
         stepIndex: number,
         pixelX: number,
@@ -25,7 +34,8 @@
         canvasWidth: number,
         canvasHeight: number,
       ) => { u: number; v: number } | null)
-    | undefined = undefined;
+    | undefined;
+  } = $props();
   const dispatch = createEventDispatcher<{
     'add-step': undefined;
     'duplicate-step': { stepId: string };
@@ -41,43 +51,17 @@
     'status-message': { message: string; kind?: StatusKind };
   }>();
 
-  let language = getLanguage();
-  let scrollRoot: HTMLDivElement | null = null;
-  let pendingScrollRestore = false;
-  let previousRestoreNonce = 0;
+  let language = $state(getLanguage());
+  let scrollRoot = $state<HTMLDivElement | null>(null);
   const scrollState = {
     savedTop: 0,
     savedLeft: 0,
     restoring: false,
+    appliedRestoreNonce: -1,
+    appliedRestoreNode: null as HTMLDivElement | null,
   };
   const disposeLanguageSync = subscribeLanguageChange((nextLanguage: ReturnType<typeof getLanguage>) => {
     language = nextLanguage;
-  });
-
-  $: {
-    scrollState.savedTop = preservedScrollTop;
-    scrollState.savedLeft = preservedScrollLeft;
-  }
-
-  $: if (restoreNonce > 0) {
-    pendingScrollRestore = true;
-    scrollState.restoring = true;
-  }
-
-  beforeUpdate(() => {
-    if (restoreNonce === previousRestoreNonce) {
-      return;
-    }
-
-    previousRestoreNonce = restoreNonce;
-    if (!scrollRoot) {
-      return;
-    }
-
-    scrollState.savedTop = scrollRoot.scrollTop;
-    scrollState.savedLeft = scrollRoot.scrollLeft;
-    pendingScrollRestore = true;
-    scrollState.restoring = true;
   });
 
   function tr(key: Parameters<typeof t>[0], values?: Record<string, string | number>): string {
@@ -89,13 +73,16 @@
     dispatch('status-message', { message, kind });
   }
 
-  function captureScrollPosition(): void {
+  function captureScrollPosition(syncParent = false): void {
     if (!scrollRoot) {
       return;
     }
 
     scrollState.savedTop = scrollRoot.scrollTop;
     scrollState.savedLeft = scrollRoot.scrollLeft;
+    if (syncParent && !scrollState.restoring) {
+      dispatch('schedule-connection-draw');
+    }
   }
 
   function restoreScrollPosition(target: HTMLElement): void {
@@ -103,62 +90,12 @@
     target.scrollLeft = scrollState.savedLeft;
   }
 
-  function scheduleScrollRestore(): void {
-    pendingScrollRestore = true;
-    queueMicrotask(() => {
-      if (!scrollRoot) {
-        pendingScrollRestore = false;
-        return;
-      }
-
-      scrollState.restoring = true;
-      restoreScrollPosition(scrollRoot);
-      requestAnimationFrame(() => {
-        if (!scrollRoot) {
-          scrollState.restoring = false;
-          pendingScrollRestore = false;
-          return;
-        }
-
-        restoreScrollPosition(scrollRoot);
-        requestAnimationFrame(() => {
-          if (!scrollRoot) {
-            scrollState.restoring = false;
-            pendingScrollRestore = false;
-            return;
-          }
-
-          restoreScrollPosition(scrollRoot);
-          scrollState.restoring = false;
-          pendingScrollRestore = false;
-        });
-      });
-    });
-  }
-
   function bindScrollRoot(node: HTMLDivElement): { destroy: () => void } {
     scrollRoot = node;
-    restoreScrollPosition(node);
-    const observer = new MutationObserver(() => {
-      if (scrollState.restoring) {
-        return;
-      }
-      if (Math.abs(node.scrollTop - scrollState.savedTop) <= 1 && Math.abs(node.scrollLeft - scrollState.savedLeft) <= 1) {
-        return;
-      }
-      scrollState.restoring = true;
-      restoreScrollPosition(node);
-      queueMicrotask(() => {
-        if (scrollRoot === node) {
-          restoreScrollPosition(node);
-        }
-        scrollState.restoring = false;
-      });
-    });
-    observer.observe(node, { childList: true, subtree: true });
+    scrollState.savedTop = node.scrollTop;
+    scrollState.savedLeft = node.scrollLeft;
     return {
       destroy: () => {
-        observer.disconnect();
         if (scrollRoot === node) {
           scrollRoot = null;
         }
@@ -169,7 +106,6 @@
   function handleAddStepClick(): void {
     captureScrollPosition();
     dispatch('add-step');
-    scheduleScrollRestore();
   }
 
   function handleStepMuteChange(stepId: string, muted: boolean): void {
@@ -200,44 +136,43 @@
     dispatch('step-op-change', { stepId, channel, op });
   }
 
-  afterUpdate(() => {
-    if (!scrollRoot) {
+  $effect(() => {
+    const node = scrollRoot;
+    if (!node) {
+      return;
+    }
+    const nextRestoreNonce = restoreNonce;
+    if (nextRestoreNonce === scrollState.appliedRestoreNonce && node === scrollState.appliedRestoreNode) {
       return;
     }
 
-    const deltaTop = Math.abs(scrollRoot.scrollTop - scrollState.savedTop);
-    const deltaLeft = Math.abs(scrollRoot.scrollLeft - scrollState.savedLeft);
-    if (deltaTop <= 1 && deltaLeft <= 1) {
-      if (pendingScrollRestore) {
-        pendingScrollRestore = false;
-      }
-      scrollState.restoring = false;
-      return;
+    if (!(preservedScrollTop === 0 && scrollState.savedTop > 0)) {
+      scrollState.savedTop = preservedScrollTop;
     }
-
+    if (!(preservedScrollLeft === 0 && scrollState.savedLeft > 0)) {
+      scrollState.savedLeft = preservedScrollLeft;
+    }
+    scrollState.appliedRestoreNonce = nextRestoreNonce;
+    scrollState.appliedRestoreNode = node;
     scrollState.restoring = true;
-    scrollRoot.scrollTop = scrollState.savedTop;
-    scrollRoot.scrollLeft = scrollState.savedLeft;
+
+    restoreScrollPosition(node);
     requestAnimationFrame(() => {
-        if (!scrollRoot) {
+        if (scrollRoot !== node) {
           scrollState.restoring = false;
-          pendingScrollRestore = false;
           return;
         }
 
-        scrollRoot.scrollTop = scrollState.savedTop;
-        scrollRoot.scrollLeft = scrollState.savedLeft;
+        restoreScrollPosition(node);
         requestAnimationFrame(() => {
-          if (!scrollRoot) {
+          if (scrollRoot !== node) {
             scrollState.restoring = false;
-            pendingScrollRestore = false;
             return;
           }
 
-          scrollRoot.scrollTop = scrollState.savedTop;
-          scrollRoot.scrollLeft = scrollState.savedLeft;
+          restoreScrollPosition(node);
           scrollState.restoring = false;
-          pendingScrollRestore = false;
+          dispatch('schedule-connection-draw');
         });
       });
   });
@@ -251,8 +186,8 @@
 <div
   class="step-root"
   use:bindScrollRoot
-  on:scroll={() => {
-    if (scrollState.restoring || pendingScrollRestore) {
+  onscroll={() => {
+    if (scrollState.restoring) {
       return;
     }
     captureScrollPosition();
@@ -267,7 +202,7 @@
         {luts}
         {customParams}
         {tr}
-        onCaptureScroll={captureScrollPosition}
+        onCaptureScroll={() => captureScrollPosition(true)}
         onStepMuteChange={handleStepMuteChange}
         onDuplicateStep={handleDuplicateStep}
         onRemoveStep={handleRemoveStep}
@@ -295,8 +230,7 @@
     className="inline-add-button"
     blurOnPress={true}
     handleMouseDown={event => {
-      pendingScrollRestore = true;
-      captureScrollPosition();
+      captureScrollPosition(true);
       event.preventDefault();
     }}
     handlePress={handleAddStepClick}
