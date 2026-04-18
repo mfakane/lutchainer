@@ -1,24 +1,25 @@
 <script lang="ts">
+    import type { AriaAttributes } from "svelte/elements";
+
   export let type: 'button' | 'submit' | 'reset' = 'button';
   export let variant:
     | 'default'
     | 'secondary'
     | 'submit'
     | 'destructive'
+    | 'destructive-small'
     | 'menu-trigger'
-    | 'menu-item'
-    | 'remove'
-    | 'remove-small' = 'default';
+    | 'menu-item' = 'default';
   export let active = false;
   export let disabled = false;
   export let className = '';
   export let id: string | undefined = undefined;
   export let element: HTMLButtonElement | null = null;
   export let role: string | undefined = undefined;
-  export let ariaLabel: string | undefined = undefined;
-  export let ariaPressed: 'true' | 'false' | undefined = undefined;
-  export let ariaHaspopup: string | undefined = undefined;
-  export let ariaExpanded: 'true' | 'false' | undefined = undefined;
+  export let ariaLabel: AriaAttributes['aria-label'] = undefined;
+  export let ariaPressed: AriaAttributes['aria-pressed'] = undefined;
+  export let ariaHaspopup: AriaAttributes['aria-haspopup'] = undefined;
+  export let ariaExpanded: AriaAttributes['aria-expanded'] = undefined;
   export let handlePress: (() => void) | undefined = undefined;
   export let handleKeyPress: ((event: KeyboardEvent) => void) | undefined = undefined;
   export let handleMouseDown: ((event: MouseEvent) => void) | undefined = undefined;
@@ -91,19 +92,13 @@
     font-weight: 700;
   }
 
-  .button-destructive {
-    border-color: var(--color-danger-border);
-    background: color-mix(in srgb, var(--color-panel), var(--color-danger-bg) 28%);
-    color: var(--color-danger-text);
-  }
-
-  .button-remove,
-  .button-remove-small {
+  .button-destructive,
+  .button-destructive-small {
     background: transparent;
     color: var(--color-danger-text);
   }
 
-  .button-remove-small {
+  .button-destructive-small {
     font-size: 10px;
     padding: 3px 7px;
   }
