@@ -102,6 +102,7 @@
   });
 </script>
 
+{#key language}
 <Button
   variant="secondary"
   id="btn-undo-pipeline"
@@ -231,3 +232,4 @@
     </button>
   </svelte:fragment>
 </DropdownMenu>
+{/key}

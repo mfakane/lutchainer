@@ -131,6 +131,11 @@ const TRANSLATIONS: Record<Language, TranslationSchema> = {
 
     'panel.materialHelp': 'カラーとライティング係数',
     'panel.lightHelp': 'ライト方向と色、環境光の設定',
+    'panel.materialTitle': 'Material',
+    'panel.lightTitle': 'Light',
+    'panel.baseColor': 'Base Color',
+    'panel.lightColor': 'Light Color',
+    'panel.ambientColor': 'Ambient Color',
     'panel.materialPreset': 'Material Preset',
     'panel.lightPreset': 'Light Preset',
     'panel.presetsMenu': 'Presets',
@@ -179,6 +184,7 @@ const TRANSLATIONS: Record<Language, TranslationSchema> = {
     'preview.status.invalidWireframeSyncArg': 'Wireframe同期の引数が不正です: {value}',
 
     'shader.help': '現在のstep構成から生成されたシェーダコード',
+    'shader.title': 'Generated Shader',
     'shader.tabsAria': 'Shader source selector',
     'shader.copy': 'コピー',
     'shader.download': 'ダウンロード',
@@ -367,6 +373,11 @@ const TRANSLATIONS: Record<Language, TranslationSchema> = {
 
     'panel.materialHelp': 'Color and lighting factors',
     'panel.lightHelp': 'Adjust light direction, light color, and ambient color',
+    'panel.materialTitle': 'Material',
+    'panel.lightTitle': 'Light',
+    'panel.baseColor': 'Base Color',
+    'panel.lightColor': 'Light Color',
+    'panel.ambientColor': 'Ambient Color',
     'panel.materialPreset': 'Material Preset',
     'panel.lightPreset': 'Light Preset',
     'panel.presetsMenu': 'Presets',
@@ -415,6 +426,7 @@ const TRANSLATIONS: Record<Language, TranslationSchema> = {
     'preview.status.invalidWireframeSyncArg': 'Invalid wireframe sync argument: {value}',
 
     'shader.help': 'Shader code generated from the current step configuration',
+    'shader.title': 'Generated Shader',
     'shader.tabsAria': 'Shader source selector',
     'shader.copy': 'Copy',
     'shader.download': 'Download',

@@ -164,6 +164,7 @@
 
 <svelte:window on:scroll={syncActivePreviewPosition} on:resize={syncActivePreviewPosition} />
 
+{#key language}
 <div class="param-root">
   {#each pipelineModel.PARAM_GROUPS as group}
     <section data-param-group={group.key} data-param-group-tone={group.tone}>
@@ -299,6 +300,7 @@
     </span>
   {/if}
 </div>
+{/key}
 
 <style>
   .param-root {

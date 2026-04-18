@@ -96,10 +96,11 @@
   $: baseColorHex = pipelineModel.colorToHex(settings.baseColor);
 </script>
 
+{#key language}
 <div class="panel-root">
   <div class="panel-head">
     <div>
-      <div class="section-label">Material</div>
+      <div class="section-label">{tr('panel.materialTitle')}</div>
       <div class="help-text">{tr('panel.materialHelp')}</div>
     </div>
     <DropdownMenu
@@ -134,7 +135,7 @@
   <div class="grid">
     <label class="field color-field">
       <span class="label-row">
-        <span class="label-text">Base Color</span>
+        <span class="label-text">{tr('panel.baseColor')}</span>
         <span class="value-text" id="mat-base-color-value">{baseColorHex}</span>
       </span>
       <input class="color-input" type="color" id="mat-base-color" value={baseColorHex} on:input={handleBaseColorInput} />
@@ -162,6 +163,7 @@
     {/each}
   </div>
 </div>
+{/key}
 
 <style>
   .panel-root {

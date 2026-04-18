@@ -166,6 +166,7 @@
   });
 </script>
 
+{#key language}
 <div
   class="lut-root"
   bind:this={scrollRoot}
@@ -289,6 +290,7 @@
     on:change={event => void handleFileInputChange(event)}
   />
 </div>
+{/key}
 
 <style>
   .lut-root {

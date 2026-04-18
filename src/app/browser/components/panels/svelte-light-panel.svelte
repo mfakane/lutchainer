@@ -109,10 +109,11 @@
   $: ambientColorHex = pipelineModel.colorToHex(settings.ambientColor);
 </script>
 
+{#key language}
 <div class="panel-root">
   <div class="panel-head">
     <div>
-      <div class="section-label">Light</div>
+      <div class="section-label">{tr('panel.lightTitle')}</div>
       <div class="help-text">{tr('panel.lightHelp')}</div>
     </div>
     <div class="light-actions">
@@ -159,7 +160,7 @@
   <div class="grid">
     <label class="field color-field">
       <span class="label-row">
-        <span class="label-text">Light Color</span>
+        <span class="label-text">{tr('panel.lightColor')}</span>
         <span class="value-text" id="light-color-value">{lightColorHex}</span>
       </span>
       <input class="color-input" type="color" id="light-color" value={lightColorHex} on:input={event => handleColorInput(event, 'light')} />
@@ -167,7 +168,7 @@
 
     <label class="field color-field">
       <span class="label-row">
-        <span class="label-text">Ambient Color</span>
+        <span class="label-text">{tr('panel.ambientColor')}</span>
         <span class="value-text" id="light-ambient-color-value">{ambientColorHex}</span>
       </span>
       <input class="color-input" type="color" id="light-ambient-color" value={ambientColorHex} on:input={event => handleColorInput(event, 'ambient')} />
@@ -201,6 +202,7 @@
     {/each}
   </div>
 </div>
+{/key}
 
 <style>
   .panel-root {

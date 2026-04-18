@@ -83,6 +83,7 @@
   });
 </script>
 
+{#key language}
 <div class="section-label">{tr('preview.shapeLabel')}</div>
 <div class="preview-shape-group">
   {#each PREVIEW_SHAPES as shape}
@@ -139,6 +140,7 @@
     </button>
   </svelte:fragment>
 </DropdownMenu>
+{/key}
 
 <style>
   .preview-shape-group {

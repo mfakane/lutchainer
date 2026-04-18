@@ -122,10 +122,11 @@
   }
 </script>
 
+{#key language}
 <div class="shader-root">
   <div class="shader-header">
     <div>
-      <div class="section-label" id="shader-dialog-title">Generated Shader</div>
+      <div class="section-label" id="shader-dialog-title">{tr('shader.title')}</div>
       <div class="shader-help-text">{tr('shader.help')}</div>
     </div>
     <div class="shader-tabs" aria-label={tr('shader.tabsAria')}>
@@ -162,6 +163,7 @@
   <div class="shader-meta">{getMetaText()}</div>
   <pre class="shader-code-output">{getShaderSource()}</pre>
 </div>
+{/key}
 
 <style>
   .shader-root {

@@ -248,6 +248,7 @@
   });
 </script>
 
+{#key language}
 <div
   class="step-root"
   use:bindScrollRoot
@@ -302,6 +303,7 @@
     {tr('pipeline.step.add')}
   </Button>
 </div>
+{/key}
 
 <style>
   .step-root {

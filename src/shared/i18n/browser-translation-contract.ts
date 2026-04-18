@@ -96,6 +96,11 @@ export interface TranslationSchema {
   'pipeline.lut.addFailed': string;
   'panel.materialHelp': string;
   'panel.lightHelp': string;
+  'panel.materialTitle': string;
+  'panel.lightTitle': string;
+  'panel.baseColor': string;
+  'panel.lightColor': string;
+  'panel.ambientColor': string;
   'panel.materialPreset': string;
   'panel.lightPreset': string;
   'panel.presetsMenu': string;
@@ -142,6 +147,7 @@ export interface TranslationSchema {
   'preview.status.menuActionFailed': string;
   'preview.status.invalidWireframeSyncArg': string;
   'shader.help': string;
+  'shader.title': string;
   'shader.tabsAria': string;
   'shader.copy': string;
   'shader.download': string;

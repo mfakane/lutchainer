@@ -715,6 +715,7 @@
   }
 </script>
 
+{#key language}
 <div class="root">
   <div class="head">
     <input
@@ -844,6 +845,7 @@
     </div>
   </div>
 </div>
+{/key}
 
 <style>
   .root {
