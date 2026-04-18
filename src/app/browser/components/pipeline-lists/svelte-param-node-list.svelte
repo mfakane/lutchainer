@@ -494,12 +494,23 @@
     min-width: 0;
     width: 100%;
     padding: 4px 6px;
-    border: 1px solid var(--color-line);
+    border: 1px solid transparent;
     border-radius: 8px;
-    background: color-mix(in srgb, var(--color-panel), white 4%);
+    background: transparent;
     color: var(--color-text-strong);
     font-size: 12px;
     font-weight: 700;
+  }
+
+  .custom-param-input:hover {
+    border-color: color-mix(in srgb, var(--color-line), var(--color-accent) 32%);
+    background: color-mix(in srgb, var(--color-panel), var(--color-bg) 10%);
+  }
+
+  .custom-param-input:focus {
+    outline: none;
+    border-color: var(--color-accent);
+    background: color-mix(in srgb, var(--color-panel), var(--color-bg) 6%);
   }
 
   .custom-param-range {
