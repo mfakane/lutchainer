@@ -226,10 +226,6 @@ button:disabled:hover {
   background: color-mix(in srgb, var(--color-panel), var(--color-bg) 6%);
 }
 
-.ui-remove-text {
-  color: var(--color-remove-text);
-}
-
 .ui-language-button {
   width: 30px;
   height: 30px;
