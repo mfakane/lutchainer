@@ -1,4 +1,3 @@
-import type { Accessor } from 'solid-js';
 import * as pipelineModel from '../../../../features/pipeline/pipeline-model.ts';
 import {
   MAX_STEP_LABEL_LENGTH,
@@ -79,71 +78,10 @@ export interface LutStripListMountOptions {
   onStatus: StatusReporter;
 }
 
-export interface ParamNodeListProps {
-  getMaterialSettings: () => pipelineModel.MaterialSettings;
-  customParams: Accessor<CustomParamModel[]>;
-  onAddCustomParam: () => void;
-  onRenameCustomParam: (paramId: string, label: string) => void;
-  onSetCustomParamValue: (paramId: string, value: number, options?: { recordHistory?: boolean }) => void;
-  onCommitCustomParamValueChange: () => void;
-  onRemoveCustomParam: (paramId: string) => void;
-  onStatus: StatusReporter;
-}
-
 export interface ParamPreviewState {
   param: ParamRef;
   left: number;
   top: number;
-}
-
-export interface CustomParamNodeProps {
-  customParam: Accessor<CustomParamModel>;
-  onRenameCustomParam: (paramId: string, label: string) => void;
-  onSetCustomParamValue: (paramId: string, value: number, options?: { recordHistory?: boolean }) => void;
-  onCommitCustomParamValueChange: () => void;
-  onRemoveCustomParam: (paramId: string) => void;
-}
-
-export interface StepListProps {
-  steps: Accessor<StepModel[]>;
-  luts: Accessor<LutModel[]>;
-  customParams: Accessor<CustomParamModel[]>;
-  onAddStep: () => void;
-  onDuplicateStep: (stepId: string) => void;
-  onRemoveStep: (stepId: string) => void;
-  onStepMuteChange: (stepId: string, muted: boolean) => void;
-  onStepLabelChange: (stepId: string, label: string | null) => void;
-  onStepLutChange: (stepId: string, lutId: string) => void;
-  onStepBlendModeChange: (stepId: string, blendMode: StepModel['blendMode']) => void;
-  onStepOpChange: (stepId: string, channel: ChannelName, op: BlendOp) => void;
-  shouldSuppressClick?: () => boolean;
-  onOpenPipelineFilePicker: () => void;
-  onLoadExample: (example: PipelinePresetKey) => void | Promise<void>;
-  onScheduleConnectionDraw: () => void;
-  computeLutUv?: (
-    stepIndex: number,
-    pixelX: number,
-    pixelY: number,
-    canvasWidth: number,
-    canvasHeight: number,
-  ) => { u: number; v: number } | null;
-  onStatus: StatusReporter;
-}
-
-export interface StepWelcomeProps {
-  onOpenPipelineFilePicker: () => void;
-  onLoadExample: (example: PipelinePresetKey) => void | Promise<void>;
-}
-
-export interface LutStripListProps {
-  luts: Accessor<LutModel[]>;
-  steps: Accessor<StepModel[]>;
-  onRemoveLut: (lutId: string) => void;
-  onAddLutFiles: (files: File[]) => void | Promise<void>;
-  onEditLut?: (lutId: string) => void;
-  onDuplicateLut?: (lutId: string) => void;
-  onNewLut?: () => void;
-  onStatus: StatusReporter;
 }
 
 export function isNonEmptyString(value: unknown): value is string {

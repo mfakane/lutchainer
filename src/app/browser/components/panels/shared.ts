@@ -1,4 +1,3 @@
-import type { Accessor } from 'solid-js';
 import * as pipelineModel from '../../../../features/pipeline/pipeline-model.ts';
 
 export type StatusKind = 'success' | 'error' | 'info';
@@ -13,18 +12,6 @@ export interface MaterialPanelMountOptions {
 export interface LightPanelMountOptions {
   initialSettings: pipelineModel.LightSettings;
   onSettingsChange: (nextSettings: pipelineModel.LightSettings) => void;
-  onStatus: StatusReporter;
-}
-
-export interface MaterialPanelProps {
-  settings: Accessor<pipelineModel.MaterialSettings>;
-  commitSettings: (nextSettings: pipelineModel.MaterialSettings) => void;
-  onStatus: StatusReporter;
-}
-
-export interface LightPanelProps {
-  settings: Accessor<pipelineModel.LightSettings>;
-  commitSettings: (nextSettings: pipelineModel.LightSettings) => void;
   onStatus: StatusReporter;
 }
 

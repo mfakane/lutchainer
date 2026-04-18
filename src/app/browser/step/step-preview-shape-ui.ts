@@ -1,7 +1,7 @@
 import {
   mountPreviewShapeBar,
   type PreviewShapeType,
-} from '../components/solid-preview-shape-bar.tsx';
+} from '../components/preview-shape-bar.ts';
 
 type StatusKind = 'success' | 'error' | 'info';
 type StatusReporter = (message: string, kind?: StatusKind) => void;

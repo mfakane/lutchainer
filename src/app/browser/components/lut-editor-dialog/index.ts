@@ -1,7 +1,7 @@
 import type { ColorRamp2dLutData } from '../../../../features/lut-editor/lut-editor-model.ts';
 import type { LutModel } from '../../../../features/step/step-model.ts';
 import './svelte-lut-editor-dialog.svelte';
-import { mountSvelteHost, type SvelteHostElement } from '../custom-element-host.ts';
+import { mountSvelteHost } from '../custom-element-host.ts';
 import {
   ensureLutEditorDialogShellOptions,
   type LutEditorDialogShellOptions,

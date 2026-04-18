@@ -1,4 +1,4 @@
-import type { PreviewShapeType } from '../components/solid-preview-shape-bar.tsx';
+import type { PreviewShapeType } from '../components/preview-shape-bar.ts';
 import type { Renderer } from '../../../platforms/webgl/renderer.ts';
 import type { AppTranslator } from '../../../shared/i18n/browser-translation-contract.ts';
 import { createCube, createSphere, createTorus } from '../../../shared/utils/geometry.ts';

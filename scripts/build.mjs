@@ -1,6 +1,4 @@
 import esbuild from 'esbuild';
-import { vanillaExtractPlugin } from '@vanilla-extract/esbuild-plugin';
-import { solidPlugin } from 'esbuild-plugin-solid';
 import { compile } from 'svelte/compiler';
 import childProcess from 'child_process';
 import fs from 'fs';
@@ -89,7 +87,6 @@ const typeScriptExtensionPlugin = {
         fullPath + '.ts',
         fullPath + '.tsx',
         fullPath + '/index.ts',
-        fullPath + '/index.tsx',
         fullPath + '.js',
         fullPath + '.json',
       ];
@@ -168,7 +165,7 @@ const buildOptions = {
   define: {
     __BUILD_COMMIT_ID__: JSON.stringify(buildCommitId),
   },
-  plugins: [typeScriptExtensionPlugin, sveltePlugin, vanillaExtractPlugin(), copyBuildAssetsPlugin, solidPlugin({ dev: watchMode })],
+  plugins: [typeScriptExtensionPlugin, sveltePlugin, copyBuildAssetsPlugin],
 };
 
 const cliBuildOptions = {

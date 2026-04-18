@@ -4,14 +4,11 @@
     "composite": true,
     "emitDeclarationOnly": true,
     "outDir": "dist/types/browser",
-    "jsx": "preserve",
-    "jsxImportSource": "solid-js",
     "lib": ["ES2020", "DOM"],
     "types": []
   },
   "include": [
-    "src/**/*.ts",
-    "src/**/*.tsx"
+    "src/**/*.ts"
   ],
   "exclude": [
     "src/app/cli/**",

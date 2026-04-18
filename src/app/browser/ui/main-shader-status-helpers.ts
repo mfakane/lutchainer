@@ -4,10 +4,10 @@ import type { ShaderBuildInput, ShaderLanguage } from '../../../features/shader/
 import type { AppTranslator } from '../../../shared/i18n/browser-translation-contract.ts';
 import {
   syncStatusPanelState,
-} from '../components/panels/index.tsx';
+} from '../components/panels/index.ts';
 import {
   syncShaderDialogState,
-} from '../components/solid-shader-dialog.tsx';
+} from '../components/shader-dialog.ts';
 
 type StatusKind = 'success' | 'error' | 'info';
 export type MainStatusReporter = (message: string, kind?: StatusKind) => void;

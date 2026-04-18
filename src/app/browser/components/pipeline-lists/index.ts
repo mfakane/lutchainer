@@ -1,4 +1,4 @@
-import type { BlendOp, ChannelName, CustomParamModel, LutModel, StepModel } from '../../../../features/step/step-model.ts';
+import type { CustomParamModel, LutModel, StepModel } from '../../../../features/step/step-model.ts';
 import {
   cloneCustomParamArray,
   cloneLutArray,
@@ -231,7 +231,7 @@ export function mountStepList(target: HTMLElement, options: StepListMountOptions
 
 export function mountLutStripList(target: HTMLElement, options: LutStripListMountOptions): void {
   if (!(target instanceof HTMLElement)) {
-    throw new Error('LUTストリップの描画先要素が不正です。');
+    throw new Error('LUTストリップリストの描画先要素が不正です。');
   }
 
   ensureLutStripListMountOptions(options);
@@ -261,7 +261,6 @@ export function mountLutStripList(target: HTMLElement, options: LutStripListMoun
     lutStripHost?.destroyHost();
     lutStripHost = null;
   };
-
   syncLutStripListInternal = (nextLuts, nextSteps) => {
     if (!Array.isArray(nextLuts) || nextLuts.some(lut => !isValidLutModel(lut))) {
       lutStripStatusReporter('LUTストリップの同期LUT配列が不正です。', 'error');
@@ -279,41 +278,14 @@ export function mountLutStripList(target: HTMLElement, options: LutStripListMoun
   };
 }
 
-export function syncStepListState(steps: StepModel[], luts: LutModel[], customParams: CustomParamModel[]): void {
-  if (!Array.isArray(steps) || steps.some(step => !isValidStepModel(step))) {
-    stepListStatusReporter('Stepリスト同期に失敗しました: Step配列が不正です。', 'error');
-    return;
-  }
-  if (!Array.isArray(luts) || luts.some(lut => !isValidLutModel(lut))) {
-    stepListStatusReporter('Stepリスト同期に失敗しました: LUT配列が不正です。', 'error');
-    return;
-  }
-  if (!Array.isArray(customParams) || customParams.some(customParam => !isValidCustomParamModel(customParam))) {
-    stepListStatusReporter('Stepリスト同期に失敗しました: Custom Param配列が不正です。', 'error');
-    return;
-  }
-
-  syncStepListInternal?.(steps, luts, customParams);
+export function syncParamNodeListState(nextCustomParams: CustomParamModel[]): void {
+  syncParamNodeListInternal?.(nextCustomParams);
 }
 
-export function syncParamNodeListState(customParams: CustomParamModel[]): void {
-  if (!Array.isArray(customParams) || customParams.some(customParam => !isValidCustomParamModel(customParam))) {
-    paramNodeListStatusReporter('Paramノードリスト同期に失敗しました: Custom Param配列が不正です。', 'error');
-    return;
-  }
-
-  syncParamNodeListInternal?.(customParams);
+export function syncStepListState(nextSteps: StepModel[], nextLuts: LutModel[], nextCustomParams: CustomParamModel[]): void {
+  syncStepListInternal?.(nextSteps, nextLuts, nextCustomParams);
 }
 
-export function syncLutStripListState(luts: LutModel[], steps: StepModel[]): void {
-  if (!Array.isArray(luts) || luts.some(lut => !isValidLutModel(lut))) {
-    lutStripStatusReporter('LUTストリップ同期に失敗しました: LUT配列が不正です。', 'error');
-    return;
-  }
-  if (!Array.isArray(steps) || steps.some(step => !isValidStepModel(step))) {
-    lutStripStatusReporter('LUTストリップ同期に失敗しました: Step配列が不正です。', 'error');
-    return;
-  }
-
-  syncLutStripListInternal?.(luts, steps);
+export function syncLutStripListState(nextLuts: LutModel[], nextSteps: StepModel[]): void {
+  syncLutStripListInternal?.(nextLuts, nextSteps);
 }

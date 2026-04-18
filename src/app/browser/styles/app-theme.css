@@ -9,24 +9,75 @@
   --color-muted: #9aa3b2;
   --color-accent: #7ab6ff;
   --color-accent-ink: #0c1420;
-  --color-line: #414141;
   --color-control-border: #515151;
   --color-control-bg: #1a1a1a;
   --color-panel-border-strong: #464646;
   --color-surface-inset: #171c25;
-  --color-danger-text: #f8c2b8;
-  --color-danger-border: #8b5a54;
-  --color-danger-bg: #5c241e;
+  --color-line: #414141;
+  --color-resizer-line: #4b4b4b;
+  --color-resizer-active: #4b4b4b;
+  --color-remove-text: #f8c2b8;
   --color-socket-border: #9bb6dd;
   --color-socket-bg: #1b1b1b;
+  --color-scrollbar-thumb: #4a4a4a;
+  --color-scrollbar-thumb-hover: #5e5e5e;
+  --color-light-gizmo-main: #ffd17a;
+  --color-axis-x: #ff8d84;
+  --color-axis-y: #90ec8f;
+  --color-axis-z: #8dc4ff;
   --color-warn: #ef8f7a;
+  --color-ok: #7adf9f;
   --color-checker-a: #808080;
   --color-checker-b: #666666;
+  --color-tab-pill-bg: #171b22;
+  --color-code-text: #dde7fb;
+  --color-status-panel: #14171d;
+  --color-feedback-border: #6f85a8;
+  --color-feedback-badge-border: rgba(122, 182, 255, 0.35);
+  --color-feedback-badge-bg: rgba(122, 182, 255, 0.14);
+  --color-feedback-badge-text: #d5e6ff;
   --color-socket-target-border: #e0ebff;
   --color-accent-ring-strong: rgba(122, 182, 255, 0.24);
   --color-accent-ring: rgba(122, 182, 255, 0.18);
   --color-step-socket-axis: #adc0dd;
   --color-crosshair-dash: rgba(255, 255, 255, 0.5);
   --color-crosshair-shade: rgba(0, 0, 0, 0.5);
+  --color-bg-halo-a: #252525;
+  --color-bg-halo-b: #444444;
   --size-checker: 12px;
+  --font-sans: 'Avenir Next', 'Segoe UI', 'Hiragino Sans', sans-serif;
+  --font-mono: 'SFMono-Regular', 'Consolas', monospace;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-sans);
+  color: var(--color-text);
+  background:
+    radial-gradient(circle at 12% 15%, var(--color-bg-halo-a) 0%, transparent 38%),
+    radial-gradient(circle at 88% 82%, var(--color-bg-halo-b) 0%, transparent 42%),
+    var(--color-bg3);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+input[type='checkbox'],
+input[type='radio'] {
+  accent-color: var(--color-accent);
 }

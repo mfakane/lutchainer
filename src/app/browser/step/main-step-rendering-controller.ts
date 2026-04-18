@@ -2,7 +2,7 @@ import {
   syncParamNodeListState,
   syncLutStripListState,
   syncStepListState,
-} from '../components/pipeline-lists/index.tsx';
+} from '../components/pipeline-lists/index.ts';
 import type {
   LightSettings,
   MaterialSettings,

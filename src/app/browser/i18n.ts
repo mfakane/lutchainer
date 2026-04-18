@@ -1,4 +1,3 @@
-import { createSignal, onCleanup, type Accessor } from 'solid-js';
 import {
   readTextFromLocalStorage,
   writeTextToLocalStorage,
@@ -508,7 +507,7 @@ const TRANSLATIONS: Record<Language, TranslationSchema> = {
 };
 
 const languageListeners = new Set<LanguageChangeListener>();
-const [languageState, setLanguageState] = createSignal<Language>(resolveInitialLanguage());
+let languageState: Language = resolveInitialLanguage();
 
 function isLanguage(value: unknown): value is Language {
   return value === 'ja' || value === 'en';
@@ -616,17 +615,17 @@ function ensureSupportedLanguage(language: unknown): asserts language is Languag
 }
 
 export function getLanguage(): Language {
-  return languageState();
+  return languageState;
 }
 
 export function setLanguage(language: unknown): Language {
   ensureSupportedLanguage(language);
 
-  if (languageState() === language) {
-    return languageState();
+  if (languageState === language) {
+    return languageState;
   }
 
-  setLanguageState(language);
+  languageState = language;
   persistLanguage(language);
   notifyLanguageListeners(language);
   return language;
@@ -659,14 +658,4 @@ export function subscribeLanguageChange(listener: unknown): () => void {
   return () => {
     languageListeners.delete(typedListener);
   };
-}
-
-export function useLanguage(): Accessor<Language> {
-  const [language, setLanguageSignal] = createSignal<Language>(getLanguage());
-  const dispose = subscribeLanguageChange((nextLanguage: Language) => {
-    setLanguageSignal(nextLanguage);
-  });
-
-  onCleanup(dispose);
-  return language;
 }

@@ -37,12 +37,12 @@ import {
 import type { StepPreviewRenderer } from '../../platforms/webgl/step-preview-renderer.ts';
 import {
   syncHeaderActionHistoryState,
-} from './components/solid-header-actions.tsx';
-import { getMountedStepListElement } from './components/pipeline-lists/index.tsx';
+} from './components/header-actions.ts';
+import { getMountedStepListElement } from './components/pipeline-lists/index.ts';
 import {
   syncPreviewShapeBarState,
   syncPreviewWireframeState,
-} from './components/solid-preview-shape-bar.tsx';
+} from './components/preview-shape-bar.ts';
 import {
   getLanguage,
   subscribeLanguageChange,
@@ -69,8 +69,8 @@ import {
 } from './pipeline/pipeline-socket-dnd-controller.ts';
 import { createMainStepRenderingController } from './step/main-step-rendering-controller.ts';
 import { createStepPreviewSystem } from './step/step-preview-system.ts';
-import './styles/app-theme.css.ts';
-import './styles/app-shell.css.ts';
+import './styles/app-theme.css';
+import './styles/app-shell.css';
 import {
   clearSocketDragState,
   getLutReorderDragState,

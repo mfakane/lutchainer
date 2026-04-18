@@ -1,6 +1,6 @@
 import type { ShaderBuildInput, ShaderLanguage } from '../../../features/shader/shader-generator.ts';
 import './svelte-shader-dialog.svelte';
-import { mountSvelteHost, type SvelteHostElement } from './custom-element-host.ts';
+import { mountSvelteHost } from './custom-element-host.ts';
 
 type StatusKind = 'success' | 'error' | 'info';
 

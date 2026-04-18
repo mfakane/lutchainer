@@ -6,11 +6,11 @@ import {
   mountStatusPanel,
   syncLightPanelState,
   syncMaterialPanelState,
-} from '../components/panels/index.tsx';
+} from '../components/panels/index.ts';
 import {
   mountShaderDialogShell,
   syncShaderDialogState,
-} from '../components/solid-shader-dialog.tsx';
+} from '../components/shader-dialog.ts';
 
 type StatusKind = 'success' | 'error' | 'info';
 type StatusReporter = (message: string, kind?: StatusKind) => void;

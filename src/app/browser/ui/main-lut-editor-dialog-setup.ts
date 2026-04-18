@@ -4,7 +4,7 @@ import type { AppTranslator } from '../../../shared/i18n/browser-translation-con
 import {
   mountLutEditorDialogShell,
   syncLutEditorDialogState,
-} from '../components/lut-editor-dialog/index.tsx';
+} from '../components/lut-editor-dialog/index.ts';
 
 type StatusKind = 'success' | 'error' | 'info';
 type StatusReporter = (message: string, kind?: StatusKind) => void;

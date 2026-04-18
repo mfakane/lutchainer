@@ -218,10 +218,7 @@ export function mountStatusPanel(target: HTMLElement, options?: StatusPanelMount
 
   syncStatusPanelInternal = nextState => {
     assertValidStatusState(nextState);
-    statusHost.setHostProps({
-      message: nextState.message,
-      kind: nextState.kind,
-    });
+    statusHost.setHostProps(nextState);
   };
 
   disposeStatusPanel = () => {

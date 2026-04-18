@@ -12,7 +12,7 @@ import {
     mountLutStripList,
     mountParamNodeList,
     mountStepList,
-} from '../components/pipeline-lists/index.tsx';
+} from '../components/pipeline-lists/index.ts';
 import {
     bindReorderDragHandlers,
     type DndBindingDisposer,

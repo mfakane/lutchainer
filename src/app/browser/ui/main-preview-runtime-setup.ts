@@ -10,7 +10,7 @@ import {
   type StepPreviewRenderer,
 } from '../../../platforms/webgl/step-preview-renderer.ts';
 import type { ShaderBuildInput } from '../../../features/shader/shader-generator.ts';
-import type { PreviewShapeType } from '../components/solid-preview-shape-bar.tsx';
+import type { PreviewShapeType } from '../components/preview-shape-bar.ts';
 import type { AppTranslator } from '../../../shared/i18n/browser-translation-contract.ts';
 import type { PreviewShapeController } from './preview-shape-controller.ts';
 import { createPreviewShapeController } from './preview-shape-controller.ts';

@@ -5,8 +5,8 @@ import type { ParamRef } from '../../../features/step/step-model.ts';
 import {
   mountHeaderActionGroup,
   mountLanguageSwitcher,
-} from '../components/solid-header-actions.tsx';
-import { openShaderDialog } from '../components/solid-shader-dialog.tsx';
+} from '../components/header-actions.ts';
+import { openShaderDialog } from '../components/shader-dialog.ts';
 import type { PipelineDropIndicatorController } from '../pipeline/pipeline-drop-indicators.ts';
 import type { PipelineHeaderActionController } from '../pipeline/pipeline-header-actions-controller.ts';
 import type { PipelineSocketDndController } from '../pipeline/pipeline-socket-dnd-controller.ts';
