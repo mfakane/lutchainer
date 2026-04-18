@@ -1,8 +1,8 @@
 <script lang="ts">
   import type { ColorRamp } from '../../../../features/lut-editor/lut-editor-model.ts';
-  import { formatPositionPercent, scheduleSelectAllTextIfFocused } from './shared.ts';
   import Button from '../svelte-button.svelte';
   import DropdownMenu from '../svelte-dropdown-menu.svelte';
+  import { formatPositionPercent, scheduleSelectAllTextIfFocused } from './shared.ts';
 
   export let ramps: readonly ColorRamp[] = [];
   export let selectedRamp: ColorRamp | null = null;

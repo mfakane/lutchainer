@@ -2,10 +2,10 @@
 
 <script lang="ts">
   import { createEventDispatcher, onDestroy, tick } from 'svelte';
-  import * as pipelineModel from '../../../../features/pipeline/pipeline-model.ts';
   import type { MaterialSettings } from '../../../../features/pipeline/pipeline-model.ts';
-  import { drawParamPreviewSphereCpu } from '../../../../platforms/browser/step-preview-cpu-render.ts';
+  import * as pipelineModel from '../../../../features/pipeline/pipeline-model.ts';
   import type { CustomParamModel, ParamName, ParamRef } from '../../../../features/step/step-model.ts';
+  import { drawParamPreviewSphereCpu } from '../../../../platforms/browser/step-preview-cpu-render.ts';
   import { getLanguage, subscribeLanguageChange, t } from '../../i18n.ts';
   import Button from '../svelte-button.svelte';
   import { PARAM_PREVIEW_SIZE, PARAM_PREVIEW_TARGETS } from './shared.ts';

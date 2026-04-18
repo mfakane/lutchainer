@@ -1,9 +1,9 @@
 <script lang="ts">
   import type { ColorRamp, ColorStop } from '../../../../features/lut-editor/lut-editor-model.ts';
   import { colorToHex } from '../../../../features/pipeline/pipeline-model.ts';
-  import { formatPositionPercent, scheduleSelectAllTextIfFocused } from './shared.ts';
   import Button from '../svelte-button.svelte';
   import DropdownMenu from '../svelte-dropdown-menu.svelte';
+  import { formatPositionPercent, scheduleSelectAllTextIfFocused } from './shared.ts';
 
   export let selectedRamp: ColorRamp | null = null;
   export let focusedStop: ColorStop | null = null;
