@@ -1,8 +1,8 @@
-import esbuild from 'esbuild';
-import { compile } from 'svelte/compiler';
 import childProcess from 'child_process';
+import esbuild from 'esbuild';
 import fs from 'fs';
 import path from 'path';
+import { compile } from 'svelte/compiler';
 
 const watchMode = process.argv.includes('--watch');
 const distDir = path.resolve('dist');
@@ -14,15 +14,11 @@ const copyTargets = [
     destination: path.join(webDir, 'examples'),
   },
   {
-    source: path.resolve('src/app/browser/styles/app-theme.css'),
-    destination: path.join(webDir, 'app-theme.css'),
+    source: path.resolve('src/app/browser/styles'),
+    destination: path.join(webDir, 'styles'),
   },
   {
-    source: path.resolve('src/app/browser/styles/ui-primitives.css'),
-    destination: path.join(webDir, 'ui-primitives.css'),
-  },
-  {
-    source: path.resolve('index.html'),
+    source: path.resolve('src/app/browser/index.html'),
     destination: path.join(webDir, 'index.html'),
   },
 ];
@@ -50,10 +46,6 @@ function copyBuildAssets() {
   for (const target of copyTargets) {
     if (path.basename(target.source) === 'index.html') {
       const indexHtml = fs.readFileSync(target.source, 'utf8')
-        .replace(
-          '<link rel="stylesheet" href="bundle.css" />',
-          '<link rel="stylesheet" href="app-theme.css" />\n  <link rel="stylesheet" href="ui-primitives.css" />\n  <link rel="stylesheet" href="bundle.css" />',
-        )
         .replace(/src="dist\/bundle\.js"/g, 'src="bundle.js"');
       fs.writeFileSync(target.destination, indexHtml);
       continue;

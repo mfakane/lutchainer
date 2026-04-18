@@ -70,8 +70,6 @@ import {
 } from './pipeline/pipeline-socket-dnd-controller.ts';
 import { createMainStepRenderingController } from './step/main-step-rendering-controller.ts';
 import { createStepPreviewSystem } from './step/step-preview-system.ts';
-import './styles/app-theme.css';
-import './styles/app-shell.css';
 import {
   clearSocketDragState,
   getLutReorderDragState,

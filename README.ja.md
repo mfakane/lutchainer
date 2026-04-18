@@ -74,8 +74,6 @@ npm run serve
 # http://localhost:8000
 ```
 
-`index.html` を `file://` で直接開く方法では、ブラウザの制約により example の読み込みが失敗することがあります。
-
 ### Nixで起動（ビルド成果物を配信）
 
 ```bash
