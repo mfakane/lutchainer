@@ -42,7 +42,7 @@ Main capabilities:
 ### Current Layering
 
 ```text
-app/browser/      Browser app orchestration, DOM wiring, SolidJS mounts
+app/browser/      Browser app orchestration, DOM wiring, Svelte components
 platforms/webgl/  DOM-free WebGL runtime implementations
 platforms/browser/Browser API adapters (storage, download, file helpers)
 features/         Domain models and pure business logic
@@ -67,12 +67,12 @@ Forbidden direction:
 
 - `features/**` must not import from `app/**` or `platforms/**`
 - `shared/**` must not import from `app/**` or `platforms/**`
-- `platforms/webgl/**` must not use `document`, `window`, `navigator`, or SolidJS
+- `platforms/webgl/**` must not use `document`, `window`, `navigator`, or Svelte
 - `app/cli/**` must not import from `app/browser/**` or browser-only modules
 
 ### Practical Meaning
 
-- Put DOM orchestration, event wiring, and SolidJS components in `src/app/browser/`
+- Put DOM orchestration, event wiring, and Svelte components in `src/app/browser/`
 - Put WebGL renderer classes and texture/program helpers in `src/platforms/webgl/`
 - Put browser storage/download/file adapters in `src/platforms/browser/`
 - Keep `src/features/` pure enough that it can be reused by browser, CLI, and Blender-related tooling
@@ -91,7 +91,7 @@ Use these naming patterns consistently:
 | `*-bindings.ts` | event binding and interaction wiring |
 | `*-view.ts` | UI-facing derived state and helpers |
 | `*-system.ts` | lifecycle-managed runtime subsystem |
-| `solid-*.tsx` | SolidJS component modules with `mount*`/`sync*` exports |
+| `svelte-*.svelte` | Svelte component modules |
 | `main-*.ts` | browser bootstrap/orchestration modules |
 | `types.ts` | type-only barrel exports |
 
@@ -101,7 +101,7 @@ Use these naming patterns consistently:
 
 Bad:
 
-- `features/**` importing DOM code, SolidJS, or `platforms/webgl`
+- `features/**` importing DOM code, Svelte, or `platforms/webgl`
 - `platforms/webgl/**` importing browser DOM helpers
 - `app/cli/**` importing browser-only modules
 
@@ -130,34 +130,12 @@ const controller = createPipelineCommandController({
 });
 ```
 
-### 3. SolidJS JSX Constraints
-
-Comma operator in JSX is invalid in this repo’s SolidJS setup.
-
-Bad:
-
-```tsx
-<span>{(language(), formatParam(param))}</span>
-```
-
-Good:
-
-```tsx
-function renderParamLabel(param: ParamName): string {
-  language();
-  return formatParam(param);
-}
-
-<span>{renderParamLabel(param)}</span>
-```
-
-### 4. TypeScript Strictness
+### 3. TypeScript Strictness
 
 Important defaults:
 
 - `strict: true`
 - `target: ES2020`
-- `jsxImportSource: "solid-js"`
 
 Implications:
 
@@ -165,7 +143,7 @@ Implications:
 - avoid `String.prototype.replaceAll()`
 - prefer explicit callback parameter types when inference is weak
 
-### 5. CPU / GPU Consistency
+### 4. CPU / GPU Consistency
 
 CPU fallback and WebGL preview must match. Preserve texel-center sampling.
 

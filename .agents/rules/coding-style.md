@@ -10,7 +10,7 @@ Important implications:
 
 - `strict: true` is on
 - target is `ES2020`
-- SolidJS JSX is enabled in the browser build
+- Svelte 5 is used for browser UI components
 - browser and CLI typechecking are intentionally separated
 
 Practical rules:
@@ -37,7 +37,7 @@ shared       -> pure only
 - `features/**` -> `platforms/**`
 - `shared/**` -> `app/**`
 - `shared/**` -> `platforms/**`
-- `platforms/webgl/**` -> DOM globals, SolidJS, `platforms/browser/**`
+- `platforms/webgl/**` -> DOM globals, Svelte, `platforms/browser/**`
 - `app/cli/**` -> `app/browser/**`
 
 ### Placement guide
@@ -48,7 +48,7 @@ Put code here:
 - `src/shared/`: pure helpers, math/geometry, archive utilities
 - `src/platforms/webgl/`: WebGL renderer classes, texture/program helpers
 - `src/platforms/browser/`: `localStorage`, download, file/blob/objectURL helpers
-- `src/app/browser/`: DOM wiring, event binding, SolidJS mounts, browser runtime orchestration
+- `src/app/browser/`: DOM wiring, event binding, Svelte components, browser runtime orchestration
 
 ## 3. Naming Patterns
 
@@ -61,7 +61,7 @@ Put code here:
 | `*-bindings.ts` | event binding glue |
 | `*-view.ts` | UI-facing state helpers |
 | `*-system.ts` | lifecycle-managed subsystem |
-| `solid-*.tsx` | SolidJS component module |
+| `svelte-*.svelte` | Svelte component module |
 | `main-*.ts` | browser bootstrap/orchestrator |
 | `types.ts` | type-only barrel |
 
@@ -101,27 +101,12 @@ setPipelineSteps([...getPipelineSteps(), newStep]);
 
 Prefer dependency injection via options objects over hidden cross-layer callbacks.
 
-## 6. SolidJS Rules
+## 6. Svelte 5 Rules
 
-- do not use comma expressions inside JSX
-- prefer helper functions for signal subscription + formatting
-- do not mount the same Solid root repeatedly into the same container
-- exported `sync*` functions are acceptable when a parent orchestrator owns updates
-
-Bad:
-
-```tsx
-<span>{(language(), formatLabel(param))}</span>
-```
-
-Good:
-
-```tsx
-function renderLabel(param: ParamName): string {
-  language();
-  return formatLabel(param);
-}
-```
+- use runes (`$state`, `$derived`, `$effect`, `$props`) for reactivity
+- use `SvelteMap` / `SvelteSet` / `SvelteURL` instead of the built-in equivalents when the value is stored in `$state` or returned from `$derived`
+- do not instantiate Svelte components outside of a Svelte context
+- `{#each}` blocks must have a key expression
 
 ## 7. WebGL and Browser Boundaries
 

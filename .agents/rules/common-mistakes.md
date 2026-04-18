@@ -117,36 +117,39 @@ Array.from(document.querySelectorAll('[data-lut-id]'))
   .find(el => el.getAttribute('data-lut-id') === lutId);
 ```
 
-## 8. SolidJS JSX Comma Expressions
-
-Bad:
-
-```tsx
-<span>{(language(), formatLabel(param))}</span>
-```
-
-Fix:
-
-```tsx
-function renderLabel(param: ParamName): string {
-  language();
-  return formatLabel(param);
-}
-```
-
-## 9. Re-mounting Solid Roots
+## 8. Svelte Built-in Collections Not Reactive
 
 Bad:
 
 ```typescript
-render(() => <StepList />, container);
-render(() => <StepList />, container);
+// inside $state or $derived
+const map = new Map<string, Value>();
 ```
 
 Fix:
 
-- mount once
-- expose `sync*` updates or state setters from the mounted component module
+```typescript
+import { SvelteMap } from 'svelte/reactivity';
+const map = new SvelteMap<string, Value>();
+```
+
+Use `SvelteMap`, `SvelteSet`, and `SvelteURL` when the collection is stored in `$state` or returned from `$derived`. Plain `Map`/`Set` mutations are not tracked by Svelte's reactivity system.
+
+## 9. Missing Key in `{#each}` Blocks
+
+Bad:
+
+```svelte
+{#each items as item}
+```
+
+Fix:
+
+```svelte
+{#each items as item (item.id)}
+```
+
+Always provide a unique key expression. Missing keys cause incorrect DOM reuse when items are added, removed, or reordered.
 
 ## 10. CPU / GPU Sampling Drift
 
