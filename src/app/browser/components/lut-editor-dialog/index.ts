@@ -1,81 +1,29 @@
 import type { ColorRamp2dLutData } from '../../../../features/lut-editor/lut-editor-model.ts';
 import type { LutModel } from '../../../../features/step/step-model.ts';
-import './svelte-lut-editor-dialog.svelte';
-import { mountSvelteHost } from '../custom-element-host.ts';
 import {
   ensureLutEditorDialogShellOptions,
   type LutEditorDialogShellOptions,
 } from './shared.ts';
 
-interface LutEditorDialogHostProps extends Record<string, unknown> {
+interface LutEditorDialogContentElement extends HTMLElement {
   rampData: ColorRamp2dLutData | null;
   lutId: string | null;
-  onApply: (lutId: string | null, updatedLut: LutModel) => void;
-  onClose: () => void;
-  onDirtyChange: (dirty: boolean) => void;
-}
-
-interface LutEditorDialogContentController {
-  dispose: () => void;
-  sync: (data: ColorRamp2dLutData | null, lutId: string | null) => void;
 }
 
 interface DirtyChangeEvent extends Event {
   detail?: boolean;
 }
 
-let activeLutEditorDialogController: LutEditorDialogContentController | null = null;
-
-function mountLutEditorDialogContent(
-  el: Element,
-  options: {
-    onApply: (lutId: string | null, updatedLut: LutModel) => void;
-    onClose: () => void;
-    onDirtyChange: (dirty: boolean) => void;
-  },
-): LutEditorDialogContentController {
-  if (!(el instanceof HTMLElement)) {
-    throw new Error('mountLutEditorDialogContent: el must be an HTMLElement');
-  }
-
-  const host = mountSvelteHost<LutEditorDialogHostProps>({
-    tagName: 'lut-lut-editor-dialog-content',
-    target: el,
-    props: {
-      rampData: null,
-      lutId: null,
-      onApply: options.onApply,
-      onClose: options.onClose,
-      onDirtyChange: options.onDirtyChange,
-    },
-  });
-
-  const onDirtyChangeEvent = (event: Event) => {
-    const dirty = (event as DirtyChangeEvent).detail === true;
-    options.onDirtyChange(dirty);
-  };
-  host.addEventListener('dirtychange', onDirtyChangeEvent);
-
-  return {
-    dispose: () => {
-      host.removeEventListener('dirtychange', onDirtyChangeEvent);
-      host.destroyHost();
-    },
-    sync: (data: ColorRamp2dLutData | null, lutId: string | null) => {
-      host.setHostProps({ rampData: data, lutId });
-    },
-  };
-}
+let activeLutEditorDialogElement: LutEditorDialogContentElement | null = null;
 
 export function mountLutEditorDialogShell(options: LutEditorDialogShellOptions): void {
   ensureLutEditorDialogShellOptions(options);
 
-  if (activeLutEditorDialogController) {
-    activeLutEditorDialogController.dispose();
-    activeLutEditorDialogController = null;
-  }
-
   let allowClose = false;
+  const element = options.surfaceEl as LutEditorDialogContentElement;
+  element.rampData = null;
+  element.lutId = null;
+  activeLutEditorDialogElement = element;
 
   const closeLutEditorDialog = (): void => {
     allowClose = true;
@@ -88,12 +36,16 @@ export function mountLutEditorDialogShell(options: LutEditorDialogShellOptions):
     options.dialogEl.removeAttribute('open');
   };
 
-  const contentController = mountLutEditorDialogContent(options.surfaceEl, {
-    onApply: options.onApply,
-    onClose: closeLutEditorDialog,
-    onDirtyChange: dirty => {
-      options.dialogEl.dataset.dirty = dirty ? 'true' : 'false';
-    },
+  element.addEventListener('apply-lut', event => {
+    const detail = (event as CustomEvent<{ lutId: string | null; updatedLut: LutModel }>).detail;
+    options.onApply(detail.lutId, detail.updatedLut);
+  });
+  element.addEventListener('request-close', () => {
+    closeLutEditorDialog();
+  });
+  element.addEventListener('dirtychange', event => {
+    const dirty = (event as DirtyChangeEvent).detail === true;
+    options.dialogEl.dataset.dirty = dirty ? 'true' : 'false';
   });
 
   const onCancel = (event: Event) => {
@@ -142,20 +94,13 @@ export function mountLutEditorDialogShell(options: LutEditorDialogShellOptions):
   options.dialogEl.addEventListener('keydown', onKeyDown, true);
   options.dialogEl.addEventListener('pointerdown', onDialogPointerDown, true);
   options.dialogEl.addEventListener('click', onDialogClick);
-
-  activeLutEditorDialogController = {
-    dispose: () => {
-      options.dialogEl.removeEventListener('cancel', onCancel);
-      options.dialogEl.removeEventListener('close', onDialogClose);
-      options.dialogEl.removeEventListener('keydown', onKeyDown, true);
-      options.dialogEl.removeEventListener('pointerdown', onDialogPointerDown, true);
-      options.dialogEl.removeEventListener('click', onDialogClick);
-      contentController.dispose();
-    },
-    sync: contentController.sync,
-  };
 }
 
 export function syncLutEditorDialogState(data: ColorRamp2dLutData | null, lutId: string | null): void {
-  activeLutEditorDialogController?.sync(data, lutId);
+  if (!activeLutEditorDialogElement) {
+    return;
+  }
+
+  activeLutEditorDialogElement.rampData = data;
+  activeLutEditorDialogElement.lutId = lutId;
 }

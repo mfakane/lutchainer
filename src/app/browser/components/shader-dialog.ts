@@ -1,12 +1,10 @@
 import type { ShaderBuildInput, ShaderLanguage } from '../../../features/shader/shader-generator.ts';
-import './svelte-shader-dialog.svelte';
-import { mountSvelteHost } from './custom-element-host.ts';
 
 type StatusKind = 'success' | 'error' | 'info';
 
-interface ShaderDialogContentController {
-  dispose: () => void;
-  sync: (input: ShaderBuildInput, fragmentShader?: string) => void;
+interface ShaderDialogContentElement extends HTMLElement {
+  buildInput: ShaderBuildInput | null;
+  fragmentShader?: string;
 }
 
 interface ShaderDialogShellOptions {
@@ -17,19 +15,25 @@ interface ShaderDialogShellOptions {
   onStatus: (message: string, kind?: StatusKind) => void;
 }
 
-interface ShaderDialogShellController extends ShaderDialogContentController {
+interface ShaderDialogShellController {
   open: () => void;
-}
-
-interface ShaderDialogHostProps extends Record<string, unknown> {
-  buildInput: ShaderBuildInput | null;
-  fragmentShader?: string;
-  onClose: () => void;
-  onExport: (language: ShaderLanguage) => void | Promise<void>;
-  onStatus: (message: string, kind?: StatusKind) => void;
+  sync: (input: ShaderBuildInput, fragmentShader?: string) => void;
 }
 
 let activeShaderDialogController: ShaderDialogShellController | null = null;
+
+function applyShaderDialogState(
+  element: ShaderDialogContentElement,
+  input: ShaderBuildInput | null,
+  fragmentShader?: string,
+): void {
+  element.buildInput = input;
+  element.fragmentShader = fragmentShader;
+  queueMicrotask(() => {
+    element.buildInput = input;
+    element.fragmentShader = fragmentShader;
+  });
+}
 
 function ensureShaderDialogShellOptions(value: unknown): asserts value is ShaderDialogShellOptions {
   if (!value || typeof value !== 'object') {
@@ -54,50 +58,11 @@ function ensureShaderDialogShellOptions(value: unknown): asserts value is Shader
   }
 }
 
-function mountShaderDialogContent(
-  el: Element,
-  options: {
-    onClose: () => void;
-    onExport: (language: ShaderLanguage) => void | Promise<void>;
-    onStatus: (message: string, kind?: StatusKind) => void;
-  },
-): ShaderDialogContentController {
-  if (!(el instanceof HTMLElement)) {
-    throw new Error('mountShaderDialogContent: el must be an HTMLElement');
-  }
-
-  const host = mountSvelteHost<ShaderDialogHostProps>({
-    tagName: 'lut-shader-dialog-content',
-    target: el,
-    props: {
-      buildInput: null,
-      fragmentShader: undefined,
-      onClose: options.onClose,
-      onExport: options.onExport,
-      onStatus: options.onStatus,
-    },
-  });
-
-  return {
-    dispose: () => {
-      host.destroyHost();
-    },
-    sync: (input: ShaderBuildInput, fragmentShader?: string) => {
-      host.setHostProps({
-        buildInput: input,
-        fragmentShader,
-      });
-    },
-  };
-}
-
 export function mountShaderDialogShell(options: ShaderDialogShellOptions): void {
   ensureShaderDialogShellOptions(options);
 
-  if (activeShaderDialogController) {
-    activeShaderDialogController.dispose();
-    activeShaderDialogController = null;
-  }
+  const contentEl = options.surfaceEl as ShaderDialogContentElement;
+  applyShaderDialogState(contentEl, null, undefined);
 
   const closeShaderDialog = (): void => {
     if (typeof options.dialogEl.close === 'function') {
@@ -123,18 +88,11 @@ export function mountShaderDialogShell(options: ShaderDialogShellOptions): void 
     options.dialogEl.setAttribute('open', '');
   };
 
-  const contentController = mountShaderDialogContent(options.surfaceEl, {
-    onClose: closeShaderDialog,
-    onExport: options.onExport,
-    onStatus: options.onStatus,
-  });
-
-  const onCancel = (event: Event) => {
+  options.dialogEl.addEventListener('cancel', event => {
     event.preventDefault();
     closeShaderDialog();
-  };
-
-  const onDialogClick = (event: MouseEvent) => {
+  });
+  options.dialogEl.addEventListener('click', event => {
     if (event.target !== options.dialogEl) {
       return;
     }
@@ -145,23 +103,25 @@ export function mountShaderDialogShell(options: ShaderDialogShellOptions): void 
     if (isOutside) {
       closeShaderDialog();
     }
-  };
+  });
 
-  options.dialogEl.addEventListener('cancel', onCancel);
-  options.dialogEl.addEventListener('click', onDialogClick);
-
-  const disposeShell = () => {
-    options.dialogEl.removeEventListener('cancel', onCancel);
-    options.dialogEl.removeEventListener('click', onDialogClick);
-  };
+  contentEl.addEventListener('request-close', () => {
+    closeShaderDialog();
+  });
+  contentEl.addEventListener('export-shader', event => {
+    const detail = (event as CustomEvent<{ language: ShaderLanguage }>).detail;
+    void options.onExport(detail.language);
+  });
+  contentEl.addEventListener('status-message', event => {
+    const detail = (event as CustomEvent<{ message: string; kind?: StatusKind }>).detail;
+    options.onStatus(detail.message, detail.kind);
+  });
 
   activeShaderDialogController = {
-    dispose: () => {
-      disposeShell();
-      contentController.dispose();
-    },
     open: openShaderDialog,
-    sync: contentController.sync,
+    sync: (input, fragmentShader) => {
+      applyShaderDialogState(contentEl, input, fragmentShader);
+    },
   };
 }
 

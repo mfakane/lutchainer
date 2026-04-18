@@ -1,7 +1,7 @@
 <svelte:options customElement={{ tag: 'lut-shader-dialog-content', shadow: 'none' }} />
 
 <script lang="ts">
-  import { onDestroy } from 'svelte';
+  import { createEventDispatcher, onDestroy } from 'svelte';
   import {
     getShaderGenerator,
     type ShaderBuildInput,
@@ -55,9 +55,11 @@
 
   export let buildInput: ShaderBuildInput | null = null;
   export let fragmentShader: string | undefined = undefined;
-  export let onClose: () => void = () => undefined;
-  export let onExport: (language: ShaderLanguage) => void | Promise<void> = () => undefined;
-  export let onStatus: (message: string, kind?: StatusKind) => void = () => undefined;
+  const dispatch = createEventDispatcher<{
+    'request-close': undefined;
+    'export-shader': { language: ShaderLanguage };
+    'status-message': { message: string; kind?: StatusKind };
+  }>();
 
   let language = getLanguage();
   let activeEntryId: ShaderCodeEntryId = 'glsl-fragment';
@@ -81,7 +83,7 @@
 
   function getShaderSource(): string {
     if (!buildInput) {
-      return '';
+      return '// Shader is not ready yet.';
     }
 
     const entry = getActiveEntry();
@@ -98,30 +100,25 @@
 
   async function handleCopy(): Promise<void> {
     if (!navigator.clipboard || typeof navigator.clipboard.writeText !== 'function') {
-      onStatus(tr('shader.status.clipboardUnavailable'), 'error');
+      dispatch('status-message', { message: tr('shader.status.clipboardUnavailable'), kind: 'error' });
       return;
     }
 
     try {
       await navigator.clipboard.writeText(getShaderSource());
-      onStatus(
-        tr('shader.status.copySuccess', {
+      dispatch('status-message', {
+        message: tr('shader.status.copySuccess', {
           stage: getActiveEntry().stageLabel,
         }),
-        'success',
-      );
+        kind: 'success',
+      });
     } catch {
-      onStatus(tr('shader.status.copyFailed'), 'error');
+      dispatch('status-message', { message: tr('shader.status.copyFailed'), kind: 'error' });
     }
   }
 
-  async function handleExport(): Promise<void> {
-    try {
-      await onExport(getActiveEntry().language);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : tr('common.unknownError');
-      onStatus(tr('shader.status.exportFailed', { message }), 'error');
-    }
+  function handleExport(): void {
+    dispatch('export-shader', { language: getActiveEntry().language });
   }
 </script>
 
@@ -153,7 +150,11 @@
       <Button variant="submit" handlePress={() => void handleExport()}>
         {tr('shader.download')}
       </Button>
-      <Button variant="secondary" ariaLabel={tr('shader.closeAria')} handlePress={onClose}>
+      <Button
+        variant="secondary"
+        ariaLabel={tr('shader.closeAria')}
+        handlePress={() => dispatch('request-close')}
+      >
         {tr('shader.close')}
       </Button>
     </div>

@@ -43,11 +43,12 @@
 
   export let rampData: ColorRamp2dLutData | null = null;
   export let lutId: string | null = null;
-  export let onApply: (lutId: string | null, updatedLut: LutModel) => void = () => undefined;
-  export let onClose: () => void = () => undefined;
-  export let onDirtyChange: (dirty: boolean) => void = () => undefined;
 
-  const dispatch = createEventDispatcher<{ dirtychange: boolean }>();
+  const dispatch = createEventDispatcher<{
+    dirtychange: boolean;
+    'apply-lut': { lutId: string | null; updatedLut: LutModel };
+    'request-close': undefined;
+  }>();
 
   let language = getLanguage();
   const disposeLanguageSync = subscribeLanguageChange(nextLanguage => {
@@ -116,10 +117,7 @@
     : null;
 
   $: isDirty = serializeRampData(editorRampData) !== initialSerializedRampData;
-  $: {
-    onDirtyChange(isDirty);
-    dispatch('dirtychange', isDirty);
-  }
+  $: dispatch('dirtychange', isDirty);
 
   $: if (!selectedRamp) {
     focusedStopId = null;
@@ -707,8 +705,8 @@
     }
     const nextLut = createLutFromColorRamp2d(editorRampData);
     initialSerializedRampData = serializeRampData(editorRampData);
-    onApply(editingLutId, nextLut);
-    onClose();
+    dispatch('apply-lut', { lutId: editingLutId, updatedLut: nextLut });
+    dispatch('request-close');
   }
 
   function rampSwatchStyle(ramp: ColorRamp): string {
@@ -735,7 +733,7 @@
       <Button variant="submit" handlePress={handleApply} disabled={!editorRampData}>
         {tr('lutEditor.apply')}
       </Button>
-      <Button variant="secondary" handlePress={onClose}>
+      <Button variant="secondary" handlePress={() => dispatch('request-close')}>
         {tr('lutEditor.cancel')}
       </Button>
     </div>

@@ -8,11 +8,12 @@ import type {
     StepModel,
 } from '../../../features/step/step-model.ts';
 import type { AppTranslator } from '../../../shared/i18n/browser-translation-contract.ts';
+import { cloneMaterialSettings } from '../components/panels/shared.ts';
 import {
-    mountLutStripList,
-    mountParamNodeList,
-    mountStepList,
-} from '../components/pipeline-lists/index.ts';
+  cloneCustomParamArray,
+  cloneLutArray,
+  cloneStepArray,
+} from '../components/pipeline-lists/shared.ts';
 import {
     bindReorderDragHandlers,
     type DndBindingDisposer,
@@ -34,6 +35,37 @@ let disposeCustomParamReorderBindings: DndBindingDisposer | null = null;
 
 export interface MainPipelineListsController {
   addLutFiles: (files: File[]) => Promise<void>;
+  syncParamNodeListState: (customParams: CustomParamModel[]) => void;
+  syncParamNodeMaterialSettings: (materialSettings: MaterialSettings) => void;
+  syncStepListState: (steps: StepModel[], luts: LutModel[], customParams: CustomParamModel[]) => void;
+  syncLutStripListState: (luts: LutModel[], steps: StepModel[]) => void;
+}
+
+interface ParamNodeListElement extends HTMLElement {
+  materialSettings: MaterialSettings;
+  customParams: CustomParamModel[];
+}
+
+interface StepListElement extends HTMLElement {
+  steps: StepModel[];
+  luts: LutModel[];
+  customParams: CustomParamModel[];
+  preservedScrollTop: number;
+  preservedScrollLeft: number;
+  restoreNonce: number;
+  computeLutUv?: SetupMainPipelineListsOptions['computeLutUv'];
+}
+
+interface LutStripListElement extends HTMLElement {
+  luts: LutModel[];
+  steps: StepModel[];
+  canEditLut: boolean;
+  canDuplicateLut: boolean;
+  canCreateNewLut: boolean;
+}
+
+function readCustomEventDetail<Detail>(event: Event): Detail {
+  return (event as CustomEvent<Detail>).detail;
 }
 
 export interface SetupMainPipelineListsOptions {
@@ -237,6 +269,9 @@ function setupCustomParamReorderBindings(options: {
 
 export function setupMainPipelineLists(options: SetupMainPipelineListsOptions): MainPipelineListsController {
   ensureOptions(options);
+  const paramNodeListEl = options.paramNodeListEl as ParamNodeListElement;
+  const stepListEl = options.stepListEl as StepListElement;
+  const lutStripListEl = options.lutStripListEl as LutStripListElement;
 
   const addLutFiles = async (files: File[]): Promise<void> => {
     if (!Array.isArray(files) || files.some(file => !(file instanceof File))) {
@@ -278,15 +313,128 @@ export function setupMainPipelineLists(options: SetupMainPipelineListsOptions): 
     }
   };
 
-  mountParamNodeList(options.paramNodeListEl, {
-    getMaterialSettings: options.getMaterialSettings,
-    customParams: options.getCustomParams(),
-    onAddCustomParam: options.onAddCustomParam,
-    onRenameCustomParam: options.onRenameCustomParam,
-    onSetCustomParamValue: options.onSetCustomParamValue,
-    onCommitCustomParamValueChange: options.onCommitCustomParamValueChange,
-    onRemoveCustomParam: options.onRemoveCustomParam,
-    onStatus: options.onStatus,
+  const syncParamNodeListState = (customParams: CustomParamModel[]): void => {
+    paramNodeListEl.customParams = cloneCustomParamArray(customParams);
+  };
+
+  const syncParamNodeMaterialSettings = (materialSettings: MaterialSettings): void => {
+    paramNodeListEl.materialSettings = cloneMaterialSettings(materialSettings);
+  };
+
+  let preservedScrollTop = 0;
+  let preservedScrollLeft = 0;
+  let restoreNonce = 0;
+  let hasPendingMutationSnapshot = false;
+  let deferredZeroCaptureTimer: number | null = null;
+
+  const getStepListScrollRoot = (): HTMLElement | null => {
+    return stepListEl.querySelector<HTMLElement>('.step-root');
+  };
+
+  const captureStepListScrollSnapshot = (): { top: number; left: number } => {
+    const scrollRoot = getStepListScrollRoot();
+    if (!(scrollRoot instanceof HTMLElement)) {
+      return { top: 0, left: 0 };
+    }
+
+    return {
+      top: scrollRoot.scrollTop,
+      left: scrollRoot.scrollLeft,
+    };
+  };
+
+  const syncPreservedScroll = (top: number, left: number): void => {
+    preservedScrollTop = top;
+    preservedScrollLeft = left;
+  };
+
+  const clearDeferredZeroCapture = (): void => {
+    if (deferredZeroCaptureTimer === null) {
+      return;
+    }
+    window.clearTimeout(deferredZeroCaptureTimer);
+    deferredZeroCaptureTimer = null;
+  };
+
+  const captureBeforeMutation = (): void => {
+    clearDeferredZeroCapture();
+    if (preservedScrollTop === 0 && preservedScrollLeft === 0) {
+      const snapshot = captureStepListScrollSnapshot();
+      syncPreservedScroll(snapshot.top, snapshot.left);
+    }
+    hasPendingMutationSnapshot = true;
+  };
+
+  const shouldIgnoreClick = (): boolean => {
+    try {
+      return options.shouldSuppressClick();
+    } catch {
+      options.onStatus(options.t('pipeline.status.suppressClickFailed'), 'error');
+      return false;
+    }
+  };
+
+  const withStepMutation = (callback: () => void): void => {
+    if (shouldIgnoreClick()) {
+      return;
+    }
+    captureBeforeMutation();
+    callback();
+  };
+
+  const syncStepListState = (steps: StepModel[], luts: LutModel[], customParams: CustomParamModel[]): void => {
+    if (!hasPendingMutationSnapshot) {
+      const snapshot = captureStepListScrollSnapshot();
+      syncPreservedScroll(snapshot.top, snapshot.left);
+    }
+    clearDeferredZeroCapture();
+    restoreNonce += 1;
+    stepListEl.preservedScrollTop = preservedScrollTop;
+    stepListEl.preservedScrollLeft = preservedScrollLeft;
+    stepListEl.restoreNonce = restoreNonce;
+    stepListEl.steps = cloneStepArray(steps);
+    stepListEl.luts = cloneLutArray(luts);
+    stepListEl.customParams = cloneCustomParamArray(customParams);
+    hasPendingMutationSnapshot = false;
+  };
+
+  const syncLutStripListState = (luts: LutModel[], steps: StepModel[]): void => {
+    lutStripListEl.luts = cloneLutArray(luts);
+    lutStripListEl.steps = cloneStepArray(steps);
+  };
+
+  syncParamNodeMaterialSettings(options.getMaterialSettings());
+  syncParamNodeListState(options.getCustomParams());
+  stepListEl.computeLutUv = options.computeLutUv;
+  syncStepListState(options.getSteps(), options.getLuts(), options.getCustomParams());
+  lutStripListEl.canEditLut = typeof options.onEditLut === 'function';
+  lutStripListEl.canDuplicateLut = typeof options.onDuplicateLut === 'function';
+  lutStripListEl.canCreateNewLut = typeof options.onNewLut === 'function';
+  syncLutStripListState(options.getLuts(), options.getSteps());
+
+  paramNodeListEl.addEventListener('add-custom-param', () => {
+    options.onAddCustomParam();
+  });
+  paramNodeListEl.addEventListener('rename-custom-param', event => {
+    const detail = readCustomEventDetail<{ paramId: string; label: string }>(event);
+    options.onRenameCustomParam(detail.paramId, detail.label);
+  });
+  paramNodeListEl.addEventListener('set-custom-param-value', event => {
+    const detail = readCustomEventDetail<{ paramId: string; value: number; recordHistory?: boolean }>(event);
+    options.onSetCustomParamValue(detail.paramId, detail.value, {
+      recordHistory: detail.recordHistory,
+    });
+  });
+  paramNodeListEl.addEventListener('commit-custom-param-value-change', () => {
+    options.onCommitCustomParamValueChange();
+  });
+  paramNodeListEl.addEventListener('remove-custom-param', event => {
+    const detail = readCustomEventDetail<{ paramId: string }>(event);
+    options.onRemoveCustomParam(detail.paramId);
+  });
+  paramNodeListEl.addEventListener('status-message', event => {
+    const detail = readCustomEventDetail<{ message: string; kind?: StatusKind }>(event);
+    options.onStatus(detail.message, detail.kind);
   });
 
   setupCustomParamReorderBindings({
@@ -295,40 +443,107 @@ export function setupMainPipelineLists(options: SetupMainPipelineListsOptions): 
     onStatus: options.onStatus,
   });
 
-  mountStepList(options.stepListEl, {
-    steps: options.getSteps(),
-    luts: options.getLuts(),
-    customParams: options.getCustomParams(),
-    onAddStep: options.onAddStep,
-    onDuplicateStep: options.onDuplicateStep,
-    onRemoveStep: options.onRemoveStep,
-    onStepMuteChange: options.onStepMuteChange,
-    onStepLabelChange: options.onStepLabelChange,
-    onStepLutChange: options.onStepLutChange,
-    onStepBlendModeChange: options.onStepBlendModeChange,
-    onStepOpChange: options.onStepOpChange,
-    shouldSuppressClick: options.shouldSuppressClick,
-    onOpenPipelineFilePicker: options.onOpenPipelineFilePicker,
-    onLoadExample: options.onLoadExample,
-    onScheduleConnectionDraw: options.onScheduleConnectionDraw,
-    computeLutUv: options.computeLutUv,
-    onStatus: options.onStatus,
+  stepListEl.addEventListener('add-step', () => {
+    withStepMutation(() => options.onAddStep());
+  });
+  stepListEl.addEventListener('duplicate-step', event => {
+    const detail = readCustomEventDetail<{ stepId: string }>(event);
+    withStepMutation(() => options.onDuplicateStep(detail.stepId));
+  });
+  stepListEl.addEventListener('remove-step', event => {
+    const detail = readCustomEventDetail<{ stepId: string }>(event);
+    withStepMutation(() => options.onRemoveStep(detail.stepId));
+  });
+  stepListEl.addEventListener('step-mute-change', event => {
+    const detail = readCustomEventDetail<{ stepId: string; muted: boolean }>(event);
+    withStepMutation(() => options.onStepMuteChange(detail.stepId, detail.muted));
+  });
+  stepListEl.addEventListener('step-label-change', event => {
+    const detail = readCustomEventDetail<{ stepId: string; label: string | null }>(event);
+    withStepMutation(() => options.onStepLabelChange(detail.stepId, detail.label));
+  });
+  stepListEl.addEventListener('step-lut-change', event => {
+    const detail = readCustomEventDetail<{ stepId: string; lutId: string }>(event);
+    withStepMutation(() => options.onStepLutChange(detail.stepId, detail.lutId));
+  });
+  stepListEl.addEventListener('step-blend-mode-change', event => {
+    const detail = readCustomEventDetail<{ stepId: string; blendMode: StepModel['blendMode'] }>(event);
+    withStepMutation(() => options.onStepBlendModeChange(detail.stepId, detail.blendMode));
+  });
+  stepListEl.addEventListener('step-op-change', event => {
+    const detail = readCustomEventDetail<{ stepId: string; channel: ChannelName; op: BlendOp }>(event);
+    withStepMutation(() => options.onStepOpChange(detail.stepId, detail.channel, detail.op));
+  });
+  stepListEl.addEventListener('open-pipeline-file-picker', () => {
+    if (shouldIgnoreClick()) {
+      return;
+    }
+    options.onOpenPipelineFilePicker();
+  });
+  stepListEl.addEventListener('load-example', event => {
+    if (shouldIgnoreClick()) {
+      return;
+    }
+    const detail = readCustomEventDetail<{ example: PipelinePresetKey }>(event);
+    void options.onLoadExample(detail.example);
+  });
+  stepListEl.addEventListener('schedule-connection-draw', () => {
+    if (!hasPendingMutationSnapshot) {
+      const snapshot = captureStepListScrollSnapshot();
+      const shouldDeferZeroCapture = (snapshot.top === 0 && preservedScrollTop > 0)
+        || (snapshot.left === 0 && preservedScrollLeft > 0);
+      if (shouldDeferZeroCapture) {
+        clearDeferredZeroCapture();
+        deferredZeroCaptureTimer = window.setTimeout(() => {
+          deferredZeroCaptureTimer = null;
+          if (hasPendingMutationSnapshot) {
+            return;
+          }
+          syncPreservedScroll(snapshot.top, snapshot.left);
+        }, 120);
+      } else {
+        clearDeferredZeroCapture();
+        syncPreservedScroll(snapshot.top, snapshot.left);
+      }
+    }
+    options.onScheduleConnectionDraw();
+  });
+  stepListEl.addEventListener('status-message', event => {
+    const detail = readCustomEventDetail<{ message: string; kind?: StatusKind }>(event);
+    options.onStatus(detail.message, detail.kind);
   });
 
-  mountLutStripList(options.lutStripListEl, {
-    luts: options.getLuts(),
-    steps: options.getSteps(),
-    onRemoveLut: options.onRemoveLut,
-    onEditLut: options.onEditLut,
-    onDuplicateLut: options.onDuplicateLut,
-    onNewLut: options.onNewLut,
-    onAddLutFiles: addLutFiles,
-    onStatus: options.onStatus,
+  lutStripListEl.addEventListener('remove-lut', event => {
+    const detail = readCustomEventDetail<{ lutId: string }>(event);
+    options.onRemoveLut(detail.lutId);
+  });
+  lutStripListEl.addEventListener('add-lut-files', event => {
+    const detail = readCustomEventDetail<{ files: File[] }>(event);
+    void addLutFiles(detail.files);
+  });
+  lutStripListEl.addEventListener('edit-lut', event => {
+    const detail = readCustomEventDetail<{ lutId: string }>(event);
+    options.onEditLut?.(detail.lutId);
+  });
+  lutStripListEl.addEventListener('duplicate-lut', event => {
+    const detail = readCustomEventDetail<{ lutId: string }>(event);
+    options.onDuplicateLut?.(detail.lutId);
+  });
+  lutStripListEl.addEventListener('new-lut', () => {
+    options.onNewLut?.();
+  });
+  lutStripListEl.addEventListener('status-message', event => {
+    const detail = readCustomEventDetail<{ message: string; kind?: StatusKind }>(event);
+    options.onStatus(detail.message, detail.kind);
   });
 
   options.renderLutStrip();
 
   return {
     addLutFiles,
+    syncParamNodeListState,
+    syncParamNodeMaterialSettings,
+    syncStepListState,
+    syncLutStripListState,
   };
 }

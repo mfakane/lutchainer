@@ -1,7 +1,7 @@
 <svelte:options customElement={{ tag: 'lut-preview-shape-bar', shadow: 'none' }} />
 
 <script lang="ts">
-  import { onDestroy } from 'svelte';
+  import { createEventDispatcher, onDestroy } from 'svelte';
   import { getLanguage, subscribeLanguageChange, t } from '../i18n.ts';
   import Button from './svelte-button.svelte';
   import DropdownMenu from './svelte-dropdown-menu.svelte';
@@ -19,11 +19,13 @@
 
   export let activeShape: PreviewShapeType = 'sphere';
   export let wireframeEnabled = false;
-  export let onShapeChange: (shape: PreviewShapeType) => void = () => undefined;
-  export let onWireframeChange: (enabled: boolean) => void = () => undefined;
-  export let onExportMainPreviewPng: () => void | Promise<void> = () => undefined;
-  export let onExportStepPreviewPng: () => void | Promise<void> = () => undefined;
-  export let onStatus: (message: string, kind?: StatusKind) => void = () => undefined;
+  const dispatch = createEventDispatcher<{
+    'preview-shape-change': { shape: PreviewShapeType };
+    'preview-wireframe-change': { enabled: boolean };
+    'export-main-preview-png': undefined;
+    'export-step-preview-png': undefined;
+    'status-message': { message: string; kind?: StatusKind };
+  }>();
 
   let language = getLanguage();
   const disposeLanguageSync = subscribeLanguageChange(nextLanguage => {
@@ -45,7 +47,10 @@
 
   function handleSelectShape(nextShape: PreviewShapeType): void {
     if (!isValidPreviewShapeType(nextShape)) {
-      onStatus(t('preview.status.invalidSelectedShape', { value: String(nextShape) }), 'error');
+      dispatch('status-message', {
+        message: t('preview.status.invalidSelectedShape', { value: String(nextShape) }),
+        kind: 'error',
+      });
       return;
     }
 
@@ -54,28 +59,23 @@
     }
 
     activeShape = nextShape;
-    onShapeChange(nextShape);
+    dispatch('preview-shape-change', { shape: nextShape });
   }
 
-  async function handleSelectActionMenu(action: PreviewActionMenuValue): Promise<void> {
-    try {
-      if (action === 'toggle-wireframe') {
-        const next = !wireframeEnabled;
-        onWireframeChange(next);
-        wireframeEnabled = next;
-        return;
-      }
-
-      if (action === 'export-main-preview') {
-        await onExportMainPreviewPng();
-        return;
-      }
-
-      await onExportStepPreviewPng();
-    } catch (error) {
-      const message = error instanceof Error ? error.message : t('common.unknownError');
-      onStatus(tr('preview.status.menuActionFailed', { message }), 'error');
+  function handleSelectActionMenu(action: PreviewActionMenuValue): void {
+    if (action === 'toggle-wireframe') {
+      const next = !wireframeEnabled;
+      wireframeEnabled = next;
+      dispatch('preview-wireframe-change', { enabled: next });
+      return;
     }
+
+    if (action === 'export-main-preview') {
+      dispatch('export-main-preview-png');
+      return;
+    }
+
+    dispatch('export-step-preview-png');
   }
 
   onDestroy(() => {

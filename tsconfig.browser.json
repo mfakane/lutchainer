@@ -8,11 +8,11 @@
     "types": []
   },
   "include": [
-    "src/**/*.ts"
-  ],
-  "exclude": [
-    "src/app/cli/**",
-    "src/platforms/node/**",
-    "src/types/node-shim.d.ts"
+    "src/app/browser/**/*.ts",
+    "src/app/browser/**/*.svelte",
+    "src/platforms/browser/**/*.ts",
+    "src/platforms/webgl/**/*.ts",
+    "src/shared/**/*.ts",
+    "src/features/**/*.ts",
   ]
 }

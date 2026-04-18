@@ -1,9 +1,10 @@
 <svelte:options customElement={{ tag: 'lut-step-list', shadow: 'none' }} />
 
 <script lang="ts">
-  import { afterUpdate, beforeUpdate, onDestroy } from 'svelte';
+  import { afterUpdate, beforeUpdate, createEventDispatcher, onDestroy } from 'svelte';
   import * as pipelineModel from '../../../../features/pipeline/pipeline-model.ts';
   import type { BlendOp, ChannelName, CustomParamModel, LutModel, StepModel } from '../../../../features/step/step-model.ts';
+  import type { PipelinePresetKey } from '../../ui/pipeline-presets.ts';
   import { getLanguage, subscribeLanguageChange, t } from '../../i18n.ts';
   import Button from '../svelte-button.svelte';
   import StepRow from './svelte-step-row.svelte';
@@ -17,19 +18,6 @@
   export let preservedScrollTop = 0;
   export let preservedScrollLeft = 0;
   export let restoreNonce = 0;
-  export let onCaptureScroll: ((top: number, left: number) => void) | undefined = undefined;
-  export let onAddStep: () => void = () => undefined;
-  export let onDuplicateStep: (stepId: string) => void = () => undefined;
-  export let onRemoveStep: (stepId: string) => void = () => undefined;
-  export let onStepMuteChange: (stepId: string, muted: boolean) => void = () => undefined;
-  export let onStepLabelChange: (stepId: string, label: string | null) => void = () => undefined;
-  export let onStepLutChange: (stepId: string, lutId: string) => void = () => undefined;
-  export let onStepBlendModeChange: (stepId: string, blendMode: StepModel['blendMode']) => void = () => undefined;
-  export let onStepOpChange: (stepId: string, channel: ChannelName, op: BlendOp) => void = () => undefined;
-  export let shouldSuppressClick: (() => boolean) | undefined = undefined;
-  export let onOpenPipelineFilePicker: () => void = () => undefined;
-  export let onLoadExample: (example: import('../../ui/pipeline-presets.ts').PipelinePresetKey) => void | Promise<void> = () => undefined;
-  export let onScheduleConnectionDraw: () => void = () => undefined;
   export let computeLutUv:
     | ((
         stepIndex: number,
@@ -39,7 +27,20 @@
         canvasHeight: number,
       ) => { u: number; v: number } | null)
     | undefined = undefined;
-  export let onStatus: (message: string, kind?: StatusKind) => void = () => undefined;
+  const dispatch = createEventDispatcher<{
+    'add-step': undefined;
+    'duplicate-step': { stepId: string };
+    'remove-step': { stepId: string };
+    'step-mute-change': { stepId: string; muted: boolean };
+    'step-label-change': { stepId: string; label: string | null };
+    'step-lut-change': { stepId: string; lutId: string };
+    'step-blend-mode-change': { stepId: string; blendMode: StepModel['blendMode'] };
+    'step-op-change': { stepId: string; channel: ChannelName; op: BlendOp };
+    'open-pipeline-file-picker': undefined;
+    'load-example': { example: PipelinePresetKey };
+    'schedule-connection-draw': undefined;
+    'status-message': { message: string; kind?: StatusKind };
+  }>();
 
   let language = getLanguage();
   let scrollRoot: HTMLDivElement | null = null;
@@ -85,17 +86,8 @@
     return values ? t(key, values as never) : t(key);
   }
 
-  function shouldIgnoreClick(): boolean {
-    if (!shouldSuppressClick) {
-      return false;
-    }
-
-    try {
-      return shouldSuppressClick();
-    } catch {
-      onStatus(tr('pipeline.status.suppressClickFailed'), 'error');
-      return false;
-    }
+  function emitStatus(message: string, kind: StatusKind = 'info'): void {
+    dispatch('status-message', { message, kind });
   }
 
   function captureScrollPosition(): void {
@@ -105,7 +97,6 @@
 
     scrollState.savedTop = scrollRoot.scrollTop;
     scrollState.savedLeft = scrollRoot.scrollLeft;
-    onCaptureScroll?.(scrollState.savedTop, scrollState.savedLeft);
   }
 
   function restoreScrollPosition(target: HTMLElement): void {
@@ -177,13 +168,37 @@
   }
 
   function handleAddStepClick(): void {
-    if (shouldIgnoreClick()) {
-      return;
-    }
-
     captureScrollPosition();
-    onAddStep();
+    dispatch('add-step');
     scheduleScrollRestore();
+  }
+
+  function handleStepMuteChange(stepId: string, muted: boolean): void {
+    dispatch('step-mute-change', { stepId, muted });
+  }
+
+  function handleDuplicateStep(stepId: string): void {
+    dispatch('duplicate-step', { stepId });
+  }
+
+  function handleRemoveStep(stepId: string): void {
+    dispatch('remove-step', { stepId });
+  }
+
+  function handleStepLabelChange(stepId: string, label: string | null): void {
+    dispatch('step-label-change', { stepId, label });
+  }
+
+  function handleStepLutChange(stepId: string, lutId: string): void {
+    dispatch('step-lut-change', { stepId, lutId });
+  }
+
+  function handleStepBlendModeChange(stepId: string, blendMode: StepModel['blendMode']): void {
+    dispatch('step-blend-mode-change', { stepId, blendMode });
+  }
+
+  function handleStepOpChange(stepId: string, channel: ChannelName, op: BlendOp): void {
+    dispatch('step-op-change', { stepId, channel, op });
   }
 
   afterUpdate(() => {
@@ -241,7 +256,7 @@
       return;
     }
     captureScrollPosition();
-    onScheduleConnectionDraw();
+    dispatch('schedule-connection-draw');
   }}
 >
   {#if steps.length > 0}
@@ -252,35 +267,24 @@
         {luts}
         {customParams}
         {tr}
-        shouldIgnoreClick={shouldIgnoreClick}
         onCaptureScroll={captureScrollPosition}
-        {onStepMuteChange}
-        {onDuplicateStep}
-        {onRemoveStep}
-        {onStepLabelChange}
-        {onStepLutChange}
-        {onStepBlendModeChange}
-        {onStepOpChange}
+        onStepMuteChange={handleStepMuteChange}
+        onDuplicateStep={handleDuplicateStep}
+        onRemoveStep={handleRemoveStep}
+        onStepLabelChange={handleStepLabelChange}
+        onStepLutChange={handleStepLutChange}
+        onStepBlendModeChange={handleStepBlendModeChange}
+        onStepOpChange={handleStepOpChange}
         {computeLutUv}
-        {onStatus}
+        onStatus={emitStatus}
       />
     {/each}
   {:else}
     <StepWelcome
       {tr}
-      {onStatus}
-      onOpenPipelineFilePicker={() => {
-        if (shouldIgnoreClick()) {
-          return;
-        }
-        onOpenPipelineFilePicker();
-      }}
-      onLoadExample={async example => {
-        if (shouldIgnoreClick()) {
-          return;
-        }
-        await onLoadExample(example);
-      }}
+      onStatus={emitStatus}
+      onOpenPipelineFilePicker={() => dispatch('open-pipeline-file-picker')}
+      onLoadExample={example => dispatch('load-example', { example })}
     />
   {/if}
 

@@ -12,7 +12,6 @@
   export let luts: LutModel[] = [];
   export let customParams: CustomParamModel[] = [];
   export let tr: (key: string, values?: Record<string, string | number>) => string;
-  export let shouldIgnoreClick: () => boolean = () => false;
   export let onCaptureScroll: () => void = () => undefined;
   export let onStepMuteChange: (stepId: string, muted: boolean) => void = () => undefined;
   export let onDuplicateStep: (stepId: string) => void = () => undefined;
@@ -99,7 +98,6 @@
     {step}
     {stepIndex}
     {tr}
-    {shouldIgnoreClick}
     {onCaptureScroll}
     {onStepMuteChange}
     {onDuplicateStep}

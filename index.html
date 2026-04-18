@@ -34,8 +34,7 @@
             <lut-param-node-list class="param-node-list" id="param-node-list"></lut-param-node-list>
           </aside>
 
-          <div class="step-column" id="step-column">
-          </div>
+          <lut-step-list class="step-column" id="step-column"></lut-step-list>
         </div>
 
         <section class="lut-strip-panel" id="lut-strip-panel">
@@ -112,7 +111,7 @@
         </div>
 
         <dialog class="shader-dialog" id="shader-dialog" aria-labelledby="shader-dialog-title">
-        <section class="shader-dialog-surface"></section>
+        <lut-shader-dialog-content class="shader-dialog-surface" id="shader-dialog-content"></lut-shader-dialog-content>
       </dialog>
       </section>
     </div>
@@ -121,7 +120,7 @@
 
   </div>
   <dialog class="lut-editor-dialog" id="lut-editor-dialog" aria-labelledby="lut-editor-dialog-title">
-    <section class="lut-editor-dialog-surface"></section>
+    <lut-lut-editor-dialog-content class="lut-editor-dialog-surface" id="lut-editor-dialog-content"></lut-lut-editor-dialog-content>
   </dialog>
   <div
     class="pipeline-file-drop-overlay"

@@ -1,7 +1,7 @@
 <svelte:options customElement={{ tag: 'lut-param-node-list', shadow: 'none' }} />
 
 <script lang="ts">
-  import { onDestroy, tick } from 'svelte';
+  import { createEventDispatcher, onDestroy, tick } from 'svelte';
   import * as pipelineModel from '../../../../features/pipeline/pipeline-model.ts';
   import type { MaterialSettings } from '../../../../features/pipeline/pipeline-model.ts';
   import { drawParamPreviewSphereCpu } from '../../../../features/step/step-preview-cpu-render.ts';
@@ -13,14 +13,16 @@
   type StatusKind = 'success' | 'error' | 'info';
   type PreviewState = { param: ParamRef; left: number; top: number };
 
-  export let getMaterialSettings: () => MaterialSettings = () => pipelineModel.DEFAULT_MATERIAL_SETTINGS;
+  export let materialSettings: MaterialSettings = pipelineModel.DEFAULT_MATERIAL_SETTINGS;
   export let customParams: CustomParamModel[] = [];
-  export let onAddCustomParam: () => void = () => undefined;
-  export let onRenameCustomParam: (paramId: string, label: string) => void = () => undefined;
-  export let onSetCustomParamValue: (paramId: string, value: number, options?: { recordHistory?: boolean }) => void = () => undefined;
-  export let onCommitCustomParamValueChange: () => void = () => undefined;
-  export let onRemoveCustomParam: (paramId: string) => void = () => undefined;
-  export let onStatus: (message: string, kind?: StatusKind) => void = () => undefined;
+  const dispatch = createEventDispatcher<{
+    'add-custom-param': undefined;
+    'rename-custom-param': { paramId: string; label: string };
+    'set-custom-param-value': { paramId: string; value: number; recordHistory?: boolean };
+    'commit-custom-param-value-change': undefined;
+    'remove-custom-param': { paramId: string };
+    'status-message': { message: string; kind?: StatusKind };
+  }>();
 
   let language = getLanguage();
   let previewState: PreviewState | null = null;
@@ -68,13 +70,16 @@
         param: param as ParamName,
         pixelWidth: PARAM_PREVIEW_SIZE,
         pixelHeight: PARAM_PREVIEW_SIZE,
-        materialSettings: getMaterialSettings(),
+        materialSettings,
         lightDirection: pipelineModel.STEP_PREVIEW_LIGHT_DIR,
         viewDirection: pipelineModel.STEP_PREVIEW_VIEW_DIR,
       });
     } catch (error) {
       const message = error instanceof Error ? error.message : tr('common.unknownError');
-      onStatus(tr('pipeline.status.paramPreviewDrawFailed', { message }), 'error');
+      dispatch('status-message', {
+        message: tr('pipeline.status.paramPreviewDrawFailed', { message }),
+        kind: 'error',
+      });
     }
   }
 
@@ -135,13 +140,20 @@
       return;
     }
 
-    onSetCustomParamValue(paramId, Number(target.value), { recordHistory: false });
+    dispatch('set-custom-param-value', {
+      paramId,
+      value: Number(target.value),
+      recordHistory: false,
+    });
   }
 
   function handleValueSliderWheel(customParam: CustomParamModel, event: WheelEvent): void {
     const delta = event.deltaY < 0 ? 0.01 : -0.01;
     const nextValue = Math.max(0, Math.min(1, customParam.defaultValue + delta));
-    onSetCustomParamValue(customParam.id, nextValue);
+    dispatch('set-custom-param-value', {
+      paramId: customParam.id,
+      value: nextValue,
+    });
     event.preventDefault();
   }
 
@@ -228,12 +240,15 @@
               value={customParam.label}
               maxlength={pipelineModel.MAX_CUSTOM_PARAM_LABEL_LENGTH}
               aria-label={`Custom param label ${customParam.id}`}
-              on:blur={event => onRenameCustomParam(customParam.id, event.currentTarget.value)}
+              on:blur={event => dispatch('rename-custom-param', {
+                paramId: customParam.id,
+                label: event.currentTarget.value,
+              })}
             />
             <Button
               variant="destructive"
               className="custom-param-remove"
-              handlePress={() => onRemoveCustomParam(customParam.id)}
+              handlePress={() => dispatch('remove-custom-param', { paramId: customParam.id })}
             >
               {tr('pipeline.param.remove')}
             </Button>
@@ -251,7 +266,7 @@
               step="0.01"
               value={String(customParam.defaultValue)}
               on:input={event => handleValueSliderInput(customParam.id, event)}
-              on:change={onCommitCustomParamValueChange}
+              on:change={() => dispatch('commit-custom-param-value-change')}
               on:wheel={event => handleValueSliderWheel(customParam, event)}
             />
             <span data-part="custom-param-value">{customParam.defaultValue.toFixed(2)}</span>
@@ -259,7 +274,7 @@
         </div>
       {/each}
 
-      <Button variant="secondary" className="add-param-button" handlePress={onAddCustomParam}>
+      <Button variant="secondary" className="add-param-button" handlePress={() => dispatch('add-custom-param')}>
         {tr('pipeline.param.add')}
       </Button>
     </div>

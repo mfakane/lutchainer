@@ -1,7 +1,7 @@
 <svelte:options customElement={{ tag: 'lut-material-panel', shadow: 'none' }} />
 
 <script lang="ts">
-  import { onDestroy } from 'svelte';
+  import { createEventDispatcher, onDestroy } from 'svelte';
   import * as pipelineModel from '../../../../features/pipeline/pipeline-model.ts';
   import { getLanguage, subscribeLanguageChange, t } from '../../i18n.ts';
   import { MATERIAL_PRESETS, type MaterialPresetDefinition } from '../../ui/preview-presets.ts';
@@ -11,8 +11,10 @@
   type StatusKind = 'success' | 'error' | 'info';
 
   export let settings: pipelineModel.MaterialSettings = cloneMaterialSettings(pipelineModel.DEFAULT_MATERIAL_SETTINGS);
-  export let commitSettings: (nextSettings: pipelineModel.MaterialSettings) => void = () => undefined;
-  export let onStatus: (message: string, kind?: StatusKind) => void = () => undefined;
+  const dispatch = createEventDispatcher<{
+    'settings-change': { settings: pipelineModel.MaterialSettings };
+    'status-message': { message: string; kind?: StatusKind };
+  }>();
 
   let language = getLanguage();
   const disposeLanguageSync = subscribeLanguageChange(nextLanguage => {
@@ -31,38 +33,38 @@
   function handleBaseColorInput(event: Event): void {
     const input = event.currentTarget as HTMLInputElement | null;
     if (!input) {
-      onStatus(tr('panel.baseColorInputMissing'), 'error');
+      dispatch('status-message', { message: tr('panel.baseColorInputMissing'), kind: 'error' });
       return;
     }
 
     const parsed = pipelineModel.parseHexColor(input.value);
     if (!parsed) {
-      onStatus(tr('panel.baseColorInvalid'), 'error');
+      dispatch('status-message', { message: tr('panel.baseColorInvalid'), kind: 'error' });
       return;
     }
 
-    commitSettings({
+    dispatch('settings-change', { settings: {
       ...settings,
       baseColor: [parsed[0], parsed[1], parsed[2]],
-    });
+    } });
   }
 
   function handleRangeInput(event: Event, binding: pipelineModel.MaterialRangeBinding): void {
     const input = event.currentTarget as HTMLInputElement | null;
     if (!input) {
-      onStatus(tr('panel.rangeInputMissing', { label: binding.label }), 'error');
+      dispatch('status-message', { message: tr('panel.rangeInputMissing', { label: binding.label }), kind: 'error' });
       return;
     }
 
     const parsed = Number(input.value);
     if (!Number.isFinite(parsed)) {
-      onStatus(tr('panel.rangeInvalid', { label: binding.label }), 'error');
+      dispatch('status-message', { message: tr('panel.rangeInvalid', { label: binding.label }), kind: 'error' });
       return;
     }
 
     const next = cloneMaterialSettings(settings);
     next[binding.key] = clamp(parsed, binding.min, binding.max);
-    commitSettings(next);
+    dispatch('settings-change', { settings: next });
   }
 
   function handleMaterialRangeWheel(event: WheelEvent, binding: pipelineModel.MaterialRangeBinding): void {
@@ -71,17 +73,23 @@
     const next = cloneMaterialSettings(settings);
     const delta = event.deltaY < 0 ? step : -step;
     next[binding.key] = clamp(settings[binding.key] + delta, binding.min, binding.max);
-    commitSettings(next);
+    dispatch('settings-change', { settings: next });
   }
 
   function applyMaterialPreset(preset: MaterialPresetDefinition): boolean {
     if (!isValidMaterialSettings(preset.settings)) {
-      onStatus(tr('panel.status.materialPresetInvalidValue', { value: preset.key }), 'error');
+      dispatch('status-message', {
+        message: tr('panel.status.materialPresetInvalidValue', { value: preset.key }),
+        kind: 'error',
+      });
       return false;
     }
 
-    commitSettings(cloneMaterialSettings(preset.settings));
-    onStatus(tr('panel.status.materialPresetApplied', { name: tr(preset.labelKey) }), 'info');
+    dispatch('settings-change', { settings: cloneMaterialSettings(preset.settings) });
+    dispatch('status-message', {
+      message: tr('panel.status.materialPresetApplied', { name: tr(preset.labelKey) }),
+      kind: 'info',
+    });
     return true;
   }
 

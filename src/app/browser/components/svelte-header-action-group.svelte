@@ -1,7 +1,7 @@
 <svelte:options customElement={{ tag: 'lut-header-action-group', shadow: 'none' }} />
 
 <script lang="ts">
-  import { onDestroy } from 'svelte';
+  import { createEventDispatcher, onDestroy } from 'svelte';
   import type { ShaderLanguage } from '../../../features/shader/shader-generator.ts';
   import type { PipelinePresetKey } from '../ui/pipeline-presets.ts';
   import { getLanguage, subscribeLanguageChange, t } from '../i18n.ts';
@@ -21,14 +21,16 @@
 
   export let canUndo = false;
   export let canRedo = false;
-  export let onUndoPipeline: () => void = () => undefined;
-  export let onRedoPipeline: () => void = () => undefined;
-  export let onResetPresetSelected: (preset: PipelinePresetKey) => void | Promise<void> = () => undefined;
-  export let onSavePipeline: () => void | Promise<void> = () => undefined;
-  export let onPipelineFileSelected: (file: File) => void | Promise<void> = () => undefined;
-  export let onOpenShaderDialog: () => void = () => undefined;
-  export let onExportShaderZip: (language: ShaderLanguage) => void | Promise<void> = () => undefined;
-  export let onStatus: (message: string, kind?: StatusKind) => void = () => undefined;
+  const dispatch = createEventDispatcher<{
+    'undo-pipeline': undefined;
+    'redo-pipeline': undefined;
+    'reset-preset-selected': { preset: PipelinePresetKey };
+    'save-pipeline': undefined;
+    'pipeline-file-selected': { file: File };
+    'open-shader-dialog': undefined;
+    'export-shader-zip': { language: ShaderLanguage };
+    'status-message': { message: string; kind?: StatusKind };
+  }>();
 
   let pipelineFileInputRef: HTMLInputElement | null = null;
   let language = getLanguage();
@@ -41,37 +43,31 @@
     return values ? t(key, values as never) : t(key);
   }
 
-  async function handleSavePipeline(): Promise<void> {
-    try {
-      await onSavePipeline();
-    } catch (error) {
-      const message = error instanceof Error ? error.message : tr('common.unknownError');
-      onStatus(tr('header.status.pipelineSaveFailed', { message }), 'error');
-    }
+  function emitStatus(message: string, kind: StatusKind = 'info'): void {
+    dispatch('status-message', { message, kind });
   }
 
-  async function handleResetPresetSelect(preset: PipelinePresetKey): Promise<void> {
-    try {
-      await onResetPresetSelected(preset);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : tr('common.unknownError');
-      onStatus(tr('header.status.pipelineLoadFailed', { message }), 'error');
-    }
+  function handleSavePipeline(): void {
+    dispatch('save-pipeline');
+  }
+
+  function handleResetPresetSelect(preset: PipelinePresetKey): void {
+    dispatch('reset-preset-selected', { preset });
   }
 
   function openPipelineFilePicker(): void {
     if (!pipelineFileInputRef) {
-      onStatus(tr('header.status.missingPipelineFileInput'), 'error');
+      emitStatus(tr('header.status.missingPipelineFileInput'), 'error');
       return;
     }
 
     pipelineFileInputRef.click();
   }
 
-  async function handlePipelineFileInputChange(event: Event): Promise<void> {
+  function handlePipelineFileInputChange(event: Event): void {
     const input = event.currentTarget as HTMLInputElement | null;
     if (!input) {
-      onStatus(tr('header.status.pipelineInputMissing'), 'error');
+      emitStatus(tr('header.status.pipelineInputMissing'), 'error');
       return;
     }
 
@@ -82,34 +78,23 @@
     }
 
     if (!(file instanceof File)) {
-      onStatus(tr('header.status.invalidSelectedFile'), 'error');
+      emitStatus(tr('header.status.invalidSelectedFile'), 'error');
       input.value = '';
       return;
     }
 
     if (!Number.isFinite(file.size) || file.size <= 0) {
-      onStatus(tr('header.status.emptyFile'), 'error');
+      emitStatus(tr('header.status.emptyFile'), 'error');
       input.value = '';
       return;
     }
 
-    try {
-      await onPipelineFileSelected(file);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : tr('common.unknownError');
-      onStatus(tr('header.status.pipelineLoadFailed', { message }), 'error');
-    } finally {
-      input.value = '';
-    }
+    dispatch('pipeline-file-selected', { file });
+    input.value = '';
   }
 
-  async function handleExportShaderZip(nextLanguage: ShaderLanguage): Promise<void> {
-    try {
-      await onExportShaderZip(nextLanguage);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : tr('common.unknownError');
-      onStatus(tr('shader.status.exportFailed', { message }), 'error');
-    }
+  function handleExportShaderZip(nextLanguage: ShaderLanguage): void {
+    dispatch('export-shader-zip', { language: nextLanguage });
   }
 
   onDestroy(() => {
@@ -122,7 +107,7 @@
   id="btn-undo-pipeline"
   ariaLabel={tr('header.undoAria')}
   disabled={!canUndo}
-  handlePress={onUndoPipeline}
+  handlePress={() => dispatch('undo-pipeline')}
 >
   {tr('header.undo')}
 </Button>
@@ -132,7 +117,7 @@
   id="btn-redo-pipeline"
   ariaLabel={tr('header.redoAria')}
   disabled={!canRedo}
-  handlePress={onRedoPipeline}
+  handlePress={() => dispatch('redo-pipeline')}
 >
   {tr('header.redo')}
 </Button>
@@ -152,7 +137,7 @@
       role="menuitem"
       on:click={() => {
         closeMenu();
-        void handleResetPresetSelect('Initial');
+        handleResetPresetSelect('Initial');
       }}
     >
       {tr('header.resetInitial')}
@@ -165,7 +150,7 @@
         role="menuitem"
         on:click={() => {
           closeMenu();
-          void handleResetPresetSelect(preset);
+          handleResetPresetSelect(preset);
         }}
       >
         {preset}
@@ -177,7 +162,7 @@
 <Button variant="secondary" id="btn-load-pipeline" handlePress={openPipelineFilePicker}>
   {tr('header.load')}
 </Button>
-<Button variant="secondary" id="btn-save-pipeline" handlePress={() => void handleSavePipeline()}>
+<Button variant="secondary" id="btn-save-pipeline" handlePress={handleSavePipeline}>
   {tr('header.save')}
 </Button>
 
@@ -187,7 +172,7 @@
   id="pipeline-file-input"
   accept=".lutchain,application/x-lutchain"
   hidden
-  on:change={event => void handlePipelineFileInputChange(event)}
+  on:change={handlePipelineFileInputChange}
 />
 
 <DropdownMenu
@@ -205,7 +190,7 @@
       role="menuitem"
       on:click={() => {
         closeMenu();
-        onOpenShaderDialog();
+        dispatch('open-shader-dialog');
       }}
     >
       {tr('header.openCode')}
@@ -217,7 +202,7 @@
       role="menuitem"
       on:click={() => {
         closeMenu();
-        void handleExportShaderZip('glsl');
+        handleExportShaderZip('glsl');
       }}
     >
       {tr('header.exportShaderZip', { language: 'GLSL' })}
@@ -228,7 +213,7 @@
       role="menuitem"
       on:click={() => {
         closeMenu();
-        void handleExportShaderZip('hlsl');
+        handleExportShaderZip('hlsl');
       }}
     >
       {tr('header.exportShaderZip', { language: 'HLSL' })}
@@ -239,7 +224,7 @@
       role="menuitem"
       on:click={() => {
         closeMenu();
-        void handleExportShaderZip('mme');
+        handleExportShaderZip('mme');
       }}
     >
       {tr('header.exportShaderZip', { language: 'MMEffect' })}

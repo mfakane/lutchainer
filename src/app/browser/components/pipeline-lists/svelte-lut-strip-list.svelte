@@ -1,7 +1,7 @@
 <svelte:options customElement={{ tag: 'lut-lut-strip-list', shadow: 'none' }} />
 
 <script lang="ts">
-  import { afterUpdate, onDestroy } from 'svelte';
+  import { afterUpdate, createEventDispatcher, onDestroy } from 'svelte';
   import type { StepModel, LutModel } from '../../../../features/step/step-model.ts';
   import { getLanguage, subscribeLanguageChange, t } from '../../i18n.ts';
   import Button from '../svelte-button.svelte';
@@ -11,12 +11,17 @@
 
   export let luts: LutModel[] = [];
   export let steps: StepModel[] = [];
-  export let onRemoveLut: (lutId: string) => void = () => undefined;
-  export let onAddLutFiles: (files: File[]) => void | Promise<void> = () => undefined;
-  export let onEditLut: ((lutId: string) => void) | undefined = undefined;
-  export let onDuplicateLut: ((lutId: string) => void) | undefined = undefined;
-  export let onNewLut: (() => void) | undefined = undefined;
-  export let onStatus: (message: string, kind?: StatusKind) => void = () => undefined;
+  export let canEditLut = false;
+  export let canDuplicateLut = false;
+  export let canCreateNewLut = false;
+  const dispatch = createEventDispatcher<{
+    'remove-lut': { lutId: string };
+    'add-lut-files': { files: File[] };
+    'edit-lut': { lutId: string };
+    'duplicate-lut': { lutId: string };
+    'new-lut': undefined;
+    'status-message': { message: string; kind?: StatusKind };
+  }>();
 
   let language = getLanguage();
   let fileInputRef: HTMLInputElement | null = null;
@@ -45,11 +50,11 @@
 
   function handleRemoveLut(lutId: string): void {
     if (!isNonEmptyString(lutId)) {
-      onStatus(tr('pipeline.lut.invalidId'), 'error');
+      dispatch('status-message', { message: tr('pipeline.lut.invalidId'), kind: 'error' });
       return;
     }
 
-    onRemoveLut(lutId);
+    dispatch('remove-lut', { lutId });
   }
 
   function restoreScrollPosition(targetLeft: number): void {
@@ -96,7 +101,7 @@
 
   function openFilePicker(): void {
     if (!fileInputRef) {
-      onStatus(tr('pipeline.lut.fileInputMissing'), 'error');
+      dispatch('status-message', { message: tr('pipeline.lut.fileInputMissing'), kind: 'error' });
       return;
     }
 
@@ -106,7 +111,7 @@
   async function handleFileInputChange(event: Event): Promise<void> {
     const input = event.currentTarget as HTMLInputElement | null;
     if (!input) {
-      onStatus(tr('pipeline.lut.fileInputFetchFailed'), 'error');
+      dispatch('status-message', { message: tr('pipeline.lut.fileInputFetchFailed'), kind: 'error' });
       return;
     }
 
@@ -118,19 +123,13 @@
 
     const files = Array.from(rawFiles);
     if (files.some(file => !(file instanceof File))) {
-      onStatus(tr('pipeline.lut.fileInputInvalidValue'), 'error');
+      dispatch('status-message', { message: tr('pipeline.lut.fileInputInvalidValue'), kind: 'error' });
       input.value = '';
       return;
     }
 
-    try {
-      await onAddLutFiles(files);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : tr('common.unknownError');
-      onStatus(tr('pipeline.lut.addFailed', { message }), 'error');
-    } finally {
-      input.value = '';
-    }
+    dispatch('add-lut-files', { files });
+    input.value = '';
   }
 
   onDestroy(() => {
@@ -187,7 +186,7 @@
           <div data-part="lut-name">{lut.name}</div>
           <div data-part="lut-stats">{tr('pipeline.lut.stats', { width: lut.width, height: lut.height, count: usageCount(lut.id) })}</div>
           <div data-part="lut-actions">
-            {#if lut.ramp2dData}
+            {#if lut.ramp2dData && (canEditLut || canDuplicateLut)}
               <DropdownMenu
                 wrapperClass="ui-menu-wrap"
                 menuClass="ui-menu lut-menu"
@@ -207,7 +206,7 @@
                     on:click={() => {
                       withPreservedScroll(() => {
                         closeMenu();
-                        onEditLut?.(lut.id);
+                        dispatch('edit-lut', { lutId: lut.id });
                       });
                     }}
                   >
@@ -220,7 +219,7 @@
                     on:click={() => {
                       withPreservedScroll(() => {
                         closeMenu();
-                        onDuplicateLut?.(lut.id);
+                        dispatch('duplicate-lut', { lutId: lut.id });
                       });
                     }}
                   >
@@ -256,9 +255,14 @@
         </div>
       </article>
     {/each}
-    {#if onNewLut}
+    {#if canCreateNewLut}
       <div data-part="lut-add-item">
-        <button type="button" data-part="lut-add-new" aria-label={tr('lutEditor.newLutAria')} on:click={onNewLut}>
+        <button
+          type="button"
+          data-part="lut-add-new"
+          aria-label={tr('lutEditor.newLutAria')}
+          on:click={() => dispatch('new-lut')}
+        >
           {tr('lutEditor.newLut')}
         </button>
         <button type="button" data-part="lut-add-browse" aria-label={tr('pipeline.lut.browseAria')} on:click={openFilePicker}>

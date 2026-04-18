@@ -1,13 +1,14 @@
 <svelte:options customElement={{ tag: 'lut-language-switcher', shadow: 'none' }} />
 
 <script lang="ts">
-  import { onDestroy } from 'svelte';
+  import { createEventDispatcher, onDestroy } from 'svelte';
   import { getLanguage, getLanguageLabel, setLanguage, subscribeLanguageChange, t } from '../i18n.ts';
   import Button from './svelte-button.svelte';
 
-  export let onStatus: (message: string, kind?: 'success' | 'error' | 'info') => void = () => undefined;
-
   type Language = 'ja' | 'en';
+  const dispatch = createEventDispatcher<{
+    'status-message': { message: string; kind?: 'success' | 'error' | 'info' };
+  }>();
 
   let language: Language = getLanguage();
   const disposeLanguageSync = subscribeLanguageChange(nextLanguage => {
@@ -20,7 +21,10 @@
 
   function handleLanguageSelect(nextLanguage: unknown): void {
     if (!isLanguage(nextLanguage)) {
-      onStatus(t('header.status.invalidLanguageSelection', { value: String(nextLanguage) }), 'error');
+      dispatch('status-message', {
+        message: t('header.status.invalidLanguageSelection', { value: String(nextLanguage) }),
+        kind: 'error',
+      });
       return;
     }
 

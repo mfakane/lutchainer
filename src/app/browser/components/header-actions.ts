@@ -1,9 +1,6 @@
 import type { ShaderLanguage } from '../../../features/shader/shader-generator.ts';
 import { t, type Language } from '../i18n.ts';
 import type { PipelinePresetKey } from '../ui/pipeline-presets.ts';
-import { mountSvelteHost } from './custom-element-host.ts';
-import './svelte-header-action-group.svelte';
-import './svelte-language-switcher.svelte';
 
 type StatusKind = 'success' | 'error' | 'info';
 type StatusReporter = (message: string, kind?: StatusKind) => void;
@@ -21,16 +18,17 @@ interface HeaderActionGroupMountOptions {
   onStatus: StatusReporter;
 }
 
-interface HeaderActionGroupController {
-  dispose: () => void;
-  syncHistory: (canUndo: boolean, canRedo: boolean) => void;
-  onStatus: StatusReporter;
+interface StatusMessageDetail {
+  message: string;
+  kind?: StatusKind;
 }
 
-const LANGUAGE_SWITCHER_TAG = 'lut-language-switcher';
-const HEADER_ACTION_GROUP_TAG = 'lut-header-action-group';
+interface HeaderActionGroupElement extends HTMLElement {
+  canUndo: boolean;
+  canRedo: boolean;
+}
 
-let activeHeaderActionGroupController: HeaderActionGroupController | null = null;
+let activeHeaderActionGroupElement: HeaderActionGroupElement | null = null;
 let headerActionStatusReporter: StatusReporter = () => undefined;
 
 function isBoolean(value: unknown): value is boolean {
@@ -84,12 +82,9 @@ export function mountLanguageSwitcher(target: HTMLElement): void {
     throw new Error('言語スイッチャーの描画先要素が不正です。');
   }
 
-  mountSvelteHost({
-    tagName: LANGUAGE_SWITCHER_TAG,
-    target,
-    props: {
-      onStatus: headerActionStatusReporter,
-    },
+  target.addEventListener('status-message', event => {
+    const detail = (event as CustomEvent<StatusMessageDetail>).detail;
+    headerActionStatusReporter(detail.message, detail.kind);
   });
 }
 
@@ -101,55 +96,49 @@ export function mountHeaderActionGroup(target: HTMLElement, options: HeaderActio
   ensureMountOptions(options);
   headerActionStatusReporter = options.onStatus;
 
-  if (activeHeaderActionGroupController) {
-    activeHeaderActionGroupController.dispose();
-    activeHeaderActionGroupController = null;
-  }
+  const element = target as HeaderActionGroupElement;
+  element.canUndo = options.initialCanUndo;
+  element.canRedo = options.initialCanRedo;
+  activeHeaderActionGroupElement = element;
 
-  const host = mountSvelteHost({
-    tagName: HEADER_ACTION_GROUP_TAG,
-    target,
-    props: {
-      canUndo: options.initialCanUndo,
-      canRedo: options.initialCanRedo,
-      onUndoPipeline: options.onUndoPipeline,
-      onRedoPipeline: options.onRedoPipeline,
-      onResetPresetSelected: options.onResetPresetSelected,
-      onSavePipeline: options.onSavePipeline,
-      onPipelineFileSelected: options.onPipelineFileSelected,
-      onOpenShaderDialog: options.onOpenShaderDialog,
-      onExportShaderZip: options.onExportShaderZip,
-      onStatus: options.onStatus,
-    },
+  element.addEventListener('undo-pipeline', () => {
+    options.onUndoPipeline();
   });
-
-  activeHeaderActionGroupController = {
-    dispose: () => host.destroyHost(),
-    syncHistory: (canUndo, canRedo) => {
-      if (!isBoolean(canUndo) || !isBoolean(canRedo)) {
-        headerActionStatusReporter(
-          t('header.status.invalidHistorySyncValue', {
-            value: `canUndo=${String(canUndo)}, canRedo=${String(canRedo)}`,
-          }),
-          'error',
-        );
-        return;
-      }
-
-      host.setHostProps({ canUndo, canRedo });
-    },
-    onStatus: options.onStatus,
-  };
+  element.addEventListener('redo-pipeline', () => {
+    options.onRedoPipeline();
+  });
+  element.addEventListener('reset-preset-selected', event => {
+    const detail = (event as CustomEvent<{ preset: PipelinePresetKey }>).detail;
+    void options.onResetPresetSelected(detail.preset);
+  });
+  element.addEventListener('save-pipeline', () => {
+    void options.onSavePipeline();
+  });
+  element.addEventListener('pipeline-file-selected', event => {
+    const detail = (event as CustomEvent<{ file: File }>).detail;
+    void options.onPipelineFileSelected(detail.file);
+  });
+  element.addEventListener('open-shader-dialog', () => {
+    options.onOpenShaderDialog();
+  });
+  element.addEventListener('export-shader-zip', event => {
+    const detail = (event as CustomEvent<{ language: ShaderLanguage }>).detail;
+    void options.onExportShaderZip(detail.language);
+  });
+  element.addEventListener('status-message', event => {
+    const detail = (event as CustomEvent<StatusMessageDetail>).detail;
+    options.onStatus(detail.message, detail.kind);
+  });
 }
 
 export function syncHeaderActionHistoryState(canUndo: boolean, canRedo: boolean): void {
-  const controller = activeHeaderActionGroupController;
-  if (!controller) {
+  const element = activeHeaderActionGroupElement;
+  if (!element) {
     return;
   }
 
   if (!isBoolean(canUndo) || !isBoolean(canRedo)) {
-    controller.onStatus(
+    headerActionStatusReporter(
       t('header.status.invalidHistorySyncArg', {
         value: `canUndo=${String(canUndo)}, canRedo=${String(canRedo)}`,
       }),
@@ -158,5 +147,6 @@ export function syncHeaderActionHistoryState(canUndo: boolean, canRedo: boolean)
     return;
   }
 
-  controller.syncHistory(canUndo, canRedo);
+  element.canUndo = canUndo;
+  element.canRedo = canRedo;
 }

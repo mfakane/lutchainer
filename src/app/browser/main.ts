@@ -38,6 +38,7 @@ import type { StepPreviewRenderer } from '../../platforms/webgl/step-preview-ren
 import {
   syncHeaderActionHistoryState,
 } from './components/header-actions.ts';
+import './components/register-custom-elements.ts';
 import { getMountedStepListElement } from './components/pipeline-lists/index.ts';
 import {
   syncPreviewShapeBarState,

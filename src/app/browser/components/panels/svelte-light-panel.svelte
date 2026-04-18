@@ -1,7 +1,7 @@
 <svelte:options customElement={{ tag: 'lut-light-panel', shadow: 'none' }} />
 
 <script lang="ts">
-  import { onDestroy } from 'svelte';
+  import { createEventDispatcher, onDestroy } from 'svelte';
   import * as pipelineModel from '../../../../features/pipeline/pipeline-model.ts';
   import { getLanguage, subscribeLanguageChange, t } from '../../i18n.ts';
   import { LIGHT_PRESETS, type LightPresetDefinition } from '../../ui/preview-presets.ts';
@@ -11,8 +11,10 @@
   type StatusKind = 'success' | 'error' | 'info';
 
   export let settings: pipelineModel.LightSettings = cloneLightSettings(pipelineModel.DEFAULT_LIGHT_SETTINGS);
-  export let commitSettings: (nextSettings: pipelineModel.LightSettings) => void = () => undefined;
-  export let onStatus: (message: string, kind?: StatusKind) => void = () => undefined;
+  const dispatch = createEventDispatcher<{
+    'settings-change': { settings: pipelineModel.LightSettings };
+    'status-message': { message: string; kind?: StatusKind };
+  }>();
 
   let language = getLanguage();
   const disposeLanguageSync = subscribeLanguageChange(nextLanguage => {
@@ -31,40 +33,46 @@
   function handleColorInput(event: Event, kind: 'light' | 'ambient'): void {
     const input = event.currentTarget as HTMLInputElement | null;
     if (!input) {
-      onStatus(tr(kind === 'light' ? 'panel.lightColorInputMissing' : 'panel.ambientColorInputMissing'), 'error');
+      dispatch('status-message', {
+        message: tr(kind === 'light' ? 'panel.lightColorInputMissing' : 'panel.ambientColorInputMissing'),
+        kind: 'error',
+      });
       return;
     }
 
     const parsed = pipelineModel.parseHexColor(input.value);
     if (!parsed) {
-      onStatus(tr(kind === 'light' ? 'panel.lightColorInvalid' : 'panel.ambientColorInvalid'), 'error');
+      dispatch('status-message', {
+        message: tr(kind === 'light' ? 'panel.lightColorInvalid' : 'panel.ambientColorInvalid'),
+        kind: 'error',
+      });
       return;
     }
 
-    commitSettings({
+    dispatch('settings-change', { settings: {
       ...settings,
       ...(kind === 'light'
         ? { lightColor: [parsed[0], parsed[1], parsed[2]] as [number, number, number] }
         : { ambientColor: [parsed[0], parsed[1], parsed[2]] as [number, number, number] }),
-    });
+    } });
   }
 
   function handleRangeInput(event: Event, binding: pipelineModel.LightRangeBinding): void {
     const input = event.currentTarget as HTMLInputElement | null;
     if (!input) {
-      onStatus(tr('panel.rangeInputMissing', { label: binding.label }), 'error');
+      dispatch('status-message', { message: tr('panel.rangeInputMissing', { label: binding.label }), kind: 'error' });
       return;
     }
 
     const parsed = Number(input.value);
     if (!Number.isFinite(parsed)) {
-      onStatus(tr('panel.rangeInvalid', { label: binding.label }), 'error');
+      dispatch('status-message', { message: tr('panel.rangeInvalid', { label: binding.label }), kind: 'error' });
       return;
     }
 
     const next = cloneLightSettings(settings);
     next[binding.key] = clamp(parsed, binding.min, binding.max);
-    commitSettings(next);
+    dispatch('settings-change', { settings: next });
   }
 
   function handleLightRangeWheel(event: WheelEvent, binding: pipelineModel.LightRangeBinding): void {
@@ -73,21 +81,27 @@
     const delta = event.deltaY < 0 ? step : -step;
     const next = cloneLightSettings(settings);
     next[binding.key] = clamp(settings[binding.key] + delta, binding.min, binding.max);
-    commitSettings(next);
+    dispatch('settings-change', { settings: next });
   }
 
   function toggleGizmo(): void {
-    commitSettings({ ...settings, showGizmo: !settings.showGizmo });
+    dispatch('settings-change', { settings: { ...settings, showGizmo: !settings.showGizmo } });
   }
 
   function applyLightPreset(preset: LightPresetDefinition): boolean {
     if (!isValidLightSettings(preset.settings)) {
-      onStatus(tr('panel.status.lightPresetInvalidValue', { value: preset.key }), 'error');
+      dispatch('status-message', {
+        message: tr('panel.status.lightPresetInvalidValue', { value: preset.key }),
+        kind: 'error',
+      });
       return false;
     }
 
-    commitSettings(cloneLightSettings(preset.settings));
-    onStatus(tr('panel.status.lightPresetApplied', { name: tr(preset.labelKey) }), 'info');
+    dispatch('settings-change', { settings: cloneLightSettings(preset.settings) });
+    dispatch('status-message', {
+      message: tr('panel.status.lightPresetApplied', { name: tr(preset.labelKey) }),
+      kind: 'info',
+    });
     return true;
   }
 

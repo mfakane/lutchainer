@@ -1,6 +1,6 @@
 import * as pipelineModel from '../../../../features/pipeline/pipeline-model.ts';
 import { t } from '../../i18n.ts';
-import { mountSvelteHost, type SvelteHostElement } from '../custom-element-host.ts';
+import { syncParamNodeListMaterialSettings } from '../pipeline-lists/index.ts';
 import {
   cloneLightSettings,
   cloneMaterialSettings,
@@ -11,21 +11,22 @@ import {
   type LightPanelMountOptions,
   type MaterialPanelMountOptions,
   type StatusKind,
-  type StatusReporter,
 } from './shared.ts';
-import './svelte-light-panel.svelte';
-import './svelte-material-panel.svelte';
-import './svelte-status-panel.svelte';
 
-let disposeMaterialPanel: (() => void) | null = null;
-let syncMaterialPanelInternal: ((nextSettings: pipelineModel.MaterialSettings) => void) | null = null;
-let materialStatusReporter: StatusReporter = () => undefined;
-let materialPanelHost: SvelteHostElement<Record<string, unknown>> | null = null;
+type StatusReporter = (message: string, kind?: StatusKind) => void;
 
-let disposeLightPanel: (() => void) | null = null;
-let syncLightPanelInternal: ((nextSettings: pipelineModel.LightSettings) => void) | null = null;
-let lightStatusReporter: StatusReporter = () => undefined;
-let lightPanelHost: SvelteHostElement<Record<string, unknown>> | null = null;
+interface MaterialPanelElement extends HTMLElement {
+  settings: pipelineModel.MaterialSettings;
+}
+
+interface LightPanelElement extends HTMLElement {
+  settings: pipelineModel.LightSettings;
+}
+
+interface StatusPanelElement extends HTMLElement {
+  message: string;
+  kind: StatusKind;
+}
 
 interface StatusState {
   message: string;
@@ -37,8 +38,11 @@ interface StatusPanelMountOptions {
   initialKind?: StatusKind;
 }
 
-let disposeStatusPanel: (() => void) | null = null;
-let syncStatusPanelInternal: ((nextState: StatusState) => void) | null = null;
+let materialPanelElement: MaterialPanelElement | null = null;
+let lightPanelElement: LightPanelElement | null = null;
+let statusPanelElement: StatusPanelElement | null = null;
+let materialStatusReporter: StatusReporter = () => undefined;
+let lightStatusReporter: StatusReporter = () => undefined;
 
 export function mountMaterialPanel(target: HTMLElement, options: MaterialPanelMountOptions): void {
   if (!(target instanceof HTMLElement)) {
@@ -48,44 +52,27 @@ export function mountMaterialPanel(target: HTMLElement, options: MaterialPanelMo
   ensureMaterialMountOptions(options);
   materialStatusReporter = options.onStatus;
 
-  if (disposeMaterialPanel) {
-    disposeMaterialPanel();
-    disposeMaterialPanel = null;
-  }
+  const element = target as MaterialPanelElement;
+  element.settings = cloneMaterialSettings(options.initialSettings);
+  syncParamNodeListMaterialSettings(options.initialSettings);
+  materialPanelElement = element;
 
-  const initialSettings = cloneMaterialSettings(options.initialSettings);
-  materialPanelHost?.destroyHost();
-  materialPanelHost = mountSvelteHost({
-    tagName: 'lut-material-panel',
-    target,
-    props: {
-      settings: initialSettings,
-      commitSettings: (nextSettings: pipelineModel.MaterialSettings): void => {
-        if (!isValidMaterialSettings(nextSettings)) {
-          materialStatusReporter(t('panel.status.materialUpdateInvalid'), 'error');
-          return;
-        }
-
-        const cloned = cloneMaterialSettings(nextSettings);
-        materialPanelHost?.setHostProps({ settings: cloned });
-        options.onSettingsChange(cloned);
-      },
-      onStatus: options.onStatus,
-    },
-  });
-
-  syncMaterialPanelInternal = nextSettings => {
-    if (!isValidMaterialSettings(nextSettings)) {
-      materialStatusReporter(t('panel.status.materialSyncInvalid'), 'error');
+  element.addEventListener('settings-change', event => {
+    const detail = (event as CustomEvent<{ settings: pipelineModel.MaterialSettings }>).detail;
+    if (!isValidMaterialSettings(detail.settings)) {
+      materialStatusReporter(t('panel.status.materialUpdateInvalid'), 'error');
       return;
     }
-    materialPanelHost?.setHostProps({ settings: cloneMaterialSettings(nextSettings) });
-  };
 
-  disposeMaterialPanel = () => {
-    materialPanelHost?.destroyHost();
-    materialPanelHost = null;
-  };
+    const cloned = cloneMaterialSettings(detail.settings);
+    element.settings = cloned;
+    syncParamNodeListMaterialSettings(cloned);
+    options.onSettingsChange(cloned);
+  });
+  element.addEventListener('status-message', event => {
+    const detail = (event as CustomEvent<{ message: string; kind?: StatusKind }>).detail;
+    options.onStatus(detail.message, detail.kind);
+  });
 }
 
 export function mountLightPanel(target: HTMLElement, options: LightPanelMountOptions): void {
@@ -96,44 +83,25 @@ export function mountLightPanel(target: HTMLElement, options: LightPanelMountOpt
   ensureLightMountOptions(options);
   lightStatusReporter = options.onStatus;
 
-  if (disposeLightPanel) {
-    disposeLightPanel();
-    disposeLightPanel = null;
-  }
+  const element = target as LightPanelElement;
+  element.settings = cloneLightSettings(options.initialSettings);
+  lightPanelElement = element;
 
-  const initialSettings = cloneLightSettings(options.initialSettings);
-  lightPanelHost?.destroyHost();
-  lightPanelHost = mountSvelteHost({
-    tagName: 'lut-light-panel',
-    target,
-    props: {
-      settings: initialSettings,
-      commitSettings: (nextSettings: pipelineModel.LightSettings): void => {
-        if (!isValidLightSettings(nextSettings)) {
-          lightStatusReporter(t('panel.status.lightUpdateInvalid'), 'error');
-          return;
-        }
-
-        const cloned = cloneLightSettings(nextSettings);
-        lightPanelHost?.setHostProps({ settings: cloned });
-        options.onSettingsChange(cloned);
-      },
-      onStatus: options.onStatus,
-    },
-  });
-
-  syncLightPanelInternal = nextSettings => {
-    if (!isValidLightSettings(nextSettings)) {
-      lightStatusReporter(t('panel.status.lightSyncInvalid'), 'error');
+  element.addEventListener('settings-change', event => {
+    const detail = (event as CustomEvent<{ settings: pipelineModel.LightSettings }>).detail;
+    if (!isValidLightSettings(detail.settings)) {
+      lightStatusReporter(t('panel.status.lightUpdateInvalid'), 'error');
       return;
     }
-    lightPanelHost?.setHostProps({ settings: cloneLightSettings(nextSettings) });
-  };
 
-  disposeLightPanel = () => {
-    lightPanelHost?.destroyHost();
-    lightPanelHost = null;
-  };
+    const cloned = cloneLightSettings(detail.settings);
+    element.settings = cloned;
+    options.onSettingsChange(cloned);
+  });
+  element.addEventListener('status-message', event => {
+    const detail = (event as CustomEvent<{ message: string; kind?: StatusKind }>).detail;
+    options.onStatus(detail.message, detail.kind);
+  });
 }
 
 export function syncMaterialPanelState(nextSettings: pipelineModel.MaterialSettings): void {
@@ -142,7 +110,11 @@ export function syncMaterialPanelState(nextSettings: pipelineModel.MaterialSetti
     return;
   }
 
-  syncMaterialPanelInternal?.(nextSettings);
+  if (materialPanelElement) {
+    const cloned = cloneMaterialSettings(nextSettings);
+    materialPanelElement.settings = cloned;
+    syncParamNodeListMaterialSettings(cloned);
+  }
 }
 
 export function syncLightPanelState(nextSettings: pipelineModel.LightSettings): void {
@@ -151,7 +123,9 @@ export function syncLightPanelState(nextSettings: pipelineModel.LightSettings): 
     return;
   }
 
-  syncLightPanelInternal?.(nextSettings);
+  if (lightPanelElement) {
+    lightPanelElement.settings = cloneLightSettings(nextSettings);
+  }
 }
 
 function isValidStatusKind(value: unknown): value is StatusKind {
@@ -201,32 +175,18 @@ export function mountStatusPanel(target: HTMLElement, options?: StatusPanelMount
   }
 
   const initialState = normalizeInitialStatusState(options);
-
-  if (disposeStatusPanel) {
-    disposeStatusPanel();
-    disposeStatusPanel = null;
-  }
-
-  const statusHost = mountSvelteHost({
-    tagName: 'lut-status-panel',
-    target,
-    props: {
-      message: initialState.message,
-      kind: initialState.kind,
-    },
-  });
-
-  syncStatusPanelInternal = nextState => {
-    assertValidStatusState(nextState);
-    statusHost.setHostProps(nextState);
-  };
-
-  disposeStatusPanel = () => {
-    statusHost.destroyHost();
-  };
+  const element = target as StatusPanelElement;
+  element.message = initialState.message;
+  element.kind = initialState.kind;
+  statusPanelElement = element;
 }
 
 export function syncStatusPanelState(nextState: StatusState): void {
   assertValidStatusState(nextState);
-  syncStatusPanelInternal?.(nextState);
+  if (!statusPanelElement) {
+    return;
+  }
+
+  statusPanelElement.message = nextState.message;
+  statusPanelElement.kind = nextState.kind;
 }

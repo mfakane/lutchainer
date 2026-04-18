@@ -7,7 +7,6 @@
   export let step: StepModel;
   export let stepIndex: number;
   export let tr: (key: string, values?: Record<string, string | number>) => string;
-  export let shouldIgnoreClick: () => boolean = () => false;
   export let onCaptureScroll: () => void = () => undefined;
   export let onStepMuteChange: (stepId: string, muted: boolean) => void = () => undefined;
   export let onDuplicateStep: (stepId: string) => void = () => undefined;
@@ -21,9 +20,6 @@
   }
 
   function captureBeforeAction(): boolean {
-    if (shouldIgnoreClick()) {
-      return false;
-    }
     onCaptureScroll();
     return true;
   }
