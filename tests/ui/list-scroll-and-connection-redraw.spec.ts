@@ -80,8 +80,9 @@ async function getVisibleDataId(
   rootSelector: string,
   itemSelector: string,
   dataKey: string,
+  options?: { minVisibleRatio?: number },
 ): Promise<string> {
-  const result = await page.evaluate(({ rootSelector, itemSelector, dataKey }) => {
+  const result = await page.evaluate(({ rootSelector, itemSelector, dataKey, minVisibleRatio }) => {
     const root = document.querySelector<HTMLElement>(rootSelector);
     if (!(root instanceof HTMLElement)) {
       return null;
@@ -91,16 +92,22 @@ async function getVisibleDataId(
     const items = Array.from(root.querySelectorAll<HTMLElement>(itemSelector));
     const visibleItem = items.find(item => {
       const rect = item.getBoundingClientRect();
+      const visibleWidth = Math.max(0, Math.min(rect.right, rootRect.right) - Math.max(rect.left, rootRect.left));
+      const visibleHeight = Math.max(0, Math.min(rect.bottom, rootRect.bottom) - Math.max(rect.top, rootRect.top));
+      const visibleRatio = rect.width > 0 && rect.height > 0
+        ? (visibleWidth * visibleHeight) / (rect.width * rect.height)
+        : 0;
       return rect.width > 0
         && rect.height > 0
         && rect.top < rootRect.bottom
         && rect.bottom > rootRect.top
         && rect.left < rootRect.right
-        && rect.right > rootRect.left;
+        && rect.right > rootRect.left
+        && visibleRatio >= minVisibleRatio;
     });
 
     return visibleItem?.dataset[dataKey] ?? null;
-  }, { rootSelector, itemSelector, dataKey });
+  }, { rootSelector, itemSelector, dataKey, minVisibleRatio: options?.minVisibleRatio ?? 0 });
 
   if (typeof result !== 'string' || result.length === 0) {
     throw new Error(`Visible item with data key ${dataKey} was not found for ${itemSelector}.`);
@@ -186,7 +193,11 @@ test.describe('List scroll retention and connection redraw', () => {
 
     await resetConnectionRedrawProbe(page);
     const scrollBeforeEdit = (await getScrollMetrics(stepScrollRoot)).scrollTop;
-    const visibleStepId = await getVisibleDataId(page, '#step-column > div', '[data-step-item="true"]', 'stepId');
+    // Avoid partially visible rows at the scroll edge, which can make Playwright auto-scroll
+    // the nested list to reveal the action button before clicking it.
+    const visibleStepId = await getVisibleDataId(page, '#step-column > div', '[data-step-item="true"]', 'stepId', {
+      minVisibleRatio: 0.9,
+    });
     const visibleStep = page.locator(`[data-step-item="true"][data-step-id="${visibleStepId}"]`);
     await visibleStep.getByRole('button', { name: 'Duplicate' }).click();
 
