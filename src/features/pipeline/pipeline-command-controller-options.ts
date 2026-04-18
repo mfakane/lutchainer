@@ -2,7 +2,7 @@ import type { AppTranslator } from '../../shared/i18n/browser-translation-contra
 import { parseNonEmptyText } from '../../shared/lutchain/lutchain-archive.ts';
 import type { CustomParamModel, LutModel, ParamRef, StepModel } from '../step/step-model.ts';
 import type { PipelineStateSnapshot } from './pipeline-state.ts';
-import type { SocketAxis } from './pipeline-view.ts';
+import type { SocketAxis } from './pipeline-socket-types.ts';
 
 export type StatusKind = 'success' | 'error' | 'info';
 

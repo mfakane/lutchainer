@@ -3,7 +3,7 @@ import type {
     SocketAxis,
     SocketDragState,
     StepReorderDragState,
-} from '../../../features/pipeline/pipeline-view.ts';
+} from './pipeline-view.ts';
 import type { ParamRef } from '../../../features/step/step-model.ts';
 import {
     bindPointerDragSources,

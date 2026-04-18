@@ -1,4 +1,4 @@
-import type { SocketAxis, SocketDragState, SocketDropTarget } from '../../../features/pipeline/pipeline-view.ts';
+import type { SocketAxis, SocketDragState, SocketDropTarget } from '../pipeline/pipeline-view.ts';
 import type { ParamRef } from '../../../features/step/step-model.ts';
 import {
   isValidSocketDragState,

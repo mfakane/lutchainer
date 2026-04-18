@@ -6,7 +6,7 @@ import {
 import type {
   LutReorderDragState,
   StepReorderDragState,
-} from '../../../features/pipeline/pipeline-view.ts';
+} from '../pipeline/pipeline-view.ts';
 import type {
   StepPreviewDebugController,
 } from '../../../features/step/step-preview-debug-controller.ts';

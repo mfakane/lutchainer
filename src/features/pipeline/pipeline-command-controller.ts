@@ -12,7 +12,7 @@ import {
     type SetCustomParamValueOptions,
 } from './pipeline-command-controller-options.ts';
 import * as pipelineModel from './pipeline-model.ts';
-import type { SocketAxis } from './pipeline-view.ts';
+import type { SocketAxis } from './pipeline-socket-types.ts';
 
 export type {
     AddStepOptions,

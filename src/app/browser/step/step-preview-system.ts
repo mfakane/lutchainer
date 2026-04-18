@@ -7,7 +7,7 @@ import {
 import type { StepPreviewRenderer } from '../../../platforms/webgl/step-preview-renderer.ts';
 import {
   drawStepPreviewSphereCpu,
-} from '../../../features/step/step-preview-cpu-render.ts';
+} from '../../../platforms/browser/step-preview-cpu-render.ts';
 import {
   buildStepPreviewDrawOptions,
   ensureStepPreviewRendererProgram,

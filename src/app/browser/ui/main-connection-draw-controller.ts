@@ -5,7 +5,7 @@ import {
 import type {
   SocketDragState,
   SocketDropTarget,
-} from '../../../features/pipeline/pipeline-view.ts';
+} from '../pipeline/pipeline-view.ts';
 import type {
   StepModel,
 } from '../../../features/step/step-model.ts';

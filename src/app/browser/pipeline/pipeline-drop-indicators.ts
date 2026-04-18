@@ -1,9 +1,9 @@
 import { getReorderPlacementFromElements } from '../interactions/reorder-list.ts';
-import * as pipelineView from '../../../features/pipeline/pipeline-view.ts';
+import * as pipelineView from './pipeline-view.ts';
 import type {
   LutReorderDragState,
   StepReorderDragState,
-} from '../../../features/pipeline/pipeline-view.ts';
+} from './pipeline-view.ts';
 
 export interface StepDropPlacement {
   stepId: string | null;

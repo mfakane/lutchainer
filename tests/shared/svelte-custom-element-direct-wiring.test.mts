@@ -8,7 +8,7 @@ function readSource(relativePath: string): string {
 }
 
 test('index.html mounts Svelte custom elements directly', () => {
-  const source = readSource('index.html');
+  const source = readSource('src/app/browser/index.html');
   assert.match(source, /<lut-step-list[^>]*id="step-column"/);
   assert.match(source, /<lut-shader-dialog-content[^>]*id="shader-dialog-content"/);
   assert.match(source, /<lut-lut-editor-dialog-content[^>]*id="lut-editor-dialog-content"/);

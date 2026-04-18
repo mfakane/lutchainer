@@ -254,7 +254,7 @@ export async function serializePipelineAsZip(
 
   for (const lut of luts) {
     const filename = `luts/${lut.id}.png`;
-    const pngBytes = await adapter.canvasToPngBytes(lut.image);
+    const pngBytes = await adapter.imageToPngBytes(lut.image);
     zipFiles[filename] = pngBytes;
     lutEntries.push({
       id: lut.id,

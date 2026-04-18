@@ -1,23 +1,23 @@
 import type {
-    LightSettings,
-    MaterialSettings,
-} from '../pipeline/pipeline-model.ts';
+  LightSettings,
+  MaterialSettings,
+} from '../../features/pipeline/pipeline-model.ts';
 import type {
-    Color,
-    CustomParamModel,
-    LutModel,
-    ParamName,
-    StepModel,
-    StepParamContext,
-    StepRuntimeModel,
-} from './step-model.ts';
+  Color,
+  CustomParamModel,
+  LutModel,
+  ParamName,
+  StepModel,
+  StepParamContext,
+  StepRuntimeModel,
+} from '../../features/step/step-model.ts';
 import {
-    evaluateStepParam,
-} from './step-param-evaluators.ts';
+  evaluateStepParam,
+} from '../../features/step/step-param-evaluators.ts';
 import {
-    composeColorFromSteps,
-    resolveStepRuntimeModels,
-} from './step-runtime.ts';
+  composeColorFromSteps,
+  resolveStepRuntimeModels,
+} from '../../features/step/step-runtime.ts';
 import { clamp01 } from '../../shared/utils/color.ts';
 
 export interface DrawStepPreviewSphereCpuInput {

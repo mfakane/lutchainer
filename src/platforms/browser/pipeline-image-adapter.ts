@@ -1,9 +1,11 @@
 import {
     MAX_PIPELINE_IMAGE_SIDE,
+    type LutImportFile,
     type PipelineImageAdapter,
 } from '../../features/pipeline/pipeline-model.ts';
 import {
     type ColorWithAlpha,
+    type LutImageHandle,
     type LutModel,
 } from '../../features/step/step-model.ts';
 import type { PipelineZipLutEntry } from '../../shared/lutchain/lutchain-archive.ts';
@@ -68,9 +70,17 @@ function loadImageFromFile(file: File): Promise<HTMLImageElement> {
   });
 }
 
-function canvasToPngBytes(canvas: HTMLCanvasElement): Promise<Uint8Array> {
+function isCanvasElement(value: LutImageHandle): value is HTMLCanvasElement {
+  return value instanceof HTMLCanvasElement;
+}
+
+function imageToPngBytes(image: LutImageHandle): Promise<Uint8Array> {
+  if (!isCanvasElement(image)) {
+    throw new Error('PNG export requires an HTMLCanvasElement-backed LUT image.');
+  }
+
   return new Promise((resolve, reject) => {
-    canvas.toBlob(blob => {
+    image.toBlob(blob => {
       if (!blob) {
         reject(new Error('PNG変換に失敗しました。'));
         return;
@@ -181,7 +191,10 @@ export function createBrowserPipelineImageAdapter(): PipelineImageAdapter {
         thumbUrl: canvas.toDataURL('image/png'),
       };
     },
-    createLutFromFile: async file => {
+    createLutFromFile: async (file: LutImportFile) => {
+      if (!(file instanceof File)) {
+        throw new Error('Browser pipeline image adapter requires a File input.');
+      }
       const img = await loadImageFromFile(file);
       const maxSide = 512;
       const scale = Math.min(1, maxSide / Math.max(img.width, img.height));
@@ -199,7 +212,7 @@ export function createBrowserPipelineImageAdapter(): PipelineImageAdapter {
 
       return createLutFromCanvas(file.name, canvas, 'lut-file');
     },
-    canvasToPngBytes,
+    imageToPngBytes,
     createLutFromZipPngBytes,
   };
 }

@@ -1,5 +1,10 @@
 import { strToU8, zipSync } from 'fflate';
-import { getShaderGenerator, type ShaderBuildInput, type ShaderLanguage } from './shader-generator.ts';
+import {
+  getShaderGenerator,
+  type ShaderBuildInput,
+  type ShaderLanguage,
+} from '../../features/shader/shader-generator.ts';
+import type { LutImageHandle } from '../../features/step/step-model.ts';
 
 export interface ExportShaderZipResult {
   ok: boolean;
@@ -71,9 +76,17 @@ export function buildShaderExportDownloadFilename(language: ShaderLanguage, now:
   return `${SHADER_EXPORT_DOWNLOAD_BASENAME}-${languageLabel}-${yyyy}${mm}${dd}-${hh}${min}${ss}.zip`;
 }
 
-function canvasToPngBytes(canvas: HTMLCanvasElement): Promise<Uint8Array> {
+function isBlobEncodableImage(value: LutImageHandle): value is LutImageHandle & Pick<HTMLCanvasElement, 'toBlob'> {
+  return typeof (value as Partial<HTMLCanvasElement>).toBlob === 'function';
+}
+
+function imageToPngBytes(image: LutImageHandle): Promise<Uint8Array> {
+  if (!isBlobEncodableImage(image)) {
+    throw new Error('PNG export requires a browser canvas-backed LUT image.');
+  }
+
   return new Promise((resolve, reject) => {
-    canvas.toBlob(blob => {
+    image.toBlob(blob => {
       if (!blob) {
         reject(new Error('PNG conversion failed.'));
         return;
@@ -98,7 +111,7 @@ export async function serializeShaderExportAsZip(
   }
 
   for (const lut of input.luts) {
-    zipFiles[`${lut.id}.png`] = await canvasToPngBytes(lut.image);
+    zipFiles[`${lut.id}.png`] = await imageToPngBytes(lut.image);
   }
 
   return zipSync(zipFiles);

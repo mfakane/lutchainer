@@ -1,4 +1,4 @@
-import * as pipelineView from '../../../features/pipeline/pipeline-view.ts';
+import * as pipelineView from '../pipeline/pipeline-view.ts';
 import {
   isValidSocketDragState,
   isValidSocketDropTarget,

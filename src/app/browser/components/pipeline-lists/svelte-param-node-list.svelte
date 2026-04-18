@@ -4,7 +4,7 @@
   import { createEventDispatcher, onDestroy, tick } from 'svelte';
   import * as pipelineModel from '../../../../features/pipeline/pipeline-model.ts';
   import type { MaterialSettings } from '../../../../features/pipeline/pipeline-model.ts';
-  import { drawParamPreviewSphereCpu } from '../../../../features/step/step-preview-cpu-render.ts';
+  import { drawParamPreviewSphereCpu } from '../../../../platforms/browser/step-preview-cpu-render.ts';
   import type { CustomParamModel, ParamName, ParamRef } from '../../../../features/step/step-model.ts';
   import { getLanguage, subscribeLanguageChange, t } from '../../i18n.ts';
   import Button from '../svelte-button.svelte';

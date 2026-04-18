@@ -1,6 +1,6 @@
 import * as pipelineModel from '../../../features/pipeline/pipeline-model.ts';
-import type { SocketDragState, SocketDropTarget } from '../../../features/pipeline/pipeline-view.ts';
-import * as pipelineView from '../../../features/pipeline/pipeline-view.ts';
+import type { SocketDragState, SocketDropTarget } from '../pipeline/pipeline-view.ts';
+import * as pipelineView from '../pipeline/pipeline-view.ts';
 
 function isFiniteNumber(value: unknown): value is number {
   return typeof value === 'number' && Number.isFinite(value);

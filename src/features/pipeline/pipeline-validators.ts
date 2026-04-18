@@ -65,7 +65,7 @@ export function isValidBlendMode(value: string): value is BlendMode {
   return BLEND_MODES.some(mode => mode.key === value);
 }
 
-export function isZipLikeFile(file: File): boolean {
+export function isZipLikeFile(file: { name?: string; type?: string }): boolean {
   return isZipLikeFileDescriptor(file);
 }
 

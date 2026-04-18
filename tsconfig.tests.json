@@ -14,10 +14,11 @@
     "src/app/browser/pipeline/pipeline-apply.ts",
     "src/app/cli/**/*.ts",
     "src/features/**/*.ts",
+    "src/platforms/browser/**/*.ts",
     "src/platforms/webgl/renderer.ts",
     "src/platforms/webgl/lut-texture-utils.ts",
     "src/platforms/node/**/*.ts",
     "src/shared/**/*.ts",
-    "src/types/node-shim.d.ts"
+    "src/types/**/*.d.ts"
   ]
 }

@@ -20,10 +20,10 @@ import {
   setLuts as setPipelineLuts,
   setSteps as setPipelineSteps,
 } from '../../features/pipeline/pipeline-state.ts';
-import * as pipelineView from '../../features/pipeline/pipeline-view.ts';
+import * as pipelineView from './pipeline/pipeline-view.ts';
 import {
   createShaderExportSystem,
-} from '../../features/shader/shader-export-system.ts';
+} from '../../platforms/browser/shader-export-system.ts';
 import { MAX_STEP_LABEL_LENGTH } from '../../features/step/step-model.ts';
 import {
   createStepPreviewDebugController,
@@ -38,12 +38,12 @@ import type { StepPreviewRenderer } from '../../platforms/webgl/step-preview-ren
 import {
   syncHeaderActionHistoryState,
 } from './components/header-actions.ts';
-import './components/register-custom-elements.ts';
 import { getMountedStepListElement } from './components/pipeline-lists/index.ts';
 import {
   syncPreviewShapeBarState,
   syncPreviewWireframeState,
 } from './components/preview-shape-bar.ts';
+import './components/register-custom-elements.ts';
 import {
   getLanguage,
   subscribeLanguageChange,

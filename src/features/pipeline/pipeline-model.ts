@@ -16,6 +16,7 @@ import {
   type Color,
   type ColorWithAlpha,
   type CustomParamModel,
+  type LutImageHandle,
   type LutModel,
   type ParamName,
   type ParamRef,
@@ -146,10 +147,16 @@ export interface CreateCustomParamResult {
   error: string | null;
 }
 
+export interface LutImportFile {
+  name: string;
+  type: string;
+  size: number;
+}
+
 export interface PipelineImageAdapter {
   createLutFromPainter: (name: string, painter: (u: number, v: number) => ColorWithAlpha) => LutModel;
-  createLutFromFile: (file: File) => Promise<LutModel>;
-  canvasToPngBytes: (canvas: HTMLCanvasElement) => Promise<Uint8Array>;
+  createLutFromFile: (file: LutImportFile) => Promise<LutModel>;
+  imageToPngBytes: (image: LutImageHandle) => Promise<Uint8Array>;
   createLutFromZipPngBytes: (entry: PipelineZipLutEntry, pngBytes: Uint8Array) => Promise<LutModel>;
 }
 
@@ -166,8 +173,8 @@ function assertValidPipelineImageAdapter(adapter: PipelineImageAdapter): void {
   if (typeof adapter.createLutFromFile !== 'function') {
     throw new Error('PipelineImageAdapter.createLutFromFile が不正です。');
   }
-  if (typeof adapter.canvasToPngBytes !== 'function') {
-    throw new Error('PipelineImageAdapter.canvasToPngBytes が不正です。');
+  if (typeof adapter.imageToPngBytes !== 'function') {
+    throw new Error('PipelineImageAdapter.imageToPngBytes が不正です。');
   }
   if (typeof adapter.createLutFromZipPngBytes !== 'function') {
     throw new Error('PipelineImageAdapter.createLutFromZipPngBytes が不正です。');
@@ -771,7 +778,7 @@ export function createBuiltinLuts(): LutModel[] {
   return [lutA, lutB, lutC];
 }
 
-export async function createLutFromFile(file: File): Promise<LutModel> {
+export async function createLutFromFile(file: LutImportFile): Promise<LutModel> {
   if (!isRecord(file) || typeof file.name !== 'string' || typeof file.type !== 'string' || !Number.isFinite(file.size)) {
     throw new Error('LUTファイル入力が不正です。');
   }

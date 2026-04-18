@@ -1,5 +1,5 @@
 import * as pipelineModel from '../../../features/pipeline/pipeline-model.ts';
-import type { ExportShaderZipResult } from '../../../features/shader/shader-export-system.ts';
+import type { ExportShaderZipResult } from '../../../platforms/browser/shader-export-system.ts';
 import type { ShaderBuildInput, ShaderLanguage } from '../../../features/shader/shader-generator.ts';
 import type { AppTranslator } from '../../../shared/i18n/browser-translation-contract.ts';
 import {

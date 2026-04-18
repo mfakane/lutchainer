@@ -36,6 +36,10 @@ export type ParamRef = ParamName | `custom:${string}`;
 
 export type Color = [number, number, number];
 export type ColorWithAlpha = [number, number, number, number?];
+export interface LutImageHandle {
+  width: number;
+  height: number;
+}
 export interface CustomParamModel {
   id: string;
   label: string;
@@ -55,7 +59,7 @@ export interface StepModel {
 export interface LutModel {
   id: string;
   name: string;
-  image: HTMLCanvasElement;
+  image: LutImageHandle;
   width: number;
   height: number;
   pixels: Uint8ClampedArray;

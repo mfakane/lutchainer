@@ -45,7 +45,7 @@ export function createPipelineApplyController(
   function applyNow(): void {
     const glslGenerator = getShaderGenerator('glsl');
     const input = options.getShaderBuildInput();
-    const lutError = options.renderer.setLutTextures(input.luts.map(l => l.image));
+    const lutError = options.renderer.setLutTextures(input.luts.map(l => l.image as TexImageSource));
     if (lutError) {
       options.onStatus(lutError, 'error');
       return;

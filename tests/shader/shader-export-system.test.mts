@@ -4,7 +4,7 @@ import { strFromU8, unzipSync } from 'fflate';
 import {
   buildShaderExportDownloadFilename,
   serializeShaderExportAsZip,
-} from '../../src/features/shader/shader-export-system.ts';
+} from '../../src/platforms/browser/shader-export-system.ts';
 import * as shaderTest from './shader-test-helpers.mts';
 
 function withExportableLutCanvases(input: ReturnType<typeof shaderTest.createShaderCoverageBuildInput>) {

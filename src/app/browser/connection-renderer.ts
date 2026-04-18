@@ -1,6 +1,6 @@
 import * as pipelineModel from '../../features/pipeline/pipeline-model.ts';
-import type { SocketAxis, SocketDragState, SocketDropTarget } from '../../features/pipeline/pipeline-view.ts';
-import * as pipelineView from '../../features/pipeline/pipeline-view.ts';
+import type { SocketAxis, SocketDragState, SocketDropTarget } from './pipeline/pipeline-view.ts';
+import * as pipelineView from './pipeline/pipeline-view.ts';
 import type { ParamRef, StepModel } from '../../features/step/step-model.ts';
 import {
     resolveSocketDragPreviewColor,

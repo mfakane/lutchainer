@@ -7,7 +7,7 @@ import {
   syncSocketDropTargetState,
 } from '../interactions/socket-dnd.ts';
 import type { ParamRef } from '../../../features/step/step-model.ts';
-import type { SocketAxis, SocketDragState, SocketDropTarget } from '../../../features/pipeline/pipeline-view.ts';
+import type { SocketAxis, SocketDragState, SocketDropTarget } from './pipeline-view.ts';
 import type { AppTranslator } from '../../../shared/i18n/browser-translation-contract.ts';
 
 type StatusKind = 'success' | 'error' | 'info';

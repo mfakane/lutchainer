@@ -10,7 +10,7 @@ import {
     replacePipelineState,
     setLuts as setPipelineLuts,
 } from '../../../features/pipeline/pipeline-state.ts';
-import * as pipelineView from '../../../features/pipeline/pipeline-view.ts';
+import * as pipelineView from '../pipeline/pipeline-view.ts';
 import {
     resolveLutUvAtPixel,
 } from '../../../features/step/step-lut-uv-resolver.ts';

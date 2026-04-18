@@ -144,7 +144,7 @@ export function ensureStepPreviewRendererProgram(
   assertValidEnsureProgramInput(input);
 
   const { renderer, steps, luts, customParams } = input;
-  const lutError = renderer.setLutTextures(luts.map(lut => lut.image));
+  const lutError = renderer.setLutTextures(luts.map(lut => lut.image as TexImageSource));
   if (lutError) {
     return {
       ok: false,

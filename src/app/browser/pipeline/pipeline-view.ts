@@ -1,6 +1,17 @@
-import { type ParamRef } from '../step/step-model.ts';
+import { type ParamRef } from '../../../features/step/step-model.ts';
+import {
+  isValidSocketAxis,
+  type LutReorderDragState,
+  type SocketAxis,
+  type StepReorderDragState,
+} from '../../../features/pipeline/pipeline-socket-types.ts';
 
-export type SocketAxis = 'x' | 'y';
+export {
+  isValidSocketAxis,
+  type LutReorderDragState,
+  type SocketAxis,
+  type StepReorderDragState,
+} from '../../../features/pipeline/pipeline-socket-types.ts';
 
 export type SocketDragState =
   | {
@@ -39,18 +50,6 @@ export type SocketDropTarget =
       stepId: string;
       axis: SocketAxis;
     };
-
-export interface StepReorderDragState {
-  stepId: string;
-  overStepId: string | null;
-  dropAfter: boolean;
-}
-
-export interface LutReorderDragState {
-  lutId: string;
-  overLutId: string | null;
-  dropAfter: boolean;
-}
 
 export interface ReorderIndicatorState<TId extends string | number> {
   draggedId: TId;
@@ -152,10 +151,6 @@ function findIndicatorItemById<TId extends string | number>(
   }
 
   return null;
-}
-
-export function isValidSocketAxis(value: string): value is SocketAxis {
-  return value === 'x' || value === 'y';
 }
 
 export function getParamSocketAnchorPoint(element: HTMLElement, workspaceRect: DOMRect): AnchorPoint {
