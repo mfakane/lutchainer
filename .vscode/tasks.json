@@ -9,7 +9,10 @@
         "kind": "build",
         "isDefault": true
       },
-      "problemMatcher": "$tsc",
+      "problemMatcher": [
+        "$tsc",
+        "$eslint-stylish"
+      ],
       "presentation": {
         "reveal": "silent",
         "panel": "shared",
@@ -22,7 +25,10 @@
       "type": "shell",
       "command": "npm run typecheck",
       "group": "build",
-      "problemMatcher": "$tsc",
+      "problemMatcher": [
+        "$tsc",
+        "$eslint-stylish"
+      ],
       "presentation": {
         "reveal": "silent",
         "panel": "shared",

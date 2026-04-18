@@ -25,14 +25,24 @@
     "test:ui:install": "playwright install --with-deps chromium",
     "test:watch": "node --watch --test tests/**/*.test.mts",
     "validate:lutchain-examples": "node tests/lutchain/validate-examples.mts",
-    "typecheck": "tsc --build tsconfig.json --noEmit"
+    "typecheck": "npm run typecheck:tsc && npm run typecheck:svelte",
+    "typecheck:tsc": "tsc --build tsconfig.json --noEmit",
+    "typecheck:svelte": "svelte-check --tsconfig tsconfig.browser.json --output machine-verbose | node scripts/svelte-check-to-tsc-problems.mjs",
+    "lint": "eslint ."
   },
   "devDependencies": {
+    "@eslint/compat": "^2.0.4",
+    "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.58.2",
-    "@types/node": "^25.6.0",
+    "@types/node": "^22",
     "esbuild": "^0.20.0",
+    "eslint": "^10.2.0",
+    "eslint-plugin-svelte": "^3.17.0",
     "gl": "^8.1.6",
-    "typescript": "^6.0.2"
+    "globals": "^17.4.0",
+    "svelte-check": "^4.4.6",
+    "typescript": "^6.0.2",
+    "typescript-eslint": "^8.58.1"
   },
   "dependencies": {
     "fflate": "^0.8.2",
