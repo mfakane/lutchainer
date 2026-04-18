@@ -29,9 +29,39 @@ function applyShaderDialogState(
 ): void {
   element.buildInput = input;
   element.fragmentShader = fragmentShader;
-  queueMicrotask(() => {
-    element.buildInput = input;
-    element.fragmentShader = fragmentShader;
+}
+
+function createShaderDialogContentElement(
+  sourceEl: Element,
+  input: ShaderBuildInput | null,
+  fragmentShader?: string,
+): ShaderDialogContentElement {
+  const nextElement = document.createElement('lut-shader-dialog-content') as ShaderDialogContentElement;
+
+  if (typeof sourceEl.id === 'string' && sourceEl.id.length > 0) {
+    nextElement.id = sourceEl.id;
+  }
+  nextElement.className = sourceEl.className;
+
+  applyShaderDialogState(nextElement, input, fragmentShader);
+  return nextElement;
+}
+
+function bindShaderDialogContentEvents(
+  contentEl: ShaderDialogContentElement,
+  options: ShaderDialogShellOptions,
+  closeShaderDialog: () => void,
+): void {
+  contentEl.addEventListener('request-close', () => {
+    closeShaderDialog();
+  });
+  contentEl.addEventListener('export-shader', event => {
+    const detail = (event as CustomEvent<{ language: ShaderLanguage }>).detail;
+    void options.onExport(detail.language);
+  });
+  contentEl.addEventListener('status-message', event => {
+    const detail = (event as CustomEvent<{ message: string; kind?: StatusKind }>).detail;
+    options.onStatus(detail.message, detail.kind);
   });
 }
 
@@ -61,8 +91,8 @@ function ensureShaderDialogShellOptions(value: unknown): asserts value is Shader
 export function mountShaderDialogShell(options: ShaderDialogShellOptions): void {
   ensureShaderDialogShellOptions(options);
 
-  const contentEl = options.surfaceEl as ShaderDialogContentElement;
-  applyShaderDialogState(contentEl, null, undefined);
+  let contentEl = createShaderDialogContentElement(options.surfaceEl, null, undefined);
+  options.surfaceEl.replaceWith(contentEl);
 
   const closeShaderDialog = (): void => {
     if (typeof options.dialogEl.close === 'function') {
@@ -105,22 +135,15 @@ export function mountShaderDialogShell(options: ShaderDialogShellOptions): void 
     }
   });
 
-  contentEl.addEventListener('request-close', () => {
-    closeShaderDialog();
-  });
-  contentEl.addEventListener('export-shader', event => {
-    const detail = (event as CustomEvent<{ language: ShaderLanguage }>).detail;
-    void options.onExport(detail.language);
-  });
-  contentEl.addEventListener('status-message', event => {
-    const detail = (event as CustomEvent<{ message: string; kind?: StatusKind }>).detail;
-    options.onStatus(detail.message, detail.kind);
-  });
+  bindShaderDialogContentEvents(contentEl, options, closeShaderDialog);
 
   activeShaderDialogController = {
     open: openShaderDialog,
     sync: (input, fragmentShader) => {
-      applyShaderDialogState(contentEl, input, fragmentShader);
+      const nextContentEl = createShaderDialogContentElement(contentEl, input, fragmentShader);
+      contentEl.replaceWith(nextContentEl);
+      bindShaderDialogContentEvents(nextContentEl, options, closeShaderDialog);
+      contentEl = nextContentEl;
     },
   };
 }
