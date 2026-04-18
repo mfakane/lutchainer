@@ -2,6 +2,7 @@
   import * as pipelineModel from '../../../../features/pipeline/pipeline-model.ts';
   import { getCustomChannelsForBlendMode, getSelectableBlendOpsForChannel } from '../../../../features/step/step-blend-strategies.ts';
   import { BLEND_MODES, type BlendOp, type ChannelName, type CustomParamModel, type LutModel, type StepModel } from '../../../../features/step/step-model.ts';
+  import { type TranslationKey } from '../../i18n.ts';
   import StepHeader from './svelte-step-header.svelte';
   import StepPreview from './svelte-step-preview.svelte';
 
@@ -11,7 +12,7 @@
   export let stepIndex: number;
   export let luts: LutModel[] = [];
   export let customParams: CustomParamModel[] = [];
-  export let tr: (key: string, values?: Record<string, string | number>) => string;
+  export let tr: (key: TranslationKey, values?: Record<string, string | number>) => string;
   export let onCaptureScroll: () => void = () => undefined;
   export let onStepMuteChange: (stepId: string, muted: boolean) => void = () => undefined;
   export let onDuplicateStep: (stepId: string) => void = () => undefined;

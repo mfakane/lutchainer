@@ -2,10 +2,9 @@
 
 <script lang="ts">
   import { afterUpdate, beforeUpdate, createEventDispatcher, onDestroy } from 'svelte';
-  import * as pipelineModel from '../../../../features/pipeline/pipeline-model.ts';
   import type { BlendOp, ChannelName, CustomParamModel, LutModel, StepModel } from '../../../../features/step/step-model.ts';
-  import type { PipelinePresetKey } from '../../ui/pipeline-presets.ts';
   import { getLanguage, subscribeLanguageChange, t } from '../../i18n.ts';
+  import type { PipelinePresetKey } from '../../ui/pipeline-presets.ts';
   import Button from '../svelte-button.svelte';
   import StepRow from './svelte-step-row.svelte';
   import StepWelcome from './svelte-step-welcome.svelte';
@@ -51,7 +50,7 @@
     savedLeft: 0,
     restoring: false,
   };
-  const disposeLanguageSync = subscribeLanguageChange(nextLanguage => {
+  const disposeLanguageSync = subscribeLanguageChange((nextLanguage: ReturnType<typeof getLanguage>) => {
     language = nextLanguage;
   });
 
@@ -285,7 +284,9 @@
       {tr}
       onStatus={emitStatus}
       onOpenPipelineFilePicker={() => dispatch('open-pipeline-file-picker')}
-      onLoadExample={example => dispatch('load-example', { example })}
+      onLoadExample={example => {
+        dispatch('load-example', { example });
+      }}
     />
   {/if}
 

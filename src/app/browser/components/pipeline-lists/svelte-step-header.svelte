@@ -1,12 +1,13 @@
 <script lang="ts">
   import { MAX_STEP_LABEL_LENGTH, type StepModel } from '../../../../features/step/step-model.ts';
+  import { type TranslationKey } from '../../i18n.ts';
   import Button from '../svelte-button.svelte';
 
   type StatusKind = 'success' | 'error' | 'info';
 
   export let step: StepModel;
   export let stepIndex: number;
-  export let tr: (key: string, values?: Record<string, string | number>) => string;
+  export let tr: (key: TranslationKey, values?: Record<string, string | number>) => string;
   export let onCaptureScroll: () => void = () => undefined;
   export let onStepMuteChange: (stepId: string, muted: boolean) => void = () => undefined;
   export let onDuplicateStep: (stepId: string) => void = () => undefined;

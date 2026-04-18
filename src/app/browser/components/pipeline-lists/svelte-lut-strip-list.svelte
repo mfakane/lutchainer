@@ -2,7 +2,7 @@
 
 <script lang="ts">
   import { afterUpdate, createEventDispatcher, onDestroy } from 'svelte';
-  import type { StepModel, LutModel } from '../../../../features/step/step-model.ts';
+  import type { LutModel, StepModel } from '../../../../features/step/step-model.ts';
   import { getLanguage, subscribeLanguageChange, t } from '../../i18n.ts';
   import Button from '../svelte-button.svelte';
   import DropdownMenu from '../svelte-dropdown-menu.svelte';
@@ -31,7 +31,7 @@
     savedLeft: 0,
     restoring: false,
   };
-  const disposeLanguageSync = subscribeLanguageChange(nextLanguage => {
+  const disposeLanguageSync = subscribeLanguageChange((nextLanguage: ReturnType<typeof getLanguage>) => {
     language = nextLanguage;
   });
 

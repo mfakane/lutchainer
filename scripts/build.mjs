@@ -3,6 +3,7 @@ import esbuild from 'esbuild';
 import fs from 'fs';
 import path from 'path';
 import { compile } from 'svelte/compiler';
+import svelteConfig from '../svelte.config.js';
 
 const watchMode = process.argv.includes('--watch');
 const distDir = path.resolve('dist');
@@ -115,14 +116,9 @@ const sveltePlugin = {
     build.onLoad({ filter: /\.svelte$/ }, async (args) => {
       const source = await fs.promises.readFile(args.path, 'utf8');
       const result = compile(source, {
+        ...svelteConfig.compilerOptions,
         filename: args.path,
-        generate: 'client',
-        css: 'injected',
         dev: watchMode,
-        customElement: true,
-        compatibility: {
-          componentApi: 4,
-        },
       });
 
       if (Array.isArray(result.warnings) && result.warnings.length > 0) {

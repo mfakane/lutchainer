@@ -27,7 +27,7 @@
   let language = getLanguage();
   let previewState: PreviewState | null = null;
   let previewCanvas: HTMLCanvasElement | null = null;
-  const disposeLanguageSync = subscribeLanguageChange(nextLanguage => {
+  const disposeLanguageSync = subscribeLanguageChange((nextLanguage: ReturnType<typeof getLanguage>) => {
     language = nextLanguage;
   });
 
