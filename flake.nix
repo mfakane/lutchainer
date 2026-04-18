@@ -88,7 +88,7 @@
             nodejs = nodejs;
 
             # Regenerate with: nix run nixpkgs#prefetch-npm-deps -- package-lock.json
-            npmDepsHash = "sha256-5B9qrclkvVCizuRTkkqFejVT8CrBmRcuzmD/Bb0OGIE=";
+            npmDepsHash = "sha256-cFKalbbAzJ4Ab3QV04NzwCz1xGnQtvdRhQxB68kmmEc=";
 
             # Prevent esbuild from running during postinstall
             npmFlags = [ "--ignore-scripts" ];
