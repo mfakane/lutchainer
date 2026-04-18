@@ -92,6 +92,7 @@
   </div>
   <div data-part="step-actions">
     <Button
+      variant="small"
       active={step.muted}
       ariaPressed={step.muted ? 'true' : 'false'}
       blurOnPress={true}
@@ -107,6 +108,7 @@
       {step.muted ? tr('pipeline.step.unmute') : tr('pipeline.step.mute')}
     </Button>
     <Button
+      variant="small"
       blurOnPress={true}
       handleMouseDown={event => {
         onCaptureScroll();
@@ -120,7 +122,7 @@
       {tr('pipeline.step.duplicate')}
     </Button>
     <Button
-      variant="destructive"
+      variant={["destructive", "small"]}
       blurOnPress={true}
       handleMouseDown={event => {
         onCaptureScroll();
