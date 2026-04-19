@@ -286,7 +286,7 @@ export function createPipelineCommandController(options: PipelineCommandControll
       return;
     }
 
-    const original = luts[idx]!;
+    const original = luts[idx];
     const before = options.captureSnapshot();
     const suffix = options.t('pipeline.lut.copyNameSuffix');
     const newLut: LutModel = {

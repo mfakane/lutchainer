@@ -636,19 +636,19 @@ export function createLutFromPainter(name: string, painter: (u: number, v: numbe
 function interpolateBuiltinRampStops(stops: readonly ColorStop[], t: number): [number, number, number, number] {
   if (stops.length === 0) return [0, 0, 0, 1];
   if (stops.length === 1) {
-    const stop = stops[0]!;
+    const stop = stops[0];
     return [stop.color[0], stop.color[1], stop.color[2], stop.alpha];
   }
 
   const clamped = clamp01(t);
-  const first = stops[0]!;
-  const last = stops[stops.length - 1]!;
+  const first = stops[0];
+  const last = stops[stops.length - 1];
   if (clamped <= first.position) return [first.color[0], first.color[1], first.color[2], first.alpha];
   if (clamped >= last.position) return [last.color[0], last.color[1], last.color[2], last.alpha];
 
   for (let index = 0; index < stops.length - 1; index++) {
-    const a = stops[index]!;
-    const b = stops[index + 1]!;
+    const a = stops[index];
+    const b = stops[index + 1];
     if (clamped < a.position || clamped > b.position) {
       continue;
     }
@@ -668,17 +668,17 @@ function interpolateBuiltinRampStops(stops: readonly ColorStop[], t: number): [n
 function sampleBuiltinRampData(data: ColorRamp2dLutData, u: number, v: number): [number, number, number, number] {
   const ramps = data.ramps;
   if (ramps.length === 0) return [0, 0, 0, 1];
-  if (ramps.length === 1) return interpolateBuiltinRampStops(ramps[0]!.stops, u);
+  if (ramps.length === 1) return interpolateBuiltinRampStops(ramps[0].stops, u);
 
   const clamped = clamp01(v);
-  const first = ramps[0]!;
-  const last = ramps[ramps.length - 1]!;
+  const first = ramps[0];
+  const last = ramps[ramps.length - 1];
   if (clamped <= first.position) return interpolateBuiltinRampStops(first.stops, u);
   if (clamped >= last.position) return interpolateBuiltinRampStops(last.stops, u);
 
   for (let index = 0; index < ramps.length - 1; index++) {
-    const a = ramps[index]!;
-    const b = ramps[index + 1]!;
+    const a = ramps[index];
+    const b = ramps[index + 1];
     if (clamped < a.position || clamped > b.position) {
       continue;
     }

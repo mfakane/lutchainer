@@ -23,14 +23,14 @@ export function interpolateColorStops(
 ): [number, number, number, number] {
   if (stops.length === 0) return [0, 0, 0, 1];
   if (stops.length === 1) {
-    const s = stops[0]!;
+    const s = stops[0];
     return [s.color[0], s.color[1], s.color[2], s.alpha];
   }
 
   const clamped = clamp01(t);
 
-  const first = stops[0]!;
-  const last = stops[stops.length - 1]!;
+  const first = stops[0];
+  const last = stops[stops.length - 1];
 
   // Outside the stop range: clamp to boundary stop color
   if (clamped <= first.position) return [first.color[0], first.color[1], first.color[2], first.alpha];
@@ -41,8 +41,8 @@ export function interpolateColorStops(
   let hi = last;
 
   for (let i = 0; i < stops.length - 1; i++) {
-    const a = stops[i]!;
-    const b = stops[i + 1]!;
+    const a = stops[i];
+    const b = stops[i + 1];
     if (clamped >= a.position && clamped <= b.position) {
       lo = a;
       hi = b;
@@ -69,12 +69,12 @@ export function sampleColorRamp2d(
 ): [number, number, number, number] {
   const ramps = data.ramps;
   if (ramps.length === 0) return [0, 0, 0, 1];
-  if (ramps.length === 1) return interpolateColorStops(ramps[0]!.stops, u);
+  if (ramps.length === 1) return interpolateColorStops(ramps[0].stops, u);
 
   const cv = clamp01(v);
 
-  const firstRamp = ramps[0]!;
-  const lastRamp = ramps[ramps.length - 1]!;
+  const firstRamp = ramps[0];
+  const lastRamp = ramps[ramps.length - 1];
 
   // Outside the ramp range: clamp to boundary ramp color
   if (cv <= firstRamp.position) return interpolateColorStops(firstRamp.stops, u);
@@ -85,8 +85,8 @@ export function sampleColorRamp2d(
   let hiRamp = lastRamp;
 
   for (let i = 0; i < ramps.length - 1; i++) {
-    const a = ramps[i]!;
-    const b = ramps[i + 1]!;
+    const a = ramps[i];
+    const b = ramps[i + 1];
     if (cv >= a.position && cv <= b.position) {
       loRamp = a;
       hiRamp = b;
@@ -157,12 +157,12 @@ export function addRamp(data: ColorRamp2dLutData, position: number): ColorRamp2d
 
   // Find neighbors
   const sorted = data.ramps;
-  let loRamp = sorted[0]!;
-  let hiRamp = sorted[sorted.length - 1]!;
+  let loRamp = sorted[0];
+  let hiRamp = sorted[sorted.length - 1];
 
   for (let i = 0; i < sorted.length - 1; i++) {
-    const a = sorted[i]!;
-    const b = sorted[i + 1]!;
+    const a = sorted[i];
+    const b = sorted[i + 1];
     if (cv >= a.position && cv <= b.position) {
       loRamp = a;
       hiRamp = b;
@@ -296,10 +296,10 @@ export function reorderRamps(
   const without = data.ramps.filter((_, i) => i !== fromIndex);
   // After removal, indices > fromIndex shift down by 1
   const adjustedInsert = insertBeforeIndex > fromIndex ? insertBeforeIndex - 1 : insertBeforeIndex;
-  without.splice(adjustedInsert, 0, data.ramps[fromIndex]!);
+  without.splice(adjustedInsert, 0, data.ramps[fromIndex]);
 
   // Reassign positions to keep the sorted structure
-  const reordered = without.map((ramp, i) => ({ ...ramp, position: positions[i]! }));
+  const reordered = without.map((ramp, i) => ({ ...ramp, position: positions[i] }));
   return { ...data, ramps: reordered };
 }
 
@@ -307,7 +307,7 @@ export function reorderRamps(
 export function moveRamp(data: ColorRamp2dLutData, rampId: string, newPosition: number): ColorRamp2dLutData {
   const idx = data.ramps.findIndex(r => r.id === rampId);
   if (idx < 0) return data;
-  const ramp = data.ramps[idx]!;
+  const ramp = data.ramps[idx];
   const clamped = clamp01(newPosition);
   const updatedRamp = { ...ramp, position: clamped };
   const newRamps = data.ramps.map(r => r.id === rampId ? updatedRamp : r)
