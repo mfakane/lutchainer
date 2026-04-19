@@ -1,7 +1,7 @@
 <svelte:options customElement={{ tag: 'lut-lut-editor-dialog-content', shadow: 'none' }} />
 
 <script lang="ts">
-  import { createEventDispatcher, onDestroy } from 'svelte';
+  import { onDestroy } from 'svelte';
   import {
       MAX_RAMPS,
       MAX_STOPS_PER_RAMP,
@@ -25,7 +25,6 @@
       updateStopColor,
   } from '../../../../features/lut-editor/lut-editor-runtime.ts';
   import { colorToHex, parseHexColor, uid } from '../../../../features/pipeline/pipeline-model.ts';
-  import type { LutModel } from '../../../../features/step/step-model.ts';
   import { getLanguage, subscribeLanguageChange, t } from '../../i18n.ts';
   import { createPointerReorderListController, syncReorderDropIndicators } from '../../interactions/reorder-list.ts';
   import Button from '../svelte-button.svelte';
@@ -49,11 +48,9 @@
     lutId?: string | null;
   } = $props();
 
-  const dispatch = createEventDispatcher<{
-    dirtychange: boolean;
-    'apply-lut': { lutId: string | null; updatedLut: LutModel };
-    'request-close': undefined;
-  }>();
+  function dispatch(eventName: string, detail?: unknown): void {
+    $host().dispatchEvent(new CustomEvent(eventName, { detail, bubbles: true, composed: true }));
+  }
 
   let language = $state(getLanguage());
   const disposeLanguageSync = subscribeLanguageChange(nextLanguage => {

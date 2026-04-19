@@ -1,7 +1,7 @@
 <svelte:options customElement={{ tag: 'lut-param-node-list', shadow: 'none' }} />
 
 <script lang="ts">
-  import { createEventDispatcher, onDestroy, tick } from 'svelte';
+  import { onDestroy, tick } from 'svelte';
   import type { MaterialSettings } from '../../../../features/pipeline/pipeline-model.ts';
   import * as pipelineModel from '../../../../features/pipeline/pipeline-model.ts';
   import type { CustomParamModel, ParamName, ParamRef } from '../../../../features/step/step-model.ts';
@@ -10,7 +10,6 @@
   import Button from '../svelte-button.svelte';
   import { PARAM_PREVIEW_SIZE, PARAM_PREVIEW_TARGETS } from './shared.ts';
 
-  type StatusKind = 'success' | 'error' | 'info';
   type PreviewState = { param: ParamRef; left: number; top: number };
 
   const {
@@ -20,14 +19,9 @@
     materialSettings?: MaterialSettings;
     customParams?: CustomParamModel[];
   } = $props();
-  const dispatch = createEventDispatcher<{
-    'add-custom-param': undefined;
-    'rename-custom-param': { paramId: string; label: string };
-    'set-custom-param-value': { paramId: string; value: number; recordHistory?: boolean };
-    'commit-custom-param-value-change': undefined;
-    'remove-custom-param': { paramId: string };
-    'status-message': { message: string; kind?: StatusKind };
-  }>();
+  function dispatch(eventName: string, detail?: unknown): void {
+    $host().dispatchEvent(new CustomEvent(eventName, { detail, bubbles: true, composed: true }));
+  }
 
   let language = $state(getLanguage());
   let previewState = $state<PreviewState | null>(null);

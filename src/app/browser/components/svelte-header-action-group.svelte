@@ -1,10 +1,10 @@
 <svelte:options customElement={{ tag: 'lut-header-action-group', shadow: 'none' }} />
 
 <script lang="ts">
-  import { createEventDispatcher, onDestroy } from 'svelte';
+  import { onDestroy } from 'svelte';
   import type { ShaderLanguage } from '../../../features/shader/shader-generator.ts';
-  import type { PipelinePresetKey } from '../ui/pipeline-presets.ts';
   import { getLanguage, subscribeLanguageChange, t } from '../i18n.ts';
+  import type { PipelinePresetKey } from '../ui/pipeline-presets.ts';
   import Button from './svelte-button.svelte';
   import DropdownMenu from './svelte-dropdown-menu.svelte';
 
@@ -26,16 +26,9 @@
     canUndo?: boolean;
     canRedo?: boolean;
   } = $props();
-  const dispatch = createEventDispatcher<{
-    'undo-pipeline': undefined;
-    'redo-pipeline': undefined;
-    'reset-preset-selected': { preset: PipelinePresetKey };
-    'save-pipeline': undefined;
-    'pipeline-file-selected': { file: File };
-    'open-shader-dialog': undefined;
-    'export-shader-zip': { language: ShaderLanguage };
-    'status-message': { message: string; kind?: StatusKind };
-  }>();
+  function dispatch(eventName: string, detail?: unknown): void {
+    $host().dispatchEvent(new CustomEvent(eventName, { detail, bubbles: true, composed: true }));
+  }
 
   let pipelineFileInputRef = $state<HTMLInputElement | null>(null);
   let language = $state(getLanguage());

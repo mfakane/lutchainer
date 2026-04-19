@@ -1,10 +1,9 @@
 <svelte:options customElement={{ tag: 'lut-step-list', shadow: 'none' }} />
 
 <script lang="ts">
-  import { createEventDispatcher, onDestroy } from 'svelte';
+  import { onDestroy } from 'svelte';
   import type { BlendOp, ChannelName, CustomParamModel, LutModel, StepModel } from '../../../../features/step/step-model.ts';
   import { getLanguage, subscribeLanguageChange, t } from '../../i18n.ts';
-  import type { PipelinePresetKey } from '../../ui/pipeline-presets.ts';
   import Button from '../svelte-button.svelte';
   import StepRow from './svelte-step-row.svelte';
   import StepWelcome from './svelte-step-welcome.svelte';
@@ -36,20 +35,9 @@
       ) => { u: number; v: number } | null)
     | undefined;
   } = $props();
-  const dispatch = createEventDispatcher<{
-    'add-step': undefined;
-    'duplicate-step': { stepId: string };
-    'remove-step': { stepId: string };
-    'step-mute-change': { stepId: string; muted: boolean };
-    'step-label-change': { stepId: string; label: string | null };
-    'step-lut-change': { stepId: string; lutId: string };
-    'step-blend-mode-change': { stepId: string; blendMode: StepModel['blendMode'] };
-    'step-op-change': { stepId: string; channel: ChannelName; op: BlendOp };
-    'open-pipeline-file-picker': undefined;
-    'load-example': { example: PipelinePresetKey };
-    'schedule-connection-draw': undefined;
-    'status-message': { message: string; kind?: StatusKind };
-  }>();
+  function dispatch(eventName: string, detail?: unknown): void {
+    $host().dispatchEvent(new CustomEvent(eventName, { detail, bubbles: true, composed: true }));
+  }
 
   let language = $state(getLanguage());
   let scrollRoot = $state<HTMLDivElement | null>(null);

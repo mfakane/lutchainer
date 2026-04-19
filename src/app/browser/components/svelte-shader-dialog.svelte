@@ -1,17 +1,16 @@
 <svelte:options customElement={{ tag: 'lut-shader-dialog-content', shadow: 'none' }} />
 
 <script lang="ts">
-  import { createEventDispatcher, onDestroy } from 'svelte';
+  import { onDestroy } from 'svelte';
   import {
-    getShaderGenerator,
-    type ShaderBuildInput,
-    type ShaderGenerator,
-    type ShaderLanguage,
+      getShaderGenerator,
+      type ShaderBuildInput,
+      type ShaderGenerator,
+      type ShaderLanguage,
   } from '../../../features/shader/shader-generator.ts';
   import { getLanguage, subscribeLanguageChange, t } from '../i18n.ts';
   import Button from './svelte-button.svelte';
 
-  type StatusKind = 'success' | 'error' | 'info';
   type ShaderCodeEntryId = 'glsl-fragment' | 'glsl-vertex' | 'hlsl-fragment' | 'mme-fragment';
 
   interface ShaderCodeEntry {
@@ -60,11 +59,9 @@
     buildInput?: ShaderBuildInput | null;
     fragmentShader?: string | undefined;
   } = $props();
-  const dispatch = createEventDispatcher<{
-    'request-close': undefined;
-    'export-shader': { language: ShaderLanguage };
-    'status-message': { message: string; kind?: StatusKind };
-  }>();
+  function dispatch(eventName: string, detail?: unknown): void {
+    $host().dispatchEvent(new CustomEvent(eventName, { detail, bubbles: true, composed: true }));
+  }
 
   let language = $state(getLanguage());
   let activeEntryId = $state<ShaderCodeEntryId>('glsl-fragment');

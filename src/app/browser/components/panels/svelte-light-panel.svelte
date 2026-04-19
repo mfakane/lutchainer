@@ -1,24 +1,21 @@
 <svelte:options customElement={{ tag: 'lut-light-panel', shadow: 'none' }} />
 
 <script lang="ts">
-  import { createEventDispatcher, onDestroy } from 'svelte';
+  import { onDestroy } from 'svelte';
   import * as pipelineModel from '../../../../features/pipeline/pipeline-model.ts';
   import { getLanguage, subscribeLanguageChange, t } from '../../i18n.ts';
   import { LIGHT_PRESETS, type LightPresetDefinition } from '../../ui/preview-presets.ts';
   import DropdownMenu from '../svelte-dropdown-menu.svelte';
   import { clamp, cloneLightSettings, getLightRangeStep, isLightAngleBinding, isValidLightSettings } from './shared.ts';
 
-  type StatusKind = 'success' | 'error' | 'info';
-
   const {
     settings = cloneLightSettings(pipelineModel.DEFAULT_LIGHT_SETTINGS),
   }: {
     settings?: pipelineModel.LightSettings;
   } = $props();
-  const dispatch = createEventDispatcher<{
-    'settings-change': { settings: pipelineModel.LightSettings };
-    'status-message': { message: string; kind?: StatusKind };
-  }>();
+  function dispatch(eventName: string, detail?: unknown): void {
+    $host().dispatchEvent(new CustomEvent(eventName, { detail, bubbles: true, composed: true }));
+  }
 
   let language = $state(getLanguage());
   const disposeLanguageSync = subscribeLanguageChange(nextLanguage => {

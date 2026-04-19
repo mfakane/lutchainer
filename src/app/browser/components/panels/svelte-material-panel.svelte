@@ -1,24 +1,21 @@
 <svelte:options customElement={{ tag: 'lut-material-panel', shadow: 'none' }} />
 
 <script lang="ts">
-  import { createEventDispatcher, onDestroy } from 'svelte';
+  import { onDestroy } from 'svelte';
   import * as pipelineModel from '../../../../features/pipeline/pipeline-model.ts';
   import { getLanguage, subscribeLanguageChange, t } from '../../i18n.ts';
   import { MATERIAL_PRESETS, type MaterialPresetDefinition } from '../../ui/preview-presets.ts';
   import DropdownMenu from '../svelte-dropdown-menu.svelte';
   import { clamp, cloneMaterialSettings, getMaterialRangeStep, isValidMaterialSettings } from './shared.ts';
 
-  type StatusKind = 'success' | 'error' | 'info';
-
   const {
     settings = cloneMaterialSettings(pipelineModel.DEFAULT_MATERIAL_SETTINGS),
   }: {
     settings?: pipelineModel.MaterialSettings;
   } = $props();
-  const dispatch = createEventDispatcher<{
-    'settings-change': { settings: pipelineModel.MaterialSettings };
-    'status-message': { message: string; kind?: StatusKind };
-  }>();
+  function dispatch(eventName: string, detail?: unknown): void {
+    $host().dispatchEvent(new CustomEvent(eventName, { detail, bubbles: true, composed: true }));
+  }
 
   let language = $state(getLanguage());
   const disposeLanguageSync = subscribeLanguageChange(nextLanguage => {

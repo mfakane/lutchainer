@@ -1,13 +1,11 @@
 <svelte:options customElement={{ tag: 'lut-lut-strip-list', shadow: 'none' }} />
 
 <script lang="ts">
-  import { createEventDispatcher, onDestroy } from 'svelte';
+  import { onDestroy } from 'svelte';
   import type { LutModel, StepModel } from '../../../../features/step/step-model.ts';
   import { getLanguage, subscribeLanguageChange, t } from '../../i18n.ts';
   import Button from '../svelte-button.svelte';
   import DropdownMenu from '../svelte-dropdown-menu.svelte';
-
-  type StatusKind = 'success' | 'error' | 'info';
 
   const {
     luts = [],
@@ -22,14 +20,9 @@
     canDuplicateLut?: boolean;
     canCreateNewLut?: boolean;
   } = $props();
-  const dispatch = createEventDispatcher<{
-    'remove-lut': { lutId: string };
-    'add-lut-files': { files: File[] };
-    'edit-lut': { lutId: string };
-    'duplicate-lut': { lutId: string };
-    'new-lut': undefined;
-    'status-message': { message: string; kind?: StatusKind };
-  }>();
+  function dispatch(eventName: string, detail?: unknown): void {
+    $host().dispatchEvent(new CustomEvent(eventName, { detail, bubbles: true, composed: true }));
+  }
 
   let language = $state(getLanguage());
   let fileInputRef = $state<HTMLInputElement | null>(null);

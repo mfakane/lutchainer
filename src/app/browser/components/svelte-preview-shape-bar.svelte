@@ -1,14 +1,13 @@
 <svelte:options customElement={{ tag: 'lut-preview-shape-bar', shadow: 'none' }} />
 
 <script lang="ts">
-  import { createEventDispatcher, onDestroy } from 'svelte';
+  import { onDestroy } from 'svelte';
   import { getLanguage, subscribeLanguageChange, t } from '../i18n.ts';
   import Button from './svelte-button.svelte';
   import DropdownMenu from './svelte-dropdown-menu.svelte';
 
   export type PreviewShapeType = 'sphere' | 'cube' | 'torus';
 
-  type StatusKind = 'success' | 'error' | 'info';
   type PreviewActionMenuValue = 'toggle-wireframe' | 'export-main-preview' | 'export-step-preview';
 
   const PREVIEW_SHAPES: Array<{ key: PreviewShapeType; label: string }> = [
@@ -24,13 +23,9 @@
     activeShape?: PreviewShapeType;
     wireframeEnabled?: boolean;
   } = $props();
-  const dispatch = createEventDispatcher<{
-    'preview-shape-change': { shape: PreviewShapeType };
-    'preview-wireframe-change': { enabled: boolean };
-    'export-main-preview-png': undefined;
-    'export-step-preview-png': undefined;
-    'status-message': { message: string; kind?: StatusKind };
-  }>();
+  function dispatch(eventName: string, detail?: unknown): void {
+    $host().dispatchEvent(new CustomEvent(eventName, { detail, bubbles: true, composed: true }));
+  }
 
   let language = $state(getLanguage());
   const disposeLanguageSync = subscribeLanguageChange(nextLanguage => {
