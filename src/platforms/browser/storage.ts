@@ -47,7 +47,7 @@ export function writeTextToLocalStorage(storageKey: string, value: string): void
   }
 }
 
-export function readJsonFromLocalStorage(storageKey: string): unknown | null {
+export function readJsonFromLocalStorage(storageKey: string): unknown {
   const raw = readTextFromLocalStorage(storageKey);
   if (raw === null) {
     return null;

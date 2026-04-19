@@ -43,7 +43,7 @@ function getNumericRange(
   };
 }
 
-function readJsonFromStorage(storageKey: string): unknown | null {
+function readJsonFromStorage(storageKey: string): unknown {
   if (typeof storageKey !== 'string' || storageKey.trim().length === 0) {
     throw new Error('Storage key must be a non-empty string.');
   }

@@ -165,6 +165,6 @@ export function emitBlendModeCode(
       return lines;
     }
     default:
-      throw new Error(`Unsupported blend mode: ${blendMode satisfies never}`);
+      throw new Error(`Unsupported blend mode: ${String(blendMode)}`);
   }
 }

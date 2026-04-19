@@ -77,17 +77,17 @@ function parseColorRamp2dLutData(value: unknown): ColorRamp2dLutData | undefined
         if (typeof r !== 'number' || typeof g !== 'number' || typeof b !== 'number') return null;
         if (!Number.isFinite(r) || !Number.isFinite(g) || !Number.isFinite(b)) return null;
         return {
-          id: stop.id as string,
-          position: stop.position as number,
+          id: stop.id,
+          position: stop.position,
           color: [r, g, b] as [number, number, number],
-          alpha: stop.alpha as number,
+          alpha: stop.alpha,
         } satisfies ColorStop;
       });
 
       if (stops.some(s => s === null)) return null;
       return {
-        id: ramp.id as string,
-        position: ramp.position as number,
+        id: ramp.id,
+        position: ramp.position,
         stops: stops as NonNullable<typeof stops[number]>[],
       } satisfies ColorRamp;
     });
@@ -95,9 +95,9 @@ function parseColorRamp2dLutData(value: unknown): ColorRamp2dLutData | undefined
     if (ramps.some(r => r === null)) return undefined;
 
     return {
-      name: value.name as string,
-      width: value.width as number,
-      height: value.height as number,
+      name: value.name,
+      width: value.width,
+      height: value.height,
       ramps: ramps as NonNullable<typeof ramps[number]>[],
       ...(value.axisSwap === true ? { axisSwap: true } : {}),
     };

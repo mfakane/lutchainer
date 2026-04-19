@@ -119,7 +119,7 @@ function parseRecordHistoryOption(
   }
 
   if (options.recordHistory !== undefined && typeof options.recordHistory !== 'boolean') {
-    throw new Error(`${errorLabel}.recordHistory は boolean で指定してください: ${String(options.recordHistory)}`);
+    throw new Error(`${errorLabel}.recordHistory は boolean で指定してください: ${JSON.stringify(options.recordHistory)}`);
   }
 
   return {

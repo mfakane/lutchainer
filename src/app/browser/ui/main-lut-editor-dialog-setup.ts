@@ -94,7 +94,7 @@ export function setupMainLutEditorDialog(
     if (lutId === null) {
       // 新規追加
       if (luts.length >= options.maxLuts) {
-        options.onStatus(options.t('main.status.maxLutLimit', { max: options.maxLuts }) as string, 'error');
+        options.onStatus(options.t('main.status.maxLutLimit', { max: options.maxLuts }), 'error');
         return;
       }
       const before = options.captureHistorySnapshot();
@@ -103,14 +103,14 @@ export function setupMainLutEditorDialog(
       options.renderSteps();
       options.scheduleApply();
       options.renderLutStrip();
-      options.onStatus(options.t('lutEditor.status.created', { name: updatedLut.name }) as string, 'success');
+      options.onStatus(options.t('lutEditor.status.created', { name: updatedLut.name }), 'success');
       return;
     }
 
     // 既存置換
     const target = luts.find(l => l.id === lutId);
     if (!target) {
-      options.onStatus(options.t('lutEditor.status.notFound') as string, 'error');
+      options.onStatus(options.t('lutEditor.status.notFound'), 'error');
       return;
     }
     const before = options.captureHistorySnapshot();
@@ -120,7 +120,7 @@ export function setupMainLutEditorDialog(
     options.renderSteps();
     options.scheduleApply();
     options.renderLutStrip();
-    options.onStatus(options.t('lutEditor.status.applied', { name: target.name }) as string, 'success');
+    options.onStatus(options.t('lutEditor.status.applied', { name: target.name }), 'success');
   };
 
   mountLutEditorDialogShell({
@@ -134,7 +134,7 @@ export function setupMainLutEditorDialog(
       const luts = options.getLuts();
       const lut = luts.find(l => l.id === lutId);
       if (!lut) {
-        options.onStatus(options.t('lutEditor.status.notFound') as string, 'error');
+        options.onStatus(options.t('lutEditor.status.notFound'), 'error');
         return;
       }
       const rampData = lut.ramp2dData ?? createDefaultColorRamp2dLutData(lut.name);
@@ -145,10 +145,10 @@ export function setupMainLutEditorDialog(
     createNewLut: () => {
       const luts = options.getLuts();
       if (luts.length >= options.maxLuts) {
-        options.onStatus(options.t('main.status.maxLutLimit', { max: options.maxLuts }) as string, 'error');
+        options.onStatus(options.t('main.status.maxLutLimit', { max: options.maxLuts }), 'error');
         return;
       }
-      const name = options.t('lutEditor.newLutName') as string;
+      const name = options.t('lutEditor.newLutName');
       const rampData = createDefaultColorRamp2dLutData(name);
       // null = 新規作成モード
       syncLutEditorDialogState(rampData, null);
