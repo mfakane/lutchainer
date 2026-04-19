@@ -95,7 +95,7 @@ export class Renderer {
 
     // Create white default texture for u_texture
     const whiteData = new Uint8Array([255, 255, 255, 255]);
-    const whiteTex = gl.createTexture()!;
+    const whiteTex = gl.createTexture();
     gl.bindTexture(gl.TEXTURE_2D, whiteTex);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, whiteData);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
@@ -130,7 +130,7 @@ export class Renderer {
 
     if (!source) return;
 
-    const texture = gl.createTexture()!;
+    const texture = gl.createTexture();
     gl.bindTexture(gl.TEXTURE_2D, texture);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, source);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
@@ -166,7 +166,7 @@ export class Renderer {
       return { success: false, errors };
     }
 
-    const program = gl.createProgram()!;
+    const program = gl.createProgram();
     gl.attachShader(program, vert);
     gl.attachShader(program, frag);
     gl.linkProgram(program);
@@ -197,7 +197,7 @@ export class Renderer {
     }
 
     const makeBuffer = (data: Float32Array | Uint16Array, target: number): WebGLBuffer => {
-      const buf = gl.createBuffer()!;
+      const buf = gl.createBuffer();
       gl.bindBuffer(target, buf);
       gl.bufferData(target, data, gl.STATIC_DRAW);
       return buf;
