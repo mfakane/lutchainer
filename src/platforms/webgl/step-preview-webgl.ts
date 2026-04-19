@@ -104,10 +104,6 @@ function assertValidEnsureProgramInput(input: EnsureStepPreviewRendererProgramIn
 }
 
 function formatShaderErrors(errors: readonly StepPreviewShaderError[]): string {
-  if (!Array.isArray(errors)) {
-    throw new Error('shader errors が不正です。');
-  }
-
   return errors
     .map(error => {
       if (!error || typeof error !== 'object') {

@@ -562,7 +562,7 @@ function detectBrowserLanguage(): Language {
 
   const candidates: unknown[] = [];
   if (Array.isArray(navigator.languages)) {
-    candidates.push(...navigator.languages);
+    candidates.push(...(navigator.languages as readonly string[]));
   }
   candidates.push(navigator.language);
 

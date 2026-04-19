@@ -7,7 +7,7 @@ function ensureSelector(value: unknown): asserts value is string {
 }
 
 function ensureQueryRoot(value: unknown): asserts value is ParentNode {
-  if (!value || typeof value !== 'object' || typeof (value as ParentNode).querySelector !== 'function') {
+  if (!(value instanceof Document || value instanceof Element)) {
     throw new Error('DOM query root must support querySelector.');
   }
 }

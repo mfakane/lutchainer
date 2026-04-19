@@ -64,10 +64,6 @@ function isValidMaterialSettings(value: unknown): value is MaterialSettings {
 }
 
 function assertValidStepRuntimeModels(stepModels: readonly StepRuntimeModel[]): void {
-  if (!Array.isArray(stepModels)) {
-    throw new Error('stepModels は配列で指定してください。');
-  }
-
   for (let index = 0; index < stepModels.length; index += 1) {
     const stepModel = stepModels[index];
     if (!stepModel || typeof stepModel !== 'object' || !stepModel.step || typeof stepModel.step !== 'object') {
