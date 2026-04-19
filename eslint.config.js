@@ -92,6 +92,9 @@ export default defineConfig(
     languageOptions: {
       globals: { ...globals.node, ...globals.browser },
     },
+    rules: {
+      '@typescript-eslint/no-unused-vars': 'off',
+    },
   },
   {
     files: ['src/app/browser/**/*.svelte', 'src/app/browser/**/*.svelte.ts', 'src/app/browser/**/*.svelte.js'],
@@ -105,18 +108,20 @@ export default defineConfig(
     },
     rules: {
       '@typescript-eslint/no-unused-expressions': 'off',
+      '@typescript-eslint/no-deprecated': 'error',
     },
   },
   {
-    files: testFiles,
-    rules: {
-      '@typescript-eslint/no-unused-vars': 'off',
-    },
-  },
-  {
+    extends: [ts.configs.recommendedTypeChecked],
     files: ['src/**/*.ts', 'src/**/*.mts', 'src/**/*.cts'],
+    languageOptions: {
+      parserOptions: {
+        projectService: true,
+      },
+    },
     rules: {
       'preserve-caught-error': 'off',
+      '@typescript-eslint/no-deprecated': 'error',
     },
   }
 );
