@@ -2,17 +2,23 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "TypeScript: Type Check and Build",
-      "type": "shell",
-      "command": "npm run typecheck && npm run build",
+      "label": "TypeScript: Build All",
       "group": {
         "kind": "build",
         "isDefault": true
       },
-      "problemMatcher": [
-        "$tsc",
-        "$eslint-stylish"
-      ],
+      "dependsOn": [
+        "TypeScript: Type Check",
+        "TypeScript: Build",
+        "ESLint: Lint"
+      ]
+    },
+    {
+      "label": "TypeScript: Type Check",
+      "type": "shell",
+      "command": "npm run typecheck",
+      "group": "build",
+      "problemMatcher": "$tsc",
       "presentation": {
         "reveal": "silent",
         "panel": "shared",
@@ -21,14 +27,24 @@
       }
     },
     {
-      "label": "TypeScript: Type Check",
+      "label": "TypeScript: Build",
       "type": "shell",
-      "command": "npm run typecheck",
+      "command": "npm run build",
       "group": "build",
-      "problemMatcher": [
-        "$tsc",
-        "$eslint-stylish"
-      ],
+      "problemMatcher": "$tsc",
+      "presentation": {
+        "reveal": "silent",
+        "panel": "shared",
+        "showReuseMessage": true,
+        "revealProblems": "onProblem"
+      }
+    },
+    {
+      "label": "ESLint: Lint",
+      "type": "shell",
+      "command": "npm run lint",
+      "group": "build",
+      "problemMatcher": "$eslint-stylish",
       "presentation": {
         "reveal": "silent",
         "panel": "shared",
