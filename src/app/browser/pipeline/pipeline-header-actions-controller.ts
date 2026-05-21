@@ -41,10 +41,18 @@ export interface PipelineHeaderActionControllerOptions {
 export interface PipelineHeaderActionController {
   buildMountOptions: () => PipelineHeaderActionMountOptions;
   loadPipelineFile: (file: File) => Promise<void>;
+  setHistoryHandlers: (handlers: { onUndoPipeline: () => void; onRedoPipeline: () => void }) => void;
+  getPipelineHistoryAvailability: () => { canUndo: boolean; canRedo: boolean };
 }
 
 function ensureFunction(value: unknown, label: string): void {
   if (typeof value !== 'function') {
+    throw new Error(`${label} が不正です。`);
+  }
+}
+
+function ensureObject(value: unknown, label: string): asserts value is Record<string, unknown> {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
     throw new Error(`${label} が不正です。`);
   }
 }
@@ -85,12 +93,15 @@ export function createPipelineHeaderActionController(
 ): PipelineHeaderActionController {
   ensureOptions(options);
 
+  let onUndoPipelineHandler = options.onUndoPipeline;
+  let onRedoPipelineHandler = options.onRedoPipeline;
+
   const onUndoPipeline = (): void => {
-    options.onUndoPipeline();
+    onUndoPipelineHandler();
   };
 
   const onRedoPipeline = (): void => {
-    options.onRedoPipeline();
+    onRedoPipelineHandler();
   };
 
   const onResetPresetSelected = async (preset: PipelinePresetKey): Promise<void> => {
@@ -215,5 +226,16 @@ export function createPipelineHeaderActionController(
   return {
     buildMountOptions,
     loadPipelineFile: onPipelineFileSelected,
+    setHistoryHandlers: handlers => {
+      ensureObject(handlers, 'PipelineHeaderActionController: handlers');
+      ensureFunction(handlers.onUndoPipeline, 'PipelineHeaderActionController: handlers.onUndoPipeline');
+      ensureFunction(handlers.onRedoPipeline, 'PipelineHeaderActionController: handlers.onRedoPipeline');
+      onUndoPipelineHandler = handlers.onUndoPipeline;
+      onRedoPipelineHandler = handlers.onRedoPipeline;
+    },
+    getPipelineHistoryAvailability: () => ({
+      canUndo: options.canUndo(),
+      canRedo: options.canRedo(),
+    }),
   };
 }

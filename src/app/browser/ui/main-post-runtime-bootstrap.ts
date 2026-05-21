@@ -1,88 +1,91 @@
 import { MAX_LUTS } from '../../../features/pipeline/pipeline-constants.ts';
 import type {
-    PipelineHistoryActionsController,
+  PipelineHistoryActionsController,
 } from '../../../features/pipeline/pipeline-history-actions.ts';
 import * as pipelineModel from '../../../features/pipeline/pipeline-model.ts';
 import {
-    getCustomParams as getPipelineCustomParams,
-    getLuts as getPipelineLuts,
-    getSteps as getPipelineSteps,
-    replacePipelineState,
-    setLuts as setPipelineLuts,
+  getCustomParams as getPipelineCustomParams,
+  getLuts as getPipelineLuts,
+  getSteps as getPipelineSteps,
+  replacePipelineState,
+  setLuts as setPipelineLuts,
 } from '../../../features/pipeline/pipeline-state.ts';
-import * as pipelineView from '../pipeline/pipeline-view.ts';
+import type { ShaderLanguage } from '../../../features/shader/shader-generator.ts';
 import {
-    resolveLutUvAtPixel,
+  resolveLutUvAtPixel,
 } from '../../../features/step/step-lut-uv-resolver.ts';
 import type {
-    BlendOp,
-    ChannelName,
-    LutModel,
-    StepModel,
+  BlendOp,
+  ChannelName,
+  LutModel,
+  StepModel,
 } from '../../../features/step/step-model.ts';
-import type { ShaderLanguage } from '../../../features/shader/shader-generator.ts';
 import type { AppTranslator } from '../../../shared/i18n/browser-translation-contract.ts';
+import {
+  syncHeaderActionHistoryState,
+} from '../components/header-actions.ts';
 import type {
-    CameraOrbitState,
+  CameraOrbitState,
 } from '../interactions/layout-interactions.ts';
 import {
-    createPipelineFileDropController,
-} from '../pipeline/pipeline-file-drop-controller.ts';
-import {
-    type PipelineApplyController,
+  type PipelineApplyController,
 } from '../pipeline/pipeline-apply.ts';
 import type {
-    PipelineDropIndicatorController,
+  PipelineDropIndicatorController,
 } from '../pipeline/pipeline-drop-indicators.ts';
+import {
+  createPipelineFileDropController,
+} from '../pipeline/pipeline-file-drop-controller.ts';
 import type {
-    PipelineHeaderActionController,
+  PipelineHeaderActionController,
 } from '../pipeline/pipeline-header-actions-controller.ts';
 import type {
-    PipelineSocketDndController,
+  PipelineSocketDndController,
 } from '../pipeline/pipeline-socket-dnd-controller.ts';
+import * as pipelineView from '../pipeline/pipeline-view.ts';
 import type {
-    MainStepRenderingController,
+  MainStepRenderingController,
 } from '../step/main-step-rendering-controller.ts';
 import {
-    clearLutReorderDragState,
-    clearStepReorderDragState,
-    getLutReorderDragState,
-    getStepReorderDragState,
-    getSuppressClickUntil,
-    setLutReorderDragState,
-    setSocketDragState,
-    setStepReorderDragState,
+  clearLutReorderDragState,
+  clearStepReorderDragState,
+  getLutReorderDragState,
+  getStepReorderDragState,
+  getSuppressClickUntil,
+  setLutReorderDragState,
+  setSocketDragState,
+  setStepReorderDragState,
 } from './interaction-state.ts';
 import {
-    setupMainLayoutControls,
+  setupMainLayoutControls,
 } from './main-layout-controls-setup.ts';
 import {
-    setupMainLutEditorDialog,
-} from './main-lut-editor-dialog-setup.ts';
+  setupMainLutEditorTabs,
+} from './main-lut-editor-tab-setup.ts';
 import {
-    setupMainPipelineEditor,
-    type MainPipelineEditorController,
+  setupMainPipelineEditor,
+  type MainPipelineEditorController,
 } from './main-pipeline-editor-setup.ts';
 import type {
-    MainPreviewCaptureController,
+  MainPreviewCaptureController,
 } from './main-preview-capture-controller.ts';
 import type {
-    MainRenderPipeline,
+  MainRenderPipeline,
 } from './main-render-pipeline-setup.ts';
 import {
-    setupMainUi,
+  setupMainUi,
 } from './main-ui-setup.ts';
 import type {
-    PreviewShapeController,
+  PreviewShapeController,
 } from './preview-shape-controller.ts';
 import {
-    getLightSettings,
-    getMaterialSettings,
-    setLightSettings,
-    setMaterialSettings,
+  getLightSettings,
+  getMaterialSettings,
+  setLightSettings,
+  setMaterialSettings,
 } from './scene-state.ts';
 import {
-    isPreviewWireframeOverlayEnabled,
+  isPreviewWireframeOverlayEnabled,
 } from './ui-state.ts';
 
 type StatusKind = 'success' | 'error' | 'info';
@@ -283,6 +286,35 @@ export function bootstrapMainPostRuntime(options: BootstrapMainPostRuntimeOption
     renderLutStrip: () => options.mainStepRendering.renderLutStrip(),
     onStatus: options.onStatus,
     t: options.t,
+    onScheduleConnectionDraw: options.onScheduleConnectionDraw,
+    onActiveTabHistoryStateChange: state => {
+      if (state.isLutTabActive) {
+        syncHeaderActionHistoryState(state.canUndo, state.canRedo);
+        return;
+      }
+
+      const pipelineHistory = options.pipelineHeaderActions.getPipelineHistoryAvailability();
+      syncHeaderActionHistoryState(pipelineHistory.canUndo, pipelineHistory.canRedo);
+    },
+  });
+
+  const runUndoPipeline = (): void => {
+    if (lutEditorController.tryUndoInActiveTab()) {
+      return;
+    }
+    options.pipelineHistoryActions.undo();
+  };
+
+  const runRedoPipeline = (): void => {
+    if (lutEditorController.tryRedoInActiveTab()) {
+      return;
+    }
+    options.pipelineHistoryActions.redo();
+  };
+
+  options.pipelineHeaderActions.setHistoryHandlers({
+    onUndoPipeline: runUndoPipeline,
+    onRedoPipeline: runRedoPipeline,
   });
 
   const mainPipelineEditor: MainPipelineEditorController = setupMainPipelineEditor({
@@ -392,8 +424,8 @@ export function bootstrapMainPostRuntime(options: BootstrapMainPostRuntimeOption
       moveStepToPosition: options.pipelineCommands.moveStepToPosition,
       onScheduleConnectionDraw: options.onScheduleConnectionDraw,
       onUpdateStepSwatches: () => options.mainStepRendering.updateStepSwatches(),
-      onUndoPipeline: options.pipelineHistoryActions.undo,
-      onRedoPipeline: options.pipelineHistoryActions.redo,
+      onUndoPipeline: runUndoPipeline,
+      onRedoPipeline: runRedoPipeline,
       onStatus: options.onStatus,
     },
   });
