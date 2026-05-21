@@ -270,11 +270,9 @@ export function bootstrapMainPostRuntime(options: BootstrapMainPostRuntimeOption
   });
   options.pipelineHistoryActions.clearHistory();
 
-  const lutEditorDialogEl = options.select<HTMLDialogElement>('#lut-editor-dialog');
-  const lutEditorSurfaceEl = options.select<HTMLElement>('.lut-editor-dialog-surface');
-  const lutEditorController = setupMainLutEditorDialog({
-    dialogEl: lutEditorDialogEl,
-    surfaceEl: lutEditorSurfaceEl,
+  const lutEditorController = setupMainLutEditorTabs({
+    pipelineTabContentEl: options.select<HTMLElement>('#pipeline-tab-content'),
+    tabBarEl: options.select<HTMLElement>('#pipeline-tab-bar'),
     getLuts: getPipelineLuts,
     setLuts: setPipelineLuts,
     maxLuts: MAX_LUTS,
