@@ -1,22 +1,22 @@
 import {
-  readTextFromLocalStorage,
-  writeTextToLocalStorage,
+    readTextFromLocalStorage,
+    writeTextToLocalStorage,
 } from '../../platforms/browser/storage.ts';
 import type {
-  AppTranslator,
-  RuntimeTranslationValues,
-  TranslationArgs,
-  TranslationKey,
-  TranslationSchema,
+    AppTranslator,
+    RuntimeTranslationValues,
+    TranslationArgs,
+    TranslationKey,
+    TranslationSchema,
 } from '../../shared/i18n/browser-translation-contract.ts';
 export type {
-  PanelPresetTranslationKey,
-  ParamGroupDescriptionTranslationKey,
-  StaticTranslationKey,
-  TranslationArgs,
-  TranslationKey,
-  TranslationParams,
-  TranslationSchema, AppTranslator as Translator
+    PanelPresetTranslationKey,
+    ParamGroupDescriptionTranslationKey,
+    StaticTranslationKey,
+    TranslationArgs,
+    TranslationKey,
+    TranslationParams,
+    TranslationSchema, AppTranslator as Translator
 } from '../../shared/i18n/browser-translation-contract.ts';
 
 export type Language = 'ja' | 'en';
@@ -261,6 +261,8 @@ const TRANSLATIONS: Record<Language, TranslationSchema> = {
     'lutEditor.status.applied': 'LUT「{name}」を更新しました。',
     'lutEditor.status.created': 'LUT「{name}」を作成しました。',
     'lutEditor.status.notFound': '対象LUTが見つかりません。',
+    'lutEditor.tab.discardConfirm': 'LUT の変更を破棄してタブを閉じますか？',
+
     'lutEditor.newLutName': '新規 LUT',
     'lutEditor.newLut': '新規作成',
     'lutEditor.newLutAria': 'カラーランプエディタで新規LUTを作成',
@@ -503,6 +505,7 @@ const TRANSLATIONS: Record<Language, TranslationSchema> = {
     'lutEditor.status.applied': 'Updated LUT "{name}".',
     'lutEditor.status.created': 'Created LUT "{name}".',
     'lutEditor.status.notFound': 'Target LUT was not found.',
+    'lutEditor.tab.discardConfirm': 'Discard LUT changes and close the tab?',
     'lutEditor.newLutName': 'New LUT',
     'lutEditor.newLut': 'New',
     'lutEditor.newLutAria': 'Create a new LUT in the color ramp editor',

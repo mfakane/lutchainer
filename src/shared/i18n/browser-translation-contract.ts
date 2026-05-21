@@ -1,7 +1,7 @@
 import type {
-  TranslationArgs as SharedTranslationArgs,
-  Translator as SharedTranslator,
-  TranslationValues,
+    TranslationArgs as SharedTranslationArgs,
+    Translator as SharedTranslator,
+    TranslationValues,
 } from './translator.ts';
 
 export interface TranslationSchema {
@@ -222,6 +222,7 @@ export interface TranslationSchema {
   'lutEditor.status.applied': string;
   'lutEditor.status.created': string;
   'lutEditor.status.notFound': string;
+  'lutEditor.tab.discardConfirm': string;
   'lutEditor.newLutName': string;
   'lutEditor.newLut': string;
   'lutEditor.newLutAria': string;
