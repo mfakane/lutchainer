@@ -28,34 +28,43 @@
           <div class="pipeline-help" id="pipeline-help-text">左ノードを選択して、各StepのX/Yソケットへ接続</div>
         </div>
 
-        <div class="pipeline-workspace" id="pipeline-workspace">
-          <svg class="connection-layer" id="connection-layer" aria-hidden="true"></svg>
+        <lut-pipeline-tab-bar class="pipeline-tab-bar" id="pipeline-tab-bar"></lut-pipeline-tab-bar>
 
-          <aside class="param-column">
-            <div class="section-label">Parameters</div>
-            <lut-param-node-list class="param-node-list" id="param-node-list"></lut-param-node-list>
-          </aside>
+        <div class="pipeline-tab-content" id="pipeline-tab-content">
+          <div class="pipeline-tab-pane" data-tab-id="pipeline" id="pipeline-tab-pane-pipeline">
 
-          <lut-step-list class="step-column" id="step-column"></lut-step-list>
-        </div>
+            <div class="pipeline-workspace" id="pipeline-workspace">
+              <svg class="connection-layer" id="connection-layer" aria-hidden="true"></svg>
 
-        <section class="lut-strip-panel" id="lut-strip-panel">
-          <div class="lut-strip-head">
-            <div class="section-label">LUT Library</div>
-          </div>
-          <lut-lut-strip-list class="lut-strip-list" id="lut-strip-list" aria-live="polite"></lut-lut-strip-list>
-          <div
-            class="lut-file-drop-overlay"
-            id="lut-file-drop-overlay"
-            data-active="false"
-            aria-hidden="true"
-          >
-            <div class="lut-file-drop-overlay-card">
-              <div class="lut-file-drop-overlay-title" id="lut-file-drop-title">画像をドロップしてLUT追加</div>
-              <div class="lut-file-drop-overlay-description" id="lut-file-drop-description">PNGやJPEGなどの画像をLUTライブラリへ追加します</div>
+              <aside class="param-column">
+                <div class="section-label">Parameters</div>
+                <lut-param-node-list class="param-node-list" id="param-node-list"></lut-param-node-list>
+              </aside>
+
+              <lut-step-list class="step-column" id="step-column"></lut-step-list>
             </div>
+
+            <section class="lut-strip-panel" id="lut-strip-panel">
+              <div class="lut-strip-head">
+                <div class="section-label">LUT Library</div>
+              </div>
+              <lut-lut-strip-list class="lut-strip-list" id="lut-strip-list" aria-live="polite"></lut-lut-strip-list>
+              <div
+                class="lut-file-drop-overlay"
+                id="lut-file-drop-overlay"
+                data-active="false"
+                aria-hidden="true"
+              >
+                <div class="lut-file-drop-overlay-card">
+                  <div class="lut-file-drop-overlay-title" id="lut-file-drop-title">画像をドロップしてLUT追加</div>
+                  <div class="lut-file-drop-overlay-description" id="lut-file-drop-description">PNGやJPEGなどの画像をLUTライブラリへ追加します</div>
+                </div>
+              </div>
+            </section>
+
           </div>
-        </section>
+          <!-- LUT 編集タブペインは JavaScript により動的に追加される -->
+        </div>
       </section>
 
       <div class="resizer" id="resizer"></div>
