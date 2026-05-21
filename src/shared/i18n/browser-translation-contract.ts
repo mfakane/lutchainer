@@ -1,7 +1,7 @@
 import type {
-    TranslationArgs as SharedTranslationArgs,
-    Translator as SharedTranslator,
-    TranslationValues,
+  TranslationArgs as SharedTranslationArgs,
+  Translator as SharedTranslator,
+  TranslationValues,
 } from './translator.ts';
 
 export interface TranslationSchema {
@@ -35,7 +35,6 @@ export interface TranslationSchema {
   'header.status.invalidHistorySyncArg': string;
   'header.status.invalidLanguageSelection': string;
   'header.status.languageChanged': string;
-  'static.pipelineHelp': string;
   'static.previewHelp': string;
   'static.previewResizerAria': string;
   'static.pipelineFileDropTitle': string;

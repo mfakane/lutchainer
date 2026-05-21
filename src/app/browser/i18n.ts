@@ -1,22 +1,22 @@
 import {
-    readTextFromLocalStorage,
-    writeTextToLocalStorage,
+  readTextFromLocalStorage,
+  writeTextToLocalStorage,
 } from '../../platforms/browser/storage.ts';
 import type {
-    AppTranslator,
-    RuntimeTranslationValues,
-    TranslationArgs,
-    TranslationKey,
-    TranslationSchema,
+  AppTranslator,
+  RuntimeTranslationValues,
+  TranslationArgs,
+  TranslationKey,
+  TranslationSchema,
 } from '../../shared/i18n/browser-translation-contract.ts';
 export type {
-    PanelPresetTranslationKey,
-    ParamGroupDescriptionTranslationKey,
-    StaticTranslationKey,
-    TranslationArgs,
-    TranslationKey,
-    TranslationParams,
-    TranslationSchema, AppTranslator as Translator
+  PanelPresetTranslationKey,
+  ParamGroupDescriptionTranslationKey,
+  StaticTranslationKey,
+  TranslationArgs,
+  TranslationKey,
+  TranslationParams,
+  TranslationSchema, AppTranslator as Translator
 } from '../../shared/i18n/browser-translation-contract.ts';
 
 export type Language = 'ja' | 'en';
@@ -66,7 +66,6 @@ const TRANSLATIONS: Record<Language, TranslationSchema> = {
     'header.status.invalidLanguageSelection': '言語選択値が不正です: {value}',
     'header.status.languageChanged': '表示言語を {language} に切り替えました。',
 
-    'static.pipelineHelp': '左ノードを選択して、各StepのX/Yソケットへ接続',
     'static.previewHelp': 'ドラッグ: 回転 / ホイール: ズーム',
     'static.previewResizerAria': '3Dプレビュー表示の高さを調整',
     'static.pipelineFileDropTitle': '.lutchain をドロップ',
@@ -310,7 +309,6 @@ const TRANSLATIONS: Record<Language, TranslationSchema> = {
     'header.status.invalidLanguageSelection': 'Invalid language selection value: {value}',
     'header.status.languageChanged': 'Switched display language to {language}.',
 
-    'static.pipelineHelp': 'Select a left node and connect it to each Step X/Y socket',
     'static.previewHelp': 'Drag: Rotate / Wheel: Zoom',
     'static.previewResizerAria': 'Adjust the 3D preview area height',
     'static.pipelineFileDropTitle': 'Drop a .lutchain file',

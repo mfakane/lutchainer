@@ -56,8 +56,6 @@
     align-items: stretch;
     gap: 0;
     padding: 0 8px;
-    border-bottom: 1px solid var(--color-line);
-    background: color-mix(in srgb, var(--color-panel-2), #000 6%);
     flex-shrink: 0;
     overflow-x: auto;
     scrollbar-width: none;

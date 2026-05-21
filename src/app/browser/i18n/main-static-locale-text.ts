@@ -13,11 +13,6 @@ interface SyncMainStaticLocaleTextOptions {
 
 const STATIC_TRANSLATION_TARGETS: TranslationTarget[] = [
   {
-    selector: '#pipeline-help-text',
-    key: 'static.pipelineHelp',
-    attribute: 'textContent',
-  },
-  {
     selector: '#preview-help-text',
     key: 'static.previewHelp',
     attribute: 'textContent',
