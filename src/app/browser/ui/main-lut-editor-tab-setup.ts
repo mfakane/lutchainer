@@ -54,31 +54,56 @@ export interface LutEditorTabsController {
 // LUT 変更のリアルタイム反映に使うデバウンスタイマー
 const LIVE_APPLY_DEBOUNCE_MS = 220;
 
-function debounce<T extends () => void>(fn: T, ms: number): () => void {
-  let timer: ReturnType<typeof setTimeout> | null = null;
-  return () => {
-    if (timer !== null) {
-      clearTimeout(timer);
-    }
-    timer = setTimeout(() => {
-      timer = null;
-      fn();
-    }, ms);
-  };
-}
-
 export function setupMainLutEditorTabs(
   options: SetupMainLutEditorTabsOptions,
 ): LutEditorTabsController {
   const tabBarEl = options.tabBarEl as PipelineTabBarElement;
   const tabContentEl = options.pipelineTabContentEl;
 
-  // デバウンス済みの「ライブ適用」（LUT 変更を 3D プレビューに反映）
-  const debouncedLiveApply = debounce(() => {
+  // LUT エディタ内の編集状態は入力イベントごとに更新するが、
+  // LUT テクスチャ生成・WebGL反映・外部UI更新は操作が落ち着いてから一度だけ行う。
+  const pendingLiveLutChanges = new Map<string, ColorRamp2dLutData>();
+  let liveApplyTimer: ReturnType<typeof setTimeout> | null = null;
+
+  const flushLiveApply = (): void => {
+    liveApplyTimer = null;
+    if (pendingLiveLutChanges.size === 0) {
+      return;
+    }
+
+    const pendingChanges = Array.from(pendingLiveLutChanges.entries());
+    pendingLiveLutChanges.clear();
+
+    let nextLuts = options.getLuts();
+    for (const [lutId, rampData] of pendingChanges) {
+      const updatedLut = createLutFromColorRamp2d(rampData);
+      nextLuts = nextLuts.map(l => l.id === lutId ? { ...updatedLut, id: lutId } : l);
+    }
+
+    options.setLuts(nextLuts);
     options.scheduleApply();
     options.renderSteps();
     options.renderLutStrip();
-  }, LIVE_APPLY_DEBOUNCE_MS);
+  };
+
+  const scheduleLiveApply = (): void => {
+    if (liveApplyTimer !== null) {
+      clearTimeout(liveApplyTimer);
+    }
+    liveApplyTimer = setTimeout(flushLiveApply, LIVE_APPLY_DEBOUNCE_MS);
+  };
+
+  const cancelPendingLiveApply = (lutId?: string): void => {
+    if (lutId === undefined) {
+      pendingLiveLutChanges.clear();
+    } else {
+      pendingLiveLutChanges.delete(lutId);
+    }
+    if (liveApplyTimer !== null && pendingLiveLutChanges.size === 0) {
+      clearTimeout(liveApplyTimer);
+      liveApplyTimer = null;
+    }
+  };
 
   // タブコントローラー
   const tabsController: PipelineTabsController = createPipelineTabsController({
@@ -175,18 +200,9 @@ export function setupMainLutEditorTabs(
     // per-tab undo スタックに変更を記録（デバウンス）
     tabState.historyController.recordChange(rampData);
 
-    // LUT テクスチャ生成と暫定反映
-    const updatedLut = createLutFromColorRamp2d(rampData);
-    const luts = options.getLuts();
-    const nextLuts = luts.map(l => l.id === lutId ? { ...updatedLut, id: lutId } : l);
-    options.setLuts(nextLuts);
-
-    // 外部からの rampData 同期キーを最新化して、直後の undo でもエディタ表示を確実に同期させる
-    const pane = options.pipelineTabContentEl.querySelector<HTMLElement>(`[data-tab-id="${CSS.escape(`lut:${lutId}`)}"]`);
-    const tabEl = pane?.querySelector('lut-lut-editor-tab') as LutEditorTabContentElement | null;
-    if (tabEl) {
-      tabEl.rampData = rampData;
-    }
+    // エディタ内のプレビューはコンポーネント自身が即時更新する。
+    // ここでは重いLUT生成を行わず、最新状態だけを保持して後でまとめて反映する。
+    pendingLiveLutChanges.set(lutId, rampData);
 
     // ダーティフラグを立てる
     tabsController.setLutTabDirty(lutId, true);
@@ -196,8 +212,8 @@ export function setupMainLutEditorTabs(
       tabsController.updateLutTabLabel(lutId, rampData.name);
     }
 
-    // デバウンス済みでプレビューを更新
-    debouncedLiveApply();
+    // 操作が落ち着いた時点でWebGL・step/LUT表示を更新
+    scheduleLiveApply();
     emitActiveTabHistoryState();
   }
 
@@ -205,6 +221,7 @@ export function setupMainLutEditorTabs(
    * Apply ボタン押下ハンドラ（グローバル history にコミットしてタブを閉じる）
    */
   function handleLutApply(lutId: string, updatedLut: LutModel): void {
+    cancelPendingLiveApply(lutId);
     const luts = options.getLuts();
     const target = luts.find(l => l.id === lutId);
     if (!target) {
@@ -251,6 +268,7 @@ export function setupMainLutEditorTabs(
    * LUT を元のデータに戻す
    */
   function revertLutToOriginal(lutId: string, originalLutModel: LutModel): void {
+    cancelPendingLiveApply(lutId);
     const luts = options.getLuts();
     const nextLuts = luts.map(l => l.id === lutId ? originalLutModel : l);
     options.setLuts(nextLuts);
@@ -263,6 +281,7 @@ export function setupMainLutEditorTabs(
    * タブを DOM から削除して閉じる
    */
   function closeLutTab(lutId: string): void {
+    cancelPendingLiveApply(lutId);
     const tabId = `lut:${lutId}`;
     const pane = tabContentEl.querySelector<HTMLElement>(`[data-tab-id="${CSS.escape(tabId)}"]`);
     if (pane) {
@@ -352,12 +371,9 @@ export function setupMainLutEditorTabs(
         return true; // キャプチャはしたが戻れなかった（但しグローバルには渡さない）
       }
 
-      // LUT を per-tab undo で復元した状態に適用
-      const updatedLut = createLutFromColorRamp2d(prevData);
-      const luts = options.getLuts();
-      const nextLuts = luts.map(l => l.id === lutId ? { ...updatedLut, id: lutId } : l);
-      options.setLuts(nextLuts);
-      debouncedLiveApply();
+      // LUT はデバウンス後に生成・反映する。エディタ表示は直ちに同期する。
+      pendingLiveLutChanges.set(lutId, prevData);
+      scheduleLiveApply();
 
       // タブコンポーネントの表示も同期（rampData プロパティ更新）
       const pane = options.pipelineTabContentEl.querySelector<HTMLElement>(`[data-tab-id="${CSS.escape(`lut:${lutId}`)}"]`);
@@ -388,11 +404,8 @@ export function setupMainLutEditorTabs(
         return true;
       }
 
-      const updatedLut = createLutFromColorRamp2d(nextData);
-      const luts = options.getLuts();
-      const nextLuts = luts.map(l => l.id === lutId ? { ...updatedLut, id: lutId } : l);
-      options.setLuts(nextLuts);
-      debouncedLiveApply();
+      pendingLiveLutChanges.set(lutId, nextData);
+      scheduleLiveApply();
 
       const pane = options.pipelineTabContentEl.querySelector<HTMLElement>(`[data-tab-id="${CSS.escape(`lut:${lutId}`)}"]`);
       const tabEl = pane?.querySelector('lut-lut-editor-tab') as LutEditorTabContentElement | null;
@@ -406,6 +419,7 @@ export function setupMainLutEditorTabs(
     },
 
     dispose(): void {
+      cancelPendingLiveApply();
       // 全 LUT タブを強制クローズ（revert なし）
       for (const tab of tabsController.getTabs()) {
         if (tab.kind === 'lut') {
