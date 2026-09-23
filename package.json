@@ -35,7 +35,7 @@
     "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.58.2",
     "@types/node": "^22",
-    "esbuild": "^0.20.0",
+    "esbuild": "^0.28.0",
     "eslint": "^10.2.0",
     "eslint-plugin-svelte": "^3.17.0",
     "gl": "^8.1.6",
