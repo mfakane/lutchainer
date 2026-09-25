@@ -41,7 +41,7 @@
     "gl": "^8.1.6",
     "globals": "^17.4.0",
     "svelte-check": "^4.4.6",
-    "typescript": "^6.0.2",
+    "typescript": "^7.0.0",
     "typescript-eslint": "^8.58.1"
   },
   "dependencies": {
